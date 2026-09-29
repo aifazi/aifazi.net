@@ -37,7 +37,9 @@ const STORE_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico
 const STATUS_SHARED_PREFIXES = ['/api', '/auth', '/login', '/admin']
 const STATUS_SHARED_PATHS = new Set(['/robots.txt', '/sitemap.xml', '/favicon.ico', '/logo.svg'])
 const INTERNAL_API_SECRET = process.env.INTERNAL_API_SECRET   || ''
-const PASETO_SECRET       = process.env.PASETO_SECRET || ''
+// NOTE: there is intentionally no PASETO_SECRET here — admin-gate verification
+// uses ADMIN_GATE_SECRET only (see below). Do not re-add it: a same-named
+// variable invites rotation confusion between edge and backend secrets.
 // Must match the backend's ADMIN_GATE_SECRET exactly. No fallback to
 // INTERNAL_API_SECRET — the backend deliberately never falls back either,
 // so reusing it here would break admin-gate verification when the keys differ.
@@ -298,9 +300,14 @@ function isLocalHost(hostname: string): boolean {
 
 // M1 — only relax signature verification during local development. Never rely on
 // a raw Host header or a build-time ENV flag, both of which an attacker can
-// influence in non-Vercel/standalone deployments.
+// influence in non-Vercel/standalone deployments. Requires an explicit opt-in
+// flag too, so a misbuilt production image (NODE_ENV=development) can never
+// silently disable admin-gate verification on its own.
 function isRelaxedLocalRuntime(hostname: string): boolean {
-  return process.env.NODE_ENV === 'development' && isLocalHost(hostname)
+  return process.env.ALLOW_INSECURE_LOCAL_ADMIN === '1'
+    && process.env.NODE_ENV === 'development'
+    && isLocalHost(hostname)
+    && process.env.VERCEL_ENV !== 'production'
 }
 
 // ── CSP (per-request nonce + strict-dynamic) ─────────────────────────────────
@@ -455,6 +462,10 @@ export async function proxy(request: NextRequest) {
     const isPublicContentGet =
       request.method === 'GET' &&
       (lowerPath === '/api/content' || lowerPath.startsWith('/api/content/'))
+    // Parity note: backend main.py _OPEN_GET_PREFIXES opens the same
+    // "/api/content" prefix, so edge and origin agree. If the backend ever
+    // narrows this (e.g. drafts/preview carve-outs), narrow this rule to the
+    // exact public prefixes in the same change.
     const isSelfAuthWebhook =
       lowerPath === '/api/admin/mail/queue/webhook/inbound' ||
       lowerPath === '/api/admin/mail/queue/process-pending'

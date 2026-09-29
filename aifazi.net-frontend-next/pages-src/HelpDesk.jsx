@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback, useRef, useSyncExternalStore } from 'react'
+import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { useForum } from '../context/ForumContext'
@@ -10,10 +10,8 @@ import { getSupabase } from '@/lib/supabase'
 import { talkUrl } from '@/lib/talk'
 import {
   StatusBadge, PriorityDot, PriorityBadge, MessageBubble, TicketDetail, SubmitTicket, CheckStatus, FAQS, FAQ,
+  mono, card,
 } from './helpDeskParts'
-
-const mono = { fontFamily: 'var(--font-mono)' }
-const card = { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '20px 24px' }
 
 export default function HelpDesk() {
   const { user } = useForum()

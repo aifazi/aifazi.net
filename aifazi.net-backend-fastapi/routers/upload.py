@@ -671,11 +671,13 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
                 provider_error = "R2 delete failed (credentials not configured)"
 
         elif provider == "b2":
-            # B2 native API: authorize → /b2api/v2/b2_delete_file_version.
+            # B2 native API: authorize → resolve fileId via list_file_versions
+            # (uploads only persist the storage key, not the B2 fileId) →
+            # /b2api/v2/b2_delete_file_version.
             app_key_id    = cfg.get("b2KeyId", "").strip()
             app_key_secret = cfg.get("b2AppKey", "").strip()
-            file_id       = path  # we store the file_id as storage_path for B2
-            if not (app_key_id and app_key_secret and file_id):
+            file_name     = row.get("filename", "")
+            if not (app_key_id and app_key_secret and path and file_name):
                 provider_ok = False
                 provider_error = "B2 credentials not configured"
             else:
@@ -688,13 +690,28 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
                         provider_ok = False
                         provider_error = f"B2 auth failed (HTTP {auth.status_code})"
                     else:
-                        api_url = auth.json()["apiUrl"] + "/b2api/v2/b2_delete_file_version"
+                        api_url = auth.json()["apiUrl"] + "/b2api/v2/b2_list_file_versions"
                         tok = auth.json()["authorizationToken"]
-                        dr = await c.post(api_url, json={"fileId": file_id, "fileName": row.get("filename", "")},
+                        lv = await c.post(api_url,
+                                          json={"bucketName": cfg.get("b2BucketName", "").strip(),
+                                                "fileName": file_name, "maxFileCount": 10},
                                           headers={"Authorization": tok})
-                        if dr.status_code != 200:
+                        file_id = ""
+                        if lv.status_code == 200:
+                            for v in (lv.json().get("files") or []):
+                                if v.get("fileName") == path or v.get("fileName") == file_name:
+                                    file_id = v.get("fileId", "")
+                                    break
+                        if not file_id:
                             provider_ok = False
-                            provider_error = f"B2 delete failed (HTTP {dr.status_code})"
+                            provider_error = "B2 file version not found"
+                        else:
+                            dr = await c.post(auth.json()["apiUrl"] + "/b2api/v2/b2_delete_file_version",
+                                              json={"fileId": file_id, "fileName": file_name},
+                                              headers={"Authorization": tok})
+                            if dr.status_code != 200:
+                                provider_ok = False
+                                provider_error = f"B2 delete failed (HTTP {dr.status_code})"
 
         elif provider == "imagekit":
             # ImageKit delete: DELETE /v1/files/{fileId} with basic auth on

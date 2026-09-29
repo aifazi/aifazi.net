@@ -24,7 +24,18 @@ interface SearchResult {
   title: string
   type: 'post' | 'thread' | 'product'
   url: string
+  slug?: string
   meta?: string
+}
+
+/** Backend search urls are web-style (/blog/x); map to expo routes by type. */
+function routeForResult(r: SearchResult): Href | null {
+  const key = String((r.slug ?? r.id ?? '')).trim()
+  if (!key) return null
+  if (r.type === 'post') return `/blog-post?slug=${encodeURIComponent(key)}` as Href
+  if (r.type === 'thread') return `/forum-thread?id=${encodeURIComponent(key)}` as Href
+  if (r.type === 'product') return `/store-item?slug=${encodeURIComponent(key)}` as Href
+  return null
 }
 
 const COMMANDS: Command[] = [
@@ -115,11 +126,15 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     : COMMANDS
 
   interface PaletteItem { key: string; label: string; hint: string; icon: IconName; href?: Href; external?: string; section: string }
-  const searchItems: PaletteItem[] = results.map(r => ({
-    key: `search-${r.id}`, label: r.title, hint: r.meta || '',
-    icon: r.type === 'product' ? 'store' : r.type === 'post' ? 'blog' : 'forum',
-    href: r.url as Href, section: r.type === 'product' ? '🛒 Products' : r.type === 'post' ? '📝 Blog' : '💬 Forum',
-  }))
+  const searchItems: PaletteItem[] = results.flatMap((r) => {
+    const href = routeForResult(r)
+    if (!href) return []
+    return [{
+      key: `search-${r.id}`, label: r.title, hint: r.meta || '',
+      icon: r.type === 'product' ? 'store' : r.type === 'post' ? 'blog' : 'forum',
+      href, section: r.type === 'product' ? '🛒 Products' : r.type === 'post' ? '📝 Blog' : '💬 Forum',
+    }]
+  })
   const commandItems: PaletteItem[] = filtered.map(c => ({ key: (c.href ?? c.external ?? c.label) as string, ...c, section: 'Navigate' }))
   const allItems = [...searchItems, ...commandItems]
 

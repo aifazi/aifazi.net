@@ -3,6 +3,7 @@ Structured to match frontend DatabaseGUI shape.
 """
 import asyncio
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from html import escape
 
@@ -183,9 +184,16 @@ def _stats_impl():
         for c in (contacts_res.data or [])
     ])
 
-    # ── Total views (one column, no pagination needed) ────────────────────────
-    views_res = supabase.table("posts").select("views").execute()
-    total_views = sum(p.get("views", 0) for p in (views_res.data or []))
+    # ── Total views (paged: PostgREST silently truncates at 1000 rows) ──
+    total_views = 0
+    _vstart = 0
+    while True:
+        _vpage = supabase.table("posts").select("views").range(_vstart, _vstart + 999).execute()
+        _vrows = _vpage.data or []
+        total_views += sum(p.get("views", 0) for p in _vrows)
+        if len(_vrows) < 1000:
+            break
+        _vstart += 1000
 
     return {
         "counts": {
@@ -243,7 +251,18 @@ def stats(_: dict = Depends(require_staff)):
     # warm serverless invocation surfaces as "RemoteProtocolError: Server
     # disconnected". A fresh client clears it without re-running this heavy
     # dashboard query dozens of times.
-    return call_with_retry(_stats_impl)
+    # P1 — 60s cache: ~20 queries per dashboard hit is too heavy uncached.
+    now = time.time()
+    if _STATS_CACHE["data"] is not None and now - _STATS_CACHE["at"] < _STATS_TTL:
+        return _STATS_CACHE["data"]
+    data = call_with_retry(_stats_impl)
+    _STATS_CACHE["data"] = data
+    _STATS_CACHE["at"] = now
+    return data
+
+
+_STATS_CACHE: dict = {"at": 0.0, "data": None}
+_STATS_TTL = 60
 
 
 # ── Collection browser ────────────────────────────────────────────────────────

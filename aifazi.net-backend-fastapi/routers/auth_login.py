@@ -273,8 +273,20 @@ async def refresh_token(request: Request, response: Response, body: RefreshBody 
         return {"token": new_access, "refreshToken": new_refresh}
 
     # Tokens without a users-row id (legacy admin) validate by username only.
+    # P1 — fail closed like the id path: the presented refresh must match the
+    # stored one, otherwise a stolen pre-provisioning token survives password
+    # changes forever. Sessions predating id provisioning are long expired
+    # (7-day refresh life), so this breaks nothing live.
     from utils.auth_tokens import ADMIN_USERNAME
     if username != ADMIN_USERNAME:
+        raise HTTPException(401, "Invalid refresh token")
+    legacy = supabase.table("users").select("refresh_token,previous_refresh_token").eq("username", ADMIN_USERNAME).limit(1).execute()
+    stored = (legacy.data[0].get("refresh_token") if legacy.data else None) or ""
+    previous = (legacy.data[0].get("previous_refresh_token") if legacy.data else None) or ""
+    if not stored or (
+        not _hmac.compare_digest(stored, token_str)
+        and not (previous and _hmac.compare_digest(previous, token_str))
+    ):
         raise HTTPException(401, "Invalid refresh token")
     new_access = make_token({k: v for k, v in payload.items() if k != "exp"})
     new_refresh = make_refresh_token({k: v for k, v in payload.items() if k != "exp"}, 60 * 24 * 7)

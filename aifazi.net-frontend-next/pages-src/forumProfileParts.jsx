@@ -21,7 +21,19 @@ const CLRS = {
 }
 // Discord OAuth lives on the unified /api/auth router; Steam/GitHub keep their
 // dedicated routers at /api/forum/auth/{steam,github}.
-const oauthApiBase = (provider) => (provider === 'discord' ? '/auth/discord' : `/forum/auth/${provider}`)
+export const oauthApiBase = (provider) => (provider === 'discord' ? '/auth/discord' : `/forum/auth/${provider}`)
+
+const TRUSTED_OAUTH_HOSTS = ['steamcommunity.com', 'steamlogin.com', 'discord.com', 'discordapp.com', 'github.com']
+export function safeOAuthRedirect(url) {
+  try {
+    const u = new URL(url, window.location.origin)
+    if ((u.protocol === 'https:' || u.protocol === 'http:') && TRUSTED_OAUTH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) {
+      window.location.href = url
+      return true
+    }
+  } catch {}
+  return false
+}
 const STAFF_PORTAL_ROLES = new Set(['admin', 'moderator', 'editor'])
 
 function canAccessAdminPortal(user) {

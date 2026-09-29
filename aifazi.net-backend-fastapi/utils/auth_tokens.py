@@ -53,7 +53,9 @@ def make_admin_gate_token(payload: dict, expires_minutes: int = 60 * 24) -> str:
 
 
 def make_forum_token(user_id: str, username: str, role: str) -> str:
-    return _paseto_create_token({"id": user_id, "username": username, "role": role, "token_type": "access"}, expires_in=7 * 86400, purpose="auth")
+    # P1 — 24h access like make_token (was 7d): longevity comes from the
+    # 7-day refresh cookie, and this aligns with the auth_token cookie max_age.
+    return _paseto_create_token({"id": user_id, "username": username, "role": role, "token_type": "access"}, expires_in=24 * 3600, purpose="auth")
 
 
 def make_forum_2fa_token(user_id: str, username: str, role: str, provider: str = "password") -> str:

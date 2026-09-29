@@ -3,6 +3,26 @@
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Select } from '../core/ui.jsx'
+import { SITE_URL } from '@/lib/config'
+
+// Local copies (SeoTools.jsx owns its own; this module must not import from
+// it — SeoTools imports *Parts, so that direction would be a cycle).
+async function fetchViaProxy(url) {
+  const res = await api.get('/seo-proxy', { params: { url }, timeout: 15000 })
+  const data = res.data
+  if (!data.contents) throw new Error('Could not fetch that URL. Try pasting HTML instead.')
+  return data.contents
+}
+
+const S = {
+  input:        { width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' },
+  btn:          { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '10px 20px', background: 'var(--green)', color: '#000', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', fontWeight: 700 },
+  tab:          { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '8px 14px', background: 'var(--bg2)', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer' },
+  tabActive:    { background: 'color-mix(in srgb, var(--green) 10%, transparent)', color: 'var(--green)', borderColor: 'color-mix(in srgb, var(--green) 40%, transparent)' },
+  error:        { color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 11, marginTop: 8 },
+  sectionLabel: { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 12 },
+  fieldLabel:   { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 },
+}
 
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))

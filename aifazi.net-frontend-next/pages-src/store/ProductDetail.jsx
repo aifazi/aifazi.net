@@ -7,7 +7,7 @@ import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
 import { formatPrice } from '@/lib/format'
 
-const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)'
+const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)', Y = 'var(--yellow, #ffd700)'
 const mix = (c, p) => `color-mix(in srgb, ${c} ${p}%, transparent)`
 
 // Shared with Store.jsx — guest add-to-cart stash restored after login.

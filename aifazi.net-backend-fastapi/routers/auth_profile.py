@@ -3,6 +3,7 @@
 Extracted from auth.py. Handles user self-service profile management.
 """
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 
@@ -58,6 +59,43 @@ def _sniff_avatar_mimetype(content: bytes) -> str:
 
 
 # ── Models ───────────────────────────────────────────────────────────────────
+_AVATAR_URL_ALLOW_HOSTS = (
+    "cdn.discordapp.com",
+    "cdn.discord.com",
+    "avatars.githubusercontent.com",
+    "api.dicebear.com",
+    "res.cloudinary.com",
+)
+
+
+def _validate_avatar_url(value: str) -> None:
+    """Reject non-https / off-allowlist avatar URLs (stored-XSS guard)."""
+    from urllib.parse import urlparse
+
+    if not value:
+        return
+    try:
+        parts = urlparse(value)
+    except Exception:
+        raise HTTPException(400, "Invalid avatar URL")
+    if not parts.scheme:
+        # Relative path — safe to store.
+        if value.startswith(("http:", "https:", "javascript:", "data:", "vbscript:")):
+            raise HTTPException(400, "Invalid avatar URL")
+        return
+    if parts.scheme != "https":
+        raise HTTPException(400, "Avatar URL must use https")
+    host = (parts.hostname or "").lower()
+    supabase_host = ""
+    try:
+        supabase_host = (urlparse(os.environ.get("SUPABASE_URL", "")).hostname or "").lower()
+    except Exception:
+        supabase_host = ""
+    allowed = set(_AVATAR_URL_ALLOW_HOSTS)
+    if supabase_host:
+        allowed.add(supabase_host)
+    if host not in allowed and not any(host.endswith("." + a) for a in allowed):
+        raise HTTPException(400, "Avatar host is not allowlisted")
 class ProfileBody(BaseModel):
     display_name: str | None = None
     bio: str | None = None
@@ -100,6 +138,11 @@ async def update_me(body: ProfileBody, user: dict = Depends(get_current_user)):
         updates["profile_bio"] = body.bio[:1000]
         updates["bio"] = body.bio[:500]
     if body.avatar_url is not None:
+        # P1 — allowlist avatar URLs: bare persistence of `javascript:` /
+        # `data:text/html` / attacker-CDN URLs is a stored-XSS vector wherever
+        # avatars render. Only https URLs on known-good hosts (or relative
+        # paths) are stored; empty string clears the avatar.
+        _validate_avatar_url(body.avatar_url)
         updates["profile_avatar"] = body.avatar_url[:500]
         updates["avatar"] = body.avatar_url[:500]
     # display_name/website_url have no backing columns — intentionally ignored.
@@ -184,8 +227,13 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
     if not _verify(body.current_password, res.data[0]["password_hash"]):
         raise HTTPException(400, "Current password is incorrect.")
     # P1-1 — revoke sessions on account deletion (mirrors revoke-on-reset).
+    # P1 — also scrub PII + OAuth link IDs so the deleted address can be
+    # re-registered and linked accounts can't silently re-enter this row.
+    tombstone = f"deleted_{uuid.uuid4().hex[:8]}@deleted.local"
     supabase.table("users").update({
         "username": f"deleted_{uuid.uuid4().hex[:8]}",
+        "email": tombstone,
+        "pending_email": None,
         "profile_bio": "",
         "bio": "",
         "profile_avatar": "",
@@ -193,6 +241,12 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
         "password_hash": "",
         "refresh_token": None, "previous_refresh_token": None,
         "reset_token": None, "reset_expires": None,
+        "verify_token": None, "verify_expires": None,
+        "discord_id": None, "discord_username": None, "discord_avatar": None,
+        "steam_id": None, "steam_username": None, "steam_avatar": None,
+        "github_id": None, "github_username": None, "github_avatar": None,
+        "totp_secret": None, "totp_enabled": False,
+        "recovery_codes": None,
         "banned": True,
     }).eq("username", username).execute()
     return {"ok": True}

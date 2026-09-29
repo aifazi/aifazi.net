@@ -718,6 +718,21 @@ function themeColorDefaults(themeId) {
   return byKey
 }
 
+// Style-template + preset helpers. Referenced by the preset/template flows
+// below; defined here (module scope) after an extraction left them missing,
+// which crashed template actions with `ReferenceError`.
+const makeId = (prefix = 'id') => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+const nowISO = () => new Date().toISOString()
+const applyTemplateToDraft = (draft, tpl) => {
+  const d = (tpl && tpl.draft) || {}
+  const base = draft && typeof draft === 'object' ? draft : {}
+  return {
+    ...base,
+    ...d,
+    colors: { ...((base.colors) || {}), ...((d.colors) || {}) },
+  }
+}
+
 function seedCustomDraft(themeId, saved) {
   const defaults = themeColorDefaults(themeId)
   return {

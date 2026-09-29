@@ -22,6 +22,8 @@ log = logging.getLogger("file_tools")
 
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB hard cap
 MAX_RENDER_PX = 4096  # max rendered edge (px) — prevents pixel-bomb memory exhaustion
+MAX_BATCH_FILES = 10  # max files per batch request — prevents fan-out OOM
+MAX_BATCH_BYTES = 100 * 1024 * 1024  # 100 MB aggregate per batch request
 
 # ── Helpers ───────────────────────────────────────────────────────
 def _pdf_stream(doc, name="output.pdf"):
@@ -48,6 +50,11 @@ async def _read(f: UploadFile) -> bytes:
         raise HTTPException(413, f"File too large (max {MAX_UPLOAD_BYTES // 1024 // 1024} MB)")
     return data
 
+def _check_batch(files: list) -> None:
+    """Reject oversized batches before reading anything into memory."""
+    if len(files) > MAX_BATCH_FILES:
+        raise HTTPException(400, f"Too many files (max {MAX_BATCH_FILES})")
+
 # ════════════════════════════════════════════════════════
 # PDF BASIC TOOLS
 # ════════════════════════════════════════════════════════
@@ -56,9 +63,16 @@ async def _read(f: UploadFile) -> bytes:
 async def merge_pdf(files: list[UploadFile] = File(...), _: dict = Depends(get_current_user)):
     import fitz
     if len(files) < 2: raise HTTPException(400, "Need at least 2 PDFs")
+    _check_batch(files)
     out = fitz.open()
+    total = 0
     for f in files:
-        doc = fitz.open(stream=await _read(f), filetype="pdf")
+        data = await _read(f)
+        total += len(data)
+        if total > MAX_BATCH_BYTES:
+            out.close()
+            raise HTTPException(413, f"Batch too large (max {MAX_BATCH_BYTES // 1024 // 1024} MB total)")
+        doc = fitz.open(stream=data, filetype="pdf")
         out.insert_pdf(doc); doc.close()
     return _pdf_stream(out, "merged.pdf")
 
@@ -165,9 +179,15 @@ async def page_numbers(file: UploadFile = File(...), position: str = Form("botto
 async def images_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(get_current_user)):
     import fitz
     from PIL import Image as PILImage
+    _check_batch(files)
     out = fitz.open()
+    total = 0
     for f in files:
         raw = await _read(f)
+        total += len(raw)
+        if total > MAX_BATCH_BYTES:
+            out.close()
+            raise HTTPException(413, f"Batch too large (max {MAX_BATCH_BYTES // 1024 // 1024} MB total)")
         try:
             img = PILImage.open(io.BytesIO(raw))
             w, h = img.size; r = fitz.Rect(0, 0, w*0.75, h*0.75)
@@ -467,9 +487,15 @@ async def csv_to_pdf(file: UploadFile = File(...), _: dict = Depends(get_current
 async def jpg_to_pdf(files: list[UploadFile] = File(...), _: dict = Depends(get_current_user)):
     import fitz
     from PIL import Image as PILImage
+    _check_batch(files)
     out = fitz.open()
+    total = 0
     for f in files:
         raw = await _read(f)
+        total += len(raw)
+        if total > MAX_BATCH_BYTES:
+            out.close()
+            raise HTTPException(413, f"Batch too large (max {MAX_BATCH_BYTES // 1024 // 1024} MB total)")
         img = PILImage.open(io.BytesIO(raw)); w, h = img.size
         page = out.new_page(width=w*0.75, height=h*0.75)
         page.insert_image(page.rect, stream=raw)

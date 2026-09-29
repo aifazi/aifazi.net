@@ -30,7 +30,7 @@ from database import supabase
 from dependencies import require_admin, require_staff
 from permissions import require_permission
 from utils.audit import record as _audit
-from utils.ssrf import BLOCKED_NETWORKS, is_blocked_ip
+from utils.ssrf import is_blocked_ip
 
 router = APIRouter()
 logger = logging.getLogger("monitor")
@@ -739,6 +739,22 @@ def _incidents_for(label: str, rows: list[dict]) -> list[dict]:
 async def public_status():
     """Aggregated uptime + last-check per service (core + admin custom monitors)
     for the public /status page, plus recent incident history."""
+    # P1 — 60s cache: the per-service 30d fan-out below is far too heavy to
+    # recompute on every anonymous poll of this public endpoint.
+    now_ts = time.time()
+    if _STATUS_CACHE["data"] is not None and now_ts - _STATUS_CACHE["at"] < _STATUS_TTL:
+        return _STATUS_CACHE["data"]
+    data = await _public_status_impl()
+    _STATUS_CACHE["data"] = data
+    _STATUS_CACHE["at"] = now_ts
+    return data
+
+
+_STATUS_CACHE: dict = {"at": 0.0, "data": None}
+_STATUS_TTL = 60
+
+
+async def _public_status_impl():
     now = datetime.now(timezone.utc)
     cutoff = (now - timedelta(days=30)).isoformat()
     out = []

@@ -13,23 +13,12 @@ import {
   M, D, CLRS, Badge, SectionCard, Inp, Btn, StatusMsg, ago, Avatar,
   STATUS_CFG, PRIORITY_CFG,
   STAFF_PORTAL_ROLES, canAccessAdminPortal, AdminPortalLink,
+  oauthApiBase, safeOAuthRedirect,
 } from './forumProfileParts'
 import {
   TicketCard, TicketDetailView, MyTicketsTab, ActivityTab, ProfileEditTab,
   ProfileSessionsPanel, TwoFactorPanel, SecurityTab, OverviewTab,
 } from './forumProfileTabs'
-
-const TRUSTED_OAUTH_HOSTS = ['steamcommunity.com', 'steamlogin.com', 'discord.com', 'discordapp.com', 'github.com']
-function safeOAuthRedirect(url) {
-  try {
-    const u = new URL(url, window.location.origin)
-    if ((u.protocol === 'https:' || u.protocol === 'http:') && TRUSTED_OAUTH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.' + h))) {
-      window.location.href = url
-      return true
-    }
-  } catch {}
-  return false
-}
 
 /* ─── Design tokens ──────────────────────────────────────────────────────── */
 const DISCORD_PURPLE = '#5865F2'

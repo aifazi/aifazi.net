@@ -59,13 +59,19 @@ def _safe_relative_path(value: str | None, default: str = "/profile") -> str:
     return value
 
 
-def make_oauth_state(provider: str, dest: str = "/profile", mobile: bool = False) -> str:
+def make_oauth_state(provider: str, dest: str = "/profile", mobile: bool = False,
+                     extra: dict | None = None) -> str:
     """Issue a signed state token: `<base64url(payload)>.<hex HMAC-SHA256>`.
 
     `mobile=True` marks the flow as app-driven so the callback redirects back to
     the mobile deep link (`aifazi://...`) instead of the web frontend. It is part
     of the signed payload, so an attacker cannot flip a web flow into a custom
     scheme redirect (that would open an arbitrary-scheme redirect primitive).
+
+    `extra` carries small caller-bound claims (e.g. `{"uid": ...}` for account
+    linking) so the callback can verify WHO the flow was minted for — without it
+    any valid state is replayable by a third party within the TTL. Keys must be
+    strings, values str/int/bool, total payload stays small.
 
     Raises RuntimeError if no signing secret is configured (fail closed at issue time
     so we never send an unsigned state to Discord/Steam).
@@ -76,9 +82,18 @@ def make_oauth_state(provider: str, dest: str = "/profile", mobile: bool = False
             "Configure it in Vercel env vars."
         )
     safe_dest = _safe_relative_path(dest)
-    payload = {"p": provider, "d": safe_dest, "t": int(time.time())}
+    payload: dict = {"p": provider, "d": safe_dest, "t": int(time.time())}
     if mobile:
         payload["m"] = 1
+    if extra:
+        clean = {}
+        for k, v in extra.items():
+            if not isinstance(k, str) or len(k) > 32:
+                raise ValueError("bad extra claim key")
+            if not isinstance(v, (str, int, bool)) or (isinstance(v, str) and len(v) > 128):
+                raise ValueError("bad extra claim value")
+            clean[k] = v
+        payload["x"] = clean
     data = json.dumps(payload, separators=(",", ":"))
     body = _b64u(data.encode("utf-8"))
     sig = hmac.new(_OAUTH_STATE_SECRET.encode("utf-8"), body.encode("ascii"), hashlib.sha256).hexdigest()
@@ -86,7 +101,8 @@ def make_oauth_state(provider: str, dest: str = "/profile", mobile: bool = False
 
 
 def verify_oauth_state_full(state: str | None, provider: str) -> dict:
-    """Verify signature + TTL + provider claim. Returns `{"dest": ..., "mobile": bool}`.
+    """Verify signature + TTL + provider claim.
+    Returns `{"dest": ..., "mobile": bool, "extra": dict}`.
 
     Raises ValueError on any mismatch / expiry so callers can fail closed:
         try:
@@ -115,6 +131,7 @@ def verify_oauth_state_full(state: str | None, provider: str) -> dict:
     return {
         "dest": _safe_relative_path(data.get("d", "/profile")),
         "mobile": bool(data.get("m")),
+        "extra": data.get("x") if isinstance(data.get("x"), dict) else {},
     }
 
 

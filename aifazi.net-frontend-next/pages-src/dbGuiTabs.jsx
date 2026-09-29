@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDialog } from '../core/dialog.jsx'
 import api from '../lib/api'
-import { Btn, StatCard, MiniChart, FeedRow, ap, authCfg, ago, fmt } from './dbGuiParts'
+import { Btn, StatCard, MiniChart, FeedRow, ap, authCfg, ago, fmt, adminAction, roleColor } from './dbGuiParts'
 
 function DbHealthTab({ token, toast }) {
   const [data, setData]       = useState(null);

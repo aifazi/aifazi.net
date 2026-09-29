@@ -30,7 +30,6 @@ const TYPE_ICON: Record<string, IconName> = {
   reply: 'chat',
   like: 'heart',
   mention: 'chat',
-  pm: 'send',
   system: 'bell',
 }
 
@@ -39,7 +38,7 @@ const TYPE_ICON: Record<string, IconName> = {
  * opened externally (http(s) only) or ignored — and oauth/callback links are
  * never pushed, so a crafted notification can never hijack the sign-in flow.
  */
-const ALLOWED_LINK_ROUTES = ['/forum-thread'] as const
+const ALLOWED_LINK_ROUTES = ['/forum-thread', '/blog-post'] as const
 
 export default function NotificationsScreen() {
   const { theme } = useTheme()

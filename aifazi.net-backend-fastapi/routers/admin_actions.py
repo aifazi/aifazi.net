@@ -315,11 +315,17 @@ async def newsletter_toggle_active(sub_id: str, request: Request, user: dict = D
     return {"message": "Activated" if new_status == "active" else "Deactivated"}
 
 
+# Mirrors routers/auth_sessions._SESSION_COLUMNS — explicit allowlist so a
+# future secret column on these tables can never auto-leak to staff browsers.
+_SESSION_COLUMNS = "id,username,user_id,role,ip,user_agent,last_active"
+_IP_BAN_COLUMNS = "id,ip,reason,created_at,expires_at"
+
+
 # ── Sessions ──────────────────────────────────────────────────────────────────
 @router.get("/sessions")
 async def list_sessions(_: dict = Depends(require_staff)):
     try:
-        res = supabase.table("auth_sessions").select("*").order("created_at", desc=True).limit(100).execute()
+        res = supabase.table("auth_sessions").select(_SESSION_COLUMNS).order("created_at", desc=True).limit(100).execute()
         sessions = [_normalize(s) for s in (res.data or [])]
     except Exception:
         sessions = []
@@ -362,7 +368,7 @@ def _ban_prefixlen_ok(ip_str: str) -> bool:
 @router.get("/ip-bans")
 async def list_ip_bans(_: dict = Depends(require_staff)):
     try:
-        res = supabase.table("ip_bans").select("*").order("created_at", desc=True).limit(1000).execute()
+        res = supabase.table("ip_bans").select(_IP_BAN_COLUMNS).order("created_at", desc=True).limit(1000).execute()
         bans = [_normalize(b) for b in (res.data or [])]
     except Exception:
         bans = []
