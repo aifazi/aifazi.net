@@ -66,6 +66,13 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   const [query, setQuery] = useState('')
   const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
   const playTimer = useRef(0)
+  const [notice, setNotice] = useState('')
+  const noticeTimer = useRef(0)
+  const flashNotice = (msg: string) => {
+    setNotice(msg)
+    window.clearTimeout(noticeTimer.current)
+    noticeTimer.current = window.setTimeout(() => setNotice(''), 2600)
+  }
 
   const nodes = doc?.nodes ?? COMPONENTS
   const flows = doc?.flows ?? null
@@ -106,13 +113,22 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
     }
   }, [selectedId])
 
-  // Flow player.
+  // Flow player + notice timers.
   useEffect(
     () => () => {
       window.clearInterval(playTimer.current)
+      window.clearTimeout(noticeTimer.current)
     },
     [],
   )
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      flashNotice('LINK COPIED TO CLIPBOARD')
+    } catch {
+      flashNotice('COPY FAILED — COPY THE URL MANUALLY')
+    }
+  }
   const stopPlay = () => {
     window.clearInterval(playTimer.current)
     playTimer.current = 0
@@ -176,7 +192,17 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             {m.label}
           </button>
         ))}
-        <span aria-hidden style={{ width: 1, height: 22, background: '#2b4862', margin: '0 6px' }} />
+      </div>
+
+      {/* ── Actions toolbar ─────────────────────────────────────── */}
+      <div
+        role="toolbar"
+        aria-label="Diagram actions"
+        style={{
+          display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+          marginBottom: 14,
+        }}
+      >
         <button
           type="button"
           onClick={togglePlay}
@@ -249,9 +275,28 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             {matches.size} match{matches.size === 1 ? '' : 'es'}
           </span>
         )}
-        <button type="button" onClick={() => canvasHandle.current?.exportPng()} style={BTN}>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              canvasHandle.current?.exportPng()
+              flashNotice('DIAGRAM EXPORTED AS PNG')
+            } catch {
+              flashNotice('EXPORT FAILED')
+            }
+          }}
+          style={BTN}
+        >
           EXPORT PNG
         </button>
+        <button type="button" onClick={copyLink} style={BTN} title="Copy a link to this view (includes selected node)">
+          COPY LINK
+        </button>
+        {notice && (
+          <span role="status" style={{ fontSize: 11, letterSpacing: 1.5, color: '#43d19e', fontFamily: 'var(--font-mono)' }}>
+            {notice}
+          </span>
+        )}
         <div
           role="group"
           aria-label="View mode"
@@ -332,6 +377,16 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             flows={flows ?? undefined}
           />
         </section>
+
+        {/* Text fallback of the diagram for screen readers / no-canvas */}
+        <ul className="hi-sr-only">
+          {nodes.map((c) => (
+            <li key={c.id}>
+              {c.name} — {c.role}
+              {c.workloads.length > 0 ? `: ${c.workloads.join(', ')}` : ''}
+            </li>
+          ))}
+        </ul>
 
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div
@@ -446,17 +501,22 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {TIMELINE.map((s, i) => (
-                <div
+                <button
                   key={s.id}
+                  type="button"
+                  onClick={() => { stopPlay(); setPlayStep(i); setActiveMode('all') }}
+                  aria-current={playStep === i}
+                  title={`Jump to step ${s.num}: ${s.label}`}
                   style={{
                     display: 'grid', gridTemplateColumns: '28px 1fr', gap: 8,
                     alignItems: 'center', padding: '6px 8px', borderRadius: 8,
-                    border: '1px solid transparent', fontSize: 12,
+                    border: '1px solid transparent', fontSize: 12, fontFamily: 'inherit',
+                    cursor: 'pointer', textAlign: 'left', width: '100%',
                     ...(playStep === i
                       ? { background: 'rgba(54,215,232,.1)', borderColor: 'rgba(54,215,232,.35)', color: '#e8f8ff' }
                       : playStep > i
-                        ? { color: '#9fc8b5' }
-                        : { color: '#7f97ad' }),
+                        ? { background: 'transparent', color: '#9fc8b5' }
+                        : { background: 'transparent', color: '#7f97ad' }),
                   }}
                 >
                   <div
@@ -469,7 +529,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                     {s.num}
                   </div>
                   <div>{s.label}</div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -551,6 +611,20 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
         .hi-canvas:focus-visible {
           outline: 2px solid var(--cyan, #36d7e8);
           outline-offset: 2px;
+        }
+        div[role="toolbar"] button:focus-visible,
+        aside button:focus-visible {
+          outline: 2px solid var(--cyan, #36d7e8);
+          outline-offset: 2px;
+        }
+        .hi-sr-only {
+          position: absolute;
+          width: 1px; height: 1px;
+          margin: -1px; padding: 0;
+          overflow: hidden;
+          clip: rect(0 0 0 0);
+          white-space: nowrap;
+          border: 0;
         }
       `}</style>
     </div>

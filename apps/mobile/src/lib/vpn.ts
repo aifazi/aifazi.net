@@ -17,6 +17,7 @@ export interface VpnPeer {
   device_name: string
   device_os: string
   allocated_ip: string
+  allocated_ipv6?: string | null
   status: string
   created_at: string
   last_connected_at?: string
@@ -30,6 +31,8 @@ export interface VpnStatus {
   server_public_key: string | null
   endpoint: string
   subnet: string
+  subnet_v6?: string
+  dualstack?: boolean
 }
 
 export interface VpnStats {
@@ -42,6 +45,7 @@ export interface CreatePeerResult {
   id: string
   device_name: string
   allocated_ip: string
+  allocated_ipv6?: string | null
   config: string
   qr_code: string
   status: string
@@ -52,6 +56,7 @@ export interface PeerDetail {
   device_name: string
   device_os: string
   allocated_ip: string
+  allocated_ipv6?: string | null
   status: string
   created_at: string
 }

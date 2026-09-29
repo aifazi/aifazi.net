@@ -15,6 +15,13 @@ WG_PORT="${WG_PORT:-51820}"
 WG_SUBNET="${WG_SUBNET:-10.8.0.0/24}"
 WG_SERVER_IP="${WG_SERVER_IP:-10.8.0.1}"
 WG_DNS="${WG_DNS:-1.1.1.1}"
+# Dual-stack (opt-in): WG_DUALSTACK_V6=true adds a ULA /64 to wg0 so peers get
+# fd00:8::/64 addresses with NAT66. Requires a working IPv6 uplink — the
+# script verifies with ping6 and refuses to half-configure (an Address without
+# uplink would blackhole client IPv6, and client configs claim ::/0).
+WG_DUALSTACK_V6="${WG_DUALSTACK_V6:-false}"
+WG_SUBNET_V6="${WG_SUBNET_V6:-fd00:8::/64}"
+WG_SERVER_IPV6="${WG_SERVER_IPV6:-fd00:8::1}"
 WG_CONF_DIR="/etc/wireguard"
 WG_CONF_FILE="${WG_CONF_DIR}/${WG_INTERFACE}.conf"
 
@@ -84,12 +91,27 @@ if [ -z "$PUBLIC_IFACE" ]; then
 fi
 echo "  Public interface: $PUBLIC_IFACE"
 
+# ── 4b. Dual-stack gate ────────────────────────────────────────────────────
+WG_ADDR_LINE="${WG_SERVER_IP}/24"
+if [ "$WG_DUALSTACK_V6" = "true" ]; then
+    echo "Dual-stack requested — verifying IPv6 uplink..."
+    if ! ping6 -c2 -W4 2606:4700:4700::1111 >/dev/null 2>&1; then
+        echo "ERROR: no working IPv6 uplink (ping6 failed). Fix provider IPv6"
+        echo "first (Contabo: IP Assignment must provision it; the gateway must"
+        echo "answer neighbor discovery). Refusing to add a v6 Address that would"
+        echo "blackhole tunneled client IPv6."
+        exit 1
+    fi
+    WG_ADDR_LINE="${WG_SERVER_IP}/24, ${WG_SERVER_IPV6}/64"
+    echo "  IPv6 uplink OK — ULA ${WG_SUBNET_V6} enabled with NAT66."
+fi
+
 # ── 5. Write WireGuard server config ─────────────────────────────────────────
 echo "[5/6] Writing WireGuard server config..."
 cat > "$WG_CONF_FILE" <<EOF
 [Interface]
 PrivateKey = ${SERVER_PRIV}
-Address = ${WG_SERVER_IP}/24
+Address = ${WG_ADDR_LINE}
 ListenPort = ${WG_PORT}
 DNS = ${WG_DNS}
 SaveConfig = true
@@ -113,6 +135,10 @@ echo "  Interface: ${WG_INTERFACE}"
 echo "  Port: ${WG_PORT}/UDP"
 echo "  Subnet: ${WG_SUBNET}"
 echo "  Server IP: ${WG_SERVER_IP}"
+if [ "$WG_DUALSTACK_V6" = "true" ]; then
+echo "  Subnet v6: ${WG_SUBNET_V6} (NAT66 via ip6tables MASQUERADE)"
+echo "  Server IPv6: ${WG_SERVER_IPV6}"
+fi
 echo "  Public Key: ${SERVER_PUB}"
 echo ""
 echo "Next steps:"
