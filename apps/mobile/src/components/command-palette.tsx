@@ -126,11 +126,15 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
     : COMMANDS
 
   interface PaletteItem { key: string; label: string; hint: string; icon: IconName; href?: Href; external?: string; section: string }
-  const searchItems: PaletteItem[] = results.map(r => ({
-    key: `search-${r.id}`, label: r.title, hint: r.meta || '',
-    icon: r.type === 'product' ? 'store' : r.type === 'post' ? 'blog' : 'forum',
-    href: routeForResult(r) ?? undefined, section: r.type === 'product' ? '🛒 Products' : r.type === 'post' ? '📝 Blog' : '💬 Forum',
-  })).filter((it) => !!it.href)
+  const searchItems: PaletteItem[] = results.flatMap((r) => {
+    const href = routeForResult(r)
+    if (!href) return []
+    return [{
+      key: `search-${r.id}`, label: r.title, hint: r.meta || '',
+      icon: r.type === 'product' ? 'store' : r.type === 'post' ? 'blog' : 'forum',
+      href, section: r.type === 'product' ? '🛒 Products' : r.type === 'post' ? '📝 Blog' : '💬 Forum',
+    }]
+  })
   const commandItems: PaletteItem[] = filtered.map(c => ({ key: (c.href ?? c.external ?? c.label) as string, ...c, section: 'Navigate' }))
   const allItems = [...searchItems, ...commandItems]
 
