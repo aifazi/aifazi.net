@@ -27,6 +27,14 @@ WG_ENDPOINT = os.getenv("WG_ENDPOINT", "75.119.131.157")
 WG_PORT = int(os.getenv("WG_PORT", "51820"))
 WG_DNS = os.getenv("WG_DNS", "1.1.1.1,1.0.0.1")
 WG_MTU = int(os.getenv("WG_MTU", "1420"))
+# Dual-stack (IPv6): ULA pool for peers + server address. Allocation only
+# happens when WG_DUALSTACK=true — enable it after the host has a working
+# v6 uplink + NAT66 (see scripts/setup-wireguard-vps.sh). Existing v4-only
+# peers keep working; v6 is additive per new/rotated peer.
+WG_SUBNET_V6 = os.getenv("WG_SUBNET_V6", "fd00:8::/64")
+WG_SERVER_IPV6 = os.getenv("WG_SERVER_IPV6", "fd00:8::1")
+WG_DUALSTACK = os.getenv("WG_DUALSTACK", "false").lower() == "true"
+WG_DNS_V6 = os.getenv("WG_DNS_V6", "2606:4700:4700::1111,2606:4700:4700::1001")
 
 # Host WireGuard Management API
 # The container reaches the host via the Docker gateway (usually 10.0.1.1)
@@ -128,6 +136,7 @@ def generate_client_config(
     endpoint: str | None = None,
     dns: str | None = None,
     mtu: int | None = None,
+    client_address_v6: str | None = None,
 ) -> str:
     """Build a wg-quick config string for a client.
 
@@ -140,13 +149,15 @@ def generate_client_config(
     preshared_key = (preshared_key or "").strip() if preshared_key else None
     client_address = (client_address or "").strip()
     ep = endpoint or f"{WG_ENDPOINT}:{WG_PORT}"
-    dns_val = dns or WG_DNS
     mtu_val = mtu or WG_MTU
+    v6 = (client_address_v6 or "").strip() if client_address_v6 else ""
+    dns_val = dns or (f"{WG_DNS},{WG_DNS_V6}" if v6 else WG_DNS)
+    addr_val = f"{client_address}/32" + (f", {v6}/128" if v6 else "")
 
     lines = [
         "[Interface]",
         f"PrivateKey = {client_private_key}",
-        f"Address = {client_address}/32",
+        f"Address = {addr_val}",
         f"DNS = {dns_val}",
         f"MTU = {mtu_val}",
         "",
@@ -335,3 +346,25 @@ def find_free_ip(used_ips: set[str], subnet: str = WG_SUBNET, server_ip: str = W
         if ip not in used_ips:
             return ip
     raise ValueError("No free IPs available in the VPN subnet")
+
+
+def find_free_ipv6(
+    used_ips: set[str],
+    subnet: str = WG_SUBNET_V6,
+    server_ip: str = WG_SERVER_IPV6,
+    scan_limit: int = 65536,
+) -> str:
+    """Find the first unused IPv6 address, walking up from <net>::2.
+
+    Never enumerates net.hosts() (a /64 has 2^64 addresses) — bounded walk.
+    Raises ValueError if the scan window is exhausted.
+    """
+    net = ipaddress.ip_network(subnet, strict=False)
+    if net.version != 6:
+        raise ValueError(f"Not an IPv6 subnet: {subnet}")
+    base = int(net.network_address)
+    for i in range(2, scan_limit):
+        cand = str(ipaddress.ip_address(base + i))
+        if cand != server_ip and cand not in used_ips:
+            return cand
+    raise ValueError("No free IPv6 addresses available in the VPN subnet")

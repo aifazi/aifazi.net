@@ -267,7 +267,17 @@ export function ForumProvider({ children }) {
     // Set-Cookie deletes land before we dispatch auth-change / re-hydrate).
     // Without this the refresh_token/auth_token cookies survive logout and a
     // reload silently logs the user back in via /auth/me.
-    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }) } catch {}
+    // CSRF gate (main.py): cookie POSTs need X-Requested-With or a JSON
+    // content-type — a bare fetch gets 403 and the cookies survive, which is
+    // exactly the "logout bounces back to admin / re-logs-in" loop.
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: '{}',
+      })
+    } catch {}
     // revoke:false — the backend logout above already nulled the server-side
     // refresh token; don't fire a second /auth/logout.
     clearAuthTokens({ revoke: false })

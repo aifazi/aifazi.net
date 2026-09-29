@@ -19,15 +19,19 @@ from database import supabase
 from dependencies import get_current_user, require_staff
 from utils.wireguard import (
     WG_DNS,
+    WG_DUALSTACK,
     WG_ENDPOINT,
     WG_MTU,
     WG_PORT,
     WG_SERVER_IP,
+    WG_SERVER_IPV6,
     WG_SUBNET,
+    WG_SUBNET_V6,
     add_peer,
     decrypt_peer_secret,
     encrypt_peer_secret,
     find_free_ip,
+    find_free_ipv6,
     generate_client_config,
     generate_keypair,
     generate_preshared_key,
@@ -65,6 +69,7 @@ class PeerResponse(BaseModel):
     device_name: str
     device_os: str
     allocated_ip: str
+    allocated_ipv6: str | None = None
     status: str
     created_at: str
     transfer_rx: int = 0
@@ -150,6 +155,37 @@ def _get_peer_by_id(peer_id: str, user_id: str) -> dict | None:
 def _get_all_allocated_ips() -> set[str]:
     res = supabase.table("vpn_peers").select("allocated_ip").execute()
     return {r["allocated_ip"] for r in (res.data or [])}
+
+
+def _get_all_allocated_ipv6() -> set[str]:
+    try:
+        res = supabase.table("vpn_peers").select("allocated_ipv6").execute()
+    except Exception:
+        return set()  # column missing (migration not applied) — v6 skipped
+    return {r["allocated_ipv6"] for r in (res.data or []) if r.get("allocated_ipv6")}
+
+
+def _host_allowed_ips(peer: dict) -> str:
+    """AllowedIPs for `wg set`: v4 /32 plus v6 /128 when the row has one."""
+    allowed = f"{peer.get('allocated_ip', '')}/32"
+    if peer.get("allocated_ipv6"):
+        allowed += f",{peer.get('allocated_ipv6')}/128"
+    return allowed
+
+
+def _alloc_ipv6(used_v6: set[str]) -> str | None:
+    """Allocate a ULA address when dual-stack is enabled, else None.
+
+    Never raises into peer creation: pool exhaustion or misconfig logs and
+    the peer is created v4-only.
+    """
+    if not WG_DUALSTACK:
+        return None
+    try:
+        return find_free_ipv6(used_v6)
+    except Exception as e:
+        log.warning("create_peer: IPv6 allocation skipped (%s)", e)
+        return None
 
 
 def _get_server_config() -> dict:
@@ -307,6 +343,7 @@ async def _sync_core(db_peers: list[dict], wg_stats: dict, now: datetime) -> tup
                 "device_name": p.get("device_name", ""),
                 "device_os": p.get("device_os", ""),
                 "allocated_ip": p.get("allocated_ip", ""),
+                "allocated_ipv6": p.get("allocated_ipv6"),
                 "public_key": p.get("public_key", ""),
                 "status": status,
                 "created_at": p.get("created_at", ""),
@@ -356,7 +393,7 @@ async def _sync_core(db_peers: list[dict], wg_stats: dict, now: datetime) -> tup
                         try:
                             await add_peer(
                                 public_key=p.get("public_key", ""),
-                                allowed_ips=f"{p.get('allocated_ip', '')}/32",
+                                allowed_ips=_host_allowed_ips(p),
                                 preshared_key=peer_psk,
                             )
                             supabase.table("vpn_peers").update({
@@ -434,7 +471,8 @@ async def _sync_core(db_peers: list[dict], wg_stats: dict, now: datetime) -> tup
             log.warning("vpn sync: peer %s failed: %s", p.get("id"), e)
             views.append({
                 "id": p.get("id", ""), "user_id": "", "device_name": p.get("device_name", ""),
-                "device_os": p.get("device_os", ""), "allocated_ip": p.get("allocated_ip", ""),
+                "device_os": p.get("device_os", ""),                 "allocated_ip": p.get("allocated_ip", ""),
+                "allocated_ipv6": p.get("allocated_ipv6"),
                 "public_key": p.get("public_key", ""), "status": p.get("status", "active"),
                 "created_at": p.get("created_at", ""), "transfer_rx": 0, "transfer_tx": 0,
                 "connected": False, "latest_handshake": "", "endpoint": "",
@@ -622,6 +660,8 @@ async def vpn_status(user: dict = Depends(get_current_user)):
         "server_public_key": server_pub,
         "endpoint": f"{WG_ENDPOINT}:{WG_PORT}",
         "subnet": WG_SUBNET,
+        "subnet_v6": WG_SUBNET_V6,
+        "dualstack": WG_DUALSTACK,
     }
 
 
@@ -649,6 +689,7 @@ async def list_peers(user: dict = Depends(get_current_user)):
                 "device_name": p["device_name"],
                 "device_os": p.get("device_os", ""),
                 "allocated_ip": p["allocated_ip"],
+                "allocated_ipv6": p.get("allocated_ipv6"),
                 "status": p.get("status", "active"),
                 "created_at": p.get("created_at", ""),
                 "transfer_rx": rx if isinstance(rx, (int, float)) else 0,
@@ -662,6 +703,7 @@ async def list_peers(user: dict = Depends(get_current_user)):
                 "device_name": p.get("device_name", ""),
                 "device_os": p.get("device_os", ""),
                 "allocated_ip": p.get("allocated_ip", ""),
+                "allocated_ipv6": p.get("allocated_ipv6"),
                 "status": p.get("status", "active"),
                 "created_at": p.get("created_at", ""),
                 "transfer_rx": 0,
@@ -747,25 +789,47 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     peer_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     allocated_ip = ""
+    allocated_ipv6 = _alloc_ipv6(_get_all_allocated_ipv6())
+    host_allowed = ""
     for attempt in range(3):
         used_ips = _get_all_allocated_ips()
         allocated_ip = find_free_ip(used_ips)
+        host_allowed = _host_allowed_ips(
+            {"allocated_ip": allocated_ip, "allocated_ipv6": allocated_ipv6}
+        )
+        row: dict = {
+            "id": peer_id,
+            "user_id": user_id,
+            "public_key": client_pub,
+            "private_key": stored_priv,  # Fernet enc1: legacy; "" = client-keyed (see _is_client_keyed)
+            "preshared_key": stored_psk,  # encrypted when supplied; None when the client sent none
+            "allocated_ip": allocated_ip,
+            "device_name": body.device_name,
+            "device_os": body.device_os,
+            "status": "active",
+            "created_at": now,
+            "expires_at": expires_at,
+        }
+        if allocated_ipv6:
+            row["allocated_ipv6"] = allocated_ipv6
         try:
-            supabase.table("vpn_peers").insert({
-                "id": peer_id,
-                "user_id": user_id,
-                "public_key": client_pub,
-                "private_key": stored_priv,  # Fernet enc1: legacy; "" = client-keyed (see _is_client_keyed)
-                "preshared_key": stored_psk,  # encrypted when supplied; None when the client sent none
-                "allocated_ip": allocated_ip,
-                "device_name": body.device_name,
-                "device_os": body.device_os,
-                "status": "active",
-                "created_at": now,
-                "expires_at": expires_at,
-            }).execute()
+            supabase.table("vpn_peers").insert(row).execute()
             break
         except Exception as e:
+            msg6 = str(e).lower()
+            if allocated_ipv6 and ("allocated_ipv6" in msg6 and ("column" in msg6 or "pgrst204" in msg6)):
+                # Migration not applied yet — retry v4-only (fail open on v6,
+                # closed on the peer itself).
+                log.warning("create_peer: allocated_ipv6 column missing, creating v4-only peer")
+                allocated_ipv6 = None
+                host_allowed = f"{allocated_ip}/32"
+                row.pop("allocated_ipv6", None)
+                try:
+                    supabase.table("vpn_peers").insert(row).execute()
+                    break
+                except Exception:
+                    pass
+            msg = str(e).lower()
             msg = str(e).lower()
             if "public_key" in msg and ("unique" in msg or "duplicate" in msg or "23505" in msg):
                 # Race lost on the public_key unique constraint (or a client
@@ -783,7 +847,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     try:
         await add_peer(
             public_key=client_pub,
-            allowed_ips=f"{allocated_ip}/32",
+            allowed_ips=host_allowed,
             preshared_key=psk,
         )
     except Exception as e:
@@ -797,10 +861,13 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     if client_keyed:
         # No server config/QR: the server never saw the private key. The
         # creating client renders its own QR from its locally stored copy.
+        # allocated_ipv6 is returned so the client can build a dual-stack
+        # config itself when the server has dual-stack enabled.
         return {
             "id": peer_id,
             "device_name": body.device_name,
             "allocated_ip": allocated_ip,
+            "allocated_ipv6": allocated_ipv6,
             "public_key": client_pub,
             "status": "active",
             "expires_at": expires_at,
@@ -812,6 +879,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
         client_address=allocated_ip,
         server_public_key=server_pub,
         preshared_key=psk,
+        client_address_v6=allocated_ipv6,
     )
 
     qr_b64 = _generate_qr_base64(config)
@@ -820,6 +888,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
         "id": peer_id,
         "device_name": body.device_name,
         "allocated_ip": allocated_ip,
+        "allocated_ipv6": allocated_ipv6,
         "config": config,
         "qr_code": f"data:image/png;base64,{qr_b64}" if qr_b64 else "",
         "status": "active",
@@ -851,6 +920,7 @@ async def get_peer(
             "device_name": peer["device_name"],
             "device_os": peer.get("device_os", ""),
             "allocated_ip": peer["allocated_ip"],
+            "allocated_ipv6": peer.get("allocated_ipv6"),
             "public_key": peer.get("public_key", ""),
             "status": peer.get("status", "active"),
             "created_at": peer.get("created_at", ""),
@@ -882,6 +952,7 @@ async def get_peer(
         client_address=peer["allocated_ip"],
         server_public_key=server_pub,
         preshared_key=peer_psk,
+        client_address_v6=peer.get("allocated_ipv6"),
     )
 
     if format == "conf":
@@ -910,6 +981,7 @@ async def get_peer(
         "device_name": peer["device_name"],
         "device_os": peer.get("device_os", ""),
         "allocated_ip": peer["allocated_ip"],
+        "allocated_ipv6": peer.get("allocated_ipv6"),
         "status": peer.get("status", "active"),
         "created_at": peer.get("created_at", ""),
     }
@@ -1033,10 +1105,10 @@ async def rotate_keys(
         # Remove old peer from WireGuard
         await remove_peer(peer["public_key"], peer["allocated_ip"])
 
-        # Add replacement peer (same IP)
+        # Add replacement peer (same IPs)
         await add_peer(
             public_key=new_pub,
-            allowed_ips=f"{peer['allocated_ip']}/32",
+            allowed_ips=_host_allowed_ips(peer),
             preshared_key=new_psk,
         )
 
@@ -1061,10 +1133,10 @@ async def rotate_keys(
     except RuntimeError as e:
         raise HTTPException(503, str(e))
 
-    # Add new peer to WireGuard (same IP)
+    # Add new peer to WireGuard (same IPs)
     await add_peer(
         public_key=new_pub,
-        allowed_ips=f"{peer['allocated_ip']}/32",
+        allowed_ips=_host_allowed_ips(peer),
         preshared_key=new_psk,
     )
 
@@ -1081,6 +1153,7 @@ async def rotate_keys(
         client_address=peer["allocated_ip"],
         server_public_key=server_pub,
         preshared_key=new_psk,
+        client_address_v6=peer.get("allocated_ipv6"),
     )
 
     qr_b64 = _generate_qr_base64(config)
@@ -1132,6 +1205,7 @@ async def get_stats(user: dict = Depends(get_current_user)):
                 "id": p["id"],
                 "device_name": p["device_name"],
                 "allocated_ip": p["allocated_ip"],
+                "allocated_ipv6": p.get("allocated_ipv6"),
                 "transfer_rx": rx,
                 "transfer_tx": tx,
                 "connected": bool(connected),
@@ -1142,6 +1216,7 @@ async def get_stats(user: dict = Depends(get_current_user)):
                 "id": p.get("id", ""),
                 "device_name": p.get("device_name", ""),
                 "allocated_ip": p.get("allocated_ip", ""),
+                "allocated_ipv6": p.get("allocated_ipv6"),
                 "transfer_rx": 0,
                 "transfer_tx": 0,
                 "connected": False,
@@ -1295,7 +1370,7 @@ async def admin_update_peer(peer_id: str, body: AdminPeerUpdate, _: dict = Depen
         try:
             await add_peer(
                 public_key=peer["public_key"],
-                allowed_ips=f"{peer['allocated_ip']}/32",
+                allowed_ips=_host_allowed_ips(peer),
                 preshared_key=psk,
             )
         except Exception as e:
