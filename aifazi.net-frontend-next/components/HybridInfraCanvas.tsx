@@ -31,12 +31,32 @@ import {
   type InfraFlow,
 } from '@/data/hybrid-infra'
 import { infraPalette, type InfraTone } from '@/lib/infraTheme'
+import {
+  clampView,
+  effOrigin,
+  effScale,
+  viewCenter,
+  viewForPercent,
+  viewFromCenter,
+  wheelAtBound,
+  wheelZoomFactor,
+  zoomAtPoint,
+  zoomPercent,
+  type InfraFit,
+} from '@/lib/infraView'
 
 export interface HybridInfraCanvasHandle {
   exportPng: () => void
   zoomIn: () => void
   zoomOut: () => void
+  /** Base fit: design centered, zoom 1, pan cleared. */
   resetView: () => void
+  /** Alias of resetView (FIT button). */
+  fit: () => void
+  /** Zoom to a real design-to-screen percent (e.g. 100), keeping center. */
+  setPercent: (pct: number) => void
+  /** Current view for deep-linking (z relative, cx/cy design center). */
+  getView: () => { z: number; cx: number; cy: number; pct: number }
 }
 
 export interface NodeMove {
@@ -70,6 +90,10 @@ interface Props {
   tone?: InfraTone
   /** Zoom level changed (integer percent, e.g. 125). For the viewer readout. */
   onViewChange?: (pct: number) => void
+  /** Restore a view on first layout (URL deep-link wins over storage). */
+  initialView?: { z: number; cx: number; cy: number } | null
+  /** localStorage key suffix; last view is remembered per key. */
+  viewStorageKey?: string | null
   /** Grid snap step in design px. Null/0 disables snapping. Defaults to 10. */
   snap?: number | null
   /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
@@ -110,14 +134,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
     // transform. Applied to both rendering and hit-testing so clicks stay
     // aligned while zoomed/panned.
     const viewRef = useRef({ z: 1, px: 0, py: 0 })
-    // Zoom-about-point lives inside the mount effect (needs W/H/S); the
-    // imperative handle delegates through this ref.
-    const zoomRef = useRef<(factor: number, mx?: number, my?: number) => void>(
-      () => {},
-    )
+    // Fit transform + view ops live inside the mount effect (need W/H/S);
+    // the imperative handle delegates through these refs.
+    const fitRef = useRef<InfraFit>({ v: 1, ox: 0, oy: 0 })
+    const opsRef = useRef<{
+      zoomBy: (factor: number, mx?: number, my?: number) => void
+      fit: () => void
+      setPercent: (pct: number) => void
+      getView: () => { z: number; cx: number; cy: number; pct: number }
+    } | null>(null)
     const lastPctRef = useRef(100)
     const notifyView = () => {
-      const pct = Math.round(viewRef.current.z * 100)
+      const pct = zoomPercent(fitRef.current, viewRef.current)
       if (pct !== lastPctRef.current) {
         lastPctRef.current = pct
         sRef.current.onViewChange?.(pct)
@@ -141,16 +169,29 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }, 'image/png')
       },
       zoomIn() {
-        zoomRef.current(1.25)
+        opsRef.current?.zoomBy(1.25)
       },
       zoomOut() {
-        zoomRef.current(0.8)
+        opsRef.current?.zoomBy(0.8)
       },
       resetView() {
-        viewRef.current = { z: 1, px: 0, py: 0 }
-        layoutRef.current()
-        kickRef.current()
-        notifyView()
+        opsRef.current?.fit()
+      },
+      fit() {
+        opsRef.current?.fit()
+      },
+      setPercent(pct) {
+        opsRef.current?.setPercent(pct)
+      },
+      getView() {
+        return (
+          opsRef.current?.getView() ?? {
+            z: 1,
+            cx: DESIGN_W / 2,
+            cy: DESIGN_H / 2,
+            pct: 100,
+          }
+        )
       },
     }))
 
@@ -173,13 +214,15 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let running = false
       let offscreen = false
       let docHidden = document.hidden
-      const S = { v: 1, ox: 0, oy: 0 }
+      const S: InfraFit = { v: 1, ox: 0, oy: 0 }
       // Effective transform incl. user zoom + pan (zoom anchors to a point).
-      const effS = () => S.v * viewRef.current.z
-      const effOx = () =>
-        S.ox + (W / 2) * (1 - viewRef.current.z) + viewRef.current.px
-      const effOy = () =>
-        S.oy + (H / 2) * (1 - viewRef.current.z) + viewRef.current.py
+      const effS = () => effScale(S, viewRef.current)
+      const effOx = () => effOrigin(S, viewRef.current, W, H).x
+      const effOy = () => effOrigin(S, viewRef.current, W, H).y
+      // Debounced localStorage write for "remember last view".
+      let persistT = 0
+      // Restore (URL initialView > storage) happens once, after S is known.
+      let viewInitDone = false
       const RACK = { x: 250, y: 250, w: 470, h: 540, unitH: 19.5, topPad: 26 }
       let hoverId: string | null = null
       const boxes = new Map<string, Box>()
@@ -327,6 +370,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         S.v = s
         S.ox = (W - DESIGN_W * s) / 2
         S.oy = (H - DESIGN_H * s) / 2
+        fitRef.current = S
+        if (!viewInitDone) {
+          viewInitDone = true
+          const iv = readInitialView()
+          if (iv) viewRef.current = viewFromCenter(S, iv.z, W, H, iv.cx, iv.cy)
+        }
         boxes.clear()
         hits.clear()
 
@@ -396,6 +445,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (!ba || !bb) continue
           flowPts.set(f.id, pathBetween(ba, bb))
         }
+        notifyView()
       }
 
       function resize() {
@@ -412,45 +462,81 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
       layoutRef.current = layoutScene
 
-      // ── view: clamp / zoom-to-point / refresh ────────────────
-      // Keep the viewport center inside a generous design-space box so a
-      // pan can never strand the diagram off-screen.
-      function clampView() {
-        const v = viewRef.current
-        v.z = Math.min(2.5, Math.max(0.5, v.z))
-        const cx = Math.min(
-          DESIGN_W * 1.5,
-          Math.max(-DESIGN_W * 0.5, (W / 2 - effOx()) / effS()),
-        )
-        const cy = Math.min(
-          DESIGN_H * 1.5,
-          Math.max(-DESIGN_H * 0.5, (H / 2 - effOy()) / effS()),
-        )
-        v.px = W / 2 - cx * effS() - S.ox - (W / 2) * (1 - v.z)
-        v.py = H / 2 - cy * effS() - S.oy - (H / 2) * (1 - v.z)
+      // ── view: storage / clamp / zoom / presets ───────────────
+      function readInitialView(): { z: number; cx: number; cy: number } | null {
+        const p = sRef.current.initialView
+        if (p && typeof p.z === 'number') return p
+        const key = sRef.current.viewStorageKey
+        if (!key) return null
+        try {
+          const raw = localStorage.getItem(`hi-view:${key}`)
+          if (!raw) return null
+          const v = JSON.parse(raw) as { z?: unknown; cx?: unknown; cy?: unknown }
+          if (typeof v.z === 'number' && typeof v.cx === 'number' && typeof v.cy === 'number') {
+            return { z: v.z, cx: v.cx, cy: v.cy }
+          }
+        } catch {
+          /* noop */
+        }
+        return null
+      }
+
+      // Remember the last view per storage key (debounced).
+      function persistView() {
+        const key = sRef.current.viewStorageKey
+        if (!key) return
+        window.clearTimeout(persistT)
+        persistT = window.setTimeout(() => {
+          try {
+            const { cx, cy } = viewCenter(S, viewRef.current, W, H)
+            localStorage.setItem(
+              `hi-view:${key}`,
+              JSON.stringify({ z: viewRef.current.z, cx, cy }),
+            )
+          } catch {
+            /* noop */
+          }
+        }, 400)
       }
 
       function applyView() {
-        clampView()
+        viewRef.current = clampView(
+          S,
+          viewRef.current,
+          W,
+          H,
+          { w: DESIGN_W, h: DESIGN_H },
+        )
         layoutScene()
         notifyView()
+        persistView()
         kick()
       }
 
       // Zoom while keeping the design point under (mx, my) fixed.
       function zoomBy(factor: number, mx = W / 2, my = H / 2) {
-        const v = viewRef.current
-        const z2 = Math.min(2.5, Math.max(0.5, v.z * factor))
-        if (Math.abs(z2 - v.z) < 1e-4) return
-        const dx = (mx - effOx()) / effS()
-        const dy = (my - effOy()) / effS()
-        v.z = z2
-        const s2 = S.v * z2
-        v.px = mx - dx * s2 - S.ox - (W / 2) * (1 - z2)
-        v.py = my - dy * s2 - S.oy - (H / 2) * (1 - z2)
+        const next = zoomAtPoint(S, viewRef.current, W, H, factor, mx, my)
+        if (next === viewRef.current) return
+        viewRef.current = next
         applyView()
       }
-      zoomRef.current = zoomBy
+
+      function fit() {
+        viewRef.current = { z: 1, px: 0, py: 0 }
+        applyView()
+      }
+
+      function setPercent(pct: number) {
+        viewRef.current = viewForPercent(S, viewRef.current, W, H, pct)
+        applyView()
+      }
+
+      function getView() {
+        const { cx, cy } = viewCenter(S, viewRef.current, W, H)
+        return { z: viewRef.current.z, cx, cy, pct: zoomPercent(S, viewRef.current) }
+      }
+
+      opsRef.current = { zoomBy, fit, setPercent, getView }
 
       // ── draw passes ──────────────────────────────────────────
       function dimmed(cat: InfraCategory, extra: Set<string> | null, id: string | null) {
@@ -1252,15 +1338,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       // bound the wheel passes through so the page can still scroll.
       function onWheel(e: WheelEvent) {
         const { mx, my } = toDesign(e)
-        const dy =
-          e.deltaMode === 1
-            ? e.deltaY * 16
-            : e.deltaMode === 2
-              ? e.deltaY * H
-              : e.deltaY
-        const factor = Math.exp(-dy * 0.002)
-        const z = viewRef.current.z
-        if ((factor < 1 && z <= 0.5) || (factor > 1 && z >= 2.5)) return
+        const factor = wheelZoomFactor(e.deltaY, e.deltaMode, H)
+        if (wheelAtBound(viewRef.current, factor)) return
         e.preventDefault()
         zoomBy(factor, mx, my)
       }
@@ -1283,6 +1362,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       function endPan(e: PointerEvent) {
         if (panId !== e.pointerId) return
         panId = null
+        persistView()
         try {
           canvas.releasePointerCapture(e.pointerId)
         } catch {
@@ -1339,9 +1419,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const dx = e.clientX - panSX
         const dy = e.clientY - panSY
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true
-        viewRef.current.px = panPX + dx
-        viewRef.current.py = panPY + dy
-        clampView()
+        viewRef.current = clampView(
+          S,
+          { ...viewRef.current, px: panPX + dx, py: panPY + dy },
+          W,
+          H,
+          { w: DESIGN_W, h: DESIGN_H },
+        )
         layoutScene()
         kick()
       }
@@ -1419,8 +1503,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           zoomBy(0.8)
         } else if (k === '0') {
           e.preventDefault()
-          viewRef.current = { z: 1, px: 0, py: 0 }
-          applyView()
+          fit()
         }
       }
 
@@ -1506,6 +1589,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       return () => {
         running = false
+        opsRef.current = null
+        window.clearTimeout(persistT)
         try {
           cancelAnimationFrame(raf)
         } catch {

@@ -799,7 +799,7 @@ export default function HybridInfraEditor() {
             </button>
           </div>
         )}
-        <HybridInfra doc={isSeed ? null : doc} />
+        <HybridInfra doc={doc} viewKey={docId ?? doc.slug} />
       </div>
     )
   }
@@ -999,6 +999,7 @@ export default function HybridInfraEditor() {
             tone={tone}
             snap={snapSize}
             lockedIds={lockedIds}
+            viewStorageKey={`editor-${docId ?? doc.slug}`}
           />
         </div>
 
