@@ -6,6 +6,7 @@ import {
   alignNodesDoc,
   arrangeNodesDoc,
   deleteNodesDoc,
+  diffDiagramDocs,
   duplicateNodesDoc,
   pasteNodesDoc,
   remapCategoryDoc,
@@ -166,5 +167,37 @@ describe('arrangeNodesDoc / remapCategoryDoc', () => {
     expect(next.nodes[0].category).toBe('network')
     expect(next.flows[0].cat).toBe('network')
     expect(next.nodes[1].category).toBe('compute')
+  })
+})
+
+describe('diffDiagramDocs', () => {
+  it('reports added, removed, changed nodes and flow deltas', () => {
+    const prev = doc([node('a'), node('b')], [{ id: 'f1', from: 'a', to: 'b', cat: 'network' }])
+    const next = doc(
+      [node('a', { name: 'Gateway v2' }), node('c')],
+      [{ id: 'f1', from: 'a', to: 'c', cat: 'network' }],
+    )
+    const d = diffDiagramDocs(prev, next)
+    expect(d.addedNodes).toEqual([next.nodes[1].name])
+    expect(d.removedNodes).toEqual([prev.nodes[1].name])
+    expect(d.changedNodes).toEqual([next.nodes[0].name])
+    expect(d.flowAdded).toBe(1)
+    expect(d.flowRemoved).toBe(1)
+    expect(d.titleChanged).toBe(false)
+  })
+
+  it('flags a title change and is empty for identical docs', () => {
+    const a = doc([node('a')])
+    expect(diffDiagramDocs(a, doc([node('a')]))).toMatchObject({
+      addedNodes: [],
+      removedNodes: [],
+      changedNodes: [],
+      flowAdded: 0,
+      flowRemoved: 0,
+      titleChanged: false,
+    })
+    const b = doc([node('a')])
+    b.title = 'Renamed'
+    expect(diffDiagramDocs(a, b).titleChanged).toBe(true)
   })
 })

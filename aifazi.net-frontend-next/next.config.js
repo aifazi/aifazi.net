@@ -71,24 +71,35 @@ const nextConfig = {
   // via the request CSP header + x-nonce, and uses 'strict-dynamic' instead of
   // 'unsafe-inline' in script-src. See the CSP comment block in proxy.ts.)
   async headers() {
+    const securityHeaders = [
+      // Prevent MIME-type sniffing
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      // Stop referrer leaking to external sites
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      // Permissions policy — restrict powerful browser APIs
+      { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
+      // HSTS for non-Vercel runtimes (standalone/Docker). Vercel sets its
+      // own HSTS header; harmless duplication is avoided by Vercel.
+      { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+      // Content-Security-Policy is NOT set here; it is emitted per request
+      // by proxy.ts (nonce + 'strict-dynamic', no 'unsafe-inline').
+    ]
     return [
       {
-        source: '/(.*)',
+        // Everything EXCEPT the iframe-embeddable diagram view.
+        source: '/((?!hybrid-infra/embed).*)',
         headers: [
-          // Prevent MIME-type sniffing
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
           // Prevent clickjacking
           { key: 'X-Frame-Options', value: 'DENY' },
-          // Stop referrer leaking to external sites
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          // Permissions policy — restrict powerful browser APIs
-          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=(), payment=()' },
-          // HSTS for non-Vercel runtimes (standalone/Docker). Vercel sets its
-          // own HSTS header; harmless duplication is avoided by Vercel.
-          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          // Content-Security-Policy is NOT set here; it is emitted per request
-          // by proxy.ts (nonce + 'strict-dynamic', no 'unsafe-inline').
+          ...securityHeaders,
         ],
+      },
+      {
+        // /hybrid-infra/embed is meant to be framed by other sites (plan B2);
+        // X-Frame-Options is intentionally omitted — proxy.ts emits
+        // `frame-ancestors *` for this path only.
+        source: '/hybrid-infra/embed',
+        headers: securityHeaders,
       },
     ]
   },

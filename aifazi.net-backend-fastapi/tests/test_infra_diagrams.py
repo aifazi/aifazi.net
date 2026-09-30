@@ -27,6 +27,7 @@ class _Query:
         self._op = None
         self._payload = None
         self._slice = None
+        self._order = None
 
     def select(self, *args):
         self._op = "select"
@@ -50,7 +51,13 @@ class _Query:
         self._filters.append((key, value))
         return self
 
+    def in_(self, key, values):
+        vals = list(values)
+        self._filters.append((key, vals))
+        return self
+
     def order(self, key, desc=False):
+        self._order = (key, desc)
         return self
 
     def limit(self, n):
@@ -61,12 +68,21 @@ class _Query:
         return self
 
     def _match(self, row):
-        return all(row.get(k) == v for k, v in self._filters)
+        for k, v in self._filters:
+            if isinstance(v, list):
+                if row.get(k) not in v:
+                    return False
+            elif row.get(k) != v:
+                return False
+        return True
 
     def execute(self):  # type: ignore[no-untyped-def]
         rows = self._store.setdefault(self._table, [])
         if self._op == "select":
             rows = [dict(r) for r in rows if self._match(r)]
+            if self._order:
+                key, desc = self._order
+                rows.sort(key=lambda r: r.get(key) or "", reverse=desc)
             if self._slice:
                 start, end = self._slice
                 rows = rows[start : end + 1]
@@ -74,6 +90,7 @@ class _Query:
         if self._op == "insert":
             row = dict(self._payload)
             row.setdefault("id", f"id-{len(rows)}")
+            row.setdefault("created_at", f"{len(rows):06d}")
             rows.append(row)
             return types.SimpleNamespace(data=[dict(row)])
         if self._op == "update":
@@ -306,3 +323,88 @@ def test_list_offset_pagination(client):  # type: ignore[no-untyped-def]
 
 def test_offset_rejects_negative(client):  # type: ignore[no-untyped-def]
     assert client.get("/diagrams?offset=-1").status_code == 422
+
+
+# ── Round-2 plan B4: revision history / restore ─────────────────────────────
+
+
+def test_update_snapshots_revision(client):
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    body = _doc()
+    body["title"] = "HQ East v2"
+    assert client.put(f"/diagrams/{doc_id}", json=body).status_code == 200
+    revs = client.get(f"/diagrams/{doc_id}/revisions").json()["revisions"]
+    assert len(revs) == 1
+    assert revs[0]["title"] == "HQ East"
+    assert revs[0]["published"] is False
+
+
+def test_revision_restore_roundtrip(client):
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    body = _doc()
+    body["title"] = "HQ East v2"
+    body["nodes"][0]["name"] = "FW-02"
+    assert client.put(f"/diagrams/{doc_id}", json=body).status_code == 200
+    revs = client.get(f"/diagrams/{doc_id}/revisions").json()["revisions"]
+    assert len(revs) == 1
+    r = client.post(f"/diagrams/{doc_id}/revisions/{revs[0]['id']}/restore")
+    assert r.status_code == 200, r.text
+    restored = r.json()["diagram"]
+    assert restored["title"] == "HQ East"
+    assert restored["nodes"][0]["name"] == "FW-01"
+    # The pre-restore state was snapshotted too, so restore is undoable.
+    revs2 = client.get(f"/diagrams/{doc_id}/revisions").json()["revisions"]
+    assert len(revs2) == 2
+    assert revs2[0]["title"] == "HQ East v2"
+
+
+def test_restore_keeps_live_slug(client):
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    body = _doc(slug="hq-west")
+    body["title"] = "HQ West"
+    assert client.put(f"/diagrams/{doc_id}", json=body).status_code == 200
+    revs = client.get(f"/diagrams/{doc_id}/revisions").json()["revisions"]
+    r = client.post(f"/diagrams/{doc_id}/revisions/{revs[0]['id']}/restore")
+    assert r.status_code == 200, r.text
+    assert r.json()["diagram"]["title"] == "HQ East"
+    assert r.json()["diagram"]["slug"] == "hq-west"
+
+
+def test_revision_endpoints_require_admin(denied_client):
+    denied_client.post("/diagrams", json=_doc())
+    doc_id = "any"
+    assert denied_client.get(f"/diagrams/{doc_id}/revisions").status_code == 403
+    assert denied_client.get(f"/diagrams/{doc_id}/revisions/rid").status_code == 403
+    assert denied_client.post(
+        f"/diagrams/{doc_id}/revisions/rid/restore"
+    ).status_code == 403
+
+
+def test_revision_404s(client):
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    assert client.get("/diagrams/nope/revisions").status_code in (404, 200)
+    assert client.get(f"/diagrams/{doc_id}/revisions/nope").status_code == 404
+    assert client.post(
+        f"/diagrams/{doc_id}/revisions/nope/restore"
+    ).status_code == 404
+    assert client.post("/diagrams/nope/revisions/nope/restore").status_code == 404
+
+
+def test_revision_prune_cap(client):
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    for i in range(25):
+        body = _doc()
+        body["title"] = f"HQ East r{i}"
+        assert client.put(f"/diagrams/{doc_id}", json=body).status_code == 200
+    revs = client.get(f"/diagrams/{doc_id}/revisions").json()["revisions"]
+    assert len(revs) <= 20
+
+
+def test_reserved_template_slugs_rejected(client):
+    for slug in ("multi-site", "dr-site", "hybrid-join"):
+        assert client.post("/diagrams", json=_doc(slug=slug)).status_code == 400

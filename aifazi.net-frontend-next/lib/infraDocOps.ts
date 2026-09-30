@@ -186,3 +186,48 @@ export function remapCategoryDoc(doc: DiagramDoc, from: string, to: InfraCategor
     flows: doc.flows.map((f) => (f.cat === from ? { ...f, cat: to } : f)),
   }
 }
+
+/** Human-readable change summary between two diagram states (plan B4). */
+export interface DiagramDiff {
+  addedNodes: string[]
+  removedNodes: string[]
+  changedNodes: string[]
+  flowAdded: number
+  flowRemoved: number
+  titleChanged: boolean
+}
+
+/**
+ * Compare a revision (prev) against the current doc (next) by node/flow id.
+ * Names are taken from the doc they belong to, so a rename shows up under
+ * changedNodes with the current name.
+ */
+export function diffDiagramDocs(prev: DiagramDoc, next: DiagramDoc): DiagramDiff {
+  const prevById = new Map(prev.nodes.map((n) => [n.id, n]))
+  const nextById = new Map(next.nodes.map((n) => [n.id, n]))
+  const addedNodes: string[] = []
+  const removedNodes: string[] = []
+  const changedNodes: string[] = []
+  for (const [id, n] of nextById) {
+    const p = prevById.get(id)
+    if (!p) addedNodes.push(n.name)
+    else if (JSON.stringify(p) !== JSON.stringify(n)) changedNodes.push(n.name)
+  }
+  for (const [id, p] of prevById) {
+    if (!nextById.has(id)) removedNodes.push(p.name)
+  }
+  const prevFlows = new Set(prev.flows.map((f) => `${f.from}->${f.to}:${f.id}`))
+  const nextFlows = new Set(next.flows.map((f) => `${f.from}->${f.to}:${f.id}`))
+  let flowAdded = 0
+  let flowRemoved = 0
+  for (const f of nextFlows) if (!prevFlows.has(f)) flowAdded++
+  for (const f of prevFlows) if (!nextFlows.has(f)) flowRemoved++
+  return {
+    addedNodes,
+    removedNodes,
+    changedNodes,
+    flowAdded,
+    flowRemoved,
+    titleChanged: prev.title !== next.title,
+  }
+}

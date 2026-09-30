@@ -123,4 +123,19 @@ export const BUILTIN_STUDIES: { slug: string; title: string; blurb: string }[] =
     title: 'Plan C — Cloud-Native Infrastructure',
     blurb: 'Fully cloud: edge WAF, hub firewall, Entra ID, AVD, XDR/SIEM, and vault-based immutable backup.',
   },
+  {
+    slug: 'multi-site',
+    title: 'Multi-Site Hybrid Network',
+    blurb: 'HQ datacenter over SD-WAN with branch offices, cloud identity, and an off-site immutable copy.',
+  },
+  {
+    slug: 'dr-site',
+    title: 'Disaster Recovery Site',
+    blurb: 'Warm standby site with async replication, a promotable standby database, and WORM backups.',
+  },
+  {
+    slug: 'hybrid-join',
+    title: 'Hybrid Identity Join',
+    blurb: 'AD DS synced to Entra ID: hybrid-joined devices, conditional access, and Intune Autopilot.',
+  },
 ]

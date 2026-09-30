@@ -758,7 +758,11 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
   //   return () => { socket.off('settings-update', handleSettings); socket.off('banners-update', handleBanners) }
   // }, [])
 
-  const isFullScreen = /^\/(admin|store)/.test(pathname || '') || isStoreSubdomain || isStoreDomain
+  const isFullScreen =
+    /^\/(admin|store)/.test(pathname || '') ||
+    (pathname || '').startsWith('/hybrid-infra/embed') ||
+    isStoreSubdomain ||
+    isStoreDomain
   const showMaintenance = (() => {
     if (userIsAdmin) return false
     const subMaint = siteConfig.subdomainMaintenance || serverSubdomainMaintenance || {}

@@ -21,10 +21,17 @@ from dependencies import _enrich_user, decode_token, require_admin
 router = APIRouter()
 log = logging.getLogger("infra.diagrams")
 
-RESERVED_SLUGS = {"plan-a", "cloud-infra"}
+RESERVED_SLUGS = {
+    "plan-a",
+    "cloud-infra",
+    "multi-site",
+    "dr-site",
+    "hybrid-join",
+}
 MAX_NODES = 200
 MAX_FLOWS = 200
 MAX_DOC_BYTES = 500 * 1024
+MAX_REVISIONS = 20
 
 
 class DiagramIn(BaseModel):
@@ -202,6 +209,32 @@ def _optional_admin(request: Request) -> dict | None:
         return None
 
 
+def _prune_revisions(diagram_id: str) -> None:
+    res = supabase.table("infra_diagram_revisions").select("id").eq(
+        "diagram_id", diagram_id
+    ).order("created_at", desc=True).range(MAX_REVISIONS, MAX_REVISIONS + 199).execute()
+    stale = [r["id"] for r in (res.data or [])]
+    if stale:
+        supabase.table("infra_diagram_revisions").delete().in_("id", stale).execute()
+
+
+def _snapshot_revision(row: dict) -> None:
+    """Persist the PRE-update state so the save is rollback-able.
+
+    Best-effort: a revision failure must never fail the save itself.
+    """
+    try:
+        supabase.table("infra_diagram_revisions").insert({
+            "diagram_id": row["id"],
+            "title": row.get("title") or "",
+            "published": bool(row.get("published")),
+            "doc": row.get("doc") or {"nodes": [], "flows": []},
+        }).execute()
+        _prune_revisions(str(row["id"]))
+    except Exception as e:
+        log.warning("diagram revision snapshot failed for %s: %s", row.get("id"), e)
+
+
 @router.get("/diagrams")
 def list_diagrams(offset: int = Query(0, ge=0, le=10000)):
     """Public: published diagram metas (newest first, 100 per page)."""
@@ -309,12 +342,18 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
 
 @router.put("/diagrams/{doc_id}")
 def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_admin)):
+    """Replace a diagram (full-document PUT). Snapshots the previous state
+    to infra_diagram_revisions first so the change can be rolled back."""
     slug = _slugify(body.slug or body.title)
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
     palette = _validate_palette(body.categoryColors)
     custom = _validate_custom_categories(body.customCategories)
+    prev = supabase.table("infra_diagrams").select("*").eq("id", doc_id[:64]).limit(1).execute()
+    old = (prev.data or [None])[0]
+    if not old:
+        raise HTTPException(404, "Diagram not found")
     try:
         res = (
             supabase.table("infra_diagrams")
@@ -342,6 +381,7 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
     rows = res.data or []
     if not rows:
         raise HTTPException(404, "Diagram not found")
+    _snapshot_revision(old)
     return {"diagram": _row_to_doc(rows[0], include_body=True)}
 
 
@@ -355,3 +395,90 @@ def delete_diagram(doc_id: str, admin: dict = Depends(require_admin)):
     if not (res.data or []):
         raise HTTPException(404, "Diagram not found")
     return {"deleted": True}
+
+
+@router.get("/diagrams/{doc_id}/revisions")
+def list_revisions(doc_id: str, offset: int = Query(0, ge=0, le=10000),
+                   admin: dict = Depends(require_admin)):
+    """Admin: revision history (metas only, newest first, 50 per page)."""
+    res = supabase.table("infra_diagram_revisions").select(
+        "id,created_at,title,published"
+    ).eq("diagram_id", doc_id[:64]).order("created_at", desc=True).range(
+        offset, offset + 49
+    ).execute()
+    out = [{
+        "id": r["id"],
+        "createdAt": r.get("created_at"),
+        "title": r.get("title") or "",
+        "published": bool(r.get("published")),
+    } for r in (res.data or [])]
+    return {"revisions": out, "offset": offset}
+
+
+@router.get("/diagrams/{doc_id}/revisions/{revision_id}")
+def get_revision(doc_id: str, revision_id: str, admin: dict = Depends(require_admin)):
+    """Admin: one full revision (doc body) for inspection before restore."""
+    res = supabase.table("infra_diagram_revisions").select("*").eq(
+        "diagram_id", doc_id[:64]
+    ).eq("id", revision_id[:64]).limit(1).execute()
+    row = (res.data or [None])[0]
+    if not row:
+        raise HTTPException(404, "Revision not found")
+    doc = row.get("doc") or {}
+    return {"revision": {
+        "id": row["id"],
+        "createdAt": row.get("created_at"),
+        "title": row.get("title") or "",
+        "published": bool(row.get("published")),
+        "nodes": doc.get("nodes", []),
+        "flows": doc.get("flows", []),
+        "categoryColors": doc.get("categoryColors") or None,
+        "customCategories": doc.get("customCategories") or None,
+    }}
+
+
+@router.post("/diagrams/{doc_id}/revisions/{revision_id}/restore")
+def restore_revision(doc_id: str, revision_id: str, admin: dict = Depends(require_admin)):
+    """Admin: roll the diagram back to a revision.
+
+    The current state is snapshotted first (so a restore is itself
+    undoable). The slug is intentionally NOT restored — it belongs to the
+    live row and an old slug may now belong to a different diagram (409).
+    """
+    prev = supabase.table("infra_diagrams").select("*").eq("id", doc_id[:64]).limit(1).execute()
+    old = (prev.data or [None])[0]
+    if not old:
+        raise HTTPException(404, "Diagram not found")
+    res = supabase.table("infra_diagram_revisions").select("*").eq(
+        "diagram_id", doc_id[:64]
+    ).eq("id", revision_id[:64]).limit(1).execute()
+    rev = (res.data or [None])[0]
+    if not rev:
+        raise HTTPException(404, "Revision not found")
+    doc = rev.get("doc") or {}
+    nodes, flows = _validate_doc(doc.get("nodes") or [], doc.get("flows") or [])
+    try:
+        updated = (
+            supabase.table("infra_diagrams")
+            .update({
+                "title": (rev.get("title") or old.get("title") or "Untitled diagram").strip()[:120],
+                "published": bool(rev.get("published")),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "doc": {
+                    "nodes": nodes,
+                    "flows": flows,
+                    **({"categoryColors": doc["categoryColors"]} if isinstance(doc.get("categoryColors"), dict) and doc["categoryColors"] else {}),
+                    **({"customCategories": doc["customCategories"]} if isinstance(doc.get("customCategories"), dict) and doc["customCategories"] else {}),
+                },
+            })
+            .eq("id", doc_id[:64])
+            .execute()
+        )
+    except Exception as exc:
+        log.error("infra restore failed: %s", exc)
+        raise HTTPException(500, "Could not restore revision")
+    rows = updated.data or []
+    if not rows:
+        raise HTTPException(404, "Diagram not found")
+    _snapshot_revision(old)
+    return {"diagram": _row_to_doc(rows[0], include_body=True)}
