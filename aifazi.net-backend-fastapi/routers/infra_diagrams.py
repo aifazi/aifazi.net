@@ -53,6 +53,11 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
         for key, cap in (("name", 80), ("role", 80), ("desc", 2000), ("notes", 2000)):
             if key in n and n[key] is not None and len(str(n[key])) > cap:
                 raise HTTPException(400, f"Node field too long: {key}")
+        if "accent" in n and n["accent"] not in (None, ""):
+            if not isinstance(n["accent"], str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", n["accent"]):
+                raise HTTPException(400, "Node accent must be #rrggbb")
+        if "pulse" in n and n["pulse"] not in (None, True, False):
+            raise HTTPException(400, "Node pulse must be boolean")
         if not isinstance(n.get("workloads", []), list) or len(n.get("workloads", [])) > 12:
             raise HTTPException(400, "Invalid node workloads")
         if not isinstance(n.get("deps", []), list) or len(n.get("deps", [])) > 24:

@@ -131,6 +131,20 @@ export default function HybridInfraEditor() {
     docRef.current = doc
   })
 
+  // ── Floating "Edit Site" button (page-level FAB) ──────────────
+  useEffect(() => {
+    const open = () => {
+      setEditMode(true)
+      try {
+        document.getElementById('hybrid-infra-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } catch {
+        /* noop */
+      }
+    }
+    window.addEventListener('infra:edit', open)
+    return () => window.removeEventListener('infra:edit', open)
+  }, [])
+
   // ── Load: diagram list + ?diagram=<slug> ─────────────────────
   useEffect(() => {
     let alive = true
@@ -777,7 +791,7 @@ export default function HybridInfraEditor() {
   // ── Render ───────────────────────────────────────────────────
   if (!editMode) {
     return (
-      <div>
+      <div id="hybrid-infra-editor">
         {isAdmin && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
             <button type="button" onClick={() => setEditMode(true)} style={BTN}>
@@ -791,7 +805,7 @@ export default function HybridInfraEditor() {
   }
 
   return (
-    <div>
+    <div id="hybrid-infra-editor">
       {/* Diagram bar */}
       <div
         style={{
@@ -1093,6 +1107,46 @@ export default function HybridInfraEditor() {
                   placeholder="Runbook hint, owner, ticket ref…"
                   style={{ ...INPUT, resize: 'vertical', borderColor: `${pal.gold}55` }}
                 />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <label style={LABEL}>Accent color</label>
+                  <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      aria-label="Node accent color"
+                      value={selected.accent ?? '#35a7ff'}
+                      onChange={(e) => updateNode(selected.id, { accent: e.target.value })}
+                      style={{ width: 36, height: 28, padding: 0, border: `1px solid ${pal.border}`, borderRadius: 6, background: 'transparent', cursor: 'pointer' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => updateNode(selected.id, { accent: undefined })}
+                      disabled={!selected.accent}
+                      title="Reset to category color"
+                      style={{ ...BTN, padding: '6px 9px', opacity: selected.accent ? 1 : 0.45 }}
+                    >
+                      AUTO
+                    </button>
+                  </span>
+                </div>
+                <div>
+                  <label style={LABEL}>Attention pulse</label>
+                  <button
+                    type="button"
+                    onClick={() => updateNode(selected.id, { pulse: selected.pulse ? undefined : true })}
+                    aria-pressed={selected.pulse === true}
+                    title="Animated ring around this node (static for reduced-motion users)"
+                    style={{
+                      ...BTN,
+                      width: '100%',
+                      borderColor: selected.pulse ? pal.amber : pal.border,
+                      color: selected.pulse ? pal.amber : pal.ink,
+                    }}
+                  >
+                    {selected.pulse ? 'PULSE ON' : 'PULSE OFF'}
+                  </button>
+                </div>
               </div>
               <div>
                 <label style={LABEL}>Workloads (comma separated)</label>

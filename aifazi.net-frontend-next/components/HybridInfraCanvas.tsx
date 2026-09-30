@@ -630,7 +630,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = CATEGORY_META[c.category].color
+        const accent = c.accent || CATEGORY_META[c.category].color
         const selected = p.selectedId === c.id
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
@@ -732,7 +732,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = CATEGORY_META[c.category].color
+        const accent = c.accent || CATEGORY_META[c.category].color
         const selected = p.selectedId === c.id
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
@@ -812,7 +812,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = CATEGORY_META[c.category].color
+        const accent = c.accent || CATEGORY_META[c.category].color
         const selected = p.selectedId === c.id
         const isDim =
           (p.activeMode !== 'all' && p.activeMode !== c.category) ||
@@ -925,7 +925,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (c.layer !== 'users') continue
           const b = boxes.get(c.id)
           if (!b) continue
-          const accent = CATEGORY_META[c.category].color
+          const accent = c.accent || CATEGORY_META[c.category].color
           const selected = p.selectedId === c.id
           const isDim = dimmed(c.category, p.focusIds, c.id)
           ctx.save()
@@ -1034,6 +1034,29 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.restore()
       }
 
+      // Attention pulse for nodes flagged in the editor. Frozen (reduced
+      // motion) frames render one static ring instead of animating.
+      function drawPulseRings(t: number) {
+        const list = nodeList()
+        if (!list.some((c) => c.pulse)) return
+        ctx.save()
+        for (const c of list) {
+          if (!c.pulse) continue
+          const b = boxes.get(c.id)
+          if (!b) continue
+          const accent = c.accent || CATEGORY_META[c.category].color
+          const wobble = frozen ? 0 : Math.sin(t * 4)
+          const pr = 5 + (frozen ? 0 : 2.5 * wobble)
+          ctx.globalAlpha = frozen ? 0.5 : Math.max(0.15, 0.45 + 0.25 * wobble)
+          ctx.strokeStyle = accent
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.arc(b.x + b.w / 2, b.y + b.h / 2, Math.max(b.w, b.h) / 2 + pr, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+        ctx.restore()
+      }
+
       function renderFrame(t: number) {
         P = palRef.current
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
@@ -1045,7 +1068,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         drawZoneLabels()
         drawFlows(t)
         drawPendingLink(t)
-        drawRackFrame()
+        if (nodeList().some((c) => c.layer === 'rack')) drawRackFrame()
         for (const c of nodeList()) {
           if (c.layer === 'rack') drawRackDevice(c, t)
         }
@@ -1054,6 +1077,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (c.layer === 'edge' || c.layer === 'cloud') drawChip(c, t)
         }
         drawLockBadges()
+        drawPulseRings(t)
         drawManagementOverlay()
         drawPlayPulse(t)
         ctx.restore()
@@ -1160,6 +1184,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (!sRef.current.editable || e.button !== 0) return
         const { mx, my } = toDesign(e)
         const found = hitAt(mx, my)
+        // Link mode: never start a move-drag — the click handler completes
+        // the connection. Otherwise a press-drag-release both moves the node
+        // and fires a link, which feels broken.
+        if (sRef.current.connectFrom) return
         if (found) {
           const box = boxes.get(found)
           const d = designFromClient(mx, my)
@@ -1311,8 +1339,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       // frozen is mount-constant (matchMedia sampled once).
     }, [frozen])
 
-    // Redraw static frame whenever inputs change (frozen) or sizes change.
+    // Re-layout + redraw whenever inputs change. Without the layout pass,
+    // boxes/hits/flow points stay frozen at mount/resize values, so dragged
+    // nodes, new links, and lock badges would never visibly update even
+    // though React state moves (the "drag does nothing" bug).
     useEffect(() => {
+      layoutRef.current()
       kickRef.current()
     })
 

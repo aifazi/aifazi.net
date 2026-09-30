@@ -30,6 +30,10 @@ export interface InfraComponent {
   deps: string[]
   /** Free-form operator note (per-item notes feature). */
   notes?: string
+  /** Custom accent color (#rrggbb) overriding the category color. */
+  accent?: string
+  /** Animated attention ring (paused for reduced-motion users). */
+  pulse?: boolean
   /** Rack placement (1-based U) — rack-layer only. */
   rackU?: number
   rackH?: number
@@ -489,6 +493,8 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
       workloads: Array.isArray(c.workloads) ? c.workloads.filter((w): w is string => typeof w === 'string').slice(0, 12).map((w) => w.slice(0, 60)) : [],
       deps: Array.isArray(c.deps) ? c.deps.filter((x): x is string => typeof x === 'string').slice(0, 24) : [],
       notes: typeof c.notes === 'string' ? c.notes.slice(0, 2000) : undefined,
+      ...(typeof c.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.accent) ? { accent: c.accent } : {}),
+      ...(c.pulse === true ? { pulse: true as const } : {}),
       rackU: typeof c.rackU === 'number' ? Math.max(1, Math.min(42, Math.floor(c.rackU))) : undefined,
       rackH: typeof c.rackH === 'number' ? Math.max(1, Math.min(8, Math.floor(c.rackH))) : undefined,
       x: typeof c.x === 'number' ? c.x : undefined,
