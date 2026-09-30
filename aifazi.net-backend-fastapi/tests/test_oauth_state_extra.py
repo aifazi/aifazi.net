@@ -63,6 +63,12 @@ class TestExtraClaims:
         with pytest.raises(ValueError):
             oauth_state.make_oauth_state("x", "/profile", extra={"k": ["list"]})
 
+    def test_verify_fails_closed_without_secret(self, monkeypatch):
+        state = oauth_state.make_oauth_state("discord", "/profile")
+        monkeypatch.setattr(oauth_state, "_OAUTH_STATE_SECRET", "")
+        with pytest.raises(ValueError):
+            oauth_state.verify_oauth_state_full(state, "discord")
+
 
 class TestDiscordConnectUrl:
     @pytest.fixture()

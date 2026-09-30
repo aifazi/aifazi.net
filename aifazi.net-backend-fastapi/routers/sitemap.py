@@ -8,6 +8,7 @@ still serves it for direct api.aifazi.net visits and the sitemap.py router is
 already mounted at root prefix in main.py).
 """
 import os
+from xml.sax.saxutils import escape as xml_escape
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
@@ -39,11 +40,13 @@ async def sitemap():
         slug = (d.get("slug") or "").strip()
         if not slug or slug == "plan-a":
             continue
-        urls.append(f"<url><loc>{SITE_URL}/hybrid-infra?diagram={slug}</loc><lastmod>{(d.get('updated_at') or '')[:10]}</lastmod></url>")
+        lastmod = xml_escape((d.get('updated_at') or '')[:10])
+        urls.append(f"<url><loc>{SITE_URL}/hybrid-infra?diagram={xml_escape(slug)}</loc><lastmod>{lastmod}</lastmod></url>")
     for p in posts:
-        urls.append(f"<url><loc>{SITE_URL}/blog/{p['slug']}</loc><lastmod>{(p.get('updated_at') or '')[:10]}</lastmod></url>")
+        lastmod = xml_escape((p.get('updated_at') or '')[:10])
+        urls.append(f"<url><loc>{SITE_URL}/blog/{xml_escape(str(p['slug']))}</loc><lastmod>{lastmod}</lastmod></url>")
     for t in threads:
-        urls.append(f"<url><loc>{SITE_URL}/forum/thread/{t['id']}</loc></url>")
+        urls.append(f"<url><loc>{SITE_URL}/forum/thread/{xml_escape(str(t['id']))}</loc></url>")
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     xml += "\n".join(urls)
     xml += "\n</urlset>"

@@ -10,11 +10,10 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTheme } from '@/src/theme'
-import { SPACE } from '@/src/design'
 import { Icon } from '@/src/components/icon'
 import {
   saveCalDAVCredentials, getCalDAVCredentials, clearCalDAVCredentials,
-  isCalDAVConfigured, fetchCalendars,
+  fetchCalendars,
 } from '@/src/lib/caldav'
 import { fetchAddressBooks } from '@/src/lib/carddav'
 

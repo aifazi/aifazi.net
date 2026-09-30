@@ -44,7 +44,7 @@ export function ConnectionRing({ state, onPress, location }: Props) {
       pulse.setValue(0)
       glow.setValue(0)
     }
-  }, [state])
+  }, [state, glow, pulse])
 
   const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] })
   const ringOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] })

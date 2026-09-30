@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
-import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Card, Muted, Btn } from '@/src/components/ui'
 import { Header } from '@/src/components/Header'
@@ -49,7 +48,6 @@ function fmtDur(s?: number): string {
 }
 
 export default function StatusScreen() {
-  const router = useRouter()
   const { theme } = useTheme()
   const c = theme.colors
   const [data, setData] = useState<StatusData>({})

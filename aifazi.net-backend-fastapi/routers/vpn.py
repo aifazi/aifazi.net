@@ -789,9 +789,14 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     peer_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     allocated_ip = ""
-    allocated_ipv6 = _alloc_ipv6(_get_all_allocated_ipv6())
+    allocated_ipv6 = ""
     host_allowed = ""
+    v6_unavailable = False
     for attempt in range(3):
+        # Re-allocate inside the retry loop: a unique conflict on
+        # allocated_ipv6 must draw a fresh address, not retry the same one
+        # (previously outside the loop → retries exhausted → 500).
+        allocated_ipv6 = None if v6_unavailable else _alloc_ipv6(_get_all_allocated_ipv6())
         used_ips = _get_all_allocated_ips()
         allocated_ip = find_free_ip(used_ips)
         host_allowed = _host_allowed_ips(
@@ -821,6 +826,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
                 # Migration not applied yet — retry v4-only (fail open on v6,
                 # closed on the peer itself).
                 log.warning("create_peer: allocated_ipv6 column missing, creating v4-only peer")
+                v6_unavailable = True
                 allocated_ipv6 = None
                 host_allowed = f"{allocated_ip}/32"
                 row.pop("allocated_ipv6", None)
@@ -829,7 +835,6 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
                     break
                 except Exception:
                     pass
-            msg = str(e).lower()
             msg = str(e).lower()
             if "public_key" in msg and ("unique" in msg or "duplicate" in msg or "23505" in msg):
                 # Race lost on the public_key unique constraint (or a client

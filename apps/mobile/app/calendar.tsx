@@ -10,7 +10,6 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTheme } from '@/src/theme'
-import { SPACE } from '@/src/design'
 import { Icon } from '@/src/components/icon'
 import {
   fetchAllEvents, isCalDAVConfigured, type CalDAVEvent,
@@ -32,18 +31,10 @@ export default function CalendarScreen() {
   const router = useRouter()
   const [configured, setConfigured] = useState<boolean | null>(null)
   const [events, setEvents] = useState<CalDAVEvent[]>([])
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
-
-  useEffect(() => {
-    isCalDAVConfigured().then((ok) => {
-      setConfigured(ok)
-      if (ok) loadEvents()
-      else setLoading(false)
-    })
-  }, [])
 
   const loadEvents = useCallback(async () => {
     try {
@@ -53,6 +44,14 @@ export default function CalendarScreen() {
       console.warn('[Calendar] load error:', e)
     }
   }, [])
+
+  useEffect(() => {
+    isCalDAVConfigured().then((ok) => {
+      setConfigured(ok)
+      if (ok) loadEvents()
+      else setLoading(false)
+    })
+  }, [loadEvents])
 
   useEffect(() => {
     setLoading(false)

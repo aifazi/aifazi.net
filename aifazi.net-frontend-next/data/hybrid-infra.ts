@@ -553,9 +553,11 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     (typeof c === 'string' && (cats.includes(c as BuiltinCategory) || customKeys.has(c))) as boolean
   const nodes: InfraComponent[] = []
   for (const n of d.nodes as unknown[]) {
+    if (nodes.length >= 200) break
     if (!n || typeof n !== 'object') continue
     const c = n as Record<string, unknown>
     if (typeof c.id !== 'string' || !c.id || typeof c.name !== 'string') continue
+    const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
     nodes.push({
       id: c.id.slice(0, 64),
       name: String(c.name).slice(0, 80),
@@ -568,12 +570,13 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
       notes: typeof c.notes === 'string' ? c.notes.slice(0, 2000) : undefined,
       ...(typeof c.accent === 'string' && /^#[0-9a-fA-F]{6}$/.test(c.accent) ? { accent: c.accent } : {}),
       ...(c.pulse === true ? { pulse: true as const } : {}),
-      rackU: typeof c.rackU === 'number' ? Math.max(1, Math.min(42, Math.floor(c.rackU))) : undefined,
-      rackH: typeof c.rackH === 'number' ? Math.max(1, Math.min(8, Math.floor(c.rackH))) : undefined,
-      x: typeof c.x === 'number' ? c.x : undefined,
-      y: typeof c.y === 'number' ? c.y : undefined,
-      w: typeof c.w === 'number' ? Math.max(40, Math.min(1280, c.w)) : undefined,
-      h: typeof c.h === 'number' ? Math.max(20, Math.min(920, c.h)) : undefined,
+      rackU: num(c.rackU) ? Math.max(1, Math.min(42, Math.floor(c.rackU))) : undefined,
+      rackH: num(c.rackH) ? Math.max(1, Math.min(8, Math.floor(c.rackH))) : undefined,
+      // Finite + clamped: NaN/Infinity poisons canvas transforms.
+      x: num(c.x) ? Math.max(-50000, Math.min(50000, c.x)) : undefined,
+      y: num(c.y) ? Math.max(-50000, Math.min(50000, c.y)) : undefined,
+      w: num(c.w) ? Math.max(40, Math.min(1280, c.w)) : undefined,
+      h: num(c.h) ? Math.max(20, Math.min(920, c.h)) : undefined,
       shape: c.shape === 'chip' || c.shape === 'cloud' || c.shape === 'firewall' ? c.shape : undefined,
     })
   }

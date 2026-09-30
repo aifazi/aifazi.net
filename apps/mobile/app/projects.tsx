@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { FONT, SPACE, frameworkStyles } from '@/src/design'
-import { View, Text, TouchableOpacity, FlatList, ScrollView } from 'react-native'
+import { View, Text, FlatList } from 'react-native'
 import { Image as ExpoImage } from 'expo-image'
 import { useFocusEffect } from 'expo-router'
 import { Screen } from '@/src/components/Screen'

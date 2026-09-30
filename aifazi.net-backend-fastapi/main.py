@@ -329,6 +329,11 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
     "/api/fivem/players/sessions",
     # Store catalog — public reads (categories/plans); protected routes use JWT
     "/api/store",
+    # Hybrid-infra diagrams + PageBlocks layouts — published reads are public
+    # (docstrings say so); staff-only GETs (…/admin/all) stay JWT-gated in the
+    # routes themselves, same pattern as /api/forum.
+    "/api/infra",
+    "/api/blocks",
     # Mobile app release metadata + APK download — public so the in-app updater
     # can check for new Android builds without a session (server-side GITHUB_TOKEN).
     "/api/mobile/release/latest",

@@ -12,11 +12,11 @@ import logging
 import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from database import supabase
-from dependencies import decode_token, require_admin
+from dependencies import _enrich_user, decode_token, require_admin
 
 router = APIRouter()
 log = logging.getLogger("pages.layouts")
@@ -26,6 +26,8 @@ MAX_BODY_BYTES = 500 * 1024
 MAX_DEPTH = 2
 _SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 _TYPE_RE = re.compile(r"^[a-z0-9-]{1,64}$")
+# Scheme allowlist for href/url prop keys (mirrors frontend lib/safeHref.js).
+_SAFE_HREF_RE = re.compile(r"^(?:https?://|mailto:|[/#?])", re.IGNORECASE)
 
 
 class LayoutIn(BaseModel):
@@ -61,11 +63,17 @@ def _validate_block(block: object, depth: int, seen: set[str]) -> None:
             raise HTTPException(400, "Invalid prop key")
         if isinstance(v, str) and len(v) > 5000:
             raise HTTPException(400, "Prop value too long")
+        if isinstance(v, str) and v and re.search(r"href|url", k, re.IGNORECASE):
+            if not _SAFE_HREF_RE.match(v.strip()):
+                raise HTTPException(400, "Invalid link scheme")
         if isinstance(v, (dict, list)):
             raise HTTPException(400, "Nested prop values not allowed (keep props flat)")
     children = block.get("children", [])
     if children:
-        if depth >= MAX_DEPTH:
+        # MAX_DEPTH counts levels including the top level — a depth-(N-1) block
+        # may not add an Nth level (previously `depth >= MAX_DEPTH` allowed one
+        # extra level: MAX_DEPTH=2 permitted 3).
+        if depth + 1 >= MAX_DEPTH:
             raise HTTPException(400, "Block nesting too deep")
         if not isinstance(children, list) or len(children) > 12:
             raise HTTPException(400, "Invalid block children")
@@ -106,7 +114,13 @@ def _row_to_layout(row: dict, include_body: bool = True) -> dict:
 
 
 def _optional_admin(request: Request) -> dict | None:
-    """Best-effort admin check for draft preview (never raises)."""
+    """Best-effort admin check for draft preview (never raises).
+
+    Goes through `_enrich_user` so the role comes from the user directory
+    (fresh within the 60s cache) — previously the raw JWT role claim was
+    trusted, letting a demoted admin preview drafts for up to the token
+    lifetime (~24h).
+    """
     token = ""
     auth = request.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
@@ -116,27 +130,27 @@ def _optional_admin(request: Request) -> dict | None:
     if not token:
         return None
     try:
-        return require_admin(decode_token(token))
+        return require_admin(_enrich_user(decode_token(token)))
     except Exception:
         return None
 
 
 @router.get("/layouts")
-def list_layouts():
-    """Public: published layout metas (newest first)."""
+def list_layouts(offset: int = Query(0, ge=0, le=10000)):
+    """Public: published layout metas (newest first, 100 per page)."""
     res = supabase.table("page_layouts").select(
         "id,slug,title,updated_at,published,blocks"
-    ).eq("published", True).order("updated_at", desc=True).limit(100).execute()
-    return {"layouts": [_row_to_layout(r, include_body=False) for r in (res.data or [])]}
+    ).eq("published", True).order("updated_at", desc=True).range(offset, offset + 99).execute()
+    return {"layouts": [_row_to_layout(r, include_body=False) for r in (res.data or [])], "offset": offset}
 
 
 @router.get("/layouts/admin/all")
-def admin_list_all(_: dict = Depends(require_admin)):
-    """Staff: every layout incl. drafts (metas only)."""
+def admin_list_all(offset: int = Query(0, ge=0, le=10000), _: dict = Depends(require_admin)):
+    """Staff: every layout incl. drafts (metas only, 200 per page)."""
     res = supabase.table("page_layouts").select(
         "id,slug,title,updated_at,published,blocks"
-    ).order("updated_at", desc=True).limit(200).execute()
-    return {"layouts": [_row_to_layout(r, include_body=False) for r in (res.data or [])]}
+    ).order("updated_at", desc=True).range(offset, offset + 199).execute()
+    return {"layouts": [_row_to_layout(r, include_body=False) for r in (res.data or [])], "offset": offset}
 
 
 @router.get("/layouts/{slug}")

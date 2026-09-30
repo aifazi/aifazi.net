@@ -39,7 +39,7 @@ export default function StoreCartScreen() {
   const [cart, setCart] = useState<Cart>({ items: [], subtotal_cents: 0, count: 0 })
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
+  const [, setErr] = useState('')
 
   const load = useCallback(async () => {
     try {

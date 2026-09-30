@@ -8,6 +8,7 @@
  *  3. Done — renderer, editor palette, and options panel pick it up.
  */
 import type { BlockManifest } from './types'
+import { safeHref } from '../safeHref'
 import { HeroBlock, FeaturesBlock, CtaBannerBlock } from './seedBlocks'
 
 const MANIFESTS: BlockManifest[] = [
@@ -102,7 +103,8 @@ export function sanitizeProps(type: string, props: Record<string, unknown>): Rec
         const fb = manifest.defaults[field.key]
         const raw = typeof v === 'string' && v !== '' ? v : typeof fb === 'string' ? fb : ''
         const cap = 'max' in field && typeof field.max === 'number' ? field.max : 5000
-        out[field.key] = raw.slice(0, cap)
+        // Href-ish fields go through the scheme allowlist (javascript:/data: → '#').
+        out[field.key] = /href/i.test(field.key) && raw ? safeHref(raw.slice(0, cap)) : raw.slice(0, cap)
       }
     }
   }
