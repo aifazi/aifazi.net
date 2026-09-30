@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api, { getAuthToken } from '@/lib/api'
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
-import { CollectionBrowser, SessionsTab, MaintenancePanel, ExportPanel, QueryPanel, MiniChart, FeedRow } from '../dbGuiParts'
-import { AuditLogTab, DbHealthTab } from '../dbGuiTabs'
+import { CollectionBrowser, MaintenancePanel, ExportPanel, QueryPanel, MiniChart, FeedRow } from '../dbGuiParts'
+import { AuditLogTab, DbHealthTab, SessionsTab } from '../dbGuiTabs'
 
 const ago = (d) => {
   if (!d) return ''

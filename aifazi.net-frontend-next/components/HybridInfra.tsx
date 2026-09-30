@@ -22,6 +22,7 @@ import {
   type DiagramDoc,
   type InfraCategory,
 } from '@/data/hybrid-infra'
+import { useInfraTone, infraPalette, infraCatColor } from '@/lib/infraTheme'
 
 const MODES: { id: InfraCategory | 'all'; label: string }[] = [
   { id: 'all', label: 'FULL ARCHITECTURE' },
@@ -33,17 +34,7 @@ const MODES: { id: InfraCategory | 'all'; label: string }[] = [
   { id: 'backup', label: 'BACKUP / DR' },
 ]
 
-const BTN: React.CSSProperties = {
-  background: '#10243b',
-  color: '#dcecff',
-  border: '1px solid #2b4862',
-  padding: '9px 13px',
-  borderRadius: 9,
-  fontSize: 12,
-  fontWeight: 600,
-  fontFamily: 'var(--font-mono)',
-  letterSpacing: 0.5,
-}
+/* BTN/PANEL live inside the component now (theme-aware) — see toneChrome. */
 
 export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   const [activeMode, setActiveMode] = useState<InfraCategory | 'all'>('all')
@@ -66,6 +57,25 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   const [query, setQuery] = useState('')
   const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
   const playTimer = useRef(0)
+  const stageRef = useRef<HTMLElement>(null)
+  const [toolsOpen, setToolsOpen] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen()
+      } else {
+        await stageRef.current?.requestFullscreen()
+      }
+    } catch {
+      /* noop — unsupported or denied */
+    }
+  }
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', onFs)
+    return () => document.removeEventListener('fullscreenchange', onFs)
+  }, [])
   const [notice, setNotice] = useState('')
   const noticeTimer = useRef(0)
   const flashNotice = (msg: string) => {
@@ -156,7 +166,30 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
     }, reduce ? 400 : 1100)
   }
 
-  const accent = selected ? CATEGORY_META[selected.category].color : '#35a7ff'
+  const tone = useInfraTone()
+  const pal = infraPalette(tone)
+  // Theme-aware chrome (replaces the old dark-only BTN const).
+  const BTN: React.CSSProperties = {
+    background: pal.panel,
+    color: pal.ink,
+    border: `1px solid ${pal.border}`,
+    padding: '9px 13px',
+    borderRadius: 9,
+    fontSize: 12,
+    fontWeight: 600,
+    fontFamily: 'var(--font-mono)',
+    letterSpacing: 0.5,
+  }
+  const PANEL: React.CSSProperties = {
+    background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+    border: `1px solid ${pal.border}`,
+    borderRadius: 14,
+    padding: 16,
+  }
+  const H3: React.CSSProperties = {
+    margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted,
+  }
+  const accent = selected ? infraCatColor(selected.category, tone) : pal.blue
   const edgeNote =
     selectedId === 'firewall'
       ? EDGE_COPY[edgeVendor].note
@@ -164,6 +197,16 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
 
   return (
     <div>
+      <button
+        type="button"
+        className="hi-tools-toggle"
+        aria-expanded={toolsOpen}
+        onClick={() => setToolsOpen((v) => !v)}
+        style={{ ...BTN, marginBottom: 10 }}
+      >
+        {toolsOpen ? 'HIDE TOOLS' : 'SHOW TOOLS'}
+      </button>
+      <div className={toolsOpen ? undefined : 'hi-tools-hidden'}>
       {/* ── Toolbar ─────────────────────────────────────────── */}
       <div
         role="toolbar"
@@ -185,7 +228,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             style={{
               ...BTN,
               ...(activeMode === m.id
-                ? { background: 'linear-gradient(180deg,#1b4d7a,#153a5c)', borderColor: '#35a7ff', color: '#fff' }
+                ? { background: 'linear-gradient(180deg,#1b4d7a,#153a5c)', borderColor: pal.blue, color: '#ffffff' }
                 : {}),
             }}
           >
@@ -212,7 +255,8 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
               playStep >= 0
                 ? 'linear-gradient(180deg,#8a3d3d,#6a2c2c)'
                 : 'linear-gradient(180deg,#1d5d8f,#17446c)',
-            borderColor: playStep >= 0 ? '#ff6b78' : '#4eb0ff',
+            borderColor: playStep >= 0 ? pal.red : pal.blue,
+            color: '#ffffff',
           }}
         >
           {playStep >= 0 ? '■ STOP FLOW' : '▶ PLAY ARCHITECTURE FLOW'}
@@ -225,14 +269,14 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
         >
           DESIGN NOTES
         </button>
-        <span aria-hidden style={{ width: 1, height: 22, background: '#2b4862', margin: '0 6px' }} />
+        <span aria-hidden style={{ width: 1, height: 22, background: pal.border, margin: '0 6px' }} />
         <span style={{ fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>
           SECURITY EDGE
         </span>
         <div
           role="group"
           aria-label="Firewall option"
-          style={{ display: 'inline-flex', background: '#0b1a2c', border: '1px solid #2b4862', borderRadius: 10, overflow: 'hidden' }}
+          style={{ display: 'inline-flex', background: pal.panel, border: '1px solid #2b4862', borderRadius: 10, overflow: 'hidden' }}
         >
           {(['fortigate', 'unifi'] as const).map((v) => (
             <button
@@ -242,7 +286,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
               aria-pressed={edgeVendor === v}
               style={{
                 background: 'transparent', border: 0,
-                color: edgeVendor === v ? '#ffd9a0' : '#8fa7bd',
+                color: edgeVendor === v ? pal.amber : pal.muted,
                 padding: '8px 12px', fontSize: 11, fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
                 ...(edgeVendor === v ? { background: 'rgba(255,180,84,.16)' } : {}),
@@ -265,8 +309,8 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
           placeholder="Search components…"
           aria-label="Search components"
           style={{
-            background: '#0b1a2c', border: '1px solid #2b4862', borderRadius: 9,
-            color: '#dcecff', padding: '9px 12px', fontSize: 12,
+            background: pal.panel, border: '1px solid #2b4862', borderRadius: 9,
+            color: pal.ink, padding: '9px 12px', fontSize: 12,
             fontFamily: 'var(--font-mono)', minWidth: 170,
           }}
         />
@@ -293,14 +337,14 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
           COPY LINK
         </button>
         {notice && (
-          <span role="status" style={{ fontSize: 11, letterSpacing: 1.5, color: '#43d19e', fontFamily: 'var(--font-mono)' }}>
+          <span role="status" style={{ fontSize: 11, letterSpacing: 1.5, color: pal.green, fontFamily: 'var(--font-mono)' }}>
             {notice}
           </span>
         )}
         <div
           role="group"
           aria-label="View mode"
-          style={{ display: 'inline-flex', background: '#0b1a2c', border: '1px solid #2b4862', borderRadius: 10, overflow: 'hidden' }}
+          style={{ display: 'inline-flex', background: pal.panel, border: '1px solid #2b4862', borderRadius: 10, overflow: 'hidden' }}
         >
           {(['technical', 'management'] as const).map((v) => (
             <button
@@ -310,7 +354,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
               aria-pressed={viewMode === v}
               style={{
                 background: viewMode === v ? 'rgba(53,167,255,.18)' : 'transparent',
-                border: 0, color: viewMode === v ? '#eaf5ff' : '#8fa7bd',
+                border: 0, color: viewMode === v ? pal.ink : pal.muted,
                 padding: '9px 14px', fontSize: 12, fontWeight: 600,
                 fontFamily: 'var(--font-mono)',
               }}
@@ -319,6 +363,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             </button>
           ))}
         </div>
+      </div>
       </div>
 
       {/* ── Stage + side ────────────────────────────────────── */}
@@ -332,11 +377,13 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
         className="hi-layout"
       >
         <section
+          ref={stageRef}
           aria-label="Interactive infrastructure visualization"
+          className="hi-stage"
           style={{
             position: 'relative',
-            background: 'linear-gradient(180deg,rgba(12,27,45,.95),rgba(8,18,32,.98))',
-            border: '1px solid #203a55',
+            background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+            border: `1px solid ${pal.border}`,
             borderRadius: 18,
             overflow: 'hidden',
             boxShadow: '0 24px 80px rgba(0,0,0,.55)',
@@ -346,14 +393,22 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               gap: 12, padding: '12px 16px',
-              borderBottom: '1px solid rgba(32,58,85,.8)',
-              background: 'rgba(8,18,32,.55)',
+              borderBottom: `1px solid ${pal.border}`,
+              background: pal.panel,
             }}
           >
-            <h2 style={{ margin: 0, fontSize: 12, letterSpacing: 2.5, color: '#9ec3e8', fontWeight: 700 }}>
+            <h2 style={{ margin: 0, fontSize: 12, letterSpacing: 2.5, color: pal.sub, fontWeight: 700 }}>
               INTERACTIVE ENTERPRISE DATA CENTER
             </h2>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11, color: '#8fa7bd' }} aria-hidden>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }} role="toolbar" aria-label="Diagram view controls">
+              <button type="button" onClick={() => canvasHandle.current?.zoomOut()} title="Zoom out" aria-label="Zoom out" style={{ ...BTN, padding: '6px 10px' }}>−</button>
+              <button type="button" onClick={() => canvasHandle.current?.zoomIn()} title="Zoom in" aria-label="Zoom in" style={{ ...BTN, padding: '6px 10px' }}>+</button>
+              <button type="button" onClick={() => canvasHandle.current?.resetView()} title="Reset zoom" style={{ ...BTN, padding: '6px 10px' }}>RESET</button>
+              <button type="button" onClick={toggleFullscreen} title="Toggle fullscreen" aria-pressed={isFullscreen} style={{ ...BTN, padding: '6px 10px' }}>
+                {isFullscreen ? 'EXIT FULL' : 'FULLSCREEN'}
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11, color: pal.muted }} aria-hidden>
               {Object.entries(CATEGORY_META)
                 .filter(([k]) => !['endpoint', 'power'].includes(k))
                 .map(([k, m]) => (
@@ -375,6 +430,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             onSelect={setSelectedId}
             nodes={nodes}
             flows={flows ?? undefined}
+            tone={tone}
           />
         </section>
 
@@ -391,17 +447,17 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div
             style={{
-              background: 'linear-gradient(180deg,rgba(15,32,54,.95),rgba(12,24,40,.98))',
-              border: '1px solid #203a55', borderRadius: 14, padding: 16,
+              background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+              border: `1px solid ${pal.border}`, borderRadius: 14, padding: 16,
               boxShadow: '0 12px 40px rgba(0,0,0,.28)',
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: '#8fb4d8' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted }}>
               SELECTED COMPONENT
             </h3>
             {selected ? (
               <div>
-                <h4 style={{ margin: '0 0 6px', fontSize: 17, lineHeight: 1.25, color: '#eef6ff' }}>
+                <h4 style={{ margin: '0 0 6px', fontSize: 17, lineHeight: 1.25, color: pal.ink }}>
                   {selected.name}
                 </h4>
                 <div
@@ -413,7 +469,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                 >
                   {selected.role}
                 </div>
-                <p style={{ color: '#b7c9da', fontSize: 13, lineHeight: 1.55, margin: '0 0 12px' }}>
+                <p style={{ color: pal.sub, fontSize: 13, lineHeight: 1.55, margin: '0 0 12px' }}>
                   {selected.desc}
                 </p>
                 {selected.notes && (
@@ -423,35 +479,35 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                       margin: '0 0 12px',
                     }}
                   >
-                    <div style={{ fontSize: 10, letterSpacing: 2, color: '#f0c75e', marginBottom: 4 }}>
+                    <div style={{ fontSize: 10, letterSpacing: 2, color: pal.gold, marginBottom: 4 }}>
                       OPERATOR NOTE
                     </div>
-                    <p style={{ color: '#d5e6f7', fontSize: 12, lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
+                    <p style={{ color: pal.sub, fontSize: 12, lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
                       {selected.notes}
                     </p>
                   </div>
                 )}
                 {edgeNote && (
-                  <p style={{ color: '#ffd9a0', fontSize: 12, lineHeight: 1.55, margin: '0 0 12px' }}>
+                  <p style={{ color: pal.amber, fontSize: 12, lineHeight: 1.55, margin: '0 0 12px' }}>
                     {edgeNote}
                   </p>
                 )}
                 <div style={{ display: 'grid', gap: 8, fontSize: 12 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>
-                    <div style={{ color: '#6b849c', textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, paddingTop: 2 }}>
+                    <div style={{ color: pal.muted, textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, paddingTop: 2 }}>
                       Layer
                     </div>
-                    <div style={{ color: '#d5e6f7' }}>
+                    <div style={{ color: pal.sub }}>
                       {selected.layer} · {CATEGORY_META[selected.category].label}
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>
-                    <div style={{ color: '#6b849c', textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, paddingTop: 2 }}>
+                    <div style={{ color: pal.muted, textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, paddingTop: 2 }}>
                       Workloads
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {selected.workloads.map((w) => (
-                        <span key={w} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, background: '#12253c', border: '1px solid #2b4862', color: '#c7dbf0' }}>
+                        <span key={w} style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, background: pal.raised, border: '1px solid #2b4862', color: pal.sub }}>
                           {w}
                         </span>
                       ))}
@@ -459,7 +515,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                   </div>
                   {selected.deps.length > 0 && (
                     <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>
-                      <div style={{ color: '#6b849c', textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, paddingTop: 2 }}>
+                      <div style={{ color: pal.muted, textTransform: 'uppercase', letterSpacing: 1, fontSize: 10, paddingTop: 2 }}>
                         Depends on
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -470,8 +526,8 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                             onClick={() => setSelectedId(d)}
                             style={{
                               fontSize: 11, padding: '4px 8px', borderRadius: 6,
-                              background: '#12253c', border: '1px solid #2b4862',
-                              color: '#9fd2ff', cursor: 'pointer', fontFamily: 'var(--font-mono)',
+                              background: pal.raised, border: '1px solid #2b4862',
+                              color: pal.blue, cursor: 'pointer', fontFamily: 'var(--font-mono)',
                             }}
                           >
                             {depNameIn(nodes, d)}
@@ -483,7 +539,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                 </div>
               </div>
             ) : (
-              <p style={{ color: '#b7c9da', fontSize: 13, lineHeight: 1.55, margin: 0 }}>
+              <p style={{ color: pal.sub, fontSize: 13, lineHeight: 1.55, margin: 0 }}>
                 Select any rack unit, cloud service, endpoint, or edge device to
                 inspect its role, workloads, and dependencies.
               </p>
@@ -492,11 +548,11 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
 
           <div
             style={{
-              background: 'linear-gradient(180deg,rgba(15,32,54,.95),rgba(12,24,40,.98))',
-              border: '1px solid #203a55', borderRadius: 14, padding: 16,
+              background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+              border: `1px solid ${pal.border}`, borderRadius: 14, padding: 16,
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: '#8fb4d8' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted }}>
               ARCHITECTURE FLOW TIMELINE
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -513,17 +569,17 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                     border: '1px solid transparent', fontSize: 12, fontFamily: 'inherit',
                     cursor: 'pointer', textAlign: 'left', width: '100%',
                     ...(playStep === i
-                      ? { background: 'rgba(54,215,232,.1)', borderColor: 'rgba(54,215,232,.35)', color: '#e8f8ff' }
+                      ? { background: 'rgba(54,215,232,.1)', borderColor: 'rgba(54,215,232,.35)', color: pal.ink }
                       : playStep > i
-                        ? { background: 'transparent', color: '#9fc8b5' }
-                        : { background: 'transparent', color: '#7f97ad' }),
+                        ? { background: 'transparent', color: pal.green }
+                        : { background: 'transparent', color: pal.muted }),
                   }}
                 >
                   <div
                     style={{
-                      width: 22, height: 22, borderRadius: 6, background: playStep === i ? '#36d7e8' : '#12253c',
+                      width: 22, height: 22, borderRadius: 6, background: playStep === i ? pal.cyan : pal.raised,
                       display: 'grid', placeItems: 'center', fontSize: 10, fontWeight: 700,
-                      color: playStep === i ? '#042028' : '#8eb4d4',
+                      color: playStep === i ? tone === 'light' ? '#ffffff' : '#042028' : pal.muted,
                     }}
                   >
                     {s.num}
@@ -537,12 +593,12 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
           {notesOpen && (
             <div
               style={{
-                background: 'linear-gradient(180deg,rgba(15,32,54,.95),rgba(12,24,40,.98))',
-                border: '1px solid #203a55', borderRadius: 14, padding: 16,
+                background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+                border: `1px solid ${pal.border}`, borderRadius: 14, padding: 16,
                 display: 'flex', flexDirection: 'column', gap: 10,
               }}
             >
-              <h3 style={{ margin: 0, fontSize: 11, letterSpacing: 2, color: '#8fb4d8' }}>
+              <h3 style={{ margin: 0, fontSize: 11, letterSpacing: 2, color: pal.muted }}>
                 DESIGN NOTES
               </h3>
               {DESIGN_NOTES.map((g) => (
@@ -550,12 +606,12 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                   <h5
                     style={{
                       margin: '0 0 6px', fontSize: 11, letterSpacing: 1.5,
-                      color: g.tone === 'retain' ? '#43d19e' : g.tone === 'replace' ? '#ffb454' : '#36d7e8',
+                      color: g.tone === 'retain' ? pal.green : g.tone === 'replace' ? pal.amber : pal.cyan,
                     }}
                   >
                     {g.title.toUpperCase()}
                   </h5>
-                  <ul style={{ margin: 0, paddingLeft: 16, color: '#b7c9da', fontSize: 12, lineHeight: 1.6 }}>
+                  <ul style={{ margin: 0, paddingLeft: 16, color: pal.sub, fontSize: 12, lineHeight: 1.6 }}>
                     {g.items.map((it) => (
                       <li key={it}>{it}</li>
                     ))}
@@ -568,18 +624,18 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
           {viewMode === 'management' && (
             <div
               style={{
-                background: 'linear-gradient(180deg,rgba(15,32,54,.95),rgba(12,24,40,.98))',
-                border: '1px solid #203a55', borderRadius: 14, padding: 16,
+                background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+                border: `1px solid ${pal.border}`, borderRadius: 14, padding: 16,
               }}
             >
-              <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: '#8fb4d8' }}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted }}>
                 MANAGEMENT VIEW
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {MGMT_CARDS.map((m) => (
-                  <div key={m.title} style={{ background: '#10243b', border: '1px solid #2b4862', borderRadius: 10, padding: 10 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, color: '#eef6ff' }}>{m.title}</div>
-                    <div style={{ fontSize: 11, color: '#9db4c8', lineHeight: 1.4 }}>{m.desc}</div>
+                  <div key={m.title} style={{ background: pal.panel, border: `1px solid ${pal.border}`, borderRadius: 10, padding: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, color: pal.ink }}>{m.title}</div>
+                    <div style={{ fontSize: 11, color: pal.sub, lineHeight: 1.4 }}>{m.desc}</div>
                   </div>
                 ))}
               </div>
@@ -588,14 +644,14 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
 
           <div
             style={{
-              background: 'linear-gradient(180deg,rgba(15,32,54,.95),rgba(12,24,40,.98))',
-              border: '1px solid #203a55', borderRadius: 14, padding: 16,
+              background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+              border: `1px solid ${pal.border}`, borderRadius: 14, padding: 16,
             }}
           >
-            <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: '#8fb4d8' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted }}>
               RECOVERY STRATEGY
             </h3>
-            <div style={{ fontSize: 12, color: '#9eb6cb', lineHeight: 1.5, borderLeft: '3px solid #36d7e8', paddingLeft: 10 }}>
+            <div style={{ fontSize: 12, color: pal.sub, lineHeight: 1.5, borderLeft: '3px solid #36d7e8', paddingLeft: 10 }}>
               3-2-1 / immutable recovery strategy — production workloads
               protected to local immutable repository with an off-site
               immutable copy. RTO/RPO targets to validate with restore testing.
@@ -606,6 +662,21 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
 
       <style>{`
         @media (max-width: 1100px) {
+          .hi-layout { grid-template-columns: 1fr !important; }
+        }
+        .hi-tools-toggle { display: none; }
+        @media (max-width: 720px) {
+          .hi-tools-toggle { display: inline-flex; }
+          .hi-tools-hidden { display: none; }
+        }
+        .hi-stage:fullscreen {
+          border-radius: 0;
+          background: var(--bg, #07121f);
+          padding: 12px;
+          overflow: auto;
+        }
+        @media print {
+          div[role="toolbar"], .hi-tools-toggle { display: none !important; }
           .hi-layout { grid-template-columns: 1fr !important; }
         }
         .hi-canvas:focus-visible {

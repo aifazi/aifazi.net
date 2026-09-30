@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import HybridInfraLoader from '@/components/HybridInfraLoader'
+import HybridInfraLibrary from '@/components/HybridInfraLibrary'
+import HybridInfraErrorBoundary from '@/components/HybridInfraErrorBoundary'
 
 const SITE = 'https://aifazi.net'
 
@@ -34,7 +36,16 @@ const JSON_LD = {
   mainEntityOfPage: `${SITE}/hybrid-infra`,
 }
 
-export default function HybridInfraPage() {
+export default async function HybridInfraPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ diagram?: string }>
+}) {
+  const params = (await searchParams) ?? {}
+  const activeSlug =
+    typeof params.diagram === 'string' && params.diagram.trim() !== ''
+      ? params.diagram
+      : 'plan-a'
   return (
     <>
       <script
@@ -90,7 +101,10 @@ export default function HybridInfraPage() {
             dependencies.
           </p>
         </div>
-        <HybridInfraLoader />
+        <HybridInfraLibrary activeSlug={activeSlug} />
+        <HybridInfraErrorBoundary>
+          <HybridInfraLoader />
+        </HybridInfraErrorBoundary>
         <p
           style={{
             fontFamily: 'var(--font-mono)',

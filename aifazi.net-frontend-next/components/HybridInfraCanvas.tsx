@@ -30,9 +30,13 @@ import {
   type InfraComponent,
   type InfraFlow,
 } from '@/data/hybrid-infra'
+import { infraPalette, type InfraTone } from '@/lib/infraTheme'
 
 export interface HybridInfraCanvasHandle {
   exportPng: () => void
+  zoomIn: () => void
+  zoomOut: () => void
+  resetView: () => void
 }
 
 export interface NodeMove {
@@ -62,6 +66,12 @@ interface Props {
   onMoveNode?: (id: string, pos: NodeMove, done: boolean) => void
   /** Connect mode: user clicked a second, different node. */
   onAddLink?: (from: string, to: string) => void
+  /** Light/dark tone for the stage. Defaults to dark (legacy ops-room look). */
+  tone?: InfraTone
+  /** Grid snap step in design px. Null/0 disables snapping. Defaults to 10. */
+  snap?: number | null
+  /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
+  lockedIds?: Set<string> | null
 }
 
 interface Box {
@@ -74,7 +84,7 @@ interface Box {
 const DESIGN_W = 1280
 const DESIGN_H = 920
 
-const INK = '#eef6ff'
+/* NOTE: canvas text color comes from the live theme palette (see palRef/P). */
 
 export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
   function HybridInfraCanvas(props, ref) {
@@ -82,8 +92,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
     const wrapRef = useRef<HTMLDivElement>(null)
     const sRef = useRef(props)
     sRef.current = props
+    const palRef = useRef(infraPalette(props.tone ?? 'dark'))
+    palRef.current = infraPalette(props.tone ?? 'dark')
     const drawRef = useRef<(t: number) => void>(() => {})
     const kickRef = useRef<() => void>(() => {})
+    const layoutRef = useRef<() => void>(() => {})
     // Static composition for reduced-motion users (redrawn on input change).
     const [frozen] = useState(
       () =>
@@ -91,6 +104,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     )
 
+    // User zoom (zoom-to-center on top of the fit transform). Applied to both
+    // rendering and hit-testing so clicks stay aligned while zoomed.
+    const viewRef = useRef({ z: 1 })
     useImperativeHandle(ref, () => ({
       exportPng() {
         const canvas = canvasRef.current
@@ -107,6 +123,21 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           a.remove()
           setTimeout(() => URL.revokeObjectURL(url), 4000)
         }, 'image/png')
+      },
+      zoomIn() {
+        viewRef.current.z = Math.min(2.5, +(viewRef.current.z + 0.25).toFixed(2))
+        layoutRef.current()
+        kickRef.current()
+      },
+      zoomOut() {
+        viewRef.current.z = Math.max(0.5, +(viewRef.current.z - 0.25).toFixed(2))
+        layoutRef.current()
+        kickRef.current()
+      },
+      resetView() {
+        viewRef.current.z = 1
+        layoutRef.current()
+        kickRef.current()
       },
     }))
 
@@ -130,6 +161,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let offscreen = false
       let docHidden = document.hidden
       const S = { v: 1, ox: 0, oy: 0 }
+      // Effective transform incl. user zoom (zoom-to-canvas-center).
+      const effS = () => S.v * viewRef.current.z
+      const effOx = () => S.ox + (W / 2) * (1 - viewRef.current.z)
+      const effOy = () => S.oy + (H / 2) * (1 - viewRef.current.z)
       const RACK = { x: 250, y: 250, w: 470, h: 540, unitH: 19.5, topPad: 26 }
       let hoverId: string | null = null
       const boxes = new Map<string, Box>()
@@ -141,6 +176,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let dragDY = 0
       let dragMoved = false
       let cursorDesign: { x: number; y: number } | null = null
+      // Live theme palette: refreshed every frame from palRef (tone prop),
+      // so a light/dark toggle repaints without re-subscribing the canvas.
+      // (Reassigned in renderFrame — must stay `let`.)
+      let P = palRef.current
 
       const nodeList = () => sRef.current.nodes ?? COMPONENTS
       const flowList = () => sRef.current.flows ?? FLOWS
@@ -196,7 +235,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         } = {},
       ) {
         const {
-          size = 12, color = INK, align = 'left', baseline = 'middle',
+          size = 12, color = palRef.current.ink, align = 'left', baseline = 'middle',
           weight = '500', alpha = 1, maxW,
         } = opts
         ctx.save()
@@ -225,7 +264,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       function ventGrid(x: number, y: number, w: number, h: number, cols = 12, rows = 2, alpha = 0.28) {
         ctx.save()
         ctx.globalAlpha = alpha
-        ctx.fillStyle = '#06121f'
+        ctx.fillStyle = P.bg
         const gap = 3
         const cellW = (w - (cols - 1) * gap) / cols
         const cellH = (h - (rows - 1) * gap) / rows
@@ -241,7 +280,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         for (let i = 0; i < count; i++) {
           ctx.fillStyle = i % 3 === 0 ? 'rgba(65,200,120,0.8)' : 'rgba(80,160,220,0.55)'
           ctx.fillRect(x + i * (w + gap), y, w, h)
-          if (i % 4 === 1) led(x + i * (w + gap) + w / 2, y + h + 3, '#35a7ff', 0.6, 1.3)
+          if (i % 4 === 1) led(x + i * (w + gap) + w / 2, y + h + 3, P.blue, 0.6, 1.3)
         }
       }
 
@@ -254,7 +293,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           const bx = x + i * (bayW + gap)
           fillRound(bx, y, bayW, h, 3, 'rgba(18,36,56,0.98)', 'rgba(90,150,200,0.4)')
           fillRound(bx + 4, y + 4, bayW - 8, 4, 1, 'rgba(120,180,220,0.25)', null)
-          led(bx + bayW / 2, y + h - 7, '#43d19e', 0.7, 1.8)
+          led(bx + bayW / 2, y + h - 7, P.green, 0.7, 1.8)
         }
         ctx.restore()
       }
@@ -317,10 +356,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           }
           boxes.set(c.id, box)
           hits.set(c.id, {
-            x: S.ox + box.x * S.v,
-            y: S.oy + box.y * S.v,
-            w: box.w * S.v,
-            h: box.h * S.v,
+            x: effOx() + box.x * effS(),
+            y: effOy() + box.y * effS(),
+            w: box.w * effS(),
+            h: box.h * effS(),
           })
         }
 
@@ -348,6 +387,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
         layoutScene()
       }
+      layoutRef.current = layoutScene
 
       // ── draw passes ──────────────────────────────────────────
       function dimmed(cat: InfraCategory, extra: Set<string> | null, id: string | null) {
@@ -359,13 +399,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       function drawBackground() {
         const g = ctx.createLinearGradient(0, 0, 0, DESIGN_H)
-        g.addColorStop(0, '#081524')
-        g.addColorStop(1, '#07111f')
+        g.addColorStop(0, P.bg2)
+        g.addColorStop(1, P.bg)
         ctx.fillStyle = g
         ctx.fillRect(0, 0, DESIGN_W, DESIGN_H)
         ctx.save()
         ctx.globalAlpha = 0.045
-        ctx.strokeStyle = '#6aa0d0'
+        ctx.strokeStyle = P.muted
         const step = 40
         for (let x = 0; x < DESIGN_W; x += step) {
           ctx.beginPath()
@@ -390,13 +430,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       function drawZoneLabels() {
         ctx.save()
         fillRound(270, 12, 400, 190, 14, 'rgba(12,28,48,0.28)', 'rgba(80,130,100,0.18)')
-        text('INTERNET EDGE / SECURITY', 284, 26, { size: 9.5, color: '#6f8ba5', weight: '700' })
+        text('INTERNET EDGE / SECURITY', 284, 26, { size: 9.5, color: P.muted, weight: '700' })
         fillRound(855, 12, 250, 320, 14, 'rgba(12,28,48,0.28)', 'rgba(60,110,170,0.22)')
-        text('MICROSOFT 365 / CLOUD', 868, 26, { size: 9.5, color: '#6f8ba5', weight: '700' })
+        text('MICROSOFT 365 / CLOUD', 868, 26, { size: 9.5, color: P.muted, weight: '700' })
         fillRound(855, 585, 250, 170, 14, 'rgba(12,28,48,0.28)', 'rgba(80,150,120,0.18)')
-        text('COLLABORATION / RECOVERY', 868, 598, { size: 9.5, color: '#6f8ba5', weight: '700' })
-        text('ON-PREMISES CORE', 250, 238, { size: 9.5, color: '#6f8ba5', weight: '700' })
-        text('USERS / LEGACY', 28, 505, { size: 9.5, color: '#6f8ba5', weight: '700' })
+        text('COLLABORATION / RECOVERY', 868, 598, { size: 9.5, color: P.muted, weight: '700' })
+        text('ON-PREMISES CORE', 250, 238, { size: 9.5, color: P.muted, weight: '700' })
+        text('USERS / LEGACY', 28, 505, { size: 9.5, color: P.muted, weight: '700' })
         ctx.restore()
       }
 
@@ -486,11 +526,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const ay = src.y + src.h / 2
         ctx.save()
         ctx.globalAlpha = 0.9
-        ctx.strokeStyle = '#36d7e8'
+        ctx.strokeStyle = P.cyan
         ctx.lineWidth = 2
         ctx.setLineDash([8, 6])
         ctx.lineDashOffset = frozen ? 0 : -t * 30
-        ctx.shadowColor = '#36d7e8'
+        ctx.shadowColor = P.cyan
         ctx.shadowBlur = 8
         ctx.beginPath()
         ctx.moveTo(ax, ay)
@@ -498,7 +538,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.stroke()
         ctx.setLineDash([])
         ctx.beginPath()
-        ctx.fillStyle = '#36d7e8'
+        ctx.fillStyle = P.cyan
         ctx.arc(cursorDesign.x, cursorDesign.y, 4, 0, Math.PI * 2)
         ctx.fill()
         ctx.restore()
@@ -517,37 +557,37 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.restore()
 
         const carcass = ctx.createLinearGradient(r.x - 18, r.y, r.x + r.w + 18, r.y + r.h)
-        carcass.addColorStop(0, '#1a334d')
-        carcass.addColorStop(0.5, '#243f5c')
-        carcass.addColorStop(1, '#15293f')
+        carcass.addColorStop(0, P.panel)
+        carcass.addColorStop(0.5, P.raised)
+        carcass.addColorStop(1, P.panel)
         fillRound(r.x - 18, r.y - 18, r.w + 36, r.h + 36, 14, carcass, 'rgba(120,170,210,0.35)', 1)
 
         const inner = ctx.createLinearGradient(0, r.y, 0, r.y + r.h)
-        inner.addColorStop(0, '#0b1a2b')
-        inner.addColorStop(1, '#07121f')
+        inner.addColorStop(0, P.bg2)
+        inner.addColorStop(1, P.bg)
         fillRound(r.x, r.y, r.w, r.h, 6, inner, 'rgba(40,80,120,0.45)')
 
         const railW = 18
         const railG = ctx.createLinearGradient(r.x, 0, r.x + railW, 0)
-        railG.addColorStop(0, '#2a4a68')
-        railG.addColorStop(0.45, '#6a94b8')
-        railG.addColorStop(1, '#243f5c')
+        railG.addColorStop(0, P.raised)
+        railG.addColorStop(0.45, P.muted)
+        railG.addColorStop(1, P.raised)
         fillRound(r.x, r.y, railW, r.h, 3, railG, 'rgba(140,190,220,0.4)')
         const railG2 = ctx.createLinearGradient(r.x + r.w - railW, 0, r.x + r.w, 0)
-        railG2.addColorStop(0, '#243f5c')
-        railG2.addColorStop(0.55, '#6a94b8')
-        railG2.addColorStop(1, '#2a4a68')
+        railG2.addColorStop(0, P.raised)
+        railG2.addColorStop(0.55, P.muted)
+        railG2.addColorStop(1, P.raised)
         fillRound(r.x + r.w - railW, r.y, railW, r.h, 3, railG2, 'rgba(140,190,220,0.4)')
 
         const cross = ctx.createLinearGradient(0, r.y - 18, 0, r.y + 12)
-        cross.addColorStop(0, '#5b86ad')
-        cross.addColorStop(1, '#243f5c')
+        cross.addColorStop(0, P.muted)
+        cross.addColorStop(1, P.raised)
         fillRound(r.x - 12, r.y - 12, r.w + 24, 16, 3, cross, 'rgba(140,190,220,0.35)')
         fillRound(r.x - 12, r.y + r.h - 4, r.w + 24, 16, 3, cross, 'rgba(140,190,220,0.3)')
 
         ctx.save()
         ctx.globalAlpha = 0.45
-        ctx.fillStyle = '#9fd0ff'
+        ctx.fillStyle = P.sub
         for (let u = 1; u <= 24; u++) {
           const y = r.y + r.topPad + (u - 1) * r.unitH + r.unitH * 0.35
           ctx.beginPath()
@@ -557,14 +597,14 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           ctx.arc(r.x + r.w - 7, y, 1.4, 0, Math.PI * 2)
           ctx.fill()
           if (u % 2 === 1) {
-            text(String(u), r.x + 28, y, { size: 8, color: '#7fa2c2', weight: '700', alpha: 0.4 })
+            text(String(u), r.x + 28, y, { size: 8, color: P.sub, weight: '700', alpha: 0.4 })
           }
         }
         ctx.restore()
 
         ctx.save()
         ctx.globalAlpha = 0.18
-        ctx.strokeStyle = '#36d7e8'
+        ctx.strokeStyle = P.cyan
         ctx.lineWidth = 2
         for (let i = 0; i < 5; i++) {
           ctx.beginPath()
@@ -579,10 +619,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.restore()
 
         text('42U ENTERPRISE RACK', r.x + r.w / 2, r.y + r.h + 34, {
-          size: 13, color: '#8eb4d4', align: 'center', weight: '700',
+          size: 13, color: P.sub, align: 'center', weight: '700',
         })
         text('PHYSICAL ON-PREMISES CORE', r.x + r.w / 2, r.y + r.h + 52, {
-          size: 11, color: '#5f7f9c', align: 'center', weight: '600',
+          size: 11, color: P.muted, align: 'center', weight: '600',
         })
       }
 
@@ -601,12 +641,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
         const earW = 14
         const earG = ctx.createLinearGradient(b.x - earW, 0, b.x, 0)
-        earG.addColorStop(0, '#3d6286')
-        earG.addColorStop(1, '#274460')
+        earG.addColorStop(0, P.raised)
+        earG.addColorStop(1, P.raised)
         fillRound(b.x - earW, b.y + 2, earW, b.h - 4, 2, earG, 'rgba(120,170,210,0.4)')
         const earG2 = ctx.createLinearGradient(b.x + b.w, 0, b.x + b.w + earW, 0)
-        earG2.addColorStop(0, '#274460')
-        earG2.addColorStop(1, '#3d6286')
+        earG2.addColorStop(0, P.raised)
+        earG2.addColorStop(1, P.raised)
         fillRound(b.x + b.w, b.y + 2, earW, b.h - 4, 2, earG2, 'rgba(120,170,210,0.4)')
         ctx.fillStyle = 'rgba(160,200,230,0.55)'
         for (const ex of [b.x - earW / 2, b.x + b.w + earW / 2]) {
@@ -619,19 +659,19 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
         const grad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h)
         if (selected) {
-          grad.addColorStop(0, '#234a6d')
-          grad.addColorStop(0.4, '#1a3552')
-          grad.addColorStop(1, '#0e2034')
+          grad.addColorStop(0, P.raised)
+          grad.addColorStop(0.4, P.panel)
+          grad.addColorStop(1, P.bg2)
         } else {
-          grad.addColorStop(0, '#1a324c')
-          grad.addColorStop(0.35, '#13283e')
-          grad.addColorStop(1, '#0b1a2c')
+          grad.addColorStop(0, P.panel)
+          grad.addColorStop(0.35, P.panel)
+          grad.addColorStop(1, P.bg2)
         }
-        fillRound(b.x, b.y, b.w, b.h, 3, grad, selected ? '#ffffff' : 'rgba(85,145,195,0.5)', selected ? 2.2 : 1.15)
+        fillRound(b.x, b.y, b.w, b.h, 3, grad, selected ? P.ink : 'rgba(85,145,195,0.5)', selected ? 2.2 : 1.15)
 
         ctx.save()
         ctx.globalAlpha = alpha * 0.14
-        ctx.fillStyle = '#b7dcff'
+        ctx.fillStyle = P.sub
         roundRect(b.x + 2, b.y + 2, b.w - 4, 3, 2)
         ctx.fill()
         ctx.restore()
@@ -640,7 +680,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         fillRound(b.x + 12, b.y + 7, plateW, b.h - 14, 2, 'rgba(6,14,26,0.5)', 'rgba(70,120,160,0.22)')
         text(c.name, b.x + 18, b.y + (b.h > 34 ? b.h / 2 - 7 : b.h / 2), {
           size: b.h > 34 ? 12.5 : 11,
-          color: selected ? '#ffffff' : '#dcecff',
+          color: selected ? P.ink : P.sub,
           weight: '700',
           maxW: plateW - 14,
         })
@@ -660,18 +700,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             ports(detailX, b.y + b.h / 2 - 2, Math.floor(detailW / 9), 5, 7)
           } else if (c.id === 'ups') {
             fillRound(detailX, b.y + 12, 54, 22, 2, 'rgba(20,50,40,0.9)', 'rgba(80,220,140,0.5)')
-            text('ONLINE', detailX + 27, b.y + 23, { size: 8, color: '#43d19e', align: 'center', weight: '800' })
+            text('ONLINE', detailX + 27, b.y + 23, { size: 8, color: P.green, align: 'center', weight: '800' })
             ventGrid(detailX + 70, b.y + 12, detailW - 80, b.h - 24, 10, 3, 0.25)
-            led(b.x + b.w - 18, b.y + 14, '#43d19e', 0.8, 3)
+            led(b.x + b.w - 18, b.y + 14, P.green, 0.8, 3)
           } else {
             ventGrid(detailX, b.y + 10, detailW * 0.72, b.h - 20, 16, b.h > 34 ? 3 : 1, 0.3)
             const ledX = b.x + b.w - 18
-            led(ledX, b.y + 12, '#43d19e', 0.65 + 0.35 * Math.sin(t * 3 + (c.rackU ?? 0)), 2.8)
+            led(ledX, b.y + 12, P.green, 0.65 + 0.35 * Math.sin(t * 3 + (c.rackU ?? 0)), 2.8)
             if (b.h > 28) {
-              led(ledX, b.y + b.h / 2, c.category === 'backup' ? '#ff6b78' : '#35a7ff', 0.5 + 0.45 * Math.sin(t * 4 + (c.rackU ?? 0) * 1.2), 2.8)
+              led(ledX, b.y + b.h / 2, c.category === 'backup' ? P.red : P.blue, 0.5 + 0.45 * Math.sin(t * 4 + (c.rackU ?? 0) * 1.2), 2.8)
             }
             if (b.h > 36) {
-              led(ledX, b.y + b.h - 12, c.category === 'security' ? '#ffb454' : '#43d19e', 0.4 + 0.3 * Math.sin(t * 2.1 + (c.rackU ?? 0)), 2.8)
+              led(ledX, b.y + b.h - 12, c.category === 'security' ? P.amber : P.green, 0.4 + 0.3 * Math.sin(t * 2.1 + (c.rackU ?? 0)), 2.8)
             }
             ctx.beginPath()
             ctx.strokeStyle = 'rgba(140,190,230,0.45)'
@@ -710,16 +750,16 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
         const grad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h)
         if (isCloud) {
-          grad.addColorStop(0, '#1a3858')
-          grad.addColorStop(1, '#0f243c')
+          grad.addColorStop(0, P.panel)
+          grad.addColorStop(1, P.panel)
         } else if (isFirewall) {
-          grad.addColorStop(0, '#4a3418')
-          grad.addColorStop(1, '#2a1c0d')
+          grad.addColorStop(0, P.raised)
+          grad.addColorStop(1, P.panel)
         } else {
-          grad.addColorStop(0, '#17304c')
-          grad.addColorStop(1, '#0d1c2e')
+          grad.addColorStop(0, P.panel)
+          grad.addColorStop(1, P.panel)
         }
-        fillRound(b.x, b.y, b.w, b.h, r, grad, selected ? '#ffffff' : accent, selected ? 2.2 : 1.25)
+        fillRound(b.x, b.y, b.w, b.h, r, grad, selected ? P.ink : accent, selected ? 2.2 : 1.25)
 
         ctx.save()
         ctx.globalAlpha = alpha * (isFirewall ? 0.9 : 0.55)
@@ -731,7 +771,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const cx = b.x + b.w / 2
         const cy = b.y + b.h / 2
         text(c.name, cx, b.h > 60 ? cy - 10 : cy - 4, {
-          size: isFirewall ? 15 : 12.5, color: '#f2f8ff', align: 'center', weight: '700', maxW: b.w - 18,
+          size: isFirewall ? 15 : 12.5, color: P.ink, align: 'center', weight: '700', maxW: b.w - 18,
         })
         if (c.role) {
           text(c.role, cx, b.h > 60 ? cy + 10 : cy + 13, {
@@ -746,13 +786,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               : EDGE_COPY.unifi.label
           text(label, cx, b.y + b.h - 14, {
             size: 10,
-            color: p.edgeVendor === 'fortigate' ? '#ffd28a' : '#c9b7ff',
+            color: p.edgeVendor === 'fortigate' ? P.amber : P.purple,
             align: 'center',
             weight: '700',
             maxW: b.w - 12,
           })
-          led(b.x + 18, cy, '#ffb454', 0.7 + 0.3 * Math.sin(t * 5), 3.2)
-          led(b.x + b.w - 18, cy, '#43d19e', 0.5 + 0.4 * Math.sin(t * 3 + 1), 3.2)
+          led(b.x + 18, cy, P.amber, 0.7 + 0.3 * Math.sin(t * 5), 3.2)
+          led(b.x + b.w - 18, cy, P.green, 0.5 + 0.4 * Math.sin(t * 3 + 1), 3.2)
         } else if (isCloud) {
           led(b.x + 15, b.y + 15, accent, 0.55 + 0.3 * Math.sin(t * 2 + b.x * 0.01), 2.8)
           ctx.save()
@@ -781,15 +821,15 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.save()
         ctx.globalAlpha = alpha
         const grad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h)
-        grad.addColorStop(0, selected ? '#274864' : '#183048')
-        grad.addColorStop(1, '#0d1c2e')
-        fillRound(b.x, b.y, b.w, b.h, 7, grad, selected ? '#fff' : 'rgba(100,160,210,0.45)', selected ? 1.8 : 1)
+        grad.addColorStop(0, selected ? P.raised : P.panel)
+        grad.addColorStop(1, P.panel)
+        fillRound(b.x, b.y, b.w, b.h, 7, grad, selected ? P.ink : 'rgba(100,160,210,0.45)', selected ? 1.8 : 1)
         ctx.fillStyle = accent
         roundRect(b.x, b.y + 4, 3, b.h - 8, 2)
         ctx.fill()
-        text(c.name, b.x + 12, b.y + b.h / 2 - 5, { size: 10.5, color: '#e7f2ff', weight: '700', maxW: b.w - 18 })
+        text(c.name, b.x + 12, b.y + b.h / 2 - 5, { size: 10.5, color: P.ink, weight: '700', maxW: b.w - 18 })
         text(c.role, b.x + 12, b.y + b.h / 2 + 8, { size: 9, color: accent, weight: '600', maxW: b.w - 18 })
-        led(b.x + b.w - 12, b.y + 11, '#43d19e', 0.55 + 0.3 * Math.sin(t * 3 + b.x), 2.2)
+        led(b.x + b.w - 12, b.y + 11, P.green, 0.55 + 0.3 * Math.sin(t * 3 + b.x), 2.2)
         ctx.restore()
       }
 
@@ -799,17 +839,17 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const panel = { x: 740, y: 365, w: 380, h: 215 }
         fillRound(panel.x, panel.y, panel.w, panel.h, 12, 'rgba(14,30,50,0.55)', 'rgba(110,150,210,0.3)')
         text('3-NODE PROXMOX CLUSTER · VM HA', panel.x + 14, panel.y + 16, {
-          size: 11.5, color: '#9ec3e8', weight: '700',
+          size: 11.5, color: P.sub, weight: '700',
         })
         text('DC-01 · DC-02 · File Server · Legacy Apps', panel.x + 14, panel.y + 34, {
-          size: 10, color: '#6f8ba5', weight: '500',
+          size: 10, color: P.muted, weight: '500',
         })
         text('On-prem AD authoritative · Hybrid identity', panel.x + 14, panel.y + 50, {
-          size: 10, color: '#36d7e8', weight: '600',
+          size: 10, color: P.cyan, weight: '600',
         })
 
         ctx.globalAlpha = 0.28
-        ctx.strokeStyle = '#b08cff'
+        ctx.strokeStyle = P.purple
         ctx.lineWidth = 1.3
         ctx.setLineDash([5, 5])
         ctx.lineDashOffset = frozen ? 0 : -t * 12
@@ -829,18 +869,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const ec = boxes.get('entraconnect')
         if (ec) {
           ctx.globalAlpha = 0.22 + 0.1 * Math.sin(t * 2)
-          ctx.strokeStyle = '#36d7e8'
+          ctx.strokeStyle = P.cyan
           ctx.lineWidth = 1.5
           roundRect(ec.x - 3, ec.y - 3, ec.w + 6, ec.h + 6, 8)
           ctx.stroke()
           ctx.globalAlpha = 1
           text('AD → Entra Connect → Entra ID', ec.x + ec.w / 2, ec.y + ec.h + 12, {
-            size: 9, color: '#36d7e8', align: 'center', weight: '700',
+            size: 9, color: P.cyan, align: 'center', weight: '700',
           })
         }
 
         ctx.globalAlpha = 0.55
-        ctx.strokeStyle = '#36d7e8'
+        ctx.strokeStyle = P.cyan
         ctx.lineWidth = 1.7
         ctx.setLineDash([7, 7])
         ctx.lineDashOffset = frozen ? 0 : -t * 22
@@ -852,7 +892,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.lineDashOffset = 0
 
         ctx.globalAlpha = 0.5
-        ctx.strokeStyle = '#ff6b78'
+        ctx.strokeStyle = P.red
         ctx.lineWidth = 1.7
         ctx.setLineDash([7, 7])
         ctx.lineDashOffset = frozen ? 0 : -t * 20
@@ -870,14 +910,14 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           ctx.save()
           ctx.globalAlpha = 0.48
           const grad = ctx.createLinearGradient(lb.x, lb.y, lb.x, lb.y + lb.h)
-          grad.addColorStop(0, '#222830')
-          grad.addColorStop(1, '#151a22')
-          fillRound(lb.x, lb.y, lb.w, lb.h, 11, grad, selected ? '#fff' : 'rgba(150,120,90,0.45)', selected ? 2 : 1)
+          grad.addColorStop(0, P.raised)
+          grad.addColorStop(1, P.panel)
+          fillRound(lb.x, lb.y, lb.w, lb.h, 11, grad, selected ? P.ink : 'rgba(150,120,90,0.45)', selected ? 2 : 1)
           ctx.globalAlpha = 0.82
-          text('LEGACY / DECOMMISSIONED', lb.x + 12, lb.y + 18, { size: 10, color: '#c9b89a', weight: '700' })
-          text('EOL servers · NetApp · Quantum DXi', lb.x + 12, lb.y + 40, { size: 9, color: '#8a7f70', weight: '500', maxW: lb.w - 20 })
-          text('Legacy firewalls · not active production', lb.x + 12, lb.y + 58, { size: 9, color: '#8a7f70', weight: '500', maxW: lb.w - 20 })
-          text('Scheduled for replacement', lb.x + 12, lb.y + 88, { size: 9, color: '#6f665c', weight: '600' })
+          text('LEGACY / DECOMMISSIONED', lb.x + 12, lb.y + 18, { size: 10, color: P.muted, weight: '700' })
+          text('EOL servers · NetApp · Quantum DXi', lb.x + 12, lb.y + 40, { size: 9, color: P.muted, weight: '500', maxW: lb.w - 20 })
+          text('Legacy firewalls · not active production', lb.x + 12, lb.y + 58, { size: 9, color: P.muted, weight: '500', maxW: lb.w - 20 })
+          text('Scheduled for replacement', lb.x + 12, lb.y + 88, { size: 9, color: P.muted, weight: '600' })
           ctx.restore()
         }
 
@@ -891,11 +931,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           ctx.save()
           ctx.globalAlpha = isDim ? 0.18 : 1
           const grad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h)
-          grad.addColorStop(0, '#173248')
-          grad.addColorStop(1, '#0c1a2c')
-          fillRound(b.x, b.y, b.w, b.h, 11, grad, selected ? '#fff' : accent, selected ? 2 : 1.1)
+          grad.addColorStop(0, P.panel)
+          grad.addColorStop(1, P.bg2)
+          fillRound(b.x, b.y, b.w, b.h, 11, grad, selected ? P.ink : accent, selected ? 2 : 1.1)
           text(c.name, b.x + b.w / 2, b.y + 18, {
-            size: 10, color: '#e8f3ff', align: 'center', weight: '700', maxW: b.w - 12,
+            size: 10, color: P.ink, align: 'center', weight: '700', maxW: b.w - 12,
           })
           text(c.role, b.x + b.w / 2, b.y + 34, {
             size: 8.5, color: accent, align: 'center', weight: '600', maxW: b.w - 12,
@@ -907,15 +947,15 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             fillRound(b.x + 105, b.y + 48, 42, 24, 3, 'rgba(70,140,200,0.22)', 'rgba(130,190,235,0.45)')
             fillRound(b.x + 109, b.y + 51, 34, 15, 2, 'rgba(30,80,140,0.7)', null)
             text('Intune + Defender', b.x + b.w / 2, b.y + 88, {
-              size: 8.5, color: '#8fb4d8', align: 'center', weight: '600',
+              size: 8.5, color: P.sub, align: 'center', weight: '600',
             })
           } else {
             for (let i = 0; i < 3; i++) {
               fillRound(b.x + 28 + i * 44, b.y + 48, 32, 18, 3, 'rgba(40,120,90,0.3)', 'rgba(90,190,150,0.5)')
-              led(b.x + 28 + i * 44 + 16, b.y + 57, '#43d19e', 0.5, 1.4)
+              led(b.x + 28 + i * 44 + 16, b.y + 57, P.green, 0.5, 1.4)
             }
             text('CAD · Images · Scanned Docs', b.x + b.w / 2, b.y + 82, {
-              size: 8.5, color: '#8fb4d8', align: 'center', weight: '600', maxW: b.w - 10,
+              size: 8.5, color: P.sub, align: 'center', weight: '600', maxW: b.w - 10,
             })
           }
           ctx.restore()
@@ -924,10 +964,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.save()
         fillRound(250, 820, 620, 52, 10, 'rgba(12,28,48,0.55)', 'rgba(67,209,158,0.3)')
         text('ACTIVE COLLABORATION → SharePoint / OneDrive', 266, 838, {
-          size: 10.5, color: '#43d19e', weight: '700',
+          size: 10.5, color: P.green, weight: '700',
         })
         text('BULK / LARGE / LEGACY DATA → Synology / On-Prem SMB', 266, 860, {
-          size: 10.5, color: '#36d7e8', weight: '700',
+          size: 10.5, color: P.cyan, weight: '700',
         })
         ctx.restore()
       }
@@ -938,19 +978,19 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.fillStyle = 'rgba(7,17,31,0.52)'
         ctx.fillRect(0, 0, DESIGN_W, DESIGN_H)
         const cards = [
-          { x: 750, y: 280, w: 170, h: 58, title: 'SECURITY', sub: 'HA edge · MFA/CA · Defender', color: '#ffb454' },
-          { x: 935, y: 280, w: 170, h: 58, title: 'RESILIENCE', sub: 'vPC · Dual ISP · UPS · HA', color: '#35a7ff' },
-          { x: 750, y: 350, w: 170, h: 58, title: 'IDENTITY', sub: 'On-prem AD + Entra ID', color: '#36d7e8' },
-          { x: 935, y: 350, w: 170, h: 58, title: 'BACKUP & BC', sub: 'Veeam → QNAP → off-site', color: '#ff6b78' },
-          { x: 750, y: 420, w: 170, h: 58, title: 'MICROSOFT 365', sub: 'Collaboration + security', color: '#b08cff' },
-          { x: 935, y: 420, w: 170, h: 58, title: 'LESS LEGACY', sub: 'Modern platform replaces EOL', color: '#43d19e' },
+          { x: 750, y: 280, w: 170, h: 58, title: 'SECURITY', sub: 'HA edge · MFA/CA · Defender', color: P.amber },
+          { x: 935, y: 280, w: 170, h: 58, title: 'RESILIENCE', sub: 'vPC · Dual ISP · UPS · HA', color: P.blue },
+          { x: 750, y: 350, w: 170, h: 58, title: 'IDENTITY', sub: 'On-prem AD + Entra ID', color: P.cyan },
+          { x: 935, y: 350, w: 170, h: 58, title: 'BACKUP & BC', sub: 'Veeam → QNAP → off-site', color: P.red },
+          { x: 750, y: 420, w: 170, h: 58, title: 'MICROSOFT 365', sub: 'Collaboration + security', color: P.purple },
+          { x: 935, y: 420, w: 170, h: 58, title: 'LESS LEGACY', sub: 'Modern platform replaces EOL', color: P.green },
         ]
         for (const c of cards) {
           fillRound(c.x, c.y, c.w, c.h, 11, 'rgba(15,32,54,0.94)', c.color)
-          text(c.title, c.x + 11, c.y + 20, { size: 11, color: '#fff', weight: '700' })
-          text(c.sub, c.x + 11, c.y + 40, { size: 9.5, color: '#b7c9da', weight: '500', maxW: c.w - 16 })
+          text(c.title, c.x + 11, c.y + 20, { size: 11, color: P.ink, weight: '700' })
+          text(c.sub, c.x + 11, c.y + 40, { size: 9.5, color: P.sub, weight: '500', maxW: c.w - 16 })
         }
-        text('MANAGEMENT VIEW', 750, 262, { size: 10.5, color: '#8fb4d8', weight: '700' })
+        text('MANAGEMENT VIEW', 750, 262, { size: 10.5, color: P.sub, weight: '700' })
         ctx.restore()
       }
 
@@ -958,10 +998,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const p = sRef.current
         if (p.playStep < 0) return
         const colorMap: Record<number, string> = {
-          0: '#35a7ff', 1: '#ffb454', 2: '#35a7ff', 3: '#b08cff',
-          4: '#43d19e', 5: '#36d7e8', 6: '#ffb454', 7: '#ff6b78', 8: '#ff6b78',
+          0: P.blue, 1: P.amber, 2: P.blue, 3: P.purple,
+          4: P.green, 5: P.cyan, 6: P.amber, 7: P.red, 8: P.red,
         }
-        const color = colorMap[p.playStep] ?? '#36d7e8'
+        const color = colorMap[p.playStep] ?? P.cyan
         ctx.save()
         ctx.globalAlpha = 0.07 + 0.03 * Math.sin(t * 5)
         ctx.fillStyle = color
@@ -969,12 +1009,38 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.restore()
       }
 
+      // Lock badges for editor-locked nodes (drag-blocked).
+      function drawLockBadges() {
+        const locked = sRef.current.lockedIds
+        if (!locked || locked.size === 0) return
+        ctx.save()
+        ctx.font = '11px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        for (const [id, box] of boxes) {
+          if (!locked.has(id)) continue
+          const bx = box.x + box.w - 12
+          const by = box.y + 12
+          ctx.beginPath()
+          ctx.arc(bx, by, 9, 0, Math.PI * 2)
+          ctx.fillStyle = P.panel
+          ctx.fill()
+          ctx.lineWidth = 1.5
+          ctx.strokeStyle = P.amber
+          ctx.stroke()
+          ctx.fillStyle = P.amber
+          ctx.fillText('🔒', bx, by + 0.5)
+        }
+        ctx.restore()
+      }
+
       function renderFrame(t: number) {
+        P = palRef.current
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
         ctx.clearRect(0, 0, W, H)
         ctx.save()
-        ctx.translate(S.ox, S.oy)
-        ctx.scale(S.v, S.v)
+        ctx.translate(effOx(), effOy())
+        ctx.scale(effS(), effS())
         drawBackground()
         drawZoneLabels()
         drawFlows(t)
@@ -987,6 +1053,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         for (const c of nodeList()) {
           if (c.layer === 'edge' || c.layer === 'cloud') drawChip(c, t)
         }
+        drawLockBadges()
         drawManagementOverlay()
         drawPlayPulse(t)
         ctx.restore()
@@ -1037,10 +1104,15 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
 
       function designFromClient(mx: number, my: number) {
-        return { x: (mx - S.ox) / S.v, y: (my - S.oy) / S.v }
+        return { x: (mx - effOx()) / effS(), y: (my - effOy()) / effS() }
       }
 
-      const snap = (v: number) => Math.round(v / 10) * 10
+      // Grid snap (Odoo-style placement): step from props, null/0 = free move.
+      const snap = (v: number) => {
+        const step = sRef.current.snap ?? 10
+        if (!step || step <= 0) return Math.round(v)
+        return Math.round(v / step) * step
+      }
 
       function onMove(e: MouseEvent) {
         const rect = canvas.getBoundingClientRect()
