@@ -30,6 +30,7 @@ from database import supabase
 from dependencies import require_admin, require_staff
 from permissions import require_permission
 from utils.audit import record as _audit
+from utils.request_metrics import snapshot as _error_snapshot
 from utils.ssrf import is_blocked_ip
 
 router = APIRouter()
@@ -796,7 +797,7 @@ async def _public_status_impl():
             incidents.extend(_incidents_for(svc["label"], rows))
     except Exception as e:
         logger.error("monitor: public_status failed: %s", e)
-        return {"overall": "degraded", "services": [], "incidents": []}
+        return {"overall": "degraded", "services": [], "incidents": [], "errors_24h": []}
 
     incidents.sort(key=lambda x: x.get("start") or "", reverse=True)
     overall = "operational" if all(s["status"] == "up" for s in out) else \
@@ -806,6 +807,9 @@ async def _public_status_impl():
         "generated_at": now.isoformat(),
         "services": out,
         "incidents": incidents[:12],
+        # 413/429/500 by route over the trailing 24h (in-memory, resets on
+        # redeploy; lags real time by at most the 60s status cache).
+        "errors_24h": _error_snapshot(),
     }
 
 

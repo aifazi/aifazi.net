@@ -29,6 +29,7 @@ if dsn.startswith("https://"):
 
 from utils.rate_limit import _ip_is_banned, _refresh_ip_bans, _require_redis_config, check_rate_limit
 from utils.request_ip import client_ip
+from utils.request_metrics import record_error
 from utils.scheduler import scheduler, set_event_loop
 
 # Fail-closed: refuse to boot in production without Redis (distributed rate
@@ -516,6 +517,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 except ValueError:
                     return JSONResponse(status_code=400, content={"error": "Invalid Content-Length"})
                 if _declared > _limit:
+                    record_error(path, 413)
                     return JSONResponse(status_code=413, content={"error": "Request body too large"})
 
         # ── 2. Rate limiting ───────────────────────────────────────────────────
@@ -546,6 +548,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         bucket = f"{ip}:{path}"
         allowed = await check_rate_limit(bucket, max_calls, window)
         if not allowed:
+            record_error(path, 429)
             return JSONResponse(
                 status_code=429,
                 content={"error": "Too many requests. Please slow down."},
@@ -569,6 +572,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
             except Exception:
                 allowed = False  # fail-closed: DB down → block sensitive paths
             if not allowed:
+                record_error(path, 429)
                 return JSONResponse(
                     status_code=429,
                     content={"error": "Too many requests. Please slow down."},
@@ -662,6 +666,13 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 
         # ── 4. Call next + attach headers ─────────────────────────────────────
         response = await call_next(request)
+
+        # Rolling 413/429/500-by-route counters for /api/monitor/status.
+        # Early returns above record at their own return sites; handler-level
+        # 413/429/500 responses are caught here. Unhandled exceptions never
+        # reach this line (global_exception_handler records those).
+        if response.status_code in (413, 429, 500):
+            record_error(path, response.status_code)
 
         if allowed_origin:
             response.headers["Access-Control-Allow-Origin"]      = origin
@@ -860,6 +871,7 @@ async def health():
 async def global_exception_handler(request: Request, exc: Exception):
     import traceback
 
+    record_error(str(request.url.path), 500)
     if dsn:
         sentry_sdk.capture_exception(exc)
     log.error("unhandled exception on %s: %s\n%s", request.url.path, exc,
