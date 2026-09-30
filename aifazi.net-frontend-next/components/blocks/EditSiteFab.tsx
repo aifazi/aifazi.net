@@ -11,16 +11,10 @@ import { useEffect, useState } from 'react'
 import { getRole } from '@/lib/api'
 
 export default function EditSiteFab() {
-  // Lazy initializer (not an effect): SSR-safe via try/catch.
-  const [isAdmin, setIsAdmin] = useState(() => {
-    try {
-      return getRole() === 'admin'
-    } catch {
-      return false
-    }
-  })
-  // Resync on auth signals (login/logout without remount). setState in event
-  // listeners is fine — the lint rule only bans it during render/effects.
+  // Server renders null (no window → no admin); the client must match that
+  // on its FIRST render or React logs a hydration error — so start false and
+  // read the role in an effect instead of a lazy initializer.
+  const [isAdmin, setIsAdmin] = useState(false)
   useEffect(() => {
     const sync = () => {
       try {
@@ -29,6 +23,7 @@ export default function EditSiteFab() {
         setIsAdmin(false)
       }
     }
+    sync()
     window.addEventListener('auth-change', sync)
     window.addEventListener('storage', sync)
     return () => {

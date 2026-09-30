@@ -93,6 +93,12 @@ def _fake_require_admin(user=None):
     return {"id": "admin-1", "username": "admin", "role": "admin"}
 
 
+def _denied_require_admin(user=None):
+    from fastapi import HTTPException
+
+    raise HTTPException(403, "Admin only")
+
+
 def _load_module():  # type: ignore[no-untyped-def]
     spec = importlib.util.spec_from_file_location(
         "page_layouts_under_test",
@@ -104,13 +110,12 @@ def _load_module():  # type: ignore[no-untyped-def]
     return module
 
 
-@pytest.fixture()
-def client(monkeypatch):  # type: ignore[no-untyped-def]
+def _build_app(monkeypatch, require_admin):  # type: ignore[no-untyped-def]
     fake = _FakeSupabase()
     db_stub = types.ModuleType("database")
     db_stub.supabase = fake
     deps_stub = types.ModuleType("dependencies")
-    deps_stub.require_admin = _fake_require_admin
+    deps_stub.require_admin = require_admin
     deps_stub.decode_token = lambda token: {"role": "admin"}
     monkeypatch.setitem(sys.modules, "database", db_stub)
     monkeypatch.setitem(sys.modules, "dependencies", deps_stub)
@@ -118,6 +123,16 @@ def client(monkeypatch):  # type: ignore[no-untyped-def]
     app = FastAPI()
     app.include_router(module.router)
     return TestClient(app)
+
+
+@pytest.fixture()
+def client(monkeypatch):  # type: ignore[no-untyped-def]
+    return _build_app(monkeypatch, _fake_require_admin)
+
+
+@pytest.fixture()
+def denied_client(monkeypatch):  # type: ignore[no-untyped-def]
+    return _build_app(monkeypatch, _denied_require_admin)
 
 
 def _layout(slug="home", **over):
@@ -211,3 +226,30 @@ def test_admin_all_lists_drafts(client):  # type: ignore[no-untyped-def]
     client.post("/layouts", json=_layout(slug="live-one", published=True))
     slugs = sorted(l["slug"] for l in client.get("/layouts/admin/all").json()["layouts"])
     assert slugs == ["draft-one", "live-one"]
+
+
+# ── Round-2 audit additions ────────────────────────────────────────────────
+
+
+def test_writes_require_admin(denied_client):  # type: ignore[no-untyped-def]
+    assert denied_client.post("/layouts", json=_layout()).status_code == 403
+    assert denied_client.put("/layouts/x", json=_layout()).status_code == 403
+    assert denied_client.delete("/layouts/x").status_code == 403
+    assert denied_client.get("/layouts/admin/all").status_code == 403
+
+
+def test_delete_missing_is_404(client):  # type: ignore[no-untyped-def]
+    assert client.delete("/layouts/nope").status_code == 404
+
+
+def test_update_bumps_updated_at(client):  # type: ignore[no-untyped-def]
+    import time
+
+    created = client.post("/layouts", json=_layout()).json()["layout"]
+    before = created["updatedAt"]
+    time.sleep(0.01)
+    upd = client.put(
+        f"/layouts/{created['id']}", json=_layout(title="Home v2")
+    ).json()["layout"]
+    after = upd["updatedAt"]
+    assert before and after and after > before

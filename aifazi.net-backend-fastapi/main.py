@@ -107,6 +107,14 @@ _CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Tok
 # Real API calls always set an Origin header or do not prefer text/html.
 API_HOSTNAME = os.getenv("API_HOSTNAME", "api.aifazi.net")
 
+# ── Request body size caps (pre-parse DoS guard) ──────────────────────────────
+# Enforced on the declared Content-Length before FastAPI buffers the body.
+# Multipart gets a higher cap because the file tools accept up to 50MB uploads;
+# chunked bodies without Content-Length are bounded by Cloudflare's 100MB edge
+# limit plus the per-IP rate limiter below.
+MAX_JSON_BODY_BYTES = 5 * 1024 * 1024
+MAX_UPLOAD_BODY_BYTES = 55 * 1024 * 1024
+
 # ── Internal API secret ────────────────────────────────────────────────────────
 # All non-public requests must include this header (injected by Next.js middleware).
 # Set INTERNAL_API_SECRET in your .env — use any long random string.
@@ -488,6 +496,22 @@ class SecurityMiddleware(BaseHTTPMiddleware):
                 resp.headers["Access-Control-Allow-Headers"]     = _CORS_ALLOW_HEADERS
                 resp.headers["Access-Control-Max-Age"]           = "86400"
             return resp
+
+        # ── 1b. Request body size cap ──────────────────────────────────────────
+        # Reject oversized declared bodies with 413 BEFORE any route handler
+        # reads them; otherwise FastAPI buffers the whole body into RAM first
+        # and auth checks run only after that.
+        if method in ("POST", "PUT", "PATCH"):
+            _ctype = request.headers.get("content-type", "")
+            _limit = MAX_UPLOAD_BODY_BYTES if _ctype.startswith("multipart/") else MAX_JSON_BODY_BYTES
+            _cl = request.headers.get("content-length")
+            if _cl:
+                try:
+                    _declared = int(_cl)
+                except ValueError:
+                    return JSONResponse(status_code=400, content={"error": "Invalid Content-Length"})
+                if _declared > _limit:
+                    return JSONResponse(status_code=413, content={"error": "Request body too large"})
 
         # ── 2. Rate limiting ───────────────────────────────────────────────────
         # Client IP must NOT come from user-supplied X-Forwarded-For /

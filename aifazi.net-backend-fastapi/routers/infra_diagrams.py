@@ -7,8 +7,10 @@ rejected here so nothing can squat it.
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -19,13 +21,16 @@ from dependencies import decode_token, require_admin
 router = APIRouter()
 log = logging.getLogger("infra.diagrams")
 
-RESERVED_SLUGS = {"plan-a"}
+RESERVED_SLUGS = {"plan-a", "cloud-infra"}
 MAX_NODES = 200
 MAX_FLOWS = 200
+MAX_DOC_BYTES = 500 * 1024
 
 
 class DiagramIn(BaseModel):
-    slug: str = Field(min_length=1, max_length=64)
+    # Empty slug is allowed: create derives it from the title (the frontend
+    # sends '' for seeds whose slug would collide with a builtin).
+    slug: str = Field(default="", max_length=64)
     title: str = Field(min_length=1, max_length=120)
     published: bool = False
     nodes: list = Field(default_factory=list, max_length=MAX_NODES)
@@ -101,13 +106,22 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
         raise HTTPException(400, "nodes and flows must be arrays")
     if len(nodes) > MAX_NODES or len(flows) > MAX_FLOWS:
         raise HTTPException(400, "Diagram too large")
+    if not nodes:
+        raise HTTPException(400, "Diagram has no nodes")
+    try:
+        if len(json.dumps({"nodes": nodes, "flows": flows}).encode()) > MAX_DOC_BYTES:
+            raise HTTPException(400, "Diagram body too large")
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Diagram body not serializable")
     clean_nodes = []
     for n in nodes:
         if not isinstance(n, dict):
             raise HTTPException(400, "Invalid node entry")
-        for key in ("id", "name", "category", "layer"):
-            if not isinstance(n.get(key), str) or not n.get(key):
-                raise HTTPException(400, "Node missing id/name/category/layer")
+        for key, cap in (("id", 64), ("category", 32), ("layer", 32)):
+            if not isinstance(n.get(key), str) or not n.get(key) or len(n[key]) > cap:
+                raise HTTPException(400, f"Node missing/invalid: {key}")
+        if not isinstance(n.get("name"), str) or not n.get("name"):
+            raise HTTPException(400, "Node missing id/name/category/layer")
         for key, cap in (("name", 80), ("role", 80), ("desc", 2000), ("notes", 2000)):
             if key in n and n[key] is not None and len(str(n[key])) > cap:
                 raise HTTPException(400, f"Node field too long: {key}")
@@ -122,6 +136,8 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
             raise HTTPException(400, "Invalid node deps")
         clean_nodes.append(n)
     ids = {n["id"] for n in clean_nodes}
+    if len(ids) != len(clean_nodes):
+        raise HTTPException(400, "Duplicate node id")
     clean_flows = []
     for f in flows:
         if not isinstance(f, dict):
@@ -240,12 +256,13 @@ def get_diagram(slug: str, request: Request):
 
 @router.post("/diagrams")
 def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
-    slug = _slugify(body.slug)
+    slug = _slugify(body.slug or body.title)
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
     palette = _validate_palette(body.categoryColors)
     custom = _validate_custom_categories(body.customCategories)
+    now = datetime.now(timezone.utc).isoformat()
     try:
         existing = (
             supabase.table("infra_diagrams").select("id").eq("slug", slug).limit(1).execute()
@@ -258,6 +275,8 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
+                "created_at": now,
+                "updated_at": now,
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
@@ -270,6 +289,10 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
     except HTTPException:
         raise
     except Exception as exc:
+        # TOCTOU: a concurrent create can win the unique index race.
+        msg = str(exc).lower()
+        if "unique" in msg or "duplicate" in msg or "23505" in msg:
+            raise HTTPException(409, "Slug already exists")
         log.error("infra create failed: %s", exc)
         raise HTTPException(500, "Could not create diagram")
     rows = res.data or []
@@ -280,7 +303,7 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
 
 @router.put("/diagrams/{doc_id}")
 def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_admin)):
-    slug = _slugify(body.slug)
+    slug = _slugify(body.slug or body.title)
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
@@ -293,6 +316,7 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
@@ -304,6 +328,9 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
             .execute()
         )
     except Exception as exc:
+        msg = str(exc).lower()
+        if "unique" in msg or "duplicate" in msg or "23505" in msg:
+            raise HTTPException(409, "Slug already exists")
         log.error("infra update failed: %s", exc)
         raise HTTPException(500, "Could not update diagram")
     rows = res.data or []

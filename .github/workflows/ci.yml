@@ -161,6 +161,11 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      # Route types are gitignored (written by Metro during `expo start`).
+      # Regenerate so the Href union is real — otherwise tsc checks nothing.
+      - name: Generate route types
+        run: npm run typegen
+
       - name: Run TypeScript typecheck
         run: npm run typecheck
 

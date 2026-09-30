@@ -1,12 +1,12 @@
 # aifazi.net
 
-Monorepo for [aifazi.net](https://aifazi.net) — personal platform with portfolio, blog, community forum, live chat, store, FiveM integration, and a developer-tools suite.
+Monorepo for [aifazi.net](https://aifazi.net) — personal platform with portfolio, blog, community forum, store, FiveM integration, and a developer-tools suite.
 
 ## Structure
 
 | Directory | Description |
 |-----------|-------------|
-| `aifazi.net-frontend-next/` | Next.js 14 App Router frontend (Vercel) |
+| `aifazi.net-frontend-next/` | Next.js 16 App Router frontend (Vercel) |
 | `aifazi.net-backend-fastapi/` | FastAPI backend (Coolify on VPS) |
 | `apps/mobile/` | Expo React Native app (EAS) |
 | `docker/` | Dev Dockerfiles |
@@ -83,5 +83,6 @@ docker compose up
 | [AUDIT.md](AUDIT.md) | Security / UX audit findings |
 | [DESIGN-AUDIT.md](DESIGN-AUDIT.md) | Visual design review |
 | [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) | Infrastructure hardening |
+| [PREVIEW.md](PREVIEW.md) | PR workflow: preview deploy → test → merge |
 | [ROADMAP.md](ROADMAP.md) | Planned work |
 | `aifazi.net-frontend-next/docs/` | Frontend QA & theme certification |

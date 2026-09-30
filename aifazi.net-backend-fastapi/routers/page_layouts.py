@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -156,12 +157,15 @@ def create_layout(body: LayoutIn, _: dict = Depends(require_admin)):
     """Staff: create a layout (starts unpublished unless published=true)."""
     slug = _slugify(body.slug)
     blocks = _validate_layout(body.blocks)
+    now = datetime.now(timezone.utc).isoformat()
     try:
         res = supabase.table("page_layouts").insert({
             "slug": slug,
             "title": body.title.strip(),
             "published": body.published,
             "blocks": blocks,
+            "created_at": now,
+            "updated_at": now,
         }).execute()
     except Exception as e:
         msg = str(e).lower()
@@ -185,6 +189,7 @@ def update_layout(layout_id: str, body: LayoutIn, _: dict = Depends(require_admi
             "title": body.title.strip(),
             "published": body.published,
             "blocks": blocks,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", layout_id[:64]).execute()
     except Exception as e:
         msg = str(e).lower()
@@ -199,6 +204,8 @@ def update_layout(layout_id: str, body: LayoutIn, _: dict = Depends(require_admi
 
 @router.delete("/layouts/{layout_id}")
 def delete_layout(layout_id: str, _: dict = Depends(require_admin)):
-    """Staff: delete a layout."""
-    supabase.table("page_layouts").delete().eq("id", layout_id[:64]).execute()
+    """Staff: delete a layout (404 when the id does not exist)."""
+    res = supabase.table("page_layouts").delete().eq("id", layout_id[:64]).execute()
+    if not (res.data or []):
+        raise HTTPException(404, "Layout not found")
     return {"ok": True}
