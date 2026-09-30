@@ -142,20 +142,25 @@ function RootNav() {
     const t = setTimeout(() => {
       void configurePushNotifications()
     }, 0)
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    // Same tap can arrive through BOTH the listener and the cold-start
+    // getLast() query — dedupe by notification id, then clear the stored
+    // response so an effect re-run can't re-navigate to a stale tap.
+    let lastHandledId: string | null = null
+    const handleResponse = (response: Notifications.NotificationResponse) => {
+      const id = response.notification.request.identifier
+      if (id === lastHandledId) return
+      lastHandledId = id
       const data = (response.notification.request.content.data ?? {}) as Record<string, any>
       if (!routePushData(data, (href) => router.push(href))) {
         router.push('/notifications' as Href)
       }
-    })
+    }
+    const sub = Notifications.addNotificationResponseReceivedListener(handleResponse)
     // Cold start: the tap that launched the app never fires the listener above.
     Notifications.getLastNotificationResponseAsync()
       .then((response) => {
-        if (!response) return
-        const data = (response.notification.request.content.data ?? {}) as Record<string, any>
-        if (!routePushData(data, (href) => router.push(href))) {
-          router.push('/notifications' as Href)
-        }
+        if (response) handleResponse(response)
+        return Notifications.clearLastNotificationResponseAsync().catch(() => {})
       })
       .catch(() => {})
     return () => {

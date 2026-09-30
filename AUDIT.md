@@ -32,8 +32,7 @@ Overall grade: **B+ / strong for security posture, C+ for maintainability & test
 | Frontend | `aifazi.net-frontend-next/` | Next.js 16 App Router + `pages-src/*` admin islands, Vercel |
 | Backend | `aifazi.net-backend-fastapi/` | FastAPI + 72 routers, Coolify on VPS |
 | Mobile | `apps/mobile/` | Expo RN, EAS |
-| Shared | `packages/shared/` | Chat contract + E2EE helpers |
-| DB | `supabase/migrations/` | 58 migrations, self-hosted Supabase |
+| DB | `supabase/migrations/` | 62 migrations, self-hosted Supabase |
 | Infra | `docker-compose.yml`, `Dockerfile.backend`, `scripts/` | ClamAV, WireGuard, Stalwart, backups |
 | CI | `.github/workflows/` | lint, build, pip-audit, bandit, gitleaks, dependency-review, CodeQL |
 
@@ -55,7 +54,7 @@ Deploy topology: browser → Vercel Next.js (Edge middleware HMAC) → FastAPI o
 | CSP with per-request nonce + `strict-dynamic` | `proxy.ts`, `next.config.js:96-97` | Excellent |
 | HTML sanitizer (DOMPurify + fail-closed SSR scrubber) | `lib/sanitizeHtml.ts` | Strong |
 | Path-traversal-safe upload names + MIME sniff + ClamAV | `routers/upload.py` | Strong |
-| SSRF defense with IP pinning | `routers/seo_proxy.py`, `chat_url_preview.py`, `utils/ssrf.py` | Excellent |
+| SSRF defense with IP pinning | `routers/seo_proxy.py`, `utils/ssrf.py` | Excellent |
 | `exec_sql` revoked from authenticated | `migrations/20260801000500_*` | Good |
 | RLS lockdowns + column REVOKEs | `migrations/202609*`, `202608*` | Good |
 | Admin UI gated server-side | `app/admin/[[...slug]]/page.tsx` | Good |
@@ -189,19 +188,17 @@ Against **72 routers** and a large SPA this is ~5–8% behavioral coverage.
 2. Auth: login, refresh rotation/replay, 2FA, logout cookie domain, open-redirect allowlist.
 3. Upload: MIME sniff reject, traversal names, size limits, ClamAV fail-closed.
 4. Store: Stripe webhook signature, stock reservation race.
-5. Playwright: login → admin gate deny for `user`, chat send, blog comment.
+5. Playwright: login → admin gate deny for `user`, blog comment.
 
 ### 3.4 Dependency hygiene (MEDIUM)
 
 - `requirements.txt` pins `httpx==0.27.2` while `requirements-dev.txt` has `httpx==0.28.1` — **version skew**. Align on one (prefer the newer patched line after audit).
 - Comment says “pin with pip-compile” but there is no lockfile — add `requirements.lock` / `uv.lock`.
 - Frontend Next 16 / React 19 — fine; keep Dependabot (already configured).
-- ~~`chat_ai.py` is a stub (“OpenAI removed”) but README still lists OpenAI models~~ — **done**: backend README no longer claims OpenAI.
 
 ### 3.5 Structure (INFO/GOOD)
 
 - Monorepo layout matches README.
-- Shared chat E2EE in `packages/shared` is the right place.
 - Backend split into `routers/` + `utils/` is good; finish auth split.
 - `__pycache__` / `.ruff_cache` present under source trees — ensure they stay gitignored (they are).
 
@@ -219,7 +216,7 @@ Against **72 routers** and a large SPA this is ~5–8% behavioral coverage.
 | Lazy home sections | GOOD | `Home.jsx` lazy-loads Experience/Skills/… |
 | Sentry client trim | GOOD | `@sentry/tracing` aliased off client |
 | `productionBrowserSourceMaps: false` | GOOD | — |
-| Mobile bundle | MEDIUM | `chat-room.tsx` 50k, `themes.ts` 47k — split theme data |
+| Mobile bundle | MEDIUM | `themes.ts` 47k — split theme data |
 
 **Actions:** extract theme CSS to on-demand chunks; dynamic-import admin and ServerRack; measure LCP on `/` and `/blog`; ensure hero images use `next/image` + `priority` where LCP.
 
@@ -320,7 +317,7 @@ Quick wins to do first:
 
 - Fail-closed secret loading and production gates are better than most startups.
 - Custom HTML sanitizer with quote-aware tokenizer + entity decode before scheme checks is thoughtful.
-- SSRF IP-pinning (`seo_proxy`, chat previews) avoids classic TOCTOU.
+- SSRF IP-pinning (`seo_proxy`) avoids classic TOCTOU.
 - Upload pipeline: size cap, MIME magic, path strip, ClamAV fail-closed option.
 - CI action pinning by SHA, gitleaks, dependency-review, CodeQL.
 - SECURITY.md is honest about history and threat model.
@@ -425,7 +422,7 @@ Quick wins to do first:
 |------|---------|
 | Auth refresh flow (#356: `ForumContext.jsx` silent refresh) | SAFE — one-shot server-validated refresh, no fail-closed weakening; satisfies CSRF gate (`main.py:554-565`) |
 | `auth_discord.py` signed-state upgrade | SAFE — HMAC/600s/provider-bound; callback cookie-only, no URL tokens |
-| Dead-chat cleanup (`dependencies.py`, `permissions.py`, `auth.py`) | SAFE — tightening; stale `'chat'` in `proxy.ts:65` / `permissions.py:16` is LOW residue |
+| Dead-chat cleanup (`dependencies.py`, `permissions.py`, `auth.py`) | SAFE — chat feature fully removed; no `'chat'` residue left in `proxy.ts` / `permissions.py` |
 | Username lockout (`rate_limit.py` + `auth_login.py`) | MEDIUM — username-only key leaks enumeration (`429` vs `400`) + lockout-DoS; `_get_redis()` unguarded at `rate_limit.py:151,171` |
 | Legacy-admin refresh (`auth_login.py:275-282`) | MEDIUM — bearer-only, no server-side revocation until 7d expiry |
 | Hybrid-infra backend (`infra_diagrams.py` + migration) | SAFE — admin-gated writes, published-only public reads, typed queries, no SQLi; LOW: migration skips `REVOKE` lockdown convention; LOW: `_optional_admin` skips `_enrich_user` |

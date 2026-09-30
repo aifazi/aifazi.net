@@ -95,7 +95,9 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
         const items: SearchResult[] = [
           ...(res.data.posts || []).map((r: any) => ({ ...r, type: 'post' as const, meta: r.category })),
           ...(res.data.threads || []).map((r: any) => ({ ...r, type: 'thread' as const, meta: r.author_name })),
-          ...(res.data.products || []).map((r: any) => ({ ...r, type: 'product' as const, meta: r.price ? `$${r.price}` : '' })),
+          // Products come back as `name`, not `title` (routers/search.py) —
+          // normalize once so every consumer can read r.title.
+          ...(res.data.products || []).map((r: any) => ({ ...r, title: r.title ?? r.name, type: 'product' as const, meta: r.price ? `$${r.price}` : '' })),
         ]
         setResults(items)
       } catch { setResults([]) }

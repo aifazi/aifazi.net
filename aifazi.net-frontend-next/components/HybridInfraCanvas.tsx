@@ -242,6 +242,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let dragDX = 0
       let dragDY = 0
       let dragMoved = false
+      // True when any onMoveNode fired for this drag — even sub-threshold
+      // jitter opens the editor's undo checkpoint, so it must be closed.
+      let dragTouched = false
       // Multi-select group drag: per-node original positions + shared delta.
       let dragGroup: { id: string; ox: number; oy: number }[] | null = null
       let dragStart = { x: 0, y: 0 }
@@ -304,32 +307,43 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
         for (const c of nodeList()) {
           let box: Box
+          // Authored coordinates always win: vm/legacy/users only fall back
+          // to the template/fallback layout when the node has no x/y (Plan A
+          // vm nodes); dragging then writes x/y and sticks from then on.
+          const authored = typeof c.x === 'number' && Number.isFinite(c.x) &&
+            typeof c.y === 'number' && Number.isFinite(c.y)
           if (c.layer === 'rack' && c.rackU) {
             const y = RACK.y + RACK.topPad + (c.rackU - 1) * RACK.unitH
             const h = (c.rackH ?? 1) * RACK.unitH - 3
             box = { x: RACK.x + 20, y, w: RACK.w - 40, h }
           } else if (c.layer === 'vm') {
-            box = vmMap[c.id]
-            if (!box) {
+            const tmpl = vmMap[c.id]
+            if (authored) {
+              box = { x: c.x as number, y: c.y as number, w: c.w ?? tmpl?.w ?? 155, h: c.h ?? tmpl?.h ?? 34 }
+            } else if (tmpl) {
+              box = { ...tmpl }
+            } else {
               box = { x: 760 + (vmExtra % 2) * 170, y: 400 + Math.floor(vmExtra / 2) * 42, w: 155, h: 34 }
               vmExtra += 1
-            } else {
-              box = { ...box }
             }
           } else if (c.layer === 'legacy') {
-            if (c.id === 'legacy') {
+            if (authored) {
+              box = { x: c.x as number, y: c.y as number, w: c.w ?? 195, h: c.h ?? 115 }
+            } else if (c.id === 'legacy') {
               box = { x: 28, y: 520, w: 195, h: 115 }
             } else {
               box = { x: 28, y: 520 + legacyExtra * 125, w: 195, h: 115 }
               legacyExtra += 1
             }
           } else if (c.layer === 'users') {
-            box = userMap[c.id]
-            if (!box) {
+            const tmpl = userMap[c.id]
+            if (authored) {
+              box = { x: c.x as number, y: c.y as number, w: c.w ?? tmpl?.w ?? 195, h: c.h ?? tmpl?.h ?? 100 }
+            } else if (tmpl) {
+              box = { ...tmpl }
+            } else {
               box = { x: 28, y: 655 + userExtra * 110, w: 195, h: 100 }
               userExtra += 1
-            } else {
-              box = { ...box }
             }
           } else {
             box = { x: c.x ?? 0, y: c.y ?? 0, w: c.w ?? 100, h: c.h ?? 50 }
@@ -1219,6 +1233,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             const ddx = d.x - dragStart.x
             const ddy = d.y - dragStart.y
             if (Math.abs(ddx) > 2 || Math.abs(ddy) > 2) dragMoved = true
+            dragTouched = true
             for (const g of dragGroup) {
               sRef.current.onMoveNode?.(g.id, {
                 x: snap(g.ox + ddx),
@@ -1237,13 +1252,17 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
                   Math.round((d.y - (RACK.y + RACK.topPad)) / RACK.unitH) + 1,
                 ),
               )
-              if (rackU !== node.rackU) sRef.current.onMoveNode(dragId, { rackU }, false)
+              if (rackU !== node.rackU) {
+                dragTouched = true
+                sRef.current.onMoveNode(dragId, { rackU }, false)
+              }
             } else {
               const box = boxes.get(dragId)
               if (box) {
                 const nx = snap(d.x - dragDX)
                 const ny = snap(d.y - dragDY)
                 if (Math.abs(nx - box.x) > 2 || Math.abs(ny - box.y) > 2) dragMoved = true
+                dragTouched = true
                 sRef.current.onMoveNode(dragId, { x: nx, y: ny }, false)
               }
             }
@@ -1322,6 +1341,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               dragGroup = group
               dragStart = { x: d.x, y: d.y }
               dragMoved = false
+              dragTouched = false
               cursorDesign = null
               try {
                 canvas.setPointerCapture(e.pointerId)
@@ -1334,6 +1354,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           dragId = found
           dragGroup = null
           dragMoved = false
+          dragTouched = false
           cursorDesign = null
           if (box) {
             dragDX = d.x - box.x
@@ -1377,56 +1398,66 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         kick()
       }
 
-      function onPointerUp(e: PointerEvent) {
-        endPan(e)
+      // Close the editor's drag checkpoint: commit the final position (or at
+      // minimum a done=true no-op) whenever any onMoveNode fired for this
+      // drag — pointer-up, pointer-cancel, and sub-threshold jitter alike —
+      // so the next drag always pushes its own undo history.
+      function finalizeDrag() {
         if (!dragId) {
           dragGroup = null
           return
         }
         const doneId = dragId
         const wasMoved = dragMoved
+        const wasTouched = dragTouched
         const group = dragGroup
         dragId = null
         dragGroup = null
         dragMoved = false
-        try {
-          canvas.releasePointerCapture(e.pointerId)
-        } catch {
-          /* noop */
-        }
-        // Group drag: commit every moved node as one undo checkpoint.
+        dragTouched = false
+        if (!wasTouched || !sRef.current.onMoveNode) return
         if (group) {
-          if (wasMoved && sRef.current.onMoveNode) {
+          if (wasMoved) {
             for (const g of group) {
               const b = boxes.get(g.id)
               if (b) {
                 sRef.current.onMoveNode(g.id, { x: Math.round(b.x), y: Math.round(b.y) }, true)
               }
             }
+          } else {
+            sRef.current.onMoveNode(group[0].id, {}, true)
           }
           return
         }
-        // Commit final position so the editor pushes one undo checkpoint.
-        if (wasMoved && sRef.current.onMoveNode) {
-          const node = byId(doneId)
-          const box = boxes.get(doneId)
-          if (node && box) {
-            if (node.layer === 'rack') {
-              sRef.current.onMoveNode(doneId, { rackU: node.rackU }, true)
-            } else {
-              sRef.current.onMoveNode(doneId, { x: Math.round(box.x), y: Math.round(box.y) }, true)
-            }
+        const node = byId(doneId)
+        const box = boxes.get(doneId)
+        if (wasMoved && node && box) {
+          if (node.layer === 'rack') {
+            sRef.current.onMoveNode(doneId, { rackU: node.rackU }, true)
+          } else {
+            sRef.current.onMoveNode(doneId, { x: Math.round(box.x), y: Math.round(box.y) }, true)
+          }
+        } else {
+          sRef.current.onMoveNode(doneId, {}, true)
+        }
+      }
+
+      function onPointerUp(e: PointerEvent) {
+        endPan(e)
+        const hadDrag = Boolean(dragId)
+        finalizeDrag()
+        if (hadDrag) {
+          try {
+            canvas.releasePointerCapture(e.pointerId)
+          } catch {
+            /* noop */
           }
         }
       }
 
       function onPointerCancel(e: PointerEvent) {
         endPan(e)
-        if (dragId) {
-          dragId = null
-          dragGroup = null
-          dragMoved = false
-        }
+        finalizeDrag()
       }
 
       function onClick(e: MouseEvent) {
@@ -1564,6 +1595,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             panBy(dx, dy)
             return
           }
+          // Empty doc (NEW or everything deleted): nothing to cycle.
+          if (!nl.length) return
           if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
             kbIndex = (kbIndex + 1) % nl.length
           } else {
@@ -1572,7 +1605,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
-          if (kbIndex >= 0) sRef.current.onSelect(nl[kbIndex].id)
+          if (kbIndex >= 0 && nl[kbIndex]) sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'Escape') {
           sRef.current.onSelect(null)
           kbIndex = -1

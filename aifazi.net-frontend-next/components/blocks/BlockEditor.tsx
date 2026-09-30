@@ -284,13 +284,26 @@ export default function BlockEditor() {
   const [preview, setPreview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
-  const [isAdmin] = useState(() => {
-    try {
-      return getRole() === 'admin'
-    } catch {
-      return false
+  // Start false so the first client render matches the server HTML (getRole()
+  // is null without window); hydrate, then flip in an effect — a lazy
+  // initializer here caused a hydration mismatch for staff sessions.
+  const [isAdmin, setIsAdmin] = useState(false)
+  useEffect(() => {
+    const sync = () => {
+      try {
+        setIsAdmin(getRole() === 'admin')
+      } catch {
+        setIsAdmin(false)
+      }
     }
-  })
+    sync()
+    window.addEventListener('auth-change', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('auth-change', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [])
   const histRef = useRef<{ past: string[]; future: string[] }>({ past: [], future: [] })
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)

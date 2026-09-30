@@ -51,7 +51,8 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
         const results = [
           ...res.data.posts.map(r => ({ ...r, group: '🔍 Blog Posts' })),
           ...res.data.threads.map(r => ({ ...r, group: '🔍 Forum Threads' })),
-          ...(res.data.products || []).map(r => ({ ...r, group: '🛒 Store Products', type: 'product' })),
+          // Products use `name` in routers/search.py; normalize to title.
+          ...(res.data.products || []).map(r => ({ ...r, title: r.title ?? r.name, group: '🛒 Store Products', type: 'product' })),
         ]
         setSearchResults(results)
       } catch { setSearchResults([]) }

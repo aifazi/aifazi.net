@@ -137,6 +137,18 @@ export default function HybridInfraEditor() {
     })
   }
 
+  /**
+   * Drop editor-local selection/lock/link state. Must run on every doc
+   * switch — ids from doc A (locks in particular) must never leak into doc B.
+   * Callers set the new selection afterwards when they have one.
+   */
+  const resetTransient = () => {
+    setSelIds(new Set())
+    setLockedIds(new Set())
+    setConnectFrom(null)
+    setSelectedId(null)
+  }
+
   const docRef = useRef(doc)
   const histRef = useRef<{ past: string[]; future: string[] }>({ past: [], future: [] })
   const dragRef = useRef(false)
@@ -469,6 +481,10 @@ export default function HybridInfraEditor() {
       } else if (mod && e.key.toLowerCase() === 'd' && selectedNodeIds().length) {
         e.preventDefault()
         duplicateSelected()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && connectFrom) {
+        // In link mode Delete/Backspace cancels the link, never deletes nodes.
+        e.preventDefault()
+        setConnectFrom(null)
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIds().length) {
         e.preventDefault()
         const ids = selectedNodeIds()
@@ -481,7 +497,7 @@ export default function HybridInfraEditor() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, selIds])
+  }, [selectedId, selIds, connectFrom])
 
   const addNode = (item: LibraryItem) => {
     const cur = docRef.current
@@ -573,9 +589,22 @@ export default function HybridInfraEditor() {
   }
 
   /** Unique id fragment for duplicated/pasted nodes and flows. */
-  const freshId: NextId = () => {
-    counterRef.current += 1
-    return `c${counterRef.current}`
+  const freshId: NextId = (seed: string) => {
+    // Counter is in-memory only — after a reload it restarts at 0, so probe
+    // the live doc for collisions. Nodes compose `<id>-<frag>` and flows
+    // compose `<from><to>-<frag>` (seed carries a ':'), so check both shapes.
+    const taken = new Set<string>()
+    for (const n of docRef.current.nodes) taken.add(n.id)
+    for (const f of docRef.current.flows) taken.add(f.id)
+    let n = counterRef.current
+    for (;;) {
+      n += 1
+      const frag = `c${n}`
+      if (!taken.has(`${seed}-${frag}`) && !taken.has(`${seed.replace(/:/g, '')}-${frag}`)) {
+        counterRef.current = n
+        return frag
+      }
+    }
   }
 
   const duplicateSelected = () => {
@@ -696,20 +725,22 @@ export default function HybridInfraEditor() {
   }
 
   const handleToggleSelect = (id: string) => {
-    setSelIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) {
-        next.delete(id)
-        if (selectedId === id) {
-          const rest = [...next]
-          setSelectedId(rest.length ? rest[rest.length - 1] : null)
-        }
-      } else {
-        next.add(id)
-        setSelectedId(id)
+    // Compute the next set from current state (no impure setState inside an
+    // updater — React may invoke updaters more than once).
+    const next = new Set(selIds)
+    let nextSelected = selectedId
+    if (next.has(id)) {
+      next.delete(id)
+      if (selectedId === id) {
+        const rest = [...next]
+        nextSelected = rest.length ? rest[rest.length - 1] : null
       }
-      return next
-    })
+    } else {
+      next.add(id)
+      nextSelected = id
+    }
+    setSelIds(next)
+    if (nextSelected !== selectedId) setSelectedId(nextSelected)
   }
 
   const selectedNodeIds = (): string[] => {
@@ -727,14 +758,33 @@ export default function HybridInfraEditor() {
   }
 
   const save = async () => {
+    const cur = docRef.current
+    if (!cur.nodes.length) {
+      setNotice({ msg: 'Add at least one node before saving', ok: false })
+      return
+    }
     setSaving(true)
     setNotice(null)
     try {
-      const cur = docRef.current
       if (isSeed || !docId) {
+        // "Save as new": derive a storable, unique slug. Builtin seed slugs
+        // can never win in the loader (?diagram= prefers the builtin), so a
+        // DB row with one would be unreachable — exclude them here and let
+        // the backend reserve them too.
+        const taken = new Set(diagrams.map((d) => d.slug))
+        const base =
+          cur.slug && !BUILTIN_DOCS[cur.slug] && !taken.has(cur.slug)
+            ? cur.slug
+            : slugify(cur.title || 'diagram')
+        let slug = base
+        let n = 2
+        while (taken.has(slug) || BUILTIN_DOCS[slug]) {
+          slug = `${base}-${n}`
+          n += 1
+        }
         const created = await createDiagram({
           ...cur,
-          slug: cur.slug === 'plan-a' ? '' : cur.slug,
+          slug,
           updatedAt: new Date().toISOString(),
         })
         const clean = sanitizeDoc(created)
@@ -806,7 +856,7 @@ export default function HybridInfraEditor() {
     setDoc(d)
     setDocId(null)
     setIsSeed(false)
-    setSelectedId(null)
+    resetTransient()
     savedRef.current = null
   }
 
@@ -827,6 +877,7 @@ export default function HybridInfraEditor() {
     setDoc(d)
     setDocId(null)
     setIsSeed(false)
+    resetTransient()
     savedRef.current = null
     setNotice({ msg: 'Duplicated — save to keep it', ok: true })
   }
@@ -842,7 +893,7 @@ export default function HybridInfraEditor() {
       setDoc(seed)
       setDocId(null)
       setIsSeed(true)
-      setSelectedId(null)
+      resetTransient()
       savedRef.current = null
       try {
         const url = new URL(window.location.href)
@@ -864,6 +915,7 @@ export default function HybridInfraEditor() {
       setDoc(seed)
       setDocId(null)
       setIsSeed(true)
+      resetTransient()
       setSelectedId(seed.nodes[0]?.id ?? null)
       savedRef.current = null
       histRef.current = { past: [], future: [] }
@@ -890,6 +942,7 @@ export default function HybridInfraEditor() {
       const meta = diagrams.find((m) => m.slug === clean.slug)
       setDocId(meta?.id ?? clean.id)
       setIsSeed(false)
+      resetTransient()
       setSelectedId(clean.nodes[0]?.id ?? null)
       savedRef.current = JSON.stringify(clean)
       histRef.current = { past: [], future: [] }
@@ -939,6 +992,7 @@ export default function HybridInfraEditor() {
       setDoc(clean)
       setDocId(null)
       setIsSeed(false)
+      resetTransient()
       setSelectedId(clean.nodes[0]?.id ?? null)
       savedRef.current = null
       setNotice({ msg: `Imported "${clean.title}" — save to keep it`, ok: true })
@@ -958,7 +1012,10 @@ export default function HybridInfraEditor() {
             </button>
           </div>
         )}
-        <HybridInfra doc={doc} viewKey={docId ?? doc.slug} />
+        {/* key= forces a remount per doc: re-validates ?node= against the
+            new doc and re-applies per-diagram view memory (?z/?cx/?cy) —
+            without it the island keeps the first doc's init state. */}
+        <HybridInfra key={docId ?? doc.slug} doc={doc} viewKey={docId ?? doc.slug} />
       </div>
     )
   }

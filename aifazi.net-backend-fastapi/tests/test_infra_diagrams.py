@@ -93,6 +93,12 @@ def _fake_require_admin(user=None):
     return {"id": "admin-1", "username": "admin", "role": "admin"}
 
 
+def _denied_require_admin(user=None):
+    from fastapi import HTTPException
+
+    raise HTTPException(403, "Admin only")
+
+
 def _load_module():  # type: ignore[no-untyped-def]
     spec = importlib.util.spec_from_file_location(
         "infra_diagrams_under_test",
@@ -104,13 +110,12 @@ def _load_module():  # type: ignore[no-untyped-def]
     return module
 
 
-@pytest.fixture()
-def client(monkeypatch):  # type: ignore[no-untyped-def]
+def _build_app(monkeypatch, require_admin):  # type: ignore[no-untyped-def]
     fake = _FakeSupabase()
     db_stub = types.ModuleType("database")
     db_stub.supabase = fake
     deps_stub = types.ModuleType("dependencies")
-    deps_stub.require_admin = _fake_require_admin
+    deps_stub.require_admin = require_admin
     deps_stub.decode_token = lambda token: {"role": "admin"}
     monkeypatch.setitem(sys.modules, "database", db_stub)
     monkeypatch.setitem(sys.modules, "dependencies", deps_stub)
@@ -118,6 +123,16 @@ def client(monkeypatch):  # type: ignore[no-untyped-def]
     app = FastAPI()
     app.include_router(module.router)
     return TestClient(app)
+
+
+@pytest.fixture()
+def client(monkeypatch):  # type: ignore[no-untyped-def]
+    return _build_app(monkeypatch, _fake_require_admin)
+
+
+@pytest.fixture()
+def denied_client(monkeypatch):  # type: ignore[no-untyped-def]
+    return _build_app(monkeypatch, _denied_require_admin)
 
 
 def _doc(slug="hq-east"):
@@ -194,3 +209,75 @@ def test_delete_roundtrip(client):
 
 def test_update_missing_is_404(client):
     assert client.put("/diagrams/nope", json=_doc()).status_code == 404
+
+
+# ── Round-2 audit additions ────────────────────────────────────────────────
+
+
+def test_writes_require_admin(denied_client):
+    assert denied_client.post("/diagrams", json=_doc()).status_code == 403
+    assert denied_client.put("/diagrams/x", json=_doc()).status_code == 403
+    assert denied_client.delete("/diagrams/x").status_code == 403
+    assert denied_client.get("/diagrams/admin/all").status_code == 403
+
+
+def test_empty_slug_derives_from_title(client):
+    body = _doc(slug="")
+    body["title"] = "My Backup Site"
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 200, r.text
+    assert r.json()["diagram"]["slug"] == "my-backup-site"
+
+
+def test_reserved_slug_rejected_when_derived_from_title(client):
+    body = _doc(slug="")
+    body["title"] = "Plan A"
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+def test_empty_doc_rejected(client):
+    body = _doc()
+    body["nodes"] = []
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+def test_duplicate_node_id_rejected(client):
+    body = _doc()
+    node = dict(body["nodes"][0])
+    body["nodes"] = [node, dict(node)]
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+def test_doc_byte_cap_rejected(client):
+    body = _doc()
+    body["nodes"] = [
+        {
+            "id": f"n{i}", "name": "x", "category": "network", "layer": "cloud",
+            "desc": "d" * 2000, "notes": "n" * 2000,
+        }
+        for i in range(200)
+    ]
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 400
+    assert "large" in r.json()["detail"].lower()
+
+
+def test_unbounded_node_id_rejected(client):
+    body = _doc()
+    body["nodes"][0]["id"] = "x" * 5000
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+def test_update_bumps_updated_at(client):
+    import time
+
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    before = client.get("/diagrams/admin/all").json()["diagrams"][0]["updatedAt"]
+    time.sleep(0.01)
+    body = _doc()
+    body["title"] = "HQ East v2"
+    r = client.put(f"/diagrams/{doc_id}", json=body)
+    assert r.status_code == 200, r.text
+    after = r.json()["diagram"]["updatedAt"]
+    assert before and after and after > before
