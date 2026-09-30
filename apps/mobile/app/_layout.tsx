@@ -170,9 +170,11 @@ function RootNav() {
   }, [router])
 
   // EAS Update OTA wiring: native side is configured with checkAutomatically
-  // "NEVER", so this is the single place that checks for a newer bundle for the
-  // current runtime. If one exists it is downloaded and applied by reloading.
-  // Best-effort only; a failed check must never block boot. Skipped in __DEV__.
+  // "NEVER" (kept deliberately - audit D1: SDK 57 has no ON_LOAD_STRICT, and
+  // ON_LOAD would reload without the auth-route guard below), so this is the
+  // single place that checks for a newer bundle for the current runtime. If
+  // one exists it is downloaded and applied by reloading. Best-effort only; a
+  // failed check must never block boot. Skipped in __DEV__.
   const segments = useSegments()
   const segmentsRef = useRef(segments)
   segmentsRef.current = segments

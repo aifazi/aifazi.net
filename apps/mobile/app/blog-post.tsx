@@ -4,7 +4,8 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-nativ
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { Image as ExpoImage } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Muted } from '@/src/components/ui'
+import { Muted, Badge } from '@/src/components/ui'
+import { upsertContent, getSavedBySlugAsync } from '@/src/lib/savedArticles'
 import { MarkdownText } from '@/src/components/markdown'
 import { Icon } from '@/src/components/icon'
 import { useTheme } from '@/src/theme'
@@ -59,6 +60,7 @@ export default function BlogPostScreen() {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [offline, setOffline] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [posting, setPosting] = useState(false)
 
@@ -66,8 +68,27 @@ export default function BlogPostScreen() {
     if (!slug) return
     api
       .get(`/blog/${encodeURIComponent(slug)}`)
-      .then((r) => setPost((r.data ?? null) as PostDetail | null))
-      .catch((e) => setErr(e?.response?.data?.detail || 'Could not load post'))
+      .then((r) => {
+        const p = (r.data ?? null) as PostDetail | null
+        setPost(p)
+        setOffline(false)
+        setErr('')
+        // Keep the saved local copy fresh so it stays readable offline.
+        if (p) upsertContent(slug, p)
+        // bump views best-effort - online reads only
+        api.post(`/blog/${encodeURIComponent(slug)}/view`).catch(() => {})
+      })
+      .catch(async (e) => {
+        // Network/server failure: fall back to the local saved copy, if any.
+        const local = await getSavedBySlugAsync(slug)
+        if (local?.content) {
+          setPost(local)
+          setOffline(true)
+          setErr('')
+        } else {
+          setErr(e?.response?.data?.detail || 'Could not load post')
+        }
+      })
       .finally(() => setLoading(false))
     api
       .get(`/blog/comments/${encodeURIComponent(slug)}`)
@@ -77,8 +98,6 @@ export default function BlogPostScreen() {
 
   useEffect(() => {
     load()
-    // bump views best-effort
-    if (slug) api.post(`/blog/${encodeURIComponent(slug)}/view`).catch(() => {})
   }, [load, slug])
 
   const canModerate = user?.role === 'admin' || user?.role === 'moderator'
@@ -151,7 +170,7 @@ export default function BlogPostScreen() {
 
         <Reveal dir="up" delay={160} duration={520}>
         <Text style={{ color: c.text, fontSize: 21, fontWeight: '900', lineHeight: 28 }}>{post.title}</Text>
-        <View style={{ flexDirection: 'row', marginTop: SPACE.md, gap: SPACE.lg, flexWrap: 'wrap' }}>
+        <View style={{ flexDirection: 'row', marginTop: SPACE.md, gap: SPACE.lg, flexWrap: 'wrap', alignItems: 'center' }}>
           <Muted>{post.author_name ?? 'Admin'}</Muted>
           <Muted>{fmtDate(post.created_at)}</Muted>
           {post.category ? <Muted>{post.category}</Muted> : null}
@@ -161,6 +180,7 @@ export default function BlogPostScreen() {
               <Muted>{post.views}</Muted>
             </View>
           ) : null}
+          {offline ? <Badge text="OFFLINE COPY" color="#ffcc00" outline /> : null}
         </View>
         </Reveal>
 
