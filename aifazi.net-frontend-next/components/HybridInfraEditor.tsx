@@ -12,9 +12,10 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { getRole } from '@/lib/api'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import HybridInfra from './HybridInfra'
-import { HybridInfraCanvas } from './HybridInfraCanvas'
+import { HybridInfraCanvas, type HybridInfraCanvasHandle } from './HybridInfraCanvas'
 import { INFRA_LIBRARY, type LibraryItem } from '@/data/infra-library'
-import { cloudInfraDoc } from '@/data/cloud-infra'
+import { cloudInfraDoc, BUILTIN_STUDIES } from '@/data/cloud-infra'
+import { TEMPLATE_SEEDS } from '@/data/infra-templates'
 import {
   planADoc,
   sanitizeDoc,
@@ -34,8 +35,13 @@ import {
   createDiagram,
   updateDiagram,
   deleteDiagram,
+  listRevisions,
+  getRevision,
+  restoreRevision,
   type DiagramMeta,
+  type InfraRevisionMeta,
 } from '@/lib/infraApi'
+import { diffDiagramDocs, type DiagramDiff } from '@/lib/infraDocOps'
 import {
   arrangeNodesDoc,
   alignNodesDoc,
@@ -53,6 +59,7 @@ import {
 const BUILTIN_DOCS: Record<string, () => DiagramDoc> = {
   'plan-a': planADoc,
   'cloud-infra': cloudInfraDoc,
+  ...TEMPLATE_SEEDS,
 }
 
 function slugify(s: string) {
@@ -60,6 +67,15 @@ function slugify(s: string) {
     s.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) ||
     `diagram-${Date.now().toString(36)}`
   )
+}
+
+function fmtRevTime(iso: string | null): string {
+  if (!iso) return 'unknown time'
+  try {
+    return new Date(iso).toLocaleString()
+  } catch {
+    return iso
+  }
 }
 
 export default function HybridInfraEditor() {
@@ -156,6 +172,15 @@ export default function HybridInfraEditor() {
   const savedRef = useRef<string | null>(null)
   const counterRef = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
+  // Share panel (B2): public + embed URLs, computed on first open.
+  const [shareOpen, setShareOpen] = useState(false)
+  const [shareUrls, setShareUrls] = useState<{ page: string; embed: string; snippet: string } | null>(null)
+  // History panel (B4): revision list + inspected diff.
+  const [histOpen, setHistOpen] = useState(false)
+  const [revList, setRevList] = useState<InfraRevisionMeta[] | null>(null)
+  const [revLoading, setRevLoading] = useState(false)
+  const [viewRev, setViewRev] = useState<{ meta: InfraRevisionMeta; diff: DiagramDiff } | null>(null)
 
   useEffect(() => {
     docRef.current = doc
@@ -952,15 +977,102 @@ export default function HybridInfraEditor() {
     }
   }
 
-  const shareDoc = async () => {
-    const cur = docRef.current
-    const slug = cur.slug || 'plan-a'
-    const url = `${window.location.origin}/hybrid-infra?diagram=${encodeURIComponent(slug)}${selectedId ? `&node=${encodeURIComponent(selectedId)}` : ''}`
+  const copyText = async (text: string, okMsg: string) => {
     try {
-      await navigator.clipboard.writeText(url)
-      setNotice({ msg: 'Share link copied', ok: true })
+      await navigator.clipboard.writeText(text)
+      setNotice({ msg: okMsg, ok: true })
     } catch {
-      setNotice({ msg: url, ok: true })
+      setNotice({ msg: text, ok: true })
+    }
+  }
+
+  const toggleShare = () => {
+    if (!shareOpen) {
+      const cur = docRef.current
+      const slug = cur.slug || 'plan-a'
+      const origin = typeof window !== 'undefined' ? window.location.origin : ''
+      const page = `${origin}/hybrid-infra?diagram=${encodeURIComponent(slug)}`
+      const embed = `${origin}/hybrid-infra/embed?diagram=${encodeURIComponent(slug)}`
+      const safeTitle = cur.title.replace(/"/g, '&quot;')
+      setShareUrls({
+        page,
+        embed,
+        snippet: `<iframe src="${embed}" width="100%" height="720" style="border:0" loading="lazy" title="${safeTitle}"></iframe>`,
+      })
+    }
+    setShareOpen((v) => !v)
+    setHistOpen(false)
+  }
+
+  const toggleHistory = async () => {
+    const next = !histOpen
+    setHistOpen(next)
+    setShareOpen(false)
+    if (!next) return
+    setViewRev(null)
+    if (isSeed || !docId) return
+    setRevLoading(true)
+    try {
+      setRevList(await listRevisions(docId))
+    } catch {
+      setNotice({ msg: 'Could not load history', ok: false })
+    } finally {
+      setRevLoading(false)
+    }
+  }
+
+  const inspectRevision = async (meta: InfraRevisionMeta) => {
+    if (!docId) return
+    try {
+      const rev = await getRevision(docId, meta.id)
+      if (!rev) throw new Error('missing')
+      const revDoc: DiagramDoc = {
+        ...docRef.current,
+        title: rev.title,
+        published: rev.published,
+        nodes: rev.nodes,
+        flows: rev.flows,
+        categoryColors: rev.categoryColors ?? undefined,
+        customCategories: rev.customCategories ?? undefined,
+      }
+      setViewRev({ meta, diff: diffDiagramDocs(revDoc, docRef.current) })
+    } catch {
+      setNotice({ msg: 'Could not load revision', ok: false })
+    }
+  }
+
+  const applyRevision = async (meta: InfraRevisionMeta) => {
+    if (!docId) return
+    if (!window.confirm(`Restore the state from ${fmtRevTime(meta.createdAt)}? The current state is snapshotted first.`)) {
+      return
+    }
+    try {
+      const restored = await restoreRevision(docId, meta.id)
+      const clean = sanitizeDoc(restored)
+      if (!clean) throw new Error('Restored document failed validation')
+      docRef.current = clean
+      setDoc(clean)
+      setIsSeed(false)
+      resetTransient()
+      setSelectedId(clean.nodes[0]?.id ?? null)
+      savedRef.current = JSON.stringify(clean)
+      histRef.current = { past: [], future: [] }
+      syncHistButtons()
+      setRevList(await listRevisions(docId))
+      setViewRev(null)
+      setNotice({ msg: 'Revision restored', ok: true })
+    } catch (e) {
+      setNotice({ msg: e instanceof Error ? e.message : 'Restore failed', ok: false })
+    }
+  }
+
+  const exportCanvas = (kind: 'png' | 'svg') => {
+    try {
+      if (kind === 'png') canvasHandle.current?.exportPng()
+      else canvasHandle.current?.exportSvg()
+      setNotice({ msg: `${kind.toUpperCase()} exported`, ok: true })
+    } catch {
+      setNotice({ msg: `${kind.toUpperCase()} export failed`, ok: false })
     }
   }
 
@@ -1035,8 +1147,11 @@ export default function HybridInfraEditor() {
           onChange={(e) => void switchDoc(e.target.value)}
           style={{ ...INPUT, width: 'auto', minWidth: 180 }}
         >
-          <option value="plan-a">Plan A (built-in{isSeed && doc.slug === 'plan-a' ? ' — editing a copy' : ''})</option>
-          <option value="cloud-infra">Plan C — Cloud (built-in{isSeed && doc.slug === 'cloud-infra' ? ' — editing a copy' : ''})</option>
+          {BUILTIN_STUDIES.map((s) => (
+            <option key={s.slug} value={s.slug}>
+              {s.title} (built-in{isSeed && doc.slug === s.slug ? ' — editing a copy' : ''})
+            </option>
+          ))}
           {diagrams.map((m) => (
             <option key={m.id} value={m.slug}>
               {m.title} {!m.published ? '(draft)' : ''}
@@ -1164,8 +1279,28 @@ export default function HybridInfraEditor() {
         >
           DELETE
         </button>
-        <button type="button" onClick={() => void shareDoc()} style={BTN}>SHARE</button>
-        <button type="button" onClick={exportDoc} style={BTN}>EXPORT</button>
+        <button type="button" onClick={() => void toggleShare()} aria-expanded={shareOpen} style={BTN}>
+          SHARE
+        </button>
+        <button
+          type="button"
+          onClick={() => void toggleHistory()}
+          disabled={isSeed || !docId}
+          title={isSeed || !docId ? 'Save a copy first to keep history' : 'Revision history + restore'}
+          aria-expanded={histOpen}
+          style={BTN}
+        >
+          HISTORY
+        </button>
+        <button type="button" onClick={() => exportCanvas('png')} title="Export the diagram as PNG" style={BTN}>
+          PNG
+        </button>
+        <button type="button" onClick={() => exportCanvas('svg')} title="Export the diagram as SVG (vector)" style={BTN}>
+          SVG
+        </button>
+        <button type="button" onClick={exportDoc} title="Export the document as JSON" style={BTN}>
+          JSON
+        </button>
         <button type="button" onClick={() => fileRef.current?.click()} style={BTN}>IMPORT</button>
         <input
           ref={fileRef}
@@ -1190,6 +1325,140 @@ export default function HybridInfraEditor() {
           </span>
         )}
       </div>
+
+      {/* ── Share & embed panel ─────────────────────────────── */}
+      {shareOpen && shareUrls && (
+        <div style={{ ...PANEL, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+              SHARE &amp; EMBED
+            </span>
+            <button type="button" onClick={() => setShareOpen(false)} style={{ ...BTN, padding: '4px 8px' }}>
+              CLOSE
+            </button>
+          </div>
+          {!doc.published && (
+            <div style={{ fontSize: 11, color: pal.amber, marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
+              DRAFT — links only open for signed-in admins. Toggle PUBLISHED to share publicly.
+            </div>
+          )}
+          <label style={LABEL}>PUBLIC LINK</label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <input readOnly value={shareUrls.page} style={INPUT} onFocus={(e) => e.target.select()} />
+            <button
+              type="button"
+              onClick={() => void copyText(shareUrls.page, 'Share link copied')}
+              style={{ ...BTN, whiteSpace: 'nowrap' }}
+            >
+              COPY
+            </button>
+          </div>
+          <label style={LABEL}>EMBED (IFRAME)</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input readOnly value={shareUrls.snippet} style={INPUT} onFocus={(e) => e.target.select()} />
+            <button
+              type="button"
+              onClick={() => void copyText(shareUrls.snippet, 'Embed snippet copied')}
+              style={{ ...BTN, whiteSpace: 'nowrap' }}
+            >
+              COPY
+            </button>
+          </div>
+          <p style={{ fontSize: 11, color: pal.muted, margin: '8px 0 0', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
+            The embed points at <code>/hybrid-infra/embed</code> — a chrome-free read-only view of this diagram.
+          </p>
+        </div>
+      )}
+
+      {/* ── Revision history panel ───────────────────────────── */}
+      {histOpen && (
+        <div style={{ ...PANEL, marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+              REVISION HISTORY
+            </span>
+            <button type="button" onClick={() => setHistOpen(false)} style={{ ...BTN, padding: '4px 8px' }}>
+              CLOSE
+            </button>
+          </div>
+          {isSeed || !docId ? (
+            <p style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', margin: 0 }}>
+              Built-in seed — save a copy first to keep history.
+            </p>
+          ) : revLoading ? (
+            <p style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', margin: 0 }}>
+              Loading…
+            </p>
+          ) : !revList?.length ? (
+            <p style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', margin: 0 }}>
+              No revisions yet — history starts after your next save.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {revList.map((rv) => (
+                <div
+                  key={rv.id}
+                  style={{
+                    display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
+                    alignItems: 'center', borderBottom: `1px solid ${pal.border}`, paddingBottom: 6,
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)' }}>
+                    <b>{rv.title || 'Untitled'}</b>{' '}
+                    <span style={{ color: pal.muted }}>{fmtRevTime(rv.createdAt)}</span>{' '}
+                    <span style={{ color: rv.published ? pal.green : pal.amber, fontSize: 10, letterSpacing: 1 }}>
+                      {rv.published ? 'PUBLISHED' : 'DRAFT'}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void inspectRevision(rv)}
+                    aria-expanded={viewRev?.meta.id === rv.id}
+                    style={BTN}
+                  >
+                    VIEW
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void applyRevision(rv)}
+                    title="Restore this state (current state is snapshotted first)"
+                    style={{ ...BTN, borderColor: pal.amber, color: pal.amber }}
+                  >
+                    RESTORE
+                  </button>
+                </div>
+              ))}
+              {viewRev && (
+                <div
+                  style={{
+                    marginTop: 6, padding: 10, border: `1px solid ${pal.border}`,
+                    borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11,
+                    color: pal.ink, lineHeight: 1.7,
+                  }}
+                >
+                  <div style={{ color: pal.muted, marginBottom: 4 }}>
+                    CHANGES IN “{viewRev.meta.title}” VS CURRENT
+                    {viewRev.diff.titleChanged ? ' · TITLE DIFFERS' : ''}
+                  </div>
+                  <div>+ added: {viewRev.diff.addedNodes.length ? viewRev.diff.addedNodes.join(', ') : 'none'}</div>
+                  <div>− removed: {viewRev.diff.removedNodes.length ? viewRev.diff.removedNodes.join(', ') : 'none'}</div>
+                  <div>~ changed: {viewRev.diff.changedNodes.length ? viewRev.diff.changedNodes.join(', ') : 'none'}</div>
+                  <div>
+                    flows: +{viewRev.diff.flowAdded} −{viewRev.diff.flowRemoved}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setViewRev(null)}
+                    style={{ ...BTN, marginTop: 6, padding: '4px 8px' }}
+                  >
+                    HIDE
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Editor grid */}
       <div className="hi-edit-layout" style={{ display: 'grid', gridTemplateColumns: '230px minmax(0,1fr) 320px', gap: 12, alignItems: 'start' }}>
@@ -1336,6 +1605,7 @@ export default function HybridInfraEditor() {
             </div>
           )}
           <HybridInfraCanvas
+            ref={canvasHandle}
             activeMode="all"
             edgeVendor="fortigate"
             selectedId={selectedId}

@@ -337,8 +337,11 @@ function generateNonce(): string {
   return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function buildCsp(nonce: string): string {
+function buildCsp(nonce: string, pathname = '/'): string {
   const isDev = process.env.NODE_ENV === 'development'
+  // /hybrid-infra/embed is the iframe-embeddable read-only diagram view
+  // (plan B2) — it must allow framing, unlike every other route.
+  const isEmbed = pathname === '/hybrid-infra/embed' || pathname.startsWith('/hybrid-infra/embed/')
   // CSP hosts are driven by the deployment env (lib/config.ts) so a fresh clone
   // on its own domain gets a matching policy instead of the aifazi.net hosts.
   const siteWildHttps = wildcardHttps(SITE_HOST)
@@ -361,7 +364,7 @@ function buildCsp(nonce: string): string {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'none'",
+    isEmbed ? 'frame-ancestors *' : "frame-ancestors 'none'",
   ].join('; ')
 }
 
@@ -372,12 +375,12 @@ function secureRequest(request: NextRequest): { headers: Headers; nonce: string 
   headers.set('x-nonce', nonce)
   // The CSP header on the REQUEST is what Next.js parses during SSR to attach
   // the nonce to its framework inline scripts — response-only is not enough.
-  headers.set('Content-Security-Policy', buildCsp(nonce))
+  headers.set('Content-Security-Policy', buildCsp(nonce, request.nextUrl.pathname))
   return { headers, nonce }
 }
 
-function withCsp(response: NextResponse, nonce: string): NextResponse {
-  response.headers.set('Content-Security-Policy', buildCsp(nonce))
+function withCsp(response: NextResponse, nonce: string, pathname = '/'): NextResponse {
+  response.headers.set('Content-Security-Policy', buildCsp(nonce, pathname))
   return response
 }
 
@@ -492,7 +495,7 @@ export async function proxy(request: NextRequest) {
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/api/cdn${pathname}`
     const { headers, nonce } = secureRequest(request)
-    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce)
+    return withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce, request.nextUrl.pathname)
   }
 
   // ── 2. Canonicalize FiveM URLs to the fivem subdomain ───────────────────
@@ -523,14 +526,14 @@ export async function proxy(request: NextRequest) {
       if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
       }
-      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
+      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce, request.nextUrl.pathname), origin)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/fivem'
       const { headers, nonce } = secureRequest(request)
       headers.set('x-fivem-domain', 'true')
-      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
+      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce, request.nextUrl.pathname), origin)
     }
     if (lowerPath.startsWith('/fivem')) {
       const redirectUrl = request.nextUrl.clone()
@@ -541,7 +544,7 @@ export async function proxy(request: NextRequest) {
     rewriteUrl.pathname = `/fivem${pathname}`
     const { headers, nonce } = secureRequest(request)
     headers.set('x-fivem-domain', 'true')
-    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce, request.nextUrl.pathname), origin)
   }
 
   // ── 4. Store — canonicalize root /store to the store subdomain ───────────
@@ -567,14 +570,14 @@ export async function proxy(request: NextRequest) {
       if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
       }
-      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
+      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce, request.nextUrl.pathname), origin)
     }
     if (pathname === '/' || pathname === '') {
       const rewriteUrl = request.nextUrl.clone()
       rewriteUrl.pathname = '/store'
       const { headers, nonce } = secureRequest(request)
       headers.set('x-store-domain', 'true')
-      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
+      return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce, request.nextUrl.pathname), origin)
     }
     if (lowerPath.startsWith('/store')) {
       const redirectUrl = request.nextUrl.clone()
@@ -585,7 +588,7 @@ export async function proxy(request: NextRequest) {
     rewriteUrl.pathname = `/store${pathname}`
     const { headers, nonce } = secureRequest(request)
     headers.set('x-store-domain', 'true')
-    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce, request.nextUrl.pathname), origin)
   }
 
   // ── 5b. status subdomain → /status page (monitor) ─────────────────────
@@ -600,13 +603,13 @@ export async function proxy(request: NextRequest) {
       if (lowerPath.startsWith('/api/') && INTERNAL_API_SECRET) {
         headers.set('X-Internal-Token', await makeInternalToken(request.method, pathname, request.nextUrl.searchParams))
       }
-      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce), origin)
+      return withCors(withCsp(NextResponse.next({ request: { headers } }), nonce, request.nextUrl.pathname), origin)
     }
     const rewriteUrl = request.nextUrl.clone()
     rewriteUrl.pathname = `/status${pathname === '/' || pathname === '' ? '/' : pathname}`
     const { headers, nonce } = secureRequest(request)
     headers.set('x-status-domain', 'true')
-    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce), origin)
+    return withCors(withCsp(NextResponse.rewrite(rewriteUrl, { request: { headers } }), nonce, request.nextUrl.pathname), origin)
   }
 
   // ── 6. Admin route protection ─────────────────────────────────────────────
@@ -641,7 +644,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return withCsp(NextResponse.next({ request: { headers } }), nonce)
+  return withCsp(NextResponse.next({ request: { headers } }), nonce, request.nextUrl.pathname)
 }
 
 export const config = {

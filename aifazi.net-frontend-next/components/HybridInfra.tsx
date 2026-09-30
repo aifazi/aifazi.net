@@ -406,6 +406,35 @@ export default function HybridInfra({
         >
           EXPORT PNG
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              canvasHandle.current?.exportSvg()
+              flashNotice('DIAGRAM EXPORTED AS SVG')
+            } catch {
+              flashNotice('EXPORT FAILED')
+            }
+          }}
+          title="Vector export — scales losslessly, edits in Illustrator/Inkscape"
+          style={BTN}
+        >
+          EXPORT SVG
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            try {
+              window.print()
+            } catch {
+              flashNotice('PRINT FAILED')
+            }
+          }}
+          title="Print the page or save it as PDF from the print dialog"
+          style={BTN}
+        >
+          PRINT / PDF
+        </button>
         <button type="button" onClick={copyLink} style={BTN} title="Copy a link to this view (includes selected node)">
           COPY LINK
         </button>

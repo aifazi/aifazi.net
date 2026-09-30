@@ -57,3 +57,43 @@ export async function updateDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
 export async function deleteDiagram(id: string): Promise<void> {
   await api.delete(`/infra/diagrams/${encodeURIComponent(id)}`)
 }
+
+// ── Revision history (admin-only; plan B4) ──────────────────────────────────
+
+export interface InfraRevisionMeta {
+  id: string
+  createdAt: string | null
+  title: string
+  published: boolean
+}
+
+export interface InfraRevision extends InfraRevisionMeta {
+  nodes: DiagramDoc['nodes']
+  flows: DiagramDoc['flows']
+  categoryColors?: DiagramDoc['categoryColors']
+  customCategories?: DiagramDoc['customCategories']
+}
+
+export async function listRevisions(docId: string): Promise<InfraRevisionMeta[]> {
+  const r = await api.get(`/infra/diagrams/${encodeURIComponent(docId)}/revisions`)
+  return Array.isArray(r.data?.revisions) ? r.data.revisions : []
+}
+
+export async function getRevision(
+  docId: string,
+  revisionId: string,
+): Promise<InfraRevision | null> {
+  const r = await api.get(
+    `/infra/diagrams/${encodeURIComponent(docId)}/revisions/${encodeURIComponent(revisionId)}`,
+  )
+  return (r.data?.revision as InfraRevision) ?? null
+}
+
+/** Rolls the diagram back server-side; returns the restored diagram. */
+export async function restoreRevision(docId: string, revisionId: string): Promise<DiagramDoc> {
+  const r = await api.post(
+    `/infra/diagrams/${encodeURIComponent(docId)}/revisions/${encodeURIComponent(revisionId)}/restore`,
+  )
+  if (!r.data?.diagram) throw new Error('Restore failed')
+  return r.data.diagram as DiagramDoc
+}

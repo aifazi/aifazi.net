@@ -31,6 +31,7 @@ import {
   type InfraFlow,
 } from '@/data/hybrid-infra'
 import { infraPalette, type InfraTone } from '@/lib/infraTheme'
+import { createSvgRecorder } from '@/lib/infraSvgExport'
 import { createDrawKit, center, pathBetween, pointAlong, hashId } from './infraCanvasKit'
 import {
   clampView,
@@ -48,6 +49,8 @@ import {
 
 export interface HybridInfraCanvasHandle {
   exportPng: () => void
+  /** Vector export: one synchronous frame into the SVG recorder → download. */
+  exportSvg: () => void
   zoomIn: () => void
   zoomOut: () => void
   /** Base fit: design centered, zoom 1, pan cleared. */
@@ -132,6 +135,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
     const drawRef = useRef<(t: number) => void>(() => {})
     const kickRef = useRef<() => void>(() => {})
     const layoutRef = useRef<() => void>(() => {})
+    // Swap target for the ctx proxy: exportSvg redirects one synchronous
+    // frame into the SVG recorder, then restores the real 2d context.
+    const ctxTargetRef = useRef<CanvasRenderingContext2D | null>(null)
     // Static composition for reduced-motion users (redrawn on input change).
     const [frozen] = useState(
       () =>
@@ -177,6 +183,29 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           setTimeout(() => URL.revokeObjectURL(url), 4000)
         }, 'image/png')
       },
+      exportSvg() {
+        const canvas = canvasRef.current
+        if (!canvas) return
+        const rec = createSvgRecorder()
+        ctxTargetRef.current = rec.ctx as CanvasRenderingContext2D
+        try {
+          // Same clean frozen frame as PNG export (synchronous — the rAF
+          // loop cannot interleave and pollute the recording).
+          drawRef.current(1.0)
+        } finally {
+          ctxTargetRef.current = null
+        }
+        const svg = rec.toSvg({ width: canvas.width, height: canvas.height })
+        const blob = new Blob([svg], { type: 'image/svg+xml' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'hybrid-infrastructure.svg'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 4000)
+      },
       zoomIn() {
         opsRef.current?.zoomBy(1.25)
       },
@@ -214,7 +243,33 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       const ctxOrNull = canvas.getContext('2d')
       if (!ctxOrNull) return
       // Non-null alias: TS narrowing does not persist into closures.
-      const ctx: CanvasRenderingContext2D = ctxOrNull
+      const baseCtx: CanvasRenderingContext2D = ctxOrNull
+      ctxTargetRef.current = baseCtx
+      // Swappable forwarder (see ctxTargetRef): method lookups bind to the
+      // CURRENT target, so exportSvg can reroute one frame without the draw
+      // functions knowing about it. Bound methods are cached per target to
+      // avoid per-op allocation in the rAF hot path.
+      let bindTarget: object | null = null
+      let bindCache = new Map<string | symbol, unknown>()
+      const ctx: CanvasRenderingContext2D = new Proxy(baseCtx, {
+        get: (_t, p) => {
+          const tgt = (ctxTargetRef.current ?? baseCtx) as unknown as object
+          if (tgt !== bindTarget) {
+            bindTarget = tgt
+            bindCache = new Map()
+          }
+          const cached = bindCache.get(p)
+          if (cached) return cached
+          const v = Reflect.get(tgt, p)
+          const out = typeof v === 'function' ? (v as (...a: unknown[]) => unknown).bind(tgt) : v
+          bindCache.set(p, out)
+          return out
+        },
+        set: (_t, p, v) => {
+          const tgt = (ctxTargetRef.current ?? baseCtx) as unknown as object
+          return Reflect.set(tgt, p, v)
+        },
+      }) as CanvasRenderingContext2D
 
       const DPR = Math.min(window.devicePixelRatio || 1, 2)
       let W = 1280
