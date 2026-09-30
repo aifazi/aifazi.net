@@ -50,6 +50,12 @@ export interface InfraFlow {
   from: string
   to: string
   cat: InfraCategory
+  /** Optional custom label drawn at the path midpoint. */
+  label?: string
+  /** Dashed line style (default solid). */
+  dashed?: boolean
+  /** Line color override (#rrggbb) instead of the category color. */
+  color?: string
 }
 
 export interface TimelineStep {
@@ -519,6 +525,13 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
       from: r.from,
       to: r.to,
       cat: cats.includes(r.cat as InfraCategory) ? (r.cat as InfraCategory) : 'network',
+      ...(typeof r.label === 'string' && r.label.trim()
+        ? { label: r.label.trim().slice(0, 40) }
+        : {}),
+      ...(r.dashed === true ? { dashed: true as const } : {}),
+      ...(typeof r.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(r.color)
+        ? { color: r.color }
+        : {}),
     })
     if (flows.length >= 200) break
   }

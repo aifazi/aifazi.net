@@ -63,3 +63,36 @@ describe('sanitizeDoc category palette', () => {
     expect('categoryColors' in (sanitizeDoc({ ...base, nodes }) ?? {})).toBe(false)
   })
 })
+
+describe('sanitizeDoc flow styling', () => {
+  const nodes = [
+    { id: 'n1', name: 'A', category: 'network', layer: 'edge' },
+    { id: 'n2', name: 'B', category: 'compute', layer: 'cloud' },
+  ]
+
+  it('keeps valid label/dashed/color and drops bad ones', () => {
+    const clean = sanitizeDoc({
+      ...base,
+      nodes,
+      flows: [
+        { id: 'f1', from: 'n1', to: 'n2', cat: 'network', label: '  VPN tunnel  ', dashed: true, color: '#ff0000' },
+        { id: 'f2', from: 'n1', to: 'n2', cat: 'network', label: 'x'.repeat(80), dashed: 'yes', color: 'red' },
+      ],
+    })
+    expect(clean?.flows[0]).toMatchObject({ label: 'VPN tunnel', dashed: true, color: '#ff0000' })
+    expect(clean?.flows[1].label).toBe('x'.repeat(40))
+    expect(clean?.flows[1].dashed).toBeUndefined()
+    expect(clean?.flows[1].color).toBeUndefined()
+  })
+
+  it('omits styling keys when absent (backward compatible)', () => {
+    const clean = sanitizeDoc({
+      ...base,
+      nodes,
+      flows: [{ id: 'f1', from: 'n1', to: 'n2', cat: 'network' }],
+    })
+    expect('label' in (clean?.flows[0] ?? {})).toBe(false)
+    expect('dashed' in (clean?.flows[0] ?? {})).toBe(false)
+    expect('color' in (clean?.flows[0] ?? {})).toBe(false)
+  })
+})

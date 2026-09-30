@@ -637,7 +637,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         for (const f of flowList()) {
           const pts = flowPts.get(f.id)
           if (!pts) continue
-          const color = catColor(f.cat)
+          const color = f.color ?? catColor(f.cat)
           const isDim =
             (p.activeMode !== 'all' && p.activeMode !== f.cat) ||
             (p.focusIds !== null &&
@@ -649,6 +649,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           ctx.lineWidth = boost ? 2.5 : 1.55
           ctx.lineCap = 'round'
           ctx.lineJoin = 'round'
+          if (f.dashed) ctx.setLineDash([7, 6])
           ctx.shadowColor = color
           ctx.shadowBlur = boost ? 10 : 2
           ctx.beginPath()
@@ -667,6 +668,17 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               ctx.shadowBlur = 10
               ctx.arc(pt.x, pt.y, boost ? 2.9 : 2.1, 0, Math.PI * 2)
               ctx.fill()
+            }
+            if (f.label) {
+              const lp = pointAlong(pts, 0.5)
+              const eff = effScale(S, viewRef.current)
+              text(f.label, lp.x, lp.y - Math.max(7, 10 / eff), {
+                size: Math.max(8, 9 / eff),
+                color,
+                align: 'center',
+                weight: '700',
+                alpha: boost ? 1 : 0.85,
+              })
             }
           }
           ctx.restore()

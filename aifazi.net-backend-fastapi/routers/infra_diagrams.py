@@ -89,6 +89,14 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
             raise HTTPException(400, "Invalid flow entry")
         if f.get("from") not in ids or f.get("to") not in ids or f.get("from") == f.get("to"):
             raise HTTPException(400, "Flow references unknown node")
+        if f.get("label") not in (None, ""):
+            if not isinstance(f["label"], str) or len(f["label"]) > 40:
+                raise HTTPException(400, "Flow label too long")
+        if f.get("color") not in (None, ""):
+            if not isinstance(f["color"], str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", f["color"]):
+                raise HTTPException(400, "Flow color must be #rrggbb")
+        if "dashed" in f and f["dashed"] not in (None, True, False):
+            raise HTTPException(400, "Flow dashed must be boolean")
         clean_flows.append(f)
     return clean_nodes, clean_flows
 

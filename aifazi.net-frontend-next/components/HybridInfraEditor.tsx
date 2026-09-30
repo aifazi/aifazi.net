@@ -23,6 +23,7 @@ import {
   type DiagramDoc,
   type InfraCategory,
   type InfraComponent,
+  type InfraFlow,
 } from '@/data/hybrid-infra'
 import {
   listDiagrams,
@@ -353,6 +354,9 @@ export default function HybridInfraEditor() {
     applyDoc(rest)
     setNotice({ msg: 'Palette reset to defaults (undo available)', ok: true })
   }
+  // Effective category color (doc override → canonical meta → fallback).
+  const catColorHex = (cat: string) =>
+    doc.categoryColors?.[cat] ?? CATEGORY_META[cat as InfraCategory]?.color ?? '#35a7ff'
 
   // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
   const freeNodes = () => docRef.current.nodes.filter((n) => n.layer !== 'rack')
@@ -563,6 +567,15 @@ export default function HybridInfraEditor() {
   const setLinkCat = (id: string, cat: InfraComponent['category']) => {
     const cur = docRef.current
     applyDoc({ ...cur, flows: cur.flows.map((f) => (f.id === id ? { ...f, cat } : f)) })
+  }
+
+  // Per-flow styling: label, dashed, color.
+  const setLinkStyle = (id: string, patch: Partial<InfraFlow>) => {
+    const cur = docRef.current
+    applyDoc({
+      ...cur,
+      flows: cur.flows.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    })
   }
 
   // ── Select wrapper (connect-mode aware) ──────────────────────
@@ -1251,23 +1264,65 @@ export default function HybridInfraEditor() {
                   <div style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)' }}>None yet — use CONNECT.</div>
                 )}
                 {doc.flows.filter((f) => f.from === selected.id).map((f) => (
-                  <div key={f.id} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: pal.blue, fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      → {depNameOf(f.to)}
-                    </span>
-                    <select
-                      aria-label="Link category"
-                      value={f.cat}
-                      onChange={(e) => setLinkCat(f.id, e.target.value as InfraCategory)}
-                      style={{ ...INPUT, width: 110 }}
-                    >
-                      {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    <button type="button" onClick={() => deleteLink(f.id)} style={BTN} aria-label={`Delete link to ${depNameOf(f.to)}`}>
-                      ✕
-                    </button>
+                  <div key={f.id} style={{ border: `1px solid ${pal.border}`, borderRadius: 8, padding: 6, marginBottom: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: pal.blue, fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        → {depNameOf(f.to)}
+                      </span>
+                      <select
+                        aria-label="Link category"
+                        value={f.cat}
+                        onChange={(e) => setLinkCat(f.id, e.target.value as InfraCategory)}
+                        style={{ ...INPUT, width: 100 }}
+                      >
+                        {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => deleteLink(f.id)} style={BTN} aria-label={`Delete link to ${depNameOf(f.to)}`}>
+                        ✕
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                      <input
+                        value={f.label ?? ''}
+                        onChange={(e) => setLinkStyle(f.id, { label: e.target.value.slice(0, 40) || undefined })}
+                        placeholder="Label"
+                        aria-label="Link label"
+                        style={{ ...INPUT, flex: 1, width: 'auto' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setLinkStyle(f.id, { dashed: !f.dashed })}
+                        aria-pressed={f.dashed === true}
+                        title="Dashed line"
+                        style={{
+                          ...BTN,
+                          borderColor: f.dashed ? pal.cyan : pal.border,
+                          color: f.dashed ? pal.cyan : pal.ink,
+                        }}
+                      >
+                        DASH
+                      </button>
+                      <input
+                        type="color"
+                        aria-label="Link color"
+                        value={f.color ?? catColorHex(f.cat)}
+                        onChange={(e) => setLinkStyle(f.id, { color: e.target.value })}
+                        title="Line color (defaults to category color)"
+                        style={{ width: 30, height: 26, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+                      />
+                      {f.color && (
+                        <button
+                          type="button"
+                          onClick={() => setLinkStyle(f.id, { color: undefined })}
+                          style={BTN}
+                          title="Reset to category color"
+                        >
+                          ↺
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
