@@ -68,6 +68,8 @@ interface Props {
   onAddLink?: (from: string, to: string) => void
   /** Light/dark tone for the stage. Defaults to dark (legacy ops-room look). */
   tone?: InfraTone
+  /** Zoom level changed (integer percent, e.g. 125). For the viewer readout. */
+  onViewChange?: (pct: number) => void
   /** Grid snap step in design px. Null/0 disables snapping. Defaults to 10. */
   snap?: number | null
   /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
@@ -104,9 +106,23 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     )
 
-    // User zoom (zoom-to-center on top of the fit transform). Applied to both
-    // rendering and hit-testing so clicks stay aligned while zoomed.
-    const viewRef = useRef({ z: 1 })
+    // User view: zoom (z) + pan (px/py, screen px) on top of the fit
+    // transform. Applied to both rendering and hit-testing so clicks stay
+    // aligned while zoomed/panned.
+    const viewRef = useRef({ z: 1, px: 0, py: 0 })
+    // Zoom-about-point lives inside the mount effect (needs W/H/S); the
+    // imperative handle delegates through this ref.
+    const zoomRef = useRef<(factor: number, mx?: number, my?: number) => void>(
+      () => {},
+    )
+    const lastPctRef = useRef(100)
+    const notifyView = () => {
+      const pct = Math.round(viewRef.current.z * 100)
+      if (pct !== lastPctRef.current) {
+        lastPctRef.current = pct
+        sRef.current.onViewChange?.(pct)
+      }
+    }
     useImperativeHandle(ref, () => ({
       exportPng() {
         const canvas = canvasRef.current
@@ -125,19 +141,16 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }, 'image/png')
       },
       zoomIn() {
-        viewRef.current.z = Math.min(2.5, +(viewRef.current.z + 0.25).toFixed(2))
-        layoutRef.current()
-        kickRef.current()
+        zoomRef.current(1.25)
       },
       zoomOut() {
-        viewRef.current.z = Math.max(0.5, +(viewRef.current.z - 0.25).toFixed(2))
-        layoutRef.current()
-        kickRef.current()
+        zoomRef.current(0.8)
       },
       resetView() {
-        viewRef.current.z = 1
+        viewRef.current = { z: 1, px: 0, py: 0 }
         layoutRef.current()
         kickRef.current()
+        notifyView()
       },
     }))
 
@@ -161,10 +174,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let offscreen = false
       let docHidden = document.hidden
       const S = { v: 1, ox: 0, oy: 0 }
-      // Effective transform incl. user zoom (zoom-to-canvas-center).
+      // Effective transform incl. user zoom + pan (zoom anchors to a point).
       const effS = () => S.v * viewRef.current.z
-      const effOx = () => S.ox + (W / 2) * (1 - viewRef.current.z)
-      const effOy = () => S.oy + (H / 2) * (1 - viewRef.current.z)
+      const effOx = () =>
+        S.ox + (W / 2) * (1 - viewRef.current.z) + viewRef.current.px
+      const effOy = () =>
+        S.oy + (H / 2) * (1 - viewRef.current.z) + viewRef.current.py
       const RACK = { x: 250, y: 250, w: 470, h: 540, unitH: 19.5, topPad: 26 }
       let hoverId: string | null = null
       const boxes = new Map<string, Box>()
@@ -175,6 +190,14 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let dragDX = 0
       let dragDY = 0
       let dragMoved = false
+      // View-pan state (empty-space / middle-button drag).
+      let panId: number | null = null
+      let panSX = 0
+      let panSY = 0
+      let panPX = 0
+      let panPY = 0
+      let panMoved = false
+      let overCanvas = false
       let cursorDesign: { x: number; y: number } | null = null
       // Live theme palette: refreshed every frame from palRef (tone prop),
       // so a light/dark toggle repaints without re-subscribing the canvas.
@@ -388,6 +411,46 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         layoutScene()
       }
       layoutRef.current = layoutScene
+
+      // ── view: clamp / zoom-to-point / refresh ────────────────
+      // Keep the viewport center inside a generous design-space box so a
+      // pan can never strand the diagram off-screen.
+      function clampView() {
+        const v = viewRef.current
+        v.z = Math.min(2.5, Math.max(0.5, v.z))
+        const cx = Math.min(
+          DESIGN_W * 1.5,
+          Math.max(-DESIGN_W * 0.5, (W / 2 - effOx()) / effS()),
+        )
+        const cy = Math.min(
+          DESIGN_H * 1.5,
+          Math.max(-DESIGN_H * 0.5, (H / 2 - effOy()) / effS()),
+        )
+        v.px = W / 2 - cx * effS() - S.ox - (W / 2) * (1 - v.z)
+        v.py = H / 2 - cy * effS() - S.oy - (H / 2) * (1 - v.z)
+      }
+
+      function applyView() {
+        clampView()
+        layoutScene()
+        notifyView()
+        kick()
+      }
+
+      // Zoom while keeping the design point under (mx, my) fixed.
+      function zoomBy(factor: number, mx = W / 2, my = H / 2) {
+        const v = viewRef.current
+        const z2 = Math.min(2.5, Math.max(0.5, v.z * factor))
+        if (Math.abs(z2 - v.z) < 1e-4) return
+        const dx = (mx - effOx()) / effS()
+        const dy = (my - effOy()) / effS()
+        v.z = z2
+        const s2 = S.v * z2
+        v.px = mx - dx * s2 - S.ox - (W / 2) * (1 - z2)
+        v.py = my - dy * s2 - S.oy - (H / 2) * (1 - z2)
+        applyView()
+      }
+      zoomRef.current = zoomBy
 
       // ── draw passes ──────────────────────────────────────────
       function dimmed(cat: InfraCategory, extra: Set<string> | null, id: string | null) {
@@ -1061,6 +1124,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         P = palRef.current
         ctx.setTransform(DPR, 0, 0, DPR, 0, 0)
         ctx.clearRect(0, 0, W, H)
+        // Base fill so panning/zooming past the design bounds stays seamless
+        // (drawBackground only covers the design rect).
+        ctx.fillStyle = P.bg
+        ctx.fillRect(0, 0, W, H)
         ctx.save()
         ctx.translate(effOx(), effOy())
         ctx.scale(effS(), effS())
@@ -1108,7 +1175,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
       kickRef.current = kick
 
-      function toDesign(e: MouseEvent | PointerEvent) {
+      function toDesign(e: MouseEvent | PointerEvent | WheelEvent) {
         const rect = canvas.getBoundingClientRect()
         return {
           mx: e.clientX - rect.left,
@@ -1144,13 +1211,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const my = e.clientY - rect.top
         const found = hitAt(mx, my)
         hoverId = found
-        canvas.style.cursor = dragId
+        canvas.style.cursor = dragId || panId
           ? 'grabbing'
           : sRef.current.editable && sRef.current.connectFrom
             ? 'crosshair'
             : found
               ? 'pointer'
-              : 'default'
+              : 'grab'
         if (dragId) {
           const d = designFromClient(mx, my)
           const node = byId(dragId)
@@ -1180,15 +1247,62 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
       }
 
+      // Wheel: blueprint-style zoom toward the cursor (also swallows the
+      // browser's Ctrl+wheel page zoom, like a design tool). At a zoom
+      // bound the wheel passes through so the page can still scroll.
+      function onWheel(e: WheelEvent) {
+        const { mx, my } = toDesign(e)
+        const dy =
+          e.deltaMode === 1
+            ? e.deltaY * 16
+            : e.deltaMode === 2
+              ? e.deltaY * H
+              : e.deltaY
+        const factor = Math.exp(-dy * 0.002)
+        const z = viewRef.current.z
+        if ((factor < 1 && z <= 0.5) || (factor > 1 && z >= 2.5)) return
+        e.preventDefault()
+        zoomBy(factor, mx, my)
+      }
+
+      function startPan(e: PointerEvent) {
+        panId = e.pointerId
+        panSX = e.clientX
+        panSY = e.clientY
+        panPX = viewRef.current.px
+        panPY = viewRef.current.py
+        panMoved = false
+        canvas.style.cursor = 'grabbing'
+        try {
+          canvas.setPointerCapture(e.pointerId)
+        } catch {
+          /* noop */
+        }
+      }
+
+      function endPan(e: PointerEvent) {
+        if (panId !== e.pointerId) return
+        panId = null
+        try {
+          canvas.releasePointerCapture(e.pointerId)
+        } catch {
+          /* noop */
+        }
+      }
+
       function onPointerDown(e: PointerEvent) {
-        if (!sRef.current.editable || e.button !== 0) return
+        const primary = e.button === 0
+        const middle = e.button === 1
+        if (!primary && !middle) return
+        panMoved = false
+        if (dragId) return
         const { mx, my } = toDesign(e)
         const found = hitAt(mx, my)
-        // Link mode: never start a move-drag — the click handler completes
-        // the connection. Otherwise a press-drag-release both moves the node
-        // and fires a link, which feels broken.
-        if (sRef.current.connectFrom) return
-        if (found) {
+        const p = sRef.current
+        // Edit mode: a press on a node starts a node drag (never a pan).
+        // Link mode must not start a move either — the click completes the
+        // connection, otherwise press-drag-release both moves and links.
+        if (primary && p.editable && !p.connectFrom && found) {
           const box = boxes.get(found)
           const d = designFromClient(mx, my)
           dragId = found
@@ -1206,10 +1320,34 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           } catch {
             /* noop */
           }
+          return
         }
+        // Pan: middle button anywhere, primary button on empty space (edit
+        // mode) or anywhere (view mode). Touch is excluded so the page can
+        // still scroll under a finger.
+        if (e.pointerType === 'touch') return
+        if (middle || (primary && (!found || !p.editable))) startPan(e)
+      }
+
+      // Block middle-click autoscroll (pan owns the middle button).
+      function onMouseDown(e: MouseEvent) {
+        if (e.button === 1) e.preventDefault()
+      }
+
+      function onPointerMove(e: PointerEvent) {
+        if (panId !== e.pointerId) return
+        const dx = e.clientX - panSX
+        const dy = e.clientY - panSY
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true
+        viewRef.current.px = panPX + dx
+        viewRef.current.py = panPY + dy
+        clampView()
+        layoutScene()
+        kick()
       }
 
       function onPointerUp(e: PointerEvent) {
+        endPan(e)
         if (!dragId) return
         const doneId = dragId
         const wasMoved = dragMoved
@@ -1234,10 +1372,23 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
       }
 
+      function onPointerCancel(e: PointerEvent) {
+        endPan(e)
+        if (dragId) {
+          dragId = null
+          dragMoved = false
+        }
+      }
+
       function onClick(e: MouseEvent) {
-        // A drag that moved is not a click (prevents accidental links).
+        // A node drag or view pan that moved is not a click (prevents
+        // accidental links/selections after repositioning the view).
         if (dragMoved) {
           dragMoved = false
+          return
+        }
+        if (panMoved) {
+          panMoved = false
           return
         }
         const { mx, my } = toDesign(e)
@@ -1248,6 +1399,35 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           return
         }
         p.onSelect(found)
+      }
+
+      // Ctrl/⌘ + "+"/"-"/"0" zooms while the pointer is over the diagram
+      // (or the canvas has focus). Outside that scope the browser keeps its
+      // normal page-zoom shortcut.
+      function onWinKey(e: KeyboardEvent) {
+        if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+        const ae = document.activeElement
+        const tag = (ae?.tagName || '').toLowerCase()
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+        if (!overCanvas && ae !== canvas) return
+        const k = e.key
+        if (k === '=' || k === '+') {
+          e.preventDefault()
+          zoomBy(1.25)
+        } else if (k === '-' || k === '_') {
+          e.preventDefault()
+          zoomBy(0.8)
+        } else if (k === '0') {
+          e.preventDefault()
+          viewRef.current = { z: 1, px: 0, py: 0 }
+          applyView()
+        }
+      }
+
+      function onMouseLeave() {
+        hoverId = null
+        cursorDesign = null
+        overCanvas = false
       }
 
       let kbIndex = -1
@@ -1304,15 +1484,21 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ro.observe(wrap)
       }
 
+      function onMouseEnter() {
+        overCanvas = true
+      }
+
       canvas.addEventListener('mousemove', onMove)
-      canvas.addEventListener('mouseleave', () => {
-        hoverId = null
-        cursorDesign = null
-      })
+      canvas.addEventListener('mouseenter', onMouseEnter)
+      canvas.addEventListener('mouseleave', onMouseLeave)
+      canvas.addEventListener('mousedown', onMouseDown)
       canvas.addEventListener('click', onClick)
       canvas.addEventListener('keydown', onKey)
       canvas.addEventListener('pointerdown', onPointerDown)
       canvas.addEventListener('pointerup', onPointerUp)
+      canvas.addEventListener('pointercancel', onPointerCancel)
+      canvas.addEventListener('wheel', onWheel, { passive: false })
+      window.addEventListener('keydown', onWinKey)
 
       resize()
       // Initial selection handled by parent (defaults to firewall).
@@ -1330,11 +1516,17 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ro?.disconnect()
         obs?.disconnect()
         document.removeEventListener('visibilitychange', onVis)
+        window.removeEventListener('keydown', onWinKey)
         canvas.removeEventListener('mousemove', onMove)
+        canvas.removeEventListener('mouseenter', onMouseEnter)
+        canvas.removeEventListener('mouseleave', onMouseLeave)
+        canvas.removeEventListener('mousedown', onMouseDown)
         canvas.removeEventListener('click', onClick)
         canvas.removeEventListener('keydown', onKey)
         canvas.removeEventListener('pointerdown', onPointerDown)
         canvas.removeEventListener('pointerup', onPointerUp)
+        canvas.removeEventListener('pointercancel', onPointerCancel)
+        canvas.removeEventListener('wheel', onWheel)
       }
       // frozen is mount-constant (matchMedia sampled once).
     }, [frozen])
@@ -1355,7 +1547,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           className="hi-canvas"
           tabIndex={0}
           role="img"
-          aria-label="Interactive enterprise server rack and hybrid cloud architecture. Click equipment for details. Use arrow keys to cycle components, Enter to select."
+          aria-label="Interactive enterprise server rack and hybrid cloud architecture. Click equipment for details. Scroll to zoom, drag to pan, Ctrl or Command plus plus/minus/zero to zoom. Use arrow keys to cycle components, Enter to select."
           style={{ display: 'block', width: '100%', height: 'auto', outline: 'none' }}
         />
       </div>
