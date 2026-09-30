@@ -31,6 +31,7 @@ import {
   type InfraFlow,
 } from '@/data/hybrid-infra'
 import { infraPalette, type InfraTone } from '@/lib/infraTheme'
+import { createDrawKit, center, pathBetween, pointAlong, hashId } from './infraCanvasKit'
 import {
   clampView,
   effOrigin,
@@ -267,118 +268,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
         '#35a7ff'
 
-      // ── helpers ──────────────────────────────────────────────
-      const center = (b: Box) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 })
-
-      function pathBetween(a: Box, b: Box) {
-        const ca = center(a)
-        const cb = center(b)
-        const midX = (ca.x + cb.x) / 2
-        const midY = (ca.y + cb.y) / 2
-        if (Math.abs(ca.x - cb.x) < 50) return [ca, { x: ca.x, y: midY }, cb]
-        if (Math.abs(ca.y - cb.y) < 36) return [ca, { x: midX, y: ca.y }, cb]
-        return [ca, { x: midX, y: ca.y }, { x: midX, y: midY }, { x: cb.x, y: midY }, cb]
-      }
-
-      function roundRect(x: number, y: number, w: number, h: number, r: number) {
-        const rr = Math.min(r, w / 2, h / 2)
-        ctx.beginPath()
-        ctx.moveTo(x + rr, y)
-        ctx.arcTo(x + w, y, x + w, y + h, rr)
-        ctx.arcTo(x + w, y + h, x, y + h, rr)
-        ctx.arcTo(x, y + h, x, y, rr)
-        ctx.arcTo(x, y, x + w, y, rr)
-        ctx.closePath()
-      }
-
-      function fillRound(
-        x: number, y: number, w: number, h: number, r: number,
-        fill: string | CanvasGradient | null,
-        stroke: string | CanvasGradient | null,
-        lw = 1,
-      ) {
-        roundRect(x, y, w, h, r)
-        if (fill) {
-          ctx.fillStyle = fill
-          ctx.fill()
-        }
-        if (stroke) {
-          ctx.strokeStyle = stroke
-          ctx.lineWidth = lw
-          ctx.stroke()
-        }
-      }
-
-      function text(
-        str: string, x: number, y: number,
-        opts: {
-          size?: number; color?: string; align?: CanvasTextAlign;
-          baseline?: CanvasTextBaseline; weight?: string; alpha?: number; maxW?: number;
-        } = {},
-      ) {
-        const {
-          size = 12, color = palRef.current.ink, align = 'left', baseline = 'middle',
-          weight = '500', alpha = 1, maxW,
-        } = opts
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.fillStyle = color
-        ctx.font = `${weight} ${size}px "Segoe UI", Inter, Arial, sans-serif`
-        ctx.textAlign = align
-        ctx.textBaseline = baseline
-        if (maxW) ctx.fillText(str, x, y, maxW)
-        else ctx.fillText(str, x, y)
-        ctx.restore()
-      }
-
-      function led(x: number, y: number, color: string, pulse = 0, size = 3.2) {
-        ctx.save()
-        ctx.globalAlpha = 0.55 + 0.45 * pulse
-        ctx.beginPath()
-        ctx.fillStyle = color
-        ctx.shadowColor = color
-        ctx.shadowBlur = 8
-        ctx.arc(x, y, size, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.restore()
-      }
-
-      function ventGrid(x: number, y: number, w: number, h: number, cols = 12, rows = 2, alpha = 0.28) {
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.fillStyle = P.bg
-        const gap = 3
-        const cellW = (w - (cols - 1) * gap) / cols
-        const cellH = (h - (rows - 1) * gap) / rows
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            ctx.fillRect(x + c * (cellW + gap), y + r * (cellH + gap), cellW, cellH)
-          }
-        }
-        ctx.restore()
-      }
-
-      function ports(x: number, y: number, count = 10, w = 6, h = 8, gap = 3) {
-        for (let i = 0; i < count; i++) {
-          ctx.fillStyle = i % 3 === 0 ? 'rgba(65,200,120,0.8)' : 'rgba(80,160,220,0.55)'
-          ctx.fillRect(x + i * (w + gap), y, w, h)
-          if (i % 4 === 1) led(x + i * (w + gap) + w / 2, y + h + 3, P.blue, 0.6, 1.3)
-        }
-      }
-
-      function driveBays(x: number, y: number, w: number, h: number, count = 5, alpha = 1) {
-        ctx.save()
-        ctx.globalAlpha = alpha
-        const gap = 5
-        const bayW = (w - (count - 1) * gap) / count
-        for (let i = 0; i < count; i++) {
-          const bx = x + i * (bayW + gap)
-          fillRound(bx, y, bayW, h, 3, 'rgba(18,36,56,0.98)', 'rgba(90,150,200,0.4)')
-          fillRound(bx + 4, y + 4, bayW - 8, 4, 1, 'rgba(120,180,220,0.25)', null)
-          led(bx + bayW / 2, y + h - 7, P.green, 0.7, 1.8)
-        }
-        ctx.restore()
-      }
+      // ctx-bound drawing primitives (see components/infraCanvasKit.ts).
+      const { roundRect, fillRound, text, led, ventGrid, ports, driveBays } =
+        createDrawKit(ctx, () => palRef.current)
 
       // ── layout ───────────────────────────────────────────────
       function layoutScene() {
@@ -621,35 +513,6 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         text('ON-PREMISES CORE', 250, 238, { size: 9.5, color: P.muted, weight: '700' })
         text('USERS / LEGACY', 28, 505, { size: 9.5, color: P.muted, weight: '700' })
         ctx.restore()
-      }
-
-      function hashId(id: string) {
-        let h = 0
-        for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 997
-        return h / 997
-      }
-
-      function pointAlong(pts: { x: number; y: number }[], t: number) {
-        let total = 0
-        const segs: number[] = []
-        for (let i = 1; i < pts.length; i++) {
-          const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)
-          segs.push(len)
-          total += len
-        }
-        if (!total) return pts[0]
-        let dist = t * total
-        for (let i = 0; i < segs.length; i++) {
-          if (dist <= segs[i] || i === segs.length - 1) {
-            const r = segs[i] ? dist / segs[i] : 0
-            return {
-              x: pts[i].x + (pts[i + 1].x - pts[i].x) * r,
-              y: pts[i].y + (pts[i + 1].y - pts[i].y) * r,
-            }
-          }
-          dist -= segs[i]
-        }
-        return pts[pts.length - 1]
       }
 
       function playBoost(cat: InfraCategory) {

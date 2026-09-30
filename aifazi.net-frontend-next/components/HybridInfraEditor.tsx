@@ -36,6 +36,16 @@ import {
   deleteDiagram,
   type DiagramMeta,
 } from '@/lib/infraApi'
+import {
+  arrangeNodesDoc,
+  alignNodesDoc,
+  spreadNodesDoc,
+  deleteNodesDoc,
+  duplicateNodesDoc,
+  pasteNodesDoc,
+  remapCategoryDoc,
+  type NextId,
+} from '@/lib/infraDocOps'
 
 /* PANEL/BTN/INPUT/LABEL live inside the component now (theme-aware). */
 
@@ -322,23 +332,8 @@ export default function HybridInfraEditor() {
     a.x < b.x + b.w + 20 && a.x + a.w + 20 > b.x && a.y < b.y + b.h + 20 && a.y + a.h + 20 > b.y
 
   // ── Auto-arrange: grid columns per layer, rows stacked (Odoo-style) ──
-  const LAYER_ORDER = ['edge', 'rack', 'vm', 'cloud', 'users', 'legacy']
   const arrangeNodes = () => {
-    const cur = docRef.current
-    const nextY: Record<string, number> = {}
-    const nodes = cur.nodes.map((n) => {
-      const li = Math.max(0, LAYER_ORDER.indexOf(n.layer || 'cloud'))
-      const y = nextY[n.layer] ?? 40
-      const w = n.w || 160
-      const h = n.h || 60
-      nextY[n.layer] = y + h + 24
-      return {
-        ...n,
-        x: Math.max(0, Math.min(40 + li * 210, 1480 - w)),
-        y: Math.max(0, Math.min(y, 1020 - h)),
-      }
-    })
-    applyDoc({ ...cur, nodes })
+    applyDoc(arrangeNodesDoc(docRef.current))
     setNotice({ msg: 'Auto-arranged by layer (undo available)', ok: true })
   }
 
@@ -414,10 +409,8 @@ export default function HybridInfraEditor() {
     delete cc[key]
     // Nodes/flows still using it fall back to Network so nothing dangles.
     applyDoc({
-      ...cur,
+      ...remapCategoryDoc(cur, key, 'network'),
       customCategories: Object.keys(cc).length ? cc : undefined,
-      nodes: cur.nodes.map((n) => (n.category === key ? { ...n, category: 'network' as InfraCategory } : n)),
-      flows: cur.flows.map((f) => (f.cat === key ? { ...f, cat: 'network' as InfraCategory } : f)),
     })
     setNotice({ msg: 'Category removed (nodes reset to Network)', ok: true })
   }
@@ -431,45 +424,26 @@ export default function HybridInfraEditor() {
 
   // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
   // Operates on the multi-selection when 2+ selected, else all free nodes.
-  const alignTargets = () => {
-    const ids = new Set(selectedNodeIds())
-    const free = ids.size >= 2 ? docRef.current.nodes.filter((n) => ids.has(n.id)) : freeNodes()
-    return free.filter((n) => n.layer !== 'rack')
+  const selectionForBulk = () => {
+    const ids = selectedNodeIds()
+    return ids.length >= 2 ? ids : null
   }
-  const freeNodes = () => docRef.current.nodes.filter((n) => n.layer !== 'rack')
   const alignNodes = (axis: 'x' | 'y') => {
-    const free = alignTargets()
-    if (free.length < 2) {
+    const next = alignNodesDoc(docRef.current, selectionForBulk(), axis)
+    if (!next) {
       setNotice({ msg: 'Select at least 2 free nodes to align', ok: false })
       return
     }
-    const set = new Set(free.map((n) => n.id))
-    const v = Math.min(...free.map((n) => (axis === 'x' ? n.x ?? 0 : n.y ?? 0)))
-    applyDoc({
-      ...docRef.current,
-      nodes: docRef.current.nodes.map((n) =>
-        n.layer === 'rack' || !set.has(n.id) ? n : { ...n, [axis]: v },
-      ),
-    })
+    applyDoc(next)
     setNotice({ msg: axis === 'x' ? 'Aligned left' : 'Aligned top', ok: true })
   }
   const spreadNodes = (axis: 'x' | 'y') => {
-    const free = [...alignTargets()].sort((a, b) => (axis === 'x' ? (a.x ?? 0) - (b.x ?? 0) : (a.y ?? 0) - (b.y ?? 0)))
-    if (free.length < 3) {
+    const next = spreadNodesDoc(docRef.current, selectionForBulk(), axis)
+    if (!next) {
       setNotice({ msg: 'Need at least 3 free nodes to distribute', ok: false })
       return
     }
-    const set = new Set(free.map((n) => n.id))
-    const lo = axis === 'x' ? (free[0].x ?? 0) : (free[0].y ?? 0)
-    const hi = axis === 'x' ? (free[free.length - 1].x ?? 0) : (free[free.length - 1].y ?? 0)
-    const step = (hi - lo) / (free.length - 1)
-    const pos = new Map(free.map((n, i) => [n.id, Math.round(lo + step * i)]))
-    applyDoc({
-      ...docRef.current,
-      nodes: docRef.current.nodes.map((n) =>
-        n.layer === 'rack' || !set.has(n.id) ? n : { ...n, [axis]: pos.get(n.id) },
-      ),
-    })
+    applyDoc(next)
     setNotice({ msg: axis === 'x' ? 'Distributed horizontally' : 'Distributed vertically', ok: true })
   }
 
@@ -582,16 +556,10 @@ export default function HybridInfraEditor() {
   })
 
   const deleteNodes = (ids: string[]) => {
-    if (!ids.length) return
+    const next = deleteNodesDoc(docRef.current, ids)
+    if (!next) return
+    applyDoc(next)
     const set = new Set(ids)
-    const cur = docRef.current
-    applyDoc({
-      ...cur,
-      nodes: cur.nodes
-        .filter((n) => !set.has(n.id))
-        .map((n) => ({ ...n, deps: n.deps.filter((d) => !set.has(d)) })),
-      flows: cur.flows.filter((f) => !set.has(f.from) && !set.has(f.to)),
-    })
     if (selectedId && set.has(selectedId)) setSelectedId(null)
     setSelIds((prev) => new Set([...prev].filter((id) => !set.has(id))))
     if (connectFrom && set.has(connectFrom)) setConnectFrom(null)
@@ -604,79 +572,32 @@ export default function HybridInfraEditor() {
     setSelectedId(ids.length ? ids[ids.length - 1] : null)
   }
 
+  /** Unique id fragment for duplicated/pasted nodes and flows. */
+  const freshId: NextId = () => {
+    counterRef.current += 1
+    return `c${counterRef.current}`
+  }
+
   const duplicateSelected = () => {
     const ids = selectedNodeIds()
     if (!ids.length) {
       setNotice({ msg: 'Nothing selected to duplicate', ok: false })
       return
     }
-    const cur = docRef.current
-    const idMap = new Map<string, string>()
-    const srcMap = new Map<string, InfraComponent>()
-    const copies: InfraComponent[] = []
-    for (const id of ids) {
-      const src = cur.nodes.find((n) => n.id === id)
-      if (!src) continue
-      counterRef.current += 1
-      const nid = `${src.id}-copy${counterRef.current}`
-      idMap.set(src.id, nid)
-      srcMap.set(nid, src)
-      copies.push({
-        ...src,
-        id: nid,
-        name: `${src.name} (copy)`,
-        workloads: [...src.workloads],
-        deps: [],
-        x: src.x !== undefined ? src.x + 40 : undefined,
-        y: src.y !== undefined ? src.y + 40 : undefined,
-        rackU: src.rackU !== undefined ? Math.min(42, src.rackU + (src.rackH ?? 1)) : undefined,
-      })
-    }
-    if (!copies.length) return
-    // Deps: remap to the copy when the target was copied too, otherwise
-    // keep pointing at the original (it still exists in the doc).
-    for (const c of copies) {
-      const src = srcMap.get(c.id)
-      c.deps = (src?.deps ?? []).map((d) => idMap.get(d) ?? d)
-    }
-    // Flows between copied nodes are duplicated with the copied endpoints.
-    const flows = cur.flows
-      .filter((f) => idMap.has(f.from) && idMap.has(f.to))
-      .map((f) => ({
-        ...f,
-        id: `${f.from}${f.to}-copy${counterRef.current}`,
-        from: idMap.get(f.from)!,
-        to: idMap.get(f.to)!,
-      }))
-    applyDoc({ ...cur, nodes: [...cur.nodes, ...copies], flows: [...cur.flows, ...flows] })
-    selectOnly([...idMap.values()])
-    setNotice({ msg: `Duplicated ${copies.length} node(s)`, ok: true })
+    const res = duplicateNodesDoc(docRef.current, ids, freshId)
+    if (!res) return
+    applyDoc(res.doc)
+    selectOnly(res.newIds)
+    setNotice({ msg: `Duplicated ${res.newIds.length} node(s)`, ok: true })
   }
 
   const duplicateNode = (id: string) => {
     const ids = selectedNodeIds()
-    if (ids.includes(id) && ids.length > 1) {
-      duplicateSelected()
-      return
-    }
-    const cur = docRef.current
-    const src = cur.nodes.find((n) => n.id === id)
-    if (!src) return
-    counterRef.current += 1
-    const nid = `${src.id}-copy${counterRef.current}`
-    const copy: InfraComponent = {
-      ...src,
-      id: nid,
-      name: `${src.name} (copy)`,
-      workloads: [...src.workloads],
-      deps: [...src.deps],
-      x: src.x !== undefined ? src.x + 40 : undefined,
-      y: src.y !== undefined ? src.y + 40 : undefined,
-      rackU: src.rackU !== undefined ? Math.min(42, src.rackU + (src.rackH ?? 1)) : undefined,
-    }
-    applyDoc({ ...cur, nodes: [...cur.nodes, copy] })
-    setSelectedId(nid)
-    setSelIds(new Set([nid]))
+    const targets = ids.includes(id) && ids.length > 1 ? ids : [id]
+    const res = duplicateNodesDoc(docRef.current, targets, freshId)
+    if (!res) return
+    applyDoc(res.doc)
+    selectOnly(res.newIds)
   }
 
   // ── Clipboard (Ctrl+C / Ctrl+V / Ctrl+D) ─────────────────────
@@ -706,36 +627,13 @@ export default function HybridInfraEditor() {
       setNotice({ msg: 'Clipboard is empty', ok: false })
       return
     }
-    const cur = docRef.current
-    const idMap = new Map<string, string>()
-    const newIds: string[] = []
-    for (const n of clip) {
-      counterRef.current += 1
-      const nid = `${n.id}-paste${counterRef.current}`
-      idMap.set(n.id, nid)
-      newIds.push(nid)
-    }
     const off = 24 * (pasteSeqRef.current + 1)
+    const res = pasteNodesDoc(docRef.current, clip, freshId, off)
+    if (!res) return
     pasteSeqRef.current += 1
-    const newNodes = clip.map((n, i) => ({
-      ...n,
-      id: newIds[i],
-      deps: n.deps.map((d) => idMap.get(d) ?? d),
-      x: n.x !== undefined ? n.x + off : undefined,
-      y: n.y !== undefined ? n.y + off : undefined,
-      rackU: n.rackU !== undefined ? Math.min(42, n.rackU + (n.rackH ?? 1)) : undefined,
-    }))
-    const flows = cur.flows
-      .filter((f) => idMap.has(f.from) && idMap.has(f.to))
-      .map((f) => ({
-        ...f,
-        id: `${f.from}${f.to}-paste${counterRef.current}`,
-        from: idMap.get(f.from)!,
-        to: idMap.get(f.to)!,
-      }))
-    applyDoc({ ...cur, nodes: [...cur.nodes, ...newNodes], flows: [...cur.flows, ...flows] })
-    selectOnly(newIds)
-    setNotice({ msg: `Pasted ${newNodes.length} node(s)`, ok: true })
+    applyDoc(res.doc)
+    selectOnly(res.newIds)
+    setNotice({ msg: `Pasted ${res.newIds.length} node(s)`, ok: true })
   }
 
   const updateNode = (id: string, patch: Partial<InfraComponent>) => {
