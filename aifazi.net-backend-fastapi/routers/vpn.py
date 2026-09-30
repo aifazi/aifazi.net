@@ -789,7 +789,7 @@ async def create_peer(body: PeerCreate, user: dict = Depends(get_current_user)):
     peer_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     allocated_ip = ""
-    allocated_ipv6 = ""
+    allocated_ipv6: str | None = ""
     host_allowed = ""
     v6_unavailable = False
     for attempt in range(3):
