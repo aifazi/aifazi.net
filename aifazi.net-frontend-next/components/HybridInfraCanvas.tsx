@@ -69,6 +69,10 @@ interface Props {
   activeMode: InfraCategory | 'all'
   edgeVendor: 'fortigate' | 'unifi'
   selectedId: string | null
+  /** Extra selected ids (shift-click multi-select) drawn with the ring. */
+  selectedIds?: Set<string> | null
+  /** Shift-click on a node: parent toggles it in/out of the selection. */
+  onToggleSelect?: (id: string) => void
   /** Dim everything outside this set. Null = no focus filter. */
   focusIds: Set<string> | null
   /** -1 = off, else index into TIMELINE_CATS. */
@@ -237,6 +241,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let dragDX = 0
       let dragDY = 0
       let dragMoved = false
+      // Multi-select group drag: per-node original positions + shared delta.
+      let dragGroup: { id: string; ox: number; oy: number }[] | null = null
+      let dragStart = { x: 0, y: 0 }
       // View-pan state (empty-space / middle-button drag).
       let panId: number | null = null
       let panSX = 0
@@ -555,6 +562,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         return false
       }
 
+      // Selected = primary selection or part of the multi-selection set.
+      const isSelected = (p: Props, id: string) =>
+        p.selectedId === id || (p.selectedIds?.has(id) ?? false)
+
       function drawBackground() {
         const g = ctx.createLinearGradient(0, 0, 0, DESIGN_H)
         g.addColorStop(0, P.bg2)
@@ -803,7 +814,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (!b) return
         const p = sRef.current
         const accent = c.accent || catColor(c.category)
-        const selected = p.selectedId === c.id
+        const selected = isSelected(p, c.id)
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
         const alpha = isDim ? 0.2 : 1
@@ -905,7 +916,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (!b) return
         const p = sRef.current
         const accent = c.accent || catColor(c.category)
-        const selected = p.selectedId === c.id
+        const selected = isSelected(p, c.id)
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
         const alpha = isDim ? 0.2 : 1
@@ -985,7 +996,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (!b) return
         const p = sRef.current
         const accent = c.accent || catColor(c.category)
-        const selected = p.selectedId === c.id
+        const selected = isSelected(p, c.id)
         const isDim =
           (p.activeMode !== 'all' && p.activeMode !== c.category) ||
           (p.focusIds !== null && !p.focusIds.has(c.id))
@@ -1078,7 +1089,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const legacy = byId('legacy')
         const lb = legacy ? boxes.get('legacy') : undefined
         if (legacy && lb) {
-          const selected = p.selectedId === 'legacy'
+          const selected = isSelected(p, 'legacy')
           ctx.save()
           ctx.globalAlpha = 0.48
           const grad = ctx.createLinearGradient(lb.x, lb.y, lb.x, lb.y + lb.h)
@@ -1098,7 +1109,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           const b = boxes.get(c.id)
           if (!b) continue
           const accent = c.accent || catColor(c.category)
-          const selected = p.selectedId === c.id
+          const selected = isSelected(p, c.id)
           const isDim = dimmed(c.category, p.focusIds, c.id)
           ctx.save()
           ctx.globalAlpha = isDim ? 0.18 : 1
@@ -1329,6 +1340,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               : 'grab'
         if (dragId) {
           const d = designFromClient(mx, my)
+          if (dragGroup) {
+            const ddx = d.x - dragStart.x
+            const ddy = d.y - dragStart.y
+            if (Math.abs(ddx) > 2 || Math.abs(ddy) > 2) dragMoved = true
+            for (const g of dragGroup) {
+              sRef.current.onMoveNode?.(g.id, {
+                x: snap(g.ox + ddx),
+                y: snap(g.oy + ddy),
+              }, false)
+            }
+            return
+          }
           const node = byId(dragId)
           if (node && sRef.current.onMoveNode) {
             if (node.layer === 'rack') {
@@ -1408,7 +1431,33 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (primary && p.editable && !p.connectFrom && found) {
           const box = boxes.get(found)
           const d = designFromClient(mx, my)
+          // Group drag when the pressed node belongs to a multi-selection:
+          // locked nodes and rack units (rackU is single-owner) stay put.
+          if (box && p.selectedIds && p.selectedIds.size > 1 && p.selectedIds.has(found)) {
+            const group: { id: string; ox: number; oy: number }[] = []
+            for (const id of p.selectedIds) {
+              if (p.lockedIds?.has(id)) continue
+              const n = byId(id)
+              const b = boxes.get(id)
+              if (!n || n.layer === 'rack' || !b) continue
+              group.push({ id, ox: b.x, oy: b.y })
+            }
+            if (group.length > 1) {
+              dragId = found
+              dragGroup = group
+              dragStart = { x: d.x, y: d.y }
+              dragMoved = false
+              cursorDesign = null
+              try {
+                canvas.setPointerCapture(e.pointerId)
+              } catch {
+                /* noop */
+              }
+              return
+            }
+          }
           dragId = found
+          dragGroup = null
           dragMoved = false
           cursorDesign = null
           if (box) {
@@ -1455,15 +1504,32 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       function onPointerUp(e: PointerEvent) {
         endPan(e)
-        if (!dragId) return
+        if (!dragId) {
+          dragGroup = null
+          return
+        }
         const doneId = dragId
         const wasMoved = dragMoved
+        const group = dragGroup
         dragId = null
+        dragGroup = null
         dragMoved = false
         try {
           canvas.releasePointerCapture(e.pointerId)
         } catch {
           /* noop */
+        }
+        // Group drag: commit every moved node as one undo checkpoint.
+        if (group) {
+          if (wasMoved && sRef.current.onMoveNode) {
+            for (const g of group) {
+              const b = boxes.get(g.id)
+              if (b) {
+                sRef.current.onMoveNode(g.id, { x: Math.round(b.x), y: Math.round(b.y) }, true)
+              }
+            }
+          }
+          return
         }
         // Commit final position so the editor pushes one undo checkpoint.
         if (wasMoved && sRef.current.onMoveNode) {
@@ -1483,6 +1549,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         endPan(e)
         if (dragId) {
           dragId = null
+          dragGroup = null
           dragMoved = false
         }
       }
@@ -1501,6 +1568,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const { mx, my } = toDesign(e)
         const found = hitAt(mx, my)
         const p = sRef.current
+        // Shift-click toggles membership in the multi-selection.
+        if (found && e.shiftKey && p.onToggleSelect) {
+          p.onToggleSelect(found)
+          return
+        }
         if (p.editable && p.connectFrom && found && found !== p.connectFrom && p.onAddLink) {
           p.onAddLink(p.connectFrom, found)
           return

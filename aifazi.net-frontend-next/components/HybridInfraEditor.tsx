@@ -55,6 +55,8 @@ export default function HybridInfraEditor() {
   const [isSeed, setIsSeed] = useState(true)
   const [diagrams, setDiagrams] = useState<DiagramMeta[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Multi-selection (shift-click); always includes selectedId when non-empty.
+  const [selIds, setSelIds] = useState<Set<string>>(new Set())
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -361,28 +363,36 @@ export default function HybridInfraEditor() {
     doc.categoryColors?.[cat] ?? CATEGORY_META[cat as InfraCategory]?.color ?? '#35a7ff'
 
   // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
+  // Operates on the multi-selection when 2+ selected, else all free nodes.
+  const alignTargets = () => {
+    const ids = new Set(selectedNodeIds())
+    const free = ids.size >= 2 ? docRef.current.nodes.filter((n) => ids.has(n.id)) : freeNodes()
+    return free.filter((n) => n.layer !== 'rack')
+  }
   const freeNodes = () => docRef.current.nodes.filter((n) => n.layer !== 'rack')
   const alignNodes = (axis: 'x' | 'y') => {
-    const free = freeNodes()
+    const free = alignTargets()
     if (free.length < 2) {
       setNotice({ msg: 'Select at least 2 free nodes to align', ok: false })
       return
     }
+    const set = new Set(free.map((n) => n.id))
     const v = Math.min(...free.map((n) => (axis === 'x' ? n.x ?? 0 : n.y ?? 0)))
     applyDoc({
       ...docRef.current,
       nodes: docRef.current.nodes.map((n) =>
-        n.layer === 'rack' ? n : { ...n, [axis]: v },
+        n.layer === 'rack' || !set.has(n.id) ? n : { ...n, [axis]: v },
       ),
     })
     setNotice({ msg: axis === 'x' ? 'Aligned left' : 'Aligned top', ok: true })
   }
   const spreadNodes = (axis: 'x' | 'y') => {
-    const free = [...freeNodes()].sort((a, b) => (axis === 'x' ? (a.x ?? 0) - (b.x ?? 0) : (a.y ?? 0) - (b.y ?? 0)))
+    const free = [...alignTargets()].sort((a, b) => (axis === 'x' ? (a.x ?? 0) - (b.x ?? 0) : (a.y ?? 0) - (b.y ?? 0)))
     if (free.length < 3) {
       setNotice({ msg: 'Need at least 3 free nodes to distribute', ok: false })
       return
     }
+    const set = new Set(free.map((n) => n.id))
     const lo = axis === 'x' ? (free[0].x ?? 0) : (free[0].y ?? 0)
     const hi = axis === 'x' ? (free[free.length - 1].x ?? 0) : (free[free.length - 1].y ?? 0)
     const step = (hi - lo) / (free.length - 1)
@@ -390,7 +400,7 @@ export default function HybridInfraEditor() {
     applyDoc({
       ...docRef.current,
       nodes: docRef.current.nodes.map((n) =>
-        n.layer === 'rack' || !pos.has(n.id) ? n : { ...n, [axis]: pos.get(n.id) },
+        n.layer === 'rack' || !set.has(n.id) ? n : { ...n, [axis]: pos.get(n.id) },
       ),
     })
     setNotice({ msg: axis === 'x' ? 'Distributed horizontally' : 'Distributed vertically', ok: true })
@@ -409,15 +419,28 @@ export default function HybridInfraEditor() {
       } else if ((mod && e.key.toLowerCase() === 'y') || (mod && e.shiftKey && e.key.toLowerCase() === 'z')) {
         e.preventDefault()
         redo()
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+      } else if (mod && e.key.toLowerCase() === 'c' && selectedNodeIds().length) {
         e.preventDefault()
-        if (window.confirm('Delete the selected node and its links?')) deleteNode(selectedId)
+        copySelected()
+      } else if (mod && e.key.toLowerCase() === 'v') {
+        e.preventDefault()
+        pasteClipboard()
+      } else if (mod && e.key.toLowerCase() === 'd' && selectedNodeIds().length) {
+        e.preventDefault()
+        duplicateSelected()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIds().length) {
+        e.preventDefault()
+        const ids = selectedNodeIds()
+        const msg = ids.length > 1
+          ? `Delete ${ids.length} selected nodes and their links?`
+          : 'Delete the selected node and its links?'
+        if (window.confirm(msg)) deleteNodes(ids)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId])
+  }, [selectedId, selIds])
 
   const addNode = (item: LibraryItem) => {
     const cur = docRef.current
@@ -491,27 +514,84 @@ export default function HybridInfraEditor() {
     rackH: item.rackH,
   })
 
-  const deleteNode = (id: string) => {
+  const deleteNodes = (ids: string[]) => {
+    if (!ids.length) return
+    const set = new Set(ids)
     const cur = docRef.current
     applyDoc({
       ...cur,
-      nodes: cur.nodes.filter((n) => n.id !== id),
-      flows: cur.flows.filter((f) => f.from !== id && f.to !== id),
+      nodes: cur.nodes
+        .filter((n) => !set.has(n.id))
+        .map((n) => ({ ...n, deps: n.deps.filter((d) => !set.has(d)) })),
+      flows: cur.flows.filter((f) => !set.has(f.from) && !set.has(f.to)),
     })
-    // Clean dangling dep refs so links never dangle.
-    const cleaned = docRef.current
-    applyDoc(
-      {
-        ...cleaned,
-        nodes: cleaned.nodes.map((n) => ({ ...n, deps: n.deps.filter((d) => d !== id) })),
-      },
-      false,
-    )
-    if (selectedId === id) setSelectedId(null)
-    if (connectFrom === id) setConnectFrom(null)
+    if (selectedId && set.has(selectedId)) setSelectedId(null)
+    setSelIds((prev) => new Set([...prev].filter((id) => !set.has(id))))
+    if (connectFrom && set.has(connectFrom)) setConnectFrom(null)
+  }
+
+  const deleteNode = (id: string) => deleteNodes([id])
+
+  const selectOnly = (ids: string[]) => {
+    setSelIds(new Set(ids))
+    setSelectedId(ids.length ? ids[ids.length - 1] : null)
+  }
+
+  const duplicateSelected = () => {
+    const ids = selectedNodeIds()
+    if (!ids.length) {
+      setNotice({ msg: 'Nothing selected to duplicate', ok: false })
+      return
+    }
+    const cur = docRef.current
+    const idMap = new Map<string, string>()
+    const srcMap = new Map<string, InfraComponent>()
+    const copies: InfraComponent[] = []
+    for (const id of ids) {
+      const src = cur.nodes.find((n) => n.id === id)
+      if (!src) continue
+      counterRef.current += 1
+      const nid = `${src.id}-copy${counterRef.current}`
+      idMap.set(src.id, nid)
+      srcMap.set(nid, src)
+      copies.push({
+        ...src,
+        id: nid,
+        name: `${src.name} (copy)`,
+        workloads: [...src.workloads],
+        deps: [],
+        x: src.x !== undefined ? src.x + 40 : undefined,
+        y: src.y !== undefined ? src.y + 40 : undefined,
+        rackU: src.rackU !== undefined ? Math.min(42, src.rackU + (src.rackH ?? 1)) : undefined,
+      })
+    }
+    if (!copies.length) return
+    // Deps: remap to the copy when the target was copied too, otherwise
+    // keep pointing at the original (it still exists in the doc).
+    for (const c of copies) {
+      const src = srcMap.get(c.id)
+      c.deps = (src?.deps ?? []).map((d) => idMap.get(d) ?? d)
+    }
+    // Flows between copied nodes are duplicated with the copied endpoints.
+    const flows = cur.flows
+      .filter((f) => idMap.has(f.from) && idMap.has(f.to))
+      .map((f) => ({
+        ...f,
+        id: `${f.from}${f.to}-copy${counterRef.current}`,
+        from: idMap.get(f.from)!,
+        to: idMap.get(f.to)!,
+      }))
+    applyDoc({ ...cur, nodes: [...cur.nodes, ...copies], flows: [...cur.flows, ...flows] })
+    selectOnly([...idMap.values()])
+    setNotice({ msg: `Duplicated ${copies.length} node(s)`, ok: true })
   }
 
   const duplicateNode = (id: string) => {
+    const ids = selectedNodeIds()
+    if (ids.includes(id) && ids.length > 1) {
+      duplicateSelected()
+      return
+    }
     const cur = docRef.current
     const src = cur.nodes.find((n) => n.id === id)
     if (!src) return
@@ -529,6 +609,66 @@ export default function HybridInfraEditor() {
     }
     applyDoc({ ...cur, nodes: [...cur.nodes, copy] })
     setSelectedId(nid)
+    setSelIds(new Set([nid]))
+  }
+
+  // ── Clipboard (Ctrl+C / Ctrl+V / Ctrl+D) ─────────────────────
+  const clipRef = useRef<InfraComponent[] | null>(null)
+  const pasteSeqRef = useRef(0)
+
+  const copySelected = () => {
+    const cur = docRef.current
+    const ids = new Set(selectedNodeIds())
+    const nodes = cur.nodes.filter((n) => ids.has(n.id))
+    if (!nodes.length) {
+      setNotice({ msg: 'Nothing selected to copy', ok: false })
+      return
+    }
+    clipRef.current = nodes.map((n) => ({
+      ...n,
+      workloads: [...n.workloads],
+      deps: [...n.deps],
+    }))
+    pasteSeqRef.current = 0
+    setNotice({ msg: `Copied ${nodes.length} node(s)`, ok: true })
+  }
+
+  const pasteClipboard = () => {
+    const clip = clipRef.current
+    if (!clip?.length) {
+      setNotice({ msg: 'Clipboard is empty', ok: false })
+      return
+    }
+    const cur = docRef.current
+    const idMap = new Map<string, string>()
+    const newIds: string[] = []
+    for (const n of clip) {
+      counterRef.current += 1
+      const nid = `${n.id}-paste${counterRef.current}`
+      idMap.set(n.id, nid)
+      newIds.push(nid)
+    }
+    const off = 24 * (pasteSeqRef.current + 1)
+    pasteSeqRef.current += 1
+    const newNodes = clip.map((n, i) => ({
+      ...n,
+      id: newIds[i],
+      deps: n.deps.map((d) => idMap.get(d) ?? d),
+      x: n.x !== undefined ? n.x + off : undefined,
+      y: n.y !== undefined ? n.y + off : undefined,
+      rackU: n.rackU !== undefined ? Math.min(42, n.rackU + (n.rackH ?? 1)) : undefined,
+    }))
+    const flows = cur.flows
+      .filter((f) => idMap.has(f.from) && idMap.has(f.to))
+      .map((f) => ({
+        ...f,
+        id: `${f.from}${f.to}-paste${counterRef.current}`,
+        from: idMap.get(f.from)!,
+        to: idMap.get(f.to)!,
+      }))
+    applyDoc({ ...cur, nodes: [...cur.nodes, ...newNodes], flows: [...cur.flows, ...flows] })
+    selectOnly(newIds)
+    setNotice({ msg: `Pasted ${newNodes.length} node(s)`, ok: true })
   }
 
   const updateNode = (id: string, patch: Partial<InfraComponent>) => {
@@ -587,6 +727,29 @@ export default function HybridInfraEditor() {
       return
     }
     setSelectedId(id)
+    setSelIds(id ? new Set([id]) : new Set())
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+        if (selectedId === id) {
+          const rest = [...next]
+          setSelectedId(rest.length ? rest[rest.length - 1] : null)
+        }
+      } else {
+        next.add(id)
+        setSelectedId(id)
+      }
+      return next
+    })
+  }
+
+  const selectedNodeIds = (): string[] => {
+    const ids = selIds.size ? [...selIds] : selectedId ? [selectedId] : []
+    return ids.filter((id) => docRef.current.nodes.some((n) => n.id === id))
   }
 
   // ── Persistence ──────────────────────────────────────────────
@@ -955,6 +1118,23 @@ export default function HybridInfraEditor() {
         <button type="button" onClick={() => spreadNodes('y')} title="Distribute free nodes evenly (vertical)" style={BTN}>
           SPREAD ↕
         </button>
+        <button
+          type="button"
+          onClick={copySelected}
+          disabled={!selectedNodeIds().length}
+          title="Copy selected node(s) — Ctrl+C (shift+click nodes to multi-select)"
+          style={BTN}
+        >
+          COPY{selIds.size > 1 ? ` (${selIds.size})` : ''}
+        </button>
+        <button
+          type="button"
+          onClick={pasteClipboard}
+          title="Paste copied node(s) — Ctrl+V"
+          style={BTN}
+        >
+          PASTE
+        </button>
         <button type="button" onClick={newDoc} style={BTN}>NEW</button>
         <button type="button" onClick={duplicateDoc} style={BTN}>DUPLICATE</button>
         <button
@@ -1079,6 +1259,8 @@ export default function HybridInfraEditor() {
             activeMode="all"
             edgeVendor="fortigate"
             selectedId={selectedId}
+            selectedIds={selIds}
+            onToggleSelect={handleToggleSelect}
             focusIds={focusIds}
             playStep={-1}
             viewMode="technical"
@@ -1115,12 +1297,18 @@ export default function HybridInfraEditor() {
             <div style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
               Select a node to edit its properties. Drag nodes to move them.
               Use CONNECT to draw animated links between nodes.
+              Hold Shift and click nodes to multi-select (group drag, COPY/PASTE, Ctrl+D).
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
                 PROPERTIES
               </div>
+              {selIds.size > 1 && (
+                <div style={{ fontSize: 11, color: pal.cyan, fontFamily: 'var(--font-mono)' }}>
+                  {selIds.size} NODES SELECTED — the panel edits the highlighted one; Delete/COPY/align act on all.
+                </div>
+              )}
               <div>
                 <label style={LABEL}>Name</label>
                 <input
