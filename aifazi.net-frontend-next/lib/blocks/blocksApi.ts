@@ -11,6 +11,11 @@ export async function listLayouts(): Promise<LayoutMeta[]> {
   return Array.isArray(r.data?.layouts) ? r.data.layouts : []
 }
 
+export async function listAllLayouts(): Promise<LayoutMeta[]> {
+  const r = await api.get('/blocks/layouts/admin/all')
+  return Array.isArray(r.data?.layouts) ? r.data.layouts : []
+}
+
 export async function getLayout(slug: string): Promise<PageLayout | null> {
   const r = await api.get(`/blocks/layouts/${encodeURIComponent(slug)}`)
   return (r.data?.layout as PageLayout) ?? null

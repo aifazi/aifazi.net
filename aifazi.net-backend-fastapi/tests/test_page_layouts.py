@@ -204,3 +204,10 @@ def test_update_and_delete_roundtrip(client):  # type: ignore[no-untyped-def]
 
 def test_update_missing_is_404(client):  # type: ignore[no-untyped-def]
     assert client.put("/layouts/nope", json=_layout()).status_code == 404
+
+
+def test_admin_all_lists_drafts(client):  # type: ignore[no-untyped-def]
+    client.post("/layouts", json=_layout(slug="draft-one"))
+    client.post("/layouts", json=_layout(slug="live-one", published=True))
+    slugs = sorted(l["slug"] for l in client.get("/layouts/admin/all").json()["layouts"])
+    assert slugs == ["draft-one", "live-one"]
