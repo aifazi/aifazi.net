@@ -414,6 +414,7 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/forms",                10,   60),
     ("/forms/",               10,   60),
     ("/infra/",               30,   60),
+    ("/blocks/",              30,   60),
     ("/store/checkout",       5,   60),
     ("/store/checkout/cart",  5,   60),
     ("/discord/connect",      5,   60),
@@ -725,6 +726,7 @@ from routers import (
     newsletter,
     notifications,
     oauth_admin,
+    page_layouts,
     pdf_editor,
     portfolio,
     push,
@@ -780,6 +782,7 @@ app.include_router(newsletter.router,     prefix="/api/newsletter")
 app.include_router(portfolio.router,      prefix="/api/portfolio")
 app.include_router(helpdesk.router,      prefix="/api/helpdesk")
 app.include_router(infra_diagrams.router, prefix="/api/infra")
+app.include_router(page_layouts.router,   prefix="/api/blocks")
 app.include_router(seo_proxy.router,      prefix="/api/seo-proxy")
 app.include_router(sitemap.router,        prefix="")
 app.include_router(cron.router,           prefix="")
