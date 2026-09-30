@@ -53,6 +53,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   })
   const [playStep, setPlayStep] = useState(-1)
   const [viewMode, setViewMode] = useState<'technical' | 'management'>('technical')
+  const [zoomPct, setZoomPct] = useState(100)
   const [notesOpen, setNotesOpen] = useState(false)
   const [query, setQuery] = useState('')
   const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
@@ -400,10 +401,16 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             <h2 style={{ margin: 0, fontSize: 12, letterSpacing: 2.5, color: pal.sub, fontWeight: 700 }}>
               INTERACTIVE ENTERPRISE DATA CENTER
             </h2>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }} role="toolbar" aria-label="Diagram view controls">
-              <button type="button" onClick={() => canvasHandle.current?.zoomOut()} title="Zoom out" aria-label="Zoom out" style={{ ...BTN, padding: '6px 10px' }}>−</button>
-              <button type="button" onClick={() => canvasHandle.current?.zoomIn()} title="Zoom in" aria-label="Zoom in" style={{ ...BTN, padding: '6px 10px' }}>+</button>
-              <button type="button" onClick={() => canvasHandle.current?.resetView()} title="Reset zoom" style={{ ...BTN, padding: '6px 10px' }}>RESET</button>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }} role="toolbar" aria-label="Diagram view controls" title="Scroll to zoom · drag to pan · Ctrl/⌘ + +/−/0 to zoom">
+              <button type="button" onClick={() => canvasHandle.current?.zoomOut()} title="Zoom out (Ctrl/⌘ + −)" aria-label="Zoom out" style={{ ...BTN, padding: '6px 10px' }}>−</button>
+              <span
+                aria-live="polite"
+                style={{ ...BTN, padding: '6px 8px', minWidth: 52, textAlign: 'center', cursor: 'default' }}
+              >
+                {zoomPct}%
+              </span>
+              <button type="button" onClick={() => canvasHandle.current?.zoomIn()} title="Zoom in (Ctrl/⌘ + +)" aria-label="Zoom in" style={{ ...BTN, padding: '6px 10px' }}>+</button>
+              <button type="button" onClick={() => canvasHandle.current?.resetView()} title="Reset zoom and pan (Ctrl/⌘ + 0)" style={{ ...BTN, padding: '6px 10px' }}>RESET</button>
               <button type="button" onClick={toggleFullscreen} title="Toggle fullscreen" aria-pressed={isFullscreen} style={{ ...BTN, padding: '6px 10px' }}>
                 {isFullscreen ? 'EXIT FULL' : 'FULLSCREEN'}
               </button>
@@ -431,6 +438,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             nodes={nodes}
             flows={flows ?? undefined}
             tone={tone}
+            onViewChange={setZoomPct}
           />
         </section>
 
