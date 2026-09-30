@@ -109,6 +109,8 @@ export default function HybridInfraEditor() {
   }
   // Odoo-style grid snap step (px). Null = free placement.
   const [snapSize, setSnapSize] = useState<number | null>(10)
+  // Background grid overlay (editor-local view preference).
+  const [showGrid, setShowGrid] = useState(true)
   // Locked nodes can't be dragged (editor-local; never persisted to the doc).
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set())
   const toggleLock = (id: string) => {
@@ -910,6 +912,37 @@ export default function HybridInfraEditor() {
         >
           SNAP: {snapSize ?? 'OFF'}
         </button>
+        <label
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontFamily: 'var(--font-mono)', color: pal.muted }}
+          title="Custom snap step in px (0 = free placement)"
+        >
+          STEP
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={snapSize ?? 0}
+            onChange={(e) => {
+              const v = Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)))
+              setSnapSize(v > 0 ? v : null)
+            }}
+            style={{ ...INPUT, width: 62, padding: '5px 7px' }}
+            aria-label="Custom snap step in pixels (0 disables snapping)"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowGrid((v) => !v)}
+          aria-pressed={showGrid}
+          title="Toggle the background grid overlay"
+          style={{
+            ...BTN,
+            borderColor: showGrid ? pal.cyan : pal.border,
+            color: showGrid ? pal.cyan : pal.ink,
+          }}
+        >
+          GRID {showGrid ? 'ON' : 'OFF'}
+        </button>
         <button type="button" onClick={() => alignNodes('x')} title="Align free nodes to the left edge" style={BTN}>
           ALIGN ←
         </button>
@@ -1061,6 +1094,7 @@ export default function HybridInfraEditor() {
             lockedIds={lockedIds}
             viewStorageKey={`editor-${docId ?? doc.slug}`}
             catColors={doc.categoryColors ?? null}
+            grid={showGrid}
           />
         </div>
 

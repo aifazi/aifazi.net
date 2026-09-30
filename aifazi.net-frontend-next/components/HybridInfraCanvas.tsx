@@ -96,6 +96,8 @@ interface Props {
   viewStorageKey?: string | null
   /** Per-category color overrides (from DiagramDoc.categoryColors). */
   catColors?: Record<string, string> | null
+  /** Background grid overlay. Defaults to true. */
+  grid?: boolean
   /** Grid snap step in design px. Null/0 disables snapping. Defaults to 10. */
   snap?: number | null
   /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
@@ -559,23 +561,25 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         g.addColorStop(1, P.bg)
         ctx.fillStyle = g
         ctx.fillRect(0, 0, DESIGN_W, DESIGN_H)
-        ctx.save()
-        ctx.globalAlpha = 0.045
-        ctx.strokeStyle = P.muted
-        const step = 40
-        for (let x = 0; x < DESIGN_W; x += step) {
-          ctx.beginPath()
-          ctx.moveTo(x, 0)
-          ctx.lineTo(x, DESIGN_H)
-          ctx.stroke()
+        if (sRef.current.grid !== false) {
+          ctx.save()
+          ctx.globalAlpha = 0.045
+          ctx.strokeStyle = P.muted
+          const step = 40
+          for (let x = 0; x < DESIGN_W; x += step) {
+            ctx.beginPath()
+            ctx.moveTo(x, 0)
+            ctx.lineTo(x, DESIGN_H)
+            ctx.stroke()
+          }
+          for (let y = 0; y < DESIGN_H; y += step) {
+            ctx.beginPath()
+            ctx.moveTo(0, y)
+            ctx.lineTo(DESIGN_W, y)
+            ctx.stroke()
+          }
+          ctx.restore()
         }
-        for (let y = 0; y < DESIGN_H; y += step) {
-          ctx.beginPath()
-          ctx.moveTo(0, y)
-          ctx.lineTo(DESIGN_W, y)
-          ctx.stroke()
-        }
-        ctx.restore()
         const glow = ctx.createRadialGradient(520, 480, 20, 520, 480, 360)
         glow.addColorStop(0, 'rgba(50,120,190,0.13)')
         glow.addColorStop(1, 'transparent')
