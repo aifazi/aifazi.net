@@ -35,6 +35,7 @@ from . import (
     monitor,
     network,
     notifications,
+    page_layouts,
     pdf_editor,
     portfolio,
     search,
