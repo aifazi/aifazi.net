@@ -35,7 +35,6 @@ import {
   getVpnStats,
   listVpnSessions,
   getPublicIp,
-  formatBytes,
   detectDeviceOs,
   type VpnPeer,
   type VpnStatus,

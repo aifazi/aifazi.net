@@ -4,6 +4,7 @@ import api, { canEdit as checkCanEdit, getRole, hasPermission } from '@/lib/api'
 import { IconPickerModal, IconDisplay } from '../components/IconPicker'
 import AnimationPicker from '../components/AnimationPicker'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
+import { safeHref } from '@/lib/safeHref'
 import { isGsapAnimationValue, useGsapAnimation } from '@/lib/animate'
 
 const SANITIZE_CONFIG = {
@@ -1517,12 +1518,12 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
   const [draftHref, setDraftHref] = useState(href)
 
   if (!isAdmin) {
-    const props = Tag === 'a' ? { href: href || defaultHref, style } : { style }
+    const props = Tag === 'a' ? { href: safeHref(href || defaultHref), style } : { style }
     return <Tag {...props}>{children !== undefined ? children : (value || defaultValue)}</Tag>
   }
 
   const openModal = () => { setDraftLabel(value || defaultValue); setDraftHref(href || defaultHref); setOpen(true) }
-  const confirm = () => { save(draftLabel); saveHref(draftHref); setOpen(false) }
+  const confirm = () => { save(draftLabel); saveHref(safeHref(draftHref)); setOpen(false) }
 
   return (
     <>

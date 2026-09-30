@@ -38,10 +38,11 @@ export default function ProfileScreen() {
   const { user, loading, isAuthed } = useAuth()
   const [tab, setTab] = useState<TabId>('overview')
   const pillRadius = frameworkStyles(theme).buttonRadius
+  const userId = user?.id ?? user?._id
 
   useEffect(() => {
-    if (user) setTab('overview')
-  }, [user?.id, user?._id])
+    if (userId) setTab('overview')
+  }, [userId])
 
   if (loading) {
     return (

@@ -1,7 +1,7 @@
 /**
  * SessionHistory — shows recent VPN connection sessions.
  */
-import { View, Text, ScrollView } from 'react-native'
+import { View, Text } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { formatBytes, type VpnSession } from '@/src/lib/vpn'
 

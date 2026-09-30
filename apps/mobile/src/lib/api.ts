@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { AxiosError, InternalAxiosRequestConfig, create as axiosCreate, isAxiosError } from 'axios'
 import * as SecureStore from 'expo-secure-store'
 import { API_BASE } from './getApiBase'
 
@@ -50,7 +50,7 @@ function emitAuthCleared() {
   authClearedListeners.forEach((l) => l())
 }
 
-export const api = axios.create({ baseURL: `${API_BASE}/api`, timeout: 15000 })
+export const api = axiosCreate({ baseURL: `${API_BASE}/api`, timeout: 15000 })
 
 api.interceptors.request.use(async (config) => {
   // Access token is memory-only (H4). If absent, attach nothing and let the
@@ -85,7 +85,7 @@ async function refreshAccessToken(): Promise<string> {
       return token
     } catch (e) {
       if (e instanceof RefreshFailedError) throw e
-      const status = axios.isAxiosError(e) ? e.response?.status : undefined
+      const status = isAxiosError(e) ? e.response?.status : undefined
       // Distinct 401-on-refresh: the refresh token itself was rejected —
       // the session is revoked, not merely offline.
       if (status === 401) throw new RefreshFailedError('revoked', 'Refresh token revoked (401 on refresh)')

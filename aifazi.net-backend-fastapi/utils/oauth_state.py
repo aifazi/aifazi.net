@@ -111,6 +111,10 @@ def verify_oauth_state_full(state: str | None, provider: str) -> dict:
         except ValueError:
             return RedirectResponse(f"{front}/login?oauth_error=state")
     """
+    # Fail closed on empty secret (parity with make_oauth_state): HMAC with an
+    # empty key is forgeable, so an unconfigured secret must reject all states.
+    if not _OAUTH_STATE_SECRET:
+        raise ValueError("state verification unavailable")
     if not state or not isinstance(state, str) or "." not in state:
         raise ValueError("malformed state")
     body, _, sig = state.rpartition(".")

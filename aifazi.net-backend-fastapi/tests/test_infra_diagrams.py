@@ -26,6 +26,7 @@ class _Query:
         self._filters = []
         self._op = None
         self._payload = None
+        self._slice = None
 
     def select(self, *args):
         self._op = "select"
@@ -55,13 +56,21 @@ class _Query:
     def limit(self, n):
         return self
 
+    def range(self, start, end):
+        self._slice = (start, end)
+        return self
+
     def _match(self, row):
         return all(row.get(k) == v for k, v in self._filters)
 
     def execute(self):  # type: ignore[no-untyped-def]
         rows = self._store.setdefault(self._table, [])
         if self._op == "select":
-            return types.SimpleNamespace(data=[dict(r) for r in rows if self._match(r)])
+            rows = [dict(r) for r in rows if self._match(r)]
+            if self._slice:
+                start, end = self._slice
+                rows = rows[start : end + 1]
+            return types.SimpleNamespace(data=rows)
         if self._op == "insert":
             row = dict(self._payload)
             row.setdefault("id", f"id-{len(rows)}")
@@ -117,6 +126,7 @@ def _build_app(monkeypatch, require_admin):  # type: ignore[no-untyped-def]
     deps_stub = types.ModuleType("dependencies")
     deps_stub.require_admin = require_admin
     deps_stub.decode_token = lambda token: {"role": "admin"}
+    deps_stub._enrich_user = lambda payload: payload
     monkeypatch.setitem(sys.modules, "database", db_stub)
     monkeypatch.setitem(sys.modules, "dependencies", deps_stub)
     module = _load_module()
@@ -157,7 +167,7 @@ def test_create_and_draft_hidden_from_public(client):
     assert r.status_code == 200, r.text
     assert r.json()["diagram"]["slug"] == "hq-east"
     assert client.get("/diagrams/hq-east").status_code == 404
-    assert client.get("/diagrams").json() == {"diagrams": []}
+    assert client.get("/diagrams").json() == {"diagrams": [], "offset": 0}
 
 
 def test_publish_makes_public(client):
@@ -281,3 +291,18 @@ def test_update_bumps_updated_at(client):
     assert r.status_code == 200, r.text
     after = r.json()["diagram"]["updatedAt"]
     assert before and after and after > before
+
+
+def test_list_offset_pagination(client):  # type: ignore[no-untyped-def]
+    for slug in ("pg-one", "pg-two"):
+        body = _doc(slug=slug)
+        body["published"] = True
+        assert client.post("/diagrams", json=body).status_code == 200
+    page1 = client.get("/diagrams?offset=0").json()
+    page2 = client.get("/diagrams?offset=1").json()
+    assert page1["offset"] == 0 and len(page1["diagrams"]) == 2
+    assert page2["offset"] == 1 and len(page2["diagrams"]) == 1
+
+
+def test_offset_rejects_negative(client):  # type: ignore[no-untyped-def]
+    assert client.get("/diagrams?offset=-1").status_code == 422

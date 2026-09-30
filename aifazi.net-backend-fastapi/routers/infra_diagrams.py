@@ -12,11 +12,11 @@ import logging
 import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from database import supabase
-from dependencies import decode_token, require_admin
+from dependencies import _enrich_user, decode_token, require_admin
 
 router = APIRouter()
 log = logging.getLogger("infra.diagrams")
@@ -181,7 +181,13 @@ def _row_to_doc(row: dict, include_body: bool = True) -> dict:
 
 
 def _optional_admin(request: Request) -> dict | None:
-    """Best-effort admin check for draft preview (never raises)."""
+    """Best-effort admin check for draft preview (never raises).
+
+    Goes through `_enrich_user` so the role comes from the user directory
+    (fresh within the 60s cache) — previously the raw JWT role claim was
+    trusted, letting a demoted admin preview drafts for up to the token
+    lifetime (~24h).
+    """
     token = ""
     auth = request.headers.get("authorization", "")
     if auth.lower().startswith("bearer "):
@@ -191,44 +197,44 @@ def _optional_admin(request: Request) -> dict | None:
     if not token:
         return None
     try:
-        return require_admin(decode_token(token))
+        return require_admin(_enrich_user(decode_token(token)))
     except Exception:
         return None
 
 
 @router.get("/diagrams")
-def list_diagrams():
-    """Public: published diagram metas (newest first)."""
+def list_diagrams(offset: int = Query(0, ge=0, le=10000)):
+    """Public: published diagram metas (newest first, 100 per page)."""
     try:
         res = (
             supabase.table("infra_diagrams")
             .select("id,slug,title,updated_at,published,doc")
             .eq("published", True)
             .order("updated_at", desc=True)
-            .limit(100)
+            .range(offset, offset + 99)
             .execute()
         )
     except Exception as exc:
         log.error("infra list failed: %s", exc)
         raise HTTPException(500, "Could not list diagrams")
-    return {"diagrams": [_row_to_doc(r, include_body=False) for r in (res.data or [])]}
+    return {"diagrams": [_row_to_doc(r, include_body=False) for r in (res.data or [])], "offset": offset}
 
 
 @router.get("/diagrams/admin/all")
-def list_all_diagrams(admin: dict = Depends(require_admin)):
-    """Admin: every diagram including drafts."""
+def list_all_diagrams(offset: int = Query(0, ge=0, le=10000), admin: dict = Depends(require_admin)):
+    """Admin: every diagram including drafts (200 per page)."""
     try:
         res = (
             supabase.table("infra_diagrams")
             .select("id,slug,title,updated_at,published,doc")
             .order("updated_at", desc=True)
-            .limit(200)
+            .range(offset, offset + 199)
             .execute()
         )
     except Exception as exc:
         log.error("infra admin list failed: %s", exc)
         raise HTTPException(500, "Could not list diagrams")
-    return {"diagrams": [_row_to_doc(r, include_body=False) for r in (res.data or [])]}
+    return {"diagrams": [_row_to_doc(r, include_body=False) for r in (res.data or [])], "offset": offset}
 
 
 @router.get("/diagrams/{slug}")

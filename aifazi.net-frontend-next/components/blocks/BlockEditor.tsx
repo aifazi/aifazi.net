@@ -355,10 +355,14 @@ export default function BlockEditor() {
     syncHist()
   }
 
+  const flashTimer = useRef<number | null>(null)
   const flash = (msg: string) => {
     setNotice(msg)
-    window.setTimeout(() => setNotice((n) => (n === msg ? '' : n)), 2600)
+    if (flashTimer.current) window.clearTimeout(flashTimer.current)
+    flashTimer.current = window.setTimeout(() => setNotice((n) => (n === msg ? '' : n)), 2600)
   }
+  useEffect(() => () => { if (flashTimer.current) window.clearTimeout(flashTimer.current) }, [])
+  const lastEditAt = useRef(0)
 
   // Load: layouts list + ?slug=
   useEffect(() => {
@@ -393,6 +397,10 @@ export default function BlockEditor() {
   }, [])
 
   const addBlock = (manifest: BlockManifest) => {
+    if (blocks.length >= 100) {
+      flash('Block limit reached (100)')
+      return
+    }
     const block: PageBlock = { id: newId(), type: manifest.type, props: { ...manifest.defaults } }
     applyBlocks([...blocks, block])
     setSelectedId(block.id)
@@ -464,9 +472,16 @@ export default function BlockEditor() {
   const updateProp = (blockId: string, key: string, value: string | number | boolean) => {
     const manifest = getBlockManifest(blocks.find((b) => b.id === blockId)?.type ?? '')
     const clean = sanitizeProps(manifest?.type ?? '', { ...currentProps(blockId), [key]: value })
+    // Undo checkpoint per typing *burst* (≥800ms idle), not per keystroke —
+    // previously every edit was hist=false, so prop changes were un-undoable.
+    // (Handler context, not render; wall-clock coalescing is the whole point.)
+    // eslint-disable-next-line react-hooks/purity
+    const now = Date.now()
+    const coalesce = now - lastEditAt.current < 800
+    lastEditAt.current = now
     applyBlocks(
       blocks.map((b) => (b.id === blockId ? { ...b, props: { ...b.props, ...clean } } : b)),
-      false,
+      !coalesce,
     )
   }
   const currentProps = (blockId: string): Record<string, string | number | boolean> => {
@@ -533,18 +548,36 @@ export default function BlockEditor() {
     try {
       const raw = JSON.parse(await f.text()) as { blocks?: unknown }
       if (!Array.isArray(raw.blocks)) throw new Error('No blocks array in file')
-      const clean = raw.blocks.filter(
-        (b): b is PageBlock =>
-          !!b && typeof b === 'object' && typeof (b as PageBlock).id === 'string' && typeof (b as PageBlock).type === 'string',
-      )
-      applyBlocks(
-        clean.map((b) => ({
-          id: typeof b.id === 'string' && b.id ? b.id : newId(),
-          type: b.type,
-          props: sanitizeProps(b.type, (b.props ?? {}) as Record<string, unknown>),
-          children: Array.isArray(b.children) ? b.children.slice(0, 12) : undefined,
-        })),
-      )
+      // Mirror backend _validate_block: type regex, unique ids across the
+      // whole tree, ≤100 top-level blocks, children ≤12 and ≤1 nesting level.
+      const seenIds = new Set<string>()
+      const cleanBlock = (b: unknown, depth: number): PageBlock | null => {
+        if (!b || typeof b !== 'object') return null
+        const o = b as Record<string, unknown>
+        if (typeof o.type !== 'string' || !/^[a-z0-9-]{1,64}$/.test(o.type)) return null
+        let id = typeof o.id === 'string' && o.id && o.id.length <= 64 ? o.id : ''
+        while (!id || seenIds.has(id)) id = newId()
+        seenIds.add(id)
+        const out: PageBlock = {
+          id,
+          type: o.type,
+          props: sanitizeProps(o.type, (o.props ?? {}) as Record<string, unknown>),
+        }
+        if (Array.isArray(o.children) && depth < 1) {
+          const kids = o.children
+            .slice(0, 12)
+            .map((c) => cleanBlock(c, depth + 1))
+            .filter((c): c is PageBlock => !!c)
+          if (kids.length) out.children = kids
+        }
+        return out
+      }
+      const clean = raw.blocks
+        .slice(0, 100)
+        .map((b) => cleanBlock(b, 0))
+        .filter((b): b is PageBlock => !!b)
+      if (!clean.length) throw new Error('No valid blocks in file')
+      applyBlocks(clean)
       flash(`Imported ${clean.length} blocks (unsaved)`)
     } catch (e) {
       flash(e instanceof Error ? e.message : 'Import failed')

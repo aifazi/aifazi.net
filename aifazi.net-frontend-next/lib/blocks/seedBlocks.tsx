@@ -8,6 +8,7 @@
  * This is what keeps every theme + light/dark toggle working.
  */
 import type { BlockPropValue } from './types'
+import { safeHref } from '../safeHref'
 
 type P = Record<string, BlockPropValue>
 const str = (p: P, k: string, fb = ''): string => (typeof p[k] === 'string' ? (p[k] as string) : fb) || fb
@@ -45,7 +46,7 @@ export function HeroBlock({ props }: { props: P }) {
       )}
       {str(props, 'ctaLabel') && str(props, 'ctaHref') && (
         <a
-          href={str(props, 'ctaHref')}
+          href={safeHref(str(props, 'ctaHref'))}
           style={{
             display: 'inline-block',
             marginTop: 20,
@@ -122,7 +123,7 @@ export function CtaBannerBlock({ props }: { props: P }) {
       {str(props, 'subtitle') && <p style={{ margin: '0 0 16px', opacity: 0.85 }}>{str(props, 'subtitle')}</p>}
       {str(props, 'ctaLabel') && str(props, 'ctaHref') && (
         <a
-          href={str(props, 'ctaHref')}
+          href={safeHref(str(props, 'ctaHref'))}
           style={{
             display: 'inline-block',
             padding: '12px 24px',

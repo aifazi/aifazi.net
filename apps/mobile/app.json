@@ -45,13 +45,13 @@
       },
       "bitcode": false
     },
-      "android": {
-        "permissions": [
-          "INTERNET",
-          "ACCESS_NETWORK_STATE",
-          "CAMERA",
-          "POST_NOTIFICATIONS"
-        ],
+    "android": {
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#060a0f",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
