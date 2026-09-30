@@ -16,11 +16,12 @@ import { TicketsTab } from '@/src/screens/profile/Tickets'
 import { ActivityTab } from '@/src/screens/profile/Activity'
 import { DocumentsTab } from '@/src/screens/profile/Documents'
 import { SecurityTab } from '@/src/screens/profile/Security'
+import { NotificationsTab } from '@/src/screens/profile/Notifications'
 import { EditTab } from '@/src/screens/profile/Edit'
 import { LoginCard } from '@/src/screens/profile/LoginCard'
 import { Reveal, stagger } from '@/src/components/motion'
 
-type TabId = 'overview' | 'orders' | 'tickets' | 'activity' | 'documents' | 'security' | 'edit'
+type TabId = 'overview' | 'orders' | 'tickets' | 'activity' | 'documents' | 'security' | 'notifications' | 'edit'
 
 const TABS: { id: TabId; label: string; icon: IconName }[] = [
   { id: 'overview', label: 'Overview', icon: 'profile' },
@@ -29,6 +30,7 @@ const TABS: { id: TabId; label: string; icon: IconName }[] = [
   { id: 'activity', label: 'Activity', icon: 'status' },
   { id: 'documents', label: 'Docs', icon: 'doc' },
   { id: 'security', label: 'Security', icon: 'shield' },
+  { id: 'notifications', label: 'Alerts', icon: 'bell' },
   { id: 'edit', label: 'Edit', icon: 'edit' },
 ]
 
@@ -112,6 +114,7 @@ export default function ProfileScreen() {
       {tab === 'activity' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><ActivityTab /></Reveal>}
       {tab === 'documents' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><DocumentsTab /></Reveal>}
       {tab === 'security' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><SecurityTab /></Reveal>}
+      {tab === 'notifications' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><NotificationsTab /></Reveal>}
       {tab === 'edit' && <Reveal dir="up" delay={160} duration={520} style={{ flex: 1 }}><EditTab /></Reveal>}
     </Screen>
   )

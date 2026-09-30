@@ -104,8 +104,40 @@ async function clearDenied(userId?: string) {
   }
 }
 
+/**
+ * Local (non-secret) per-user push opt-out, set from the Notifications
+ * profile screen. `registerPushToken` checks it on every future login for the
+ * same user id, so an opt-out survives logout/session restore without ever
+ * reaching the backend.
+ */
+const optOutKey = (userId?: string) => `pushOptOut:${userId ?? 'anon'}`
+
+export async function isPushEnabled(userId?: string): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(optOutKey(userId))) !== '1'
+  } catch {
+    return true // Storage failure - default to enabled (historical behavior).
+  }
+}
+
+/** Toggle push for this user on this device. Disabling unregisters the
+ * current token so backend fan-out stops immediately. Returns the new state. */
+export async function setPushEnabled(userId: string, enabled: boolean): Promise<boolean> {
+  try {
+    if (enabled) await AsyncStorage.removeItem(optOutKey(userId))
+    else await AsyncStorage.setItem(optOutKey(userId), '1')
+  } catch {
+    // Storage failure - fall through; the in-memory token state still changes.
+  }
+  if (enabled) await registerPushToken(userId)
+  else await unregisterCurrentPushToken()
+  return enabled
+}
+
 export async function registerPushToken(userId?: string) {
   try {
+    // Device opted out for this user - skip before any permission prompt.
+    if (userId && !(await isPushEnabled(userId))) return null
     // v57 docs: projectId lives under extra.eas (app.json) with an easConfig
     // fallback. Without it getExpoPushTokenAsync cannot work — skip before
     // touching permissions so there is no prompt loop and no crash.

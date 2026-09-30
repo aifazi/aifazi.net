@@ -8,9 +8,14 @@ import { Screen } from '@/src/components/Screen'
 import { Card, Title, Muted, EmptyState, FLAT_LIST_PRESET } from '@/src/components/ui'
 import { useTheme } from '@/src/theme'
 import { api } from '@/src/lib/api'
+import { useSavedArticles } from '@/src/lib/savedArticles'
 import { Icon } from '@/src/components/icon'
 import { Loader } from '@/src/components/Loader'
 import { Reveal, stagger } from '@/src/components/motion'
+
+// Sentinel category: show the locally saved (offline) articles instead of the
+// network feed. Kept out of the server's real category list.
+const SAVED = '__saved__'
 
 interface Post {
   id: string
@@ -46,8 +51,18 @@ export default function BlogScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
+  const saved = useSavedArticles()
+  const savedView = cat === SAVED
+  const listData: Post[] = savedView ? saved.items : posts
 
   const load = useCallback(() => {
+    // Saved view is served entirely from local storage - no network needed
+    // (this is the offline path).
+    if (cat === SAVED) {
+      setLoading(false)
+      setRefreshing(false)
+      return
+    }
     api
       .get('/blog', { params: cat ? { category: cat, limit: 20 } : { limit: 20 } })
       .then((r) => setPosts((r.data?.posts ?? []) as Post[]))
@@ -86,8 +101,7 @@ export default function BlogScreen() {
       <Reveal dir="up" duration={420}>
         <Title tag="BLOG">Blog</Title>
       </Reveal>
-      {cats.length > 0 ? (
-        <Reveal dir="up" delay={120} duration={520}>
+      <Reveal dir="up" delay={120} duration={520}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: SPACE.md, marginBottom: SPACE.xl }}>
           <Reveal dir="scale" delay={stagger(0)} duration={420}>
           <TouchableOpacity
@@ -102,6 +116,27 @@ export default function BlogScreen() {
             }}
           >
             <Text style={{ color: cat === '' ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>All</Text>
+          </TouchableOpacity>
+          </Reveal>
+          <Reveal dir="scale" delay={stagger(1)} duration={420}>
+          <TouchableOpacity
+            onPress={() => setCat(SAVED)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              paddingHorizontal: SPACE.xl,
+              paddingVertical: SPACE.sm,
+              borderRadius: pillRadius,
+              borderWidth: 1,
+              borderColor: savedView ? c.accent : c.border,
+              backgroundColor: savedView ? c.accent2 : 'transparent',
+            }}
+          >
+            <Icon name="star" size={12} color={savedView ? c.onAccent : c.text} />
+            <Text style={{ color: savedView ? c.onAccent : c.text, fontSize: FONT.md, fontWeight: '700' }}>
+              Saved{saved.count ? ` ${saved.count}` : ''}
+            </Text>
           </TouchableOpacity>
           </Reveal>
           {cats.map((x, i) => (
@@ -123,11 +158,10 @@ export default function BlogScreen() {
           ))}
         </View>
         </Reveal>
-      ) : null}
-      {error ? <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{error}</Muted></Reveal> : null}
+      {!savedView && error ? <Reveal dir="scale" delay={stagger(0)} duration={480}><Muted>{error}</Muted></Reveal> : null}
 
       <FlatList
-        data={posts}
+        data={listData}
         keyExtractor={(p) => p.id}
         {...FLAT_LIST_PRESET}
         showsVerticalScrollIndicator={false}
@@ -154,16 +188,33 @@ export default function BlogScreen() {
                     <Muted>{item.views}</Muted>
                   </View>
                 ) : null}
+                <TouchableOpacity
+                  onPress={() => saved.toggle(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={saved.has(item.slug) ? 'Remove saved article' : 'Save article for offline reading'}
+                  style={{ marginLeft: 'auto' }}
+                >
+                  <Icon name="star" size={16} color={saved.has(item.slug) ? c.accent : c.muted} />
+                </TouchableOpacity>
               </View>
             </Card>
           </Reveal>
         )}
         ListEmptyComponent={
-          <EmptyState
-            icon="blog"
-            title="No posts yet"
-            subtitle="Articles will appear here once published."
-          />
+          savedView ? (
+            <EmptyState
+              icon="star"
+              title="Nothing saved yet"
+              subtitle="Tap the star on any article to keep it readable offline."
+            />
+          ) : (
+            <EmptyState
+              icon="blog"
+              title="No posts yet"
+              subtitle="Articles will appear here once published."
+            />
+          )
         }
       />
     </Screen>
