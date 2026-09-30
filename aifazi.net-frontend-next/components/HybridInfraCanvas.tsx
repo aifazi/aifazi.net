@@ -94,6 +94,8 @@ interface Props {
   initialView?: { z: number; cx: number; cy: number } | null
   /** localStorage key suffix; last view is remembered per key. */
   viewStorageKey?: string | null
+  /** Per-category color overrides (from DiagramDoc.categoryColors). */
+  catColors?: Record<string, string> | null
   /** Grid snap step in design px. Null/0 disables snapping. Defaults to 10. */
   snap?: number | null
   /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
@@ -250,6 +252,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       const nodeList = () => sRef.current.nodes ?? COMPONENTS
       const flowList = () => sRef.current.flows ?? FLOWS
       const byId = (id: string) => nodeList().find((c) => c.id === id)
+      // Category color: doc override → canonical meta → fallback.
+      const catColor = (cat: string) =>
+        sRef.current.catColors?.[cat] ??
+        CATEGORY_META[cat as InfraCategory]?.color ??
+        '#35a7ff'
 
       // ── helpers ──────────────────────────────────────────────
       const center = (b: Box) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 })
@@ -630,7 +637,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         for (const f of flowList()) {
           const pts = flowPts.get(f.id)
           if (!pts) continue
-          const color = CATEGORY_META[f.cat].color
+          const color = catColor(f.cat)
           const isDim =
             (p.activeMode !== 'all' && p.activeMode !== f.cat) ||
             (p.focusIds !== null &&
@@ -779,7 +786,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = c.accent || CATEGORY_META[c.category].color
+        const accent = c.accent || catColor(c.category)
         const selected = p.selectedId === c.id
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
@@ -881,7 +888,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = c.accent || CATEGORY_META[c.category].color
+        const accent = c.accent || catColor(c.category)
         const selected = p.selectedId === c.id
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
@@ -961,7 +968,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = c.accent || CATEGORY_META[c.category].color
+        const accent = c.accent || catColor(c.category)
         const selected = p.selectedId === c.id
         const isDim =
           (p.activeMode !== 'all' && p.activeMode !== c.category) ||
@@ -1074,7 +1081,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (c.layer !== 'users') continue
           const b = boxes.get(c.id)
           if (!b) continue
-          const accent = c.accent || CATEGORY_META[c.category].color
+          const accent = c.accent || catColor(c.category)
           const selected = p.selectedId === c.id
           const isDim = dimmed(c.category, p.focusIds, c.id)
           ctx.save()
@@ -1193,7 +1200,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (!c.pulse) continue
           const b = boxes.get(c.id)
           if (!b) continue
-          const accent = c.accent || CATEGORY_META[c.category].color
+          const accent = c.accent || catColor(c.category)
           const wobble = frozen ? 0 : Math.sin(t * 4)
           const pr = 5 + (frozen ? 0 : 2.5 * wobble)
           ctx.globalAlpha = frozen ? 0.5 : Math.max(0.15, 0.45 + 0.25 * wobble)

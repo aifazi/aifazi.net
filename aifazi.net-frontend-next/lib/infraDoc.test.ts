@@ -40,3 +40,26 @@ describe('sanitizeDoc style fields', () => {
     expect('pulse' in (clean?.nodes[0] ?? {})).toBe(false)
   })
 })
+
+describe('sanitizeDoc category palette', () => {
+  it('keeps valid hex overrides and drops bad keys/values', () => {
+    const clean = sanitizeDoc({
+      ...base,
+      nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }],
+      categoryColors: {
+        network: '#123abc',
+        compute: 'purple',
+        'Bad Key!': '#123abc',
+        storage: '#zzzzzz',
+      },
+    })
+    expect(clean?.categoryColors).toEqual({ network: '#123abc' })
+  })
+
+  it('omits the palette when empty or malformed', () => {
+    const nodes = [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }]
+    expect(sanitizeDoc({ ...base, nodes, categoryColors: { compute: 'nope' } })?.categoryColors).toBeUndefined()
+    expect(sanitizeDoc({ ...base, nodes, categoryColors: 'red' })?.categoryColors).toBeUndefined()
+    expect('categoryColors' in (sanitizeDoc({ ...base, nodes }) ?? {})).toBe(false)
+  })
+})

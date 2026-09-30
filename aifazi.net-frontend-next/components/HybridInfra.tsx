@@ -137,6 +137,7 @@ export default function HybridInfra({
 
   const nodes = doc?.nodes ?? COMPONENTS
   const flows = doc?.flows ?? null
+  const catColors = doc?.categoryColors ?? null
 
   const selected = useMemo(
     () => nodes.find((c) => c.id === selectedId) ?? null,
@@ -259,7 +260,7 @@ export default function HybridInfra({
   const H3: React.CSSProperties = {
     margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted,
   }
-  const accent = selected ? infraCatColor(selected.category, tone) : pal.blue
+  const accent = selected ? infraCatColor(selected.category, tone, catColors) : pal.blue
   const edgeNote =
     selectedId === 'firewall'
       ? EDGE_COPY[edgeVendor].note
@@ -490,7 +491,7 @@ export default function HybridInfra({
                 .filter(([k]) => !['endpoint', 'power'].includes(k))
                 .map(([k, m]) => (
                   <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: m.color, display: 'inline-block' }} />
+                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: catColors?.[k] ?? m.color, display: 'inline-block' }} />
                     {m.label}
                   </span>
                 ))}
@@ -511,6 +512,7 @@ export default function HybridInfra({
             onViewChange={setZoomPct}
             initialView={initialView}
             viewStorageKey={viewKey ?? doc?.id ?? 'plan-a'}
+            catColors={catColors}
           />
         </section>
 

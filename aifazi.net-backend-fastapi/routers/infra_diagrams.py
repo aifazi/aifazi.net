@@ -30,11 +30,30 @@ class DiagramIn(BaseModel):
     published: bool = False
     nodes: list = Field(default_factory=list, max_length=MAX_NODES)
     flows: list = Field(default_factory=list, max_length=MAX_FLOWS)
+    categoryColors: dict | None = None
 
 
 def _slugify(raw: str) -> str:
     slug = re.sub(r"[^a-z0-9-]+", "-", raw.lower()).strip("-")[:64]
     return slug or "diagram"
+
+
+def _validate_palette(colors: dict | None) -> dict | None:
+    """Category palette overrides: {id: '#rrggbb'} with tight caps."""
+    if colors is None:
+        return None
+    if not isinstance(colors, dict):
+        raise HTTPException(400, "categoryColors must be an object")
+    if len(colors) > 32:
+        raise HTTPException(400, "Too many category colors")
+    clean: dict = {}
+    for key, value in colors.items():
+        if not isinstance(key, str) or not re.fullmatch(r"[a-z0-9-]{1,32}", key):
+            raise HTTPException(400, "Invalid category color key")
+        if not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
+            raise HTTPException(400, "Category color must be #rrggbb")
+        clean[key] = value
+    return clean or None
 
 
 def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
@@ -86,6 +105,8 @@ def _row_to_doc(row: dict, include_body: bool = True) -> dict:
     if include_body:
         out["nodes"] = doc.get("nodes", [])
         out["flows"] = doc.get("flows", [])
+        if isinstance(doc.get("categoryColors"), dict) and doc["categoryColors"]:
+            out["categoryColors"] = doc["categoryColors"]
     else:
         nodes = doc.get("nodes", [])
         flows = doc.get("flows", [])
@@ -174,6 +195,7 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
+    palette = _validate_palette(body.categoryColors)
     try:
         existing = (
             supabase.table("infra_diagrams").select("id").eq("slug", slug).limit(1).execute()
@@ -186,7 +208,7 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
-                "doc": {"nodes": nodes, "flows": flows},
+                "doc": {"nodes": nodes, "flows": flows, **({"categoryColors": palette} if palette else {})},
             })
             .execute()
         )
@@ -207,6 +229,7 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
+    palette = _validate_palette(body.categoryColors)
     try:
         res = (
             supabase.table("infra_diagrams")
@@ -214,7 +237,7 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
-                "doc": {"nodes": nodes, "flows": flows},
+                "doc": {"nodes": nodes, "flows": flows, **({"categoryColors": palette} if palette else {})},
             })
             .eq("id", doc_id[:64])
             .execute()

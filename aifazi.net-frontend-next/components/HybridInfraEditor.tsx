@@ -8,7 +8,7 @@
  * properties + notes, undo/redo, save/publish/share, JSON import/export.
  * Server truth is enforced by require_admin; the UI gate is convenience.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { getRole } from '@/lib/api'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import HybridInfra from './HybridInfra'
@@ -336,6 +336,22 @@ export default function HybridInfraEditor() {
 
   const cycleSnap = () => {
     setSnapSize((s) => (s === 10 ? 20 : s === 20 ? null : 10))
+  }
+
+  // ── Category palette (doc-level color overrides) ──────────────
+  const setCatColor = (cat: string, color: string) => {
+    const cur = docRef.current
+    applyDoc({
+      ...cur,
+      categoryColors: { ...(cur.categoryColors ?? {}), [cat]: color },
+    })
+  }
+  const resetCatColors = () => {
+    const cur = docRef.current
+    if (!cur.categoryColors) return
+    const { categoryColors: _dropped, ...rest } = cur
+    applyDoc(rest)
+    setNotice({ msg: 'Palette reset to defaults (undo available)', ok: true })
   }
 
   // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
@@ -948,7 +964,7 @@ export default function HybridInfraEditor() {
                     title={item.desc}
                     style={{
                       ...BTN, textAlign: 'left', fontWeight: 500,
-                      borderLeft: `3px solid ${CATEGORY_META[item.category].color}`,
+                      borderLeft: `3px solid ${doc.categoryColors?.[item.category] ?? CATEGORY_META[item.category].color}`,
                     }}
                   >
                     {item.name}
@@ -957,6 +973,37 @@ export default function HybridInfraEditor() {
               </div>
             </div>
           ))}
+
+          {/* Category palette: live per-category color overrides */}
+          <div style={{ borderTop: `1px solid ${pal.border}`, marginTop: 12, paddingTop: 10 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
+              CATEGORY COLORS
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 6, alignItems: 'center' }}>
+              {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
+                <Fragment key={c}>
+                  <span style={{ fontSize: 11, color: pal.ink, fontFamily: 'var(--font-mono)' }}>
+                    {CATEGORY_META[c].label}
+                  </span>
+                  <input
+                    type="color"
+                    aria-label={`${CATEGORY_META[c].label} color`}
+                    value={doc.categoryColors?.[c] ?? CATEGORY_META[c].color}
+                    onChange={(e) => setCatColor(c, e.target.value)}
+                    style={{ width: 34, height: 24, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+                  />
+                </Fragment>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={resetCatColors}
+              disabled={!doc.categoryColors}
+              style={{ ...BTN, marginTop: 8, width: '100%', opacity: doc.categoryColors ? 1 : 0.5 }}
+            >
+              RESET DEFAULTS
+            </button>
+          </div>
         </div>
 
         {/* Canvas */}
@@ -1000,6 +1047,7 @@ export default function HybridInfraEditor() {
             snap={snapSize}
             lockedIds={lockedIds}
             viewStorageKey={`editor-${docId ?? doc.slug}`}
+            catColors={doc.categoryColors ?? null}
           />
         </div>
 

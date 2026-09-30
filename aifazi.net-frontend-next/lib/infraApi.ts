@@ -33,6 +33,7 @@ export async function createDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
     published: doc.published,
     nodes: doc.nodes,
     flows: doc.flows,
+    categoryColors: doc.categoryColors,
   })
   if (!r.data?.diagram) throw new Error('Create failed')
   return r.data.diagram as DiagramDoc
@@ -45,6 +46,7 @@ export async function updateDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
     published: doc.published,
     nodes: doc.nodes,
     flows: doc.flows,
+    categoryColors: doc.categoryColors,
   })
   if (!r.data?.diagram) throw new Error('Update failed')
   return r.data.diagram as DiagramDoc

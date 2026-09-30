@@ -456,6 +456,8 @@ export interface DiagramDoc {
   published: boolean
   nodes: InfraComponent[]
   flows: InfraFlow[]
+  /** Per-category color overrides (#rrggbb) keyed by category id. */
+  categoryColors?: Record<string, string>
 }
 
 /** The built-in Plan A document (read-only seed). */
@@ -521,6 +523,21 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     if (flows.length >= 200) break
   }
   const slugBase = typeof d.slug === 'string' && d.slug ? d.slug : 'diagram'
+  // Category palette overrides: { id: '#rrggbb' } with tight key/value caps.
+  let categoryColors: Record<string, string> | undefined
+  if (d.categoryColors && typeof d.categoryColors === 'object' && !Array.isArray(d.categoryColors)) {
+    categoryColors = {}
+    let n = 0
+    for (const [k, v] of Object.entries(d.categoryColors as Record<string, unknown>)) {
+      if (n >= 32) break
+      if (!/^[a-z0-9-]{1,32}$/.test(k)) continue
+      if (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)) {
+        categoryColors[k] = v
+        n += 1
+      }
+    }
+    if (Object.keys(categoryColors).length === 0) categoryColors = undefined
+  }
   return {
     id: typeof d.id === 'string' && d.id ? d.id.slice(0, 64) : `doc-${Date.now()}`,
     slug: slugBase.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) || 'diagram',
@@ -529,5 +546,6 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     published: d.published !== false,
     nodes,
     flows,
+    ...(categoryColors ? { categoryColors } : {}),
   }
 }
