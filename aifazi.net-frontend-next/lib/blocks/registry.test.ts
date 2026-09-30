@@ -5,9 +5,17 @@ import { describe, expect, it } from 'vitest'
 import { getBlockManifest, listBlockManifests, sanitizeProps } from './registry'
 
 describe('block registry', () => {
-  it('ships hero, features, cta-banner with schema + defaults', () => {
+  it('ships hero, features, cta-banner, faq, pricing, gallery, testimonials', () => {
     const types = listBlockManifests().map((m) => m.type).sort()
-    expect(types).toEqual(['cta-banner', 'features', 'hero'])
+    expect(types).toEqual([
+      'cta-banner',
+      'faq',
+      'features',
+      'gallery',
+      'hero',
+      'pricing',
+      'testimonials',
+    ])
     for (const m of listBlockManifests()) {
       expect(m.schema.length).toBeGreaterThan(0)
       expect(typeof m.render).toBe('function')
@@ -37,5 +45,19 @@ describe('block registry', () => {
 
   it('drops unknown-type props entirely', () => {
     expect(sanitizeProps('nope', { a: 1 })).toEqual({})
+  })
+
+  it('runs image srcs and plan links through the href scheme allowlist', () => {
+    expect(sanitizeProps('gallery', { img1Href: 'javascript:alert(1)' }).img1Href).toBe('#')
+    expect(sanitizeProps('gallery', { img1Href: 'https://cdn.aifazi.net/x.png' }).img1Href)
+      .toBe('https://cdn.aifazi.net/x.png')
+    expect(sanitizeProps('pricing', { plan1CtaHref: 'javascript:alert(1)' }).plan1CtaHref).toBe('#')
+  })
+
+  it('new block types sanitize against their schema', () => {
+    expect(sanitizeProps('faq', {})).toMatchObject({ heading: 'Frequently asked questions', q1: '' })
+    expect(sanitizeProps('testimonials', { quote1: 'Great', quote9: 'nope' }))
+      .toEqual(expect.objectContaining({ quote1: 'Great' }))
+    expect(sanitizeProps('testimonials', { quote1: 'Great' })).not.toHaveProperty('quote9')
   })
 })
