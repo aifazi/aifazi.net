@@ -552,6 +552,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         return { z: viewRef.current.z, cx, cy, pct: zoomPercent(S, viewRef.current) }
       }
 
+      // Keyboard/touch pan: shift the design origin by screen pixels.
+      function panBy(dx: number, dy: number) {
+        viewRef.current = clampView(
+          S,
+          { ...viewRef.current, px: viewRef.current.px + dx, py: viewRef.current.py + dy },
+          W,
+          H,
+          { w: DESIGN_W, h: DESIGN_H },
+        )
+        applyView()
+      }
+
       opsRef.current = { zoomBy, fit, setPercent, getView }
 
       // ── draw passes ──────────────────────────────────────────
@@ -1608,16 +1620,92 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         overCanvas = false
       }
 
+      // ── touch: 1-finger horizontal pan, 2-finger pinch zoom ────
+      // touch-action: pan-y keeps vertical scrolling native; horizontal
+      // drags and all pinch gestures are handled here.
+      let touchPan: { sx: number; px: number } | null = null
+      let pinchDist = 0
+
+      const pinchLen = (t: TouchList) =>
+        Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+
+      function onTouchStart(e: TouchEvent) {
+        if (e.touches.length === 1) {
+          pinchDist = 0
+          touchPan = { sx: e.touches[0].clientX, px: viewRef.current.px }
+          panMoved = false
+        } else if (e.touches.length === 2) {
+          touchPan = null
+          pinchDist = pinchLen(e.touches)
+          e.preventDefault()
+        }
+      }
+
+      function onTouchMove(e: TouchEvent) {
+        if (e.touches.length === 2 && pinchDist > 0) {
+          e.preventDefault()
+          const d = pinchLen(e.touches)
+          if (d > 0 && pinchDist > 0) {
+            const rect = canvas.getBoundingClientRect()
+            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left
+            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+            zoomBy(d / pinchDist, midX, midY)
+          }
+          pinchDist = d
+          panMoved = true
+          return
+        }
+        if (e.touches.length === 1 && touchPan) {
+          const dx = e.touches[0].clientX - touchPan.sx
+          if (Math.abs(dx) < 4) return
+          e.preventDefault()
+          viewRef.current = clampView(
+            S,
+            { ...viewRef.current, px: touchPan.px + dx },
+            W,
+            H,
+            { w: DESIGN_W, h: DESIGN_H },
+          )
+          panMoved = true
+          layoutScene()
+          kick()
+        }
+      }
+
+      function onTouchEnd(e: TouchEvent) {
+        if (e.touches.length === 0) {
+          const wasPan = panMoved
+          touchPan = null
+          pinchDist = 0
+          if (wasPan) {
+            notifyView()
+            persistView()
+          }
+        } else if (e.touches.length === 1 && pinchDist > 0) {
+          // Pinch collapsed to one finger: resume single-finger tracking.
+          pinchDist = 0
+          touchPan = { sx: e.touches[0].clientX, px: viewRef.current.px }
+        }
+      }
+
       let kbIndex = -1
       function onKey(e: KeyboardEvent) {
         const nl = nodeList()
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          kbIndex = (kbIndex + 1) % nl.length
-          sRef.current.onSelect(nl[kbIndex].id)
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          e.preventDefault()
-          kbIndex = (kbIndex - 1 + nl.length) % nl.length
+          // Shift+arrows pan the viewport; plain arrows cycle components.
+          if (e.shiftKey) {
+            const step = 90
+            const dx = e.key === 'ArrowRight' ? -step : e.key === 'ArrowLeft' ? step : 0
+            const dy = e.key === 'ArrowDown' ? -step : e.key === 'ArrowUp' ? step : 0
+            panBy(dx, dy)
+            return
+          }
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            kbIndex = (kbIndex + 1) % nl.length
+          } else {
+            kbIndex = (kbIndex - 1 + nl.length) % nl.length
+          }
           sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
@@ -1676,6 +1764,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       canvas.addEventListener('pointerup', onPointerUp)
       canvas.addEventListener('pointercancel', onPointerCancel)
       canvas.addEventListener('wheel', onWheel, { passive: false })
+      canvas.addEventListener('touchstart', onTouchStart, { passive: false })
+      canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+      canvas.addEventListener('touchend', onTouchEnd)
+      canvas.addEventListener('touchcancel', onTouchEnd)
       window.addEventListener('keydown', onWinKey)
 
       resize()
@@ -1707,6 +1799,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         canvas.removeEventListener('pointerup', onPointerUp)
         canvas.removeEventListener('pointercancel', onPointerCancel)
         canvas.removeEventListener('wheel', onWheel)
+        canvas.removeEventListener('touchstart', onTouchStart)
+        canvas.removeEventListener('touchmove', onTouchMove)
+        canvas.removeEventListener('touchend', onTouchEnd)
+        canvas.removeEventListener('touchcancel', onTouchEnd)
       }
       // frozen is mount-constant (matchMedia sampled once).
     }, [frozen])
@@ -1727,8 +1823,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           className="hi-canvas"
           tabIndex={0}
           role="img"
-          aria-label="Interactive enterprise server rack and hybrid cloud architecture. Click equipment for details. Scroll to zoom, drag to pan, Ctrl or Command plus plus/minus/zero to zoom. Use arrow keys to cycle components, Enter to select."
-          style={{ display: 'block', width: '100%', height: 'auto', outline: 'none' }}
+          aria-label="Interactive enterprise server rack and hybrid cloud architecture. Click equipment for details. Scroll or pinch to zoom, drag to pan, Ctrl or Command plus plus/minus/zero to zoom. Use arrow keys to cycle components, Enter to select, Shift plus arrows to pan. On touch: drag to pan, pinch to zoom."
+          style={{ display: 'block', width: '100%', height: 'auto', outline: 'none', touchAction: 'pan-y' }}
         />
       </div>
     )
