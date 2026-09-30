@@ -264,7 +264,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       // Category color: doc override → canonical meta → fallback.
       const catColor = (cat: string) =>
         sRef.current.catColors?.[cat] ??
-        CATEGORY_META[cat as InfraCategory]?.color ??
+        (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
         '#35a7ff'
 
       // ── helpers ──────────────────────────────────────────────

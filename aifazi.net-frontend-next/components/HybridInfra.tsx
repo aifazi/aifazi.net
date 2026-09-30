@@ -19,6 +19,8 @@ import {
   CATEGORY_META,
   depNameIn,
   dependencyChainIn,
+  catLabel,
+  mergedCatColors,
   type DiagramDoc,
   type InfraCategory,
 } from '@/data/hybrid-infra'
@@ -137,7 +139,7 @@ export default function HybridInfra({
 
   const nodes = doc?.nodes ?? COMPONENTS
   const flows = doc?.flows ?? null
-  const catColors = doc?.categoryColors ?? null
+  const catColors = mergedCatColors(doc)
 
   const selected = useMemo(
     () => nodes.find((c) => c.id === selectedId) ?? null,
@@ -495,6 +497,12 @@ export default function HybridInfra({
                     {m.label}
                   </span>
                 ))}
+              {Object.entries(doc?.customCategories ?? {}).map(([k, m]) => (
+                <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <i style={{ width: 9, height: 9, borderRadius: '50%', background: catColors?.[k] ?? m.color, display: 'inline-block' }} />
+                  {m.label}
+                </span>
+              ))}
             </div>
           </div>
           <HybridInfraCanvas
@@ -580,7 +588,7 @@ export default function HybridInfra({
                       Layer
                     </div>
                     <div style={{ color: pal.sub }}>
-                      {selected.layer} · {CATEGORY_META[selected.category].label}
+                      {selected.layer} · {catLabel(selected.category, doc?.customCategories)}
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>

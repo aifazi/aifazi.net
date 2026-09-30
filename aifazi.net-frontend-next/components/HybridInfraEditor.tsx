@@ -20,7 +20,10 @@ import {
   sanitizeDoc,
   dependencyChainIn,
   CATEGORY_META,
+  catLabel,
+  mergedCatColors,
   type DiagramDoc,
+  type BuiltinCategory,
   type InfraCategory,
   type InfraComponent,
   type InfraFlow,
@@ -358,9 +361,73 @@ export default function HybridInfraEditor() {
     applyDoc(rest)
     setNotice({ msg: 'Palette reset to defaults (undo available)', ok: true })
   }
-  // Effective category color (doc override → canonical meta → fallback).
+  // Effective category color (doc override → custom → canonical meta → fallback).
   const catColorHex = (cat: string) =>
-    doc.categoryColors?.[cat] ?? CATEGORY_META[cat as InfraCategory]?.color ?? '#35a7ff'
+    doc.categoryColors?.[cat] ??
+    doc.customCategories?.[cat]?.color ??
+    (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
+    '#35a7ff'
+
+  // ── Custom categories (doc-defined beyond the built-ins) ─────
+  const [newCatLabel, setNewCatLabel] = useState('')
+  const [newCatColor, setNewCatColor] = useState('#ff8a3d')
+  const catSlug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32)
+  const addCustomCat = () => {
+    const label = newCatLabel.trim()
+    if (!label) return
+    const cur = docRef.current
+    const key = catSlug(label) || `cat-${Date.now()}`
+    if (key in CATEGORY_META || key in (cur.customCategories ?? {})) {
+      setNotice({ msg: 'Category id already exists', ok: false })
+      return
+    }
+    if (Object.keys(cur.customCategories ?? {}).length >= 16) {
+      setNotice({ msg: 'Custom category limit reached (16)', ok: false })
+      return
+    }
+    applyDoc({
+      ...cur,
+      customCategories: {
+        ...(cur.customCategories ?? {}),
+        [key]: { label: label.slice(0, 24), color: newCatColor },
+      },
+    })
+    setNewCatLabel('')
+    setNotice({ msg: `Added category "${label.slice(0, 24)}"`, ok: true })
+  }
+  const setCustomCat = (key: string, patch: { label?: string; color?: string }) => {
+    const cur = docRef.current
+    const cc = cur.customCategories ?? {}
+    if (!cc[key]) return
+    // Editing the category's own color supersedes any stale palette override.
+    const pal2 = { ...(cur.categoryColors ?? {}) }
+    if (patch.color) delete pal2[key]
+    applyDoc({
+      ...cur,
+      categoryColors: Object.keys(pal2).length ? pal2 : undefined,
+      customCategories: { ...cc, [key]: { ...cc[key], ...patch } },
+    })
+  }
+  const removeCustomCat = (key: string) => {
+    const cur = docRef.current
+    const cc = { ...(cur.customCategories ?? {}) }
+    delete cc[key]
+    // Nodes/flows still using it fall back to Network so nothing dangles.
+    applyDoc({
+      ...cur,
+      customCategories: Object.keys(cc).length ? cc : undefined,
+      nodes: cur.nodes.map((n) => (n.category === key ? { ...n, category: 'network' as InfraCategory } : n)),
+      flows: cur.flows.map((f) => (f.cat === key ? { ...f, cat: 'network' as InfraCategory } : f)),
+    })
+    setNotice({ msg: 'Category removed (nodes reset to Network)', ok: true })
+  }
+  // Custom colors merged under doc palette overrides for canvas/reader chips.
+  const mergedCat = () => mergedCatColors(doc)
+  /** All selectable categories: built-ins first, then custom ids. */
+  const allCategoryIds = (): string[] => [
+    ...(Object.keys(CATEGORY_META) as BuiltinCategory[]),
+    ...Object.keys(doc.customCategories ?? {}),
+  ]
 
   // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
   // Operates on the multi-selection when 2+ selected, else all free nodes.
@@ -1190,7 +1257,7 @@ export default function HybridInfraEditor() {
                     title={item.desc}
                     style={{
                       ...BTN, textAlign: 'left', fontWeight: 500,
-                      borderLeft: `3px solid ${doc.categoryColors?.[item.category] ?? CATEGORY_META[item.category].color}`,
+                      borderLeft: `3px solid ${catColorHex(item.category)}`,
                     }}
                   >
                     {item.name}
@@ -1206,7 +1273,7 @@ export default function HybridInfraEditor() {
               CATEGORY COLORS
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 6, alignItems: 'center' }}>
-              {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
+              {(Object.keys(CATEGORY_META) as BuiltinCategory[]).map((c) => (
                 <Fragment key={c}>
                   <span style={{ fontSize: 11, color: pal.ink, fontFamily: 'var(--font-mono)' }}>
                     {CATEGORY_META[c].label}
@@ -1229,6 +1296,64 @@ export default function HybridInfraEditor() {
             >
               RESET DEFAULTS
             </button>
+          </div>
+
+          {/* Custom categories: doc-defined categories beyond the built-ins */}
+          <div style={{ borderTop: `1px solid ${pal.border}`, marginTop: 12, paddingTop: 10 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
+              CUSTOM CATEGORIES
+            </div>
+            {Object.entries(doc.customCategories ?? {}).map(([k, m]) => (
+              <div
+                key={k}
+                style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 6, alignItems: 'center', marginBottom: 5 }}
+              >
+                <span style={{ fontSize: 11, color: pal.ink, fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.label}
+                </span>
+                <input
+                  type="color"
+                  aria-label={`${m.label} color`}
+                  value={m.color}
+                  onChange={(e) => setCustomCat(k, { color: e.target.value })}
+                  style={{ width: 34, height: 24, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCustomCat(k)}
+                  title="Remove category (its nodes reset to Network)"
+                  style={{ ...BTN, padding: '4px 8px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <input
+                value={newCatLabel}
+                onChange={(e) => setNewCatLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addCustomCat()
+                  }
+                }}
+                placeholder="New category name"
+                maxLength={24}
+                aria-label="New category name"
+                style={{ ...INPUT, flex: 1, minWidth: 0, padding: '5px 7px' }}
+              />
+              <input
+                type="color"
+                aria-label="New category color"
+                value={newCatColor}
+                onChange={(e) => setNewCatColor(e.target.value)}
+                style={{ width: 34, height: 26, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+              />
+              <button type="button" onClick={addCustomCat} disabled={!newCatLabel.trim()} style={{ ...BTN, opacity: newCatLabel.trim() ? 1 : 0.5 }}>
+                ADD
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1275,7 +1400,7 @@ export default function HybridInfraEditor() {
             snap={snapSize}
             lockedIds={lockedIds}
             viewStorageKey={`editor-${docId ?? doc.slug}`}
-            catColors={doc.categoryColors ?? null}
+            catColors={mergedCat()}
             grid={showGrid}
           />
         </div>
@@ -1333,8 +1458,11 @@ export default function HybridInfraEditor() {
                     onChange={(e) => updateNode(selected.id, { category: e.target.value as InfraCategory })}
                     style={INPUT}
                   >
-                    {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
+                    {(Object.keys(CATEGORY_META) as BuiltinCategory[]).map((c) => (
                       <option key={c} value={c}>{CATEGORY_META[c].label}</option>
+                    ))}
+                    {Object.keys(doc.customCategories ?? {}).map((c) => (
+                      <option key={c} value={c}>{doc.customCategories?.[c]?.label}</option>
                     ))}
                   </select>
                 </div>
@@ -1497,8 +1625,8 @@ export default function HybridInfraEditor() {
                         onChange={(e) => setLinkCat(f.id, e.target.value as InfraCategory)}
                         style={{ ...INPUT, width: 100 }}
                       >
-                        {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
-                          <option key={c} value={c}>{c}</option>
+                        {allCategoryIds().map((c) => (
+                          <option key={c} value={c}>{catLabel(c, doc.customCategories)}</option>
                         ))}
                       </select>
                       <button type="button" onClick={() => deleteLink(f.id)} style={BTN} aria-label={`Delete link to ${depNameOf(f.to)}`}>

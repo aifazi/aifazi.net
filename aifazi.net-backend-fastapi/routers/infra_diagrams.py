@@ -31,6 +31,19 @@ class DiagramIn(BaseModel):
     nodes: list = Field(default_factory=list, max_length=MAX_NODES)
     flows: list = Field(default_factory=list, max_length=MAX_FLOWS)
     categoryColors: dict | None = None
+    customCategories: dict | None = None
+
+
+BUILTIN_CATEGORIES = {
+    "network",
+    "compute",
+    "storage",
+    "identity",
+    "security",
+    "backup",
+    "endpoint",
+    "power",
+}
 
 
 def _slugify(raw: str) -> str:
@@ -53,6 +66,32 @@ def _validate_palette(colors: dict | None) -> dict | None:
         if not isinstance(value, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", value):
             raise HTTPException(400, "Category color must be #rrggbb")
         clean[key] = value
+    return clean or None
+
+
+def _validate_custom_categories(custom: dict | None) -> dict | None:
+    """Doc-defined categories: {id: {label, color}} with tight caps."""
+    if custom is None:
+        return None
+    if not isinstance(custom, dict):
+        raise HTTPException(400, "customCategories must be an object")
+    if len(custom) > 16:
+        raise HTTPException(400, "Too many custom categories")
+    clean: dict = {}
+    for key, value in custom.items():
+        if not isinstance(key, str) or not re.fullmatch(r"[a-z0-9-]{1,32}", key):
+            raise HTTPException(400, "Invalid custom category key")
+        if key in BUILTIN_CATEGORIES:
+            raise HTTPException(400, "Custom category shadows a built-in id")
+        if not isinstance(value, dict):
+            raise HTTPException(400, "Invalid custom category entry")
+        label = value.get("label")
+        color = value.get("color")
+        if not isinstance(label, str) or not label.strip() or len(label) > 40:
+            raise HTTPException(400, "Custom category label invalid")
+        if not isinstance(color, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", color):
+            raise HTTPException(400, "Custom category color must be #rrggbb")
+        clean[key] = {"label": label.strip()[:40], "color": color}
     return clean or None
 
 
@@ -115,6 +154,8 @@ def _row_to_doc(row: dict, include_body: bool = True) -> dict:
         out["flows"] = doc.get("flows", [])
         if isinstance(doc.get("categoryColors"), dict) and doc["categoryColors"]:
             out["categoryColors"] = doc["categoryColors"]
+        if isinstance(doc.get("customCategories"), dict) and doc["customCategories"]:
+            out["customCategories"] = doc["customCategories"]
     else:
         nodes = doc.get("nodes", [])
         flows = doc.get("flows", [])
@@ -204,6 +245,7 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
     palette = _validate_palette(body.categoryColors)
+    custom = _validate_custom_categories(body.customCategories)
     try:
         existing = (
             supabase.table("infra_diagrams").select("id").eq("slug", slug).limit(1).execute()
@@ -216,7 +258,12 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
-                "doc": {"nodes": nodes, "flows": flows, **({"categoryColors": palette} if palette else {})},
+                "doc": {
+                    "nodes": nodes,
+                    "flows": flows,
+                    **({"categoryColors": palette} if palette else {}),
+                    **({"customCategories": custom} if custom else {}),
+                },
             })
             .execute()
         )
@@ -238,6 +285,7 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
     palette = _validate_palette(body.categoryColors)
+    custom = _validate_custom_categories(body.customCategories)
     try:
         res = (
             supabase.table("infra_diagrams")
@@ -245,7 +293,12 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
-                "doc": {"nodes": nodes, "flows": flows, **({"categoryColors": palette} if palette else {})},
+                "doc": {
+                    "nodes": nodes,
+                    "flows": flows,
+                    **({"categoryColors": palette} if palette else {}),
+                    **({"customCategories": custom} if custom else {}),
+                },
             })
             .eq("id", doc_id[:64])
             .execute()

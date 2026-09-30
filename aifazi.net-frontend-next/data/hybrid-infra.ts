@@ -6,7 +6,8 @@
  * plans reuse the same component. Copy here is client-safe (no PII, no creds).
  */
 
-export type InfraCategory =
+/** Built-in category ids (closed set — CATEGORY_META is keyed by these). */
+export type BuiltinCategory =
   | 'network'
   | 'compute'
   | 'storage'
@@ -15,6 +16,12 @@ export type InfraCategory =
   | 'backup'
   | 'endpoint'
   | 'power'
+
+/**
+ * Category id: built-ins keep autocomplete, doc-defined custom ids
+ * (see DiagramDoc.customCategories) are also accepted.
+ */
+export type InfraCategory = BuiltinCategory | (string & {})
 
 export type InfraLayer = 'edge' | 'cloud' | 'rack' | 'vm' | 'users' | 'legacy'
 
@@ -64,7 +71,7 @@ export interface TimelineStep {
   label: string
 }
 
-export const CATEGORY_META: Record<InfraCategory, { label: string; color: string }> = {
+export const CATEGORY_META: Record<BuiltinCategory, { label: string; color: string }> = {
   network: { label: 'Network', color: '#35a7ff' },
   compute: { label: 'Compute', color: '#b08cff' },
   storage: { label: 'Storage / Data', color: '#43d19e' },
@@ -452,6 +459,12 @@ export function depNameIn(list: InfraComponent[], id: string): string {
 
 // ── Editable diagram documents ───────────────────────────────────
 
+/** A doc-defined category (label + default color), keyed by a slug id. */
+export interface CustomCategory {
+  label: string
+  color: string
+}
+
 /** A saved diagram: nodes + links (+ optional timeline override). */
 export interface DiagramDoc {
   id: string
@@ -464,6 +477,35 @@ export interface DiagramDoc {
   flows: InfraFlow[]
   /** Per-category color overrides (#rrggbb) keyed by category id. */
   categoryColors?: Record<string, string>
+  /** User-defined categories (label + color) beyond the built-ins. */
+  customCategories?: Record<string, CustomCategory>
+}
+
+/** Display label for any category: custom → built-in → uppercase id. */
+export function catLabel(
+  category: string,
+  custom?: Record<string, CustomCategory> | null,
+): string {
+  const c = custom?.[category]?.label
+  if (c) return c
+  const meta = (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[category]
+  return meta?.label ?? category.toUpperCase()
+}
+
+/**
+ * Effective color map for canvas/legend: custom category default colors
+ * overlaid by palette overrides. Null when nothing is overridden.
+ */
+export function mergedCatColors(
+  doc: Pick<DiagramDoc, 'categoryColors' | 'customCategories'> | null | undefined,
+): Record<string, string> | null {
+  const custom = doc?.customCategories
+  const pal = doc?.categoryColors
+  if (!custom && !pal) return null
+  return {
+    ...(custom ? Object.fromEntries(Object.entries(custom).map(([k, m]) => [k, m.color])) : {}),
+    ...(pal ?? {}),
+  }
 }
 
 /** The built-in Plan A document (read-only seed). */
@@ -484,8 +526,31 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
   if (!raw || typeof raw !== 'object') return null
   const d = raw as Record<string, unknown>
   if (!Array.isArray(d.nodes) || !Array.isArray(d.flows)) return null
-  const cats: InfraCategory[] = ['network', 'compute', 'storage', 'identity', 'security', 'backup', 'endpoint', 'power']
+  const cats: BuiltinCategory[] = ['network', 'compute', 'storage', 'identity', 'security', 'backup', 'endpoint', 'power']
   const layers = ['edge', 'cloud', 'rack', 'vm', 'users', 'legacy']
+  // Custom categories: { slug: { label, color } } with caps; can't shadow built-ins.
+  let customCategories: Record<string, CustomCategory> | undefined
+  if (d.customCategories && typeof d.customCategories === 'object' && !Array.isArray(d.customCategories)) {
+    customCategories = {}
+    let cn = 0
+    for (const [k, v] of Object.entries(d.customCategories as Record<string, unknown>)) {
+      if (cn >= 16) break
+      if (!/^[a-z0-9-]{1,32}$/.test(k) || cats.includes(k as BuiltinCategory)) continue
+      if (!v || typeof v !== 'object') continue
+      const o = v as Record<string, unknown>
+      const color = typeof o.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(o.color) ? o.color : null
+      if (!color) continue
+      customCategories[k] = {
+        label: typeof o.label === 'string' && o.label.trim() ? o.label.trim().slice(0, 24) : k,
+        color,
+      }
+      cn += 1
+    }
+    if (Object.keys(customCategories).length === 0) customCategories = undefined
+  }
+  const customKeys = customCategories ? new Set(Object.keys(customCategories)) : new Set<string>()
+  const knownCat = (c: unknown): c is InfraCategory =>
+    (typeof c === 'string' && (cats.includes(c as BuiltinCategory) || customKeys.has(c))) as boolean
   const nodes: InfraComponent[] = []
   for (const n of d.nodes as unknown[]) {
     if (!n || typeof n !== 'object') continue
@@ -494,7 +559,7 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     nodes.push({
       id: c.id.slice(0, 64),
       name: String(c.name).slice(0, 80),
-      category: cats.includes(c.category as InfraCategory) ? (c.category as InfraCategory) : 'network',
+      category: knownCat(c.category) ? c.category : 'network',
       layer: (layers as string[]).includes(c.layer as string) ? (c.layer as InfraLayer) : 'cloud',
       role: String(c.role ?? '').slice(0, 80),
       desc: String(c.desc ?? '').slice(0, 2000),
@@ -524,7 +589,7 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
       id: typeof r.id === 'string' && r.id ? r.id.slice(0, 64) : `f-${r.from}-${r.to}`,
       from: r.from,
       to: r.to,
-      cat: cats.includes(r.cat as InfraCategory) ? (r.cat as InfraCategory) : 'network',
+      cat: knownCat(r.cat) ? r.cat : 'network',
       ...(typeof r.label === 'string' && r.label.trim()
         ? { label: r.label.trim().slice(0, 40) }
         : {}),
@@ -560,5 +625,6 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     nodes,
     flows,
     ...(categoryColors ? { categoryColors } : {}),
+    ...(customCategories ? { customCategories } : {}),
   }
 }
