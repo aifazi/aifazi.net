@@ -10,9 +10,11 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { getRole } from '@/lib/api'
+import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import HybridInfra from './HybridInfra'
 import { HybridInfraCanvas } from './HybridInfraCanvas'
 import { INFRA_LIBRARY, type LibraryItem } from '@/data/infra-library'
+import { cloudInfraDoc } from '@/data/cloud-infra'
 import {
   planADoc,
   sanitizeDoc,
@@ -31,44 +33,12 @@ import {
   type DiagramMeta,
 } from '@/lib/infraApi'
 
-const PANEL: React.CSSProperties = {
-  background: 'linear-gradient(180deg,rgba(15,32,54,.95),rgba(12,24,40,.98))',
-  border: '1px solid #203a55',
-  borderRadius: 14,
-  padding: 14,
-}
+/* PANEL/BTN/INPUT/LABEL live inside the component now (theme-aware). */
 
-const BTN: React.CSSProperties = {
-  background: '#10243b',
-  color: '#dcecff',
-  border: '1px solid #2b4862',
-  padding: '8px 11px',
-  borderRadius: 8,
-  fontSize: 11,
-  fontWeight: 600,
-  fontFamily: 'var(--font-mono)',
-  cursor: 'pointer',
-}
-
-const INPUT: React.CSSProperties = {
-  width: '100%',
-  background: '#0b1a2c',
-  border: '1px solid #2b4862',
-  borderRadius: 7,
-  color: '#dcecff',
-  padding: '7px 9px',
-  fontSize: 12,
-  fontFamily: 'var(--font-mono)',
-  boxSizing: 'border-box',
-}
-
-const LABEL: React.CSSProperties = {
-  display: 'block',
-  fontSize: 10,
-  letterSpacing: 1.5,
-  color: '#6b849c',
-  marginBottom: 4,
-  fontFamily: 'var(--font-mono)',
+/** Built-in read-only seeds (edits save as a copy). */
+const BUILTIN_DOCS: Record<string, () => DiagramDoc> = {
+  'plan-a': planADoc,
+  'cloud-infra': cloudInfraDoc,
 }
 
 function slugify(s: string) {
@@ -97,6 +67,57 @@ export default function HybridInfraEditor() {
   const [notice, setNotice] = useState<{ msg: string; ok: boolean } | null>(null)
   const [canRedo, setCanRedo] = useState(false)
   const [canUndo, setCanUndo] = useState(false)
+  const tone = useInfraTone()
+  const pal = infraPalette(tone)
+  // Theme-aware chrome (replaces the old dark-only module consts).
+  const PANEL: React.CSSProperties = {
+    background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+    border: `1px solid ${pal.border}`,
+    borderRadius: 14,
+    padding: 14,
+  }
+  const BTN: React.CSSProperties = {
+    background: pal.panel,
+    color: pal.ink,
+    border: `1px solid ${pal.border}`,
+    padding: '8px 11px',
+    borderRadius: 8,
+    fontSize: 11,
+    fontWeight: 600,
+    fontFamily: 'var(--font-mono)',
+    cursor: 'pointer',
+  }
+  const INPUT: React.CSSProperties = {
+    width: '100%',
+    background: pal.panel,
+    border: `1px solid ${pal.border}`,
+    borderRadius: 7,
+    color: pal.ink,
+    padding: '7px 9px',
+    fontSize: 12,
+    fontFamily: 'var(--font-mono)',
+    boxSizing: 'border-box',
+  }
+  const LABEL: React.CSSProperties = {
+    display: 'block',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    color: pal.muted,
+    marginBottom: 4,
+    fontFamily: 'var(--font-mono)',
+  }
+  // Odoo-style grid snap step (px). Null = free placement.
+  const [snapSize, setSnapSize] = useState<number | null>(10)
+  // Locked nodes can't be dragged (editor-local; never persisted to the doc).
+  const [lockedIds, setLockedIds] = useState<Set<string>>(new Set())
+  const toggleLock = (id: string) => {
+    setLockedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   const docRef = useRef(doc)
   const histRef = useRef<{ past: string[]; future: string[] }>({ past: [], future: [] })
@@ -125,6 +146,17 @@ export default function HybridInfraEditor() {
         slug = new URLSearchParams(window.location.search).get('diagram')
       } catch {
         /* noop */
+      }
+      if (slug && BUILTIN_DOCS[slug]) {
+        const seed = BUILTIN_DOCS[slug]()
+        if (alive) {
+          docRef.current = seed
+          setDoc(seed)
+          setDocId(null)
+          setIsSeed(true)
+          savedRef.current = null
+        }
+        return
       }
       if (slug && slug !== 'plan-a') {
         try {
@@ -238,6 +270,10 @@ export default function HybridInfraEditor() {
 
   // ── Node ops ─────────────────────────────────────────────────
   const handleMoveNode = (id: string, pos: { x?: number; y?: number; rackU?: number }, done: boolean) => {
+    if (lockedIds.has(id)) {
+      if (done) setNotice({ msg: 'Node is locked — unlock to move it', ok: false })
+      return
+    }
     if (!dragRef.current) {
       pushHistory()
       dragRef.current = true
@@ -262,6 +298,90 @@ export default function HybridInfraEditor() {
 
   const boxesOverlap = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
     a.x < b.x + b.w + 20 && a.x + a.w + 20 > b.x && a.y < b.y + b.h + 20 && a.y + a.h + 20 > b.y
+
+  // ── Auto-arrange: grid columns per layer, rows stacked (Odoo-style) ──
+  const LAYER_ORDER = ['edge', 'rack', 'vm', 'cloud', 'users', 'legacy']
+  const arrangeNodes = () => {
+    const cur = docRef.current
+    const nextY: Record<string, number> = {}
+    const nodes = cur.nodes.map((n) => {
+      const li = Math.max(0, LAYER_ORDER.indexOf(n.layer || 'cloud'))
+      const y = nextY[n.layer] ?? 40
+      const w = n.w || 160
+      const h = n.h || 60
+      nextY[n.layer] = y + h + 24
+      return {
+        ...n,
+        x: Math.max(0, Math.min(40 + li * 210, 1480 - w)),
+        y: Math.max(0, Math.min(y, 1020 - h)),
+      }
+    })
+    applyDoc({ ...cur, nodes })
+    setNotice({ msg: 'Auto-arranged by layer (undo available)', ok: true })
+  }
+
+  const cycleSnap = () => {
+    setSnapSize((s) => (s === 10 ? 20 : s === 20 ? null : 10))
+  }
+
+  // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
+  const freeNodes = () => docRef.current.nodes.filter((n) => n.layer !== 'rack')
+  const alignNodes = (axis: 'x' | 'y') => {
+    const free = freeNodes()
+    if (free.length < 2) {
+      setNotice({ msg: 'Select at least 2 free nodes to align', ok: false })
+      return
+    }
+    const v = Math.min(...free.map((n) => (axis === 'x' ? n.x ?? 0 : n.y ?? 0)))
+    applyDoc({
+      ...docRef.current,
+      nodes: docRef.current.nodes.map((n) =>
+        n.layer === 'rack' ? n : { ...n, [axis]: v },
+      ),
+    })
+    setNotice({ msg: axis === 'x' ? 'Aligned left' : 'Aligned top', ok: true })
+  }
+  const spreadNodes = (axis: 'x' | 'y') => {
+    const free = [...freeNodes()].sort((a, b) => (axis === 'x' ? (a.x ?? 0) - (b.x ?? 0) : (a.y ?? 0) - (b.y ?? 0)))
+    if (free.length < 3) {
+      setNotice({ msg: 'Need at least 3 free nodes to distribute', ok: false })
+      return
+    }
+    const lo = axis === 'x' ? (free[0].x ?? 0) : (free[0].y ?? 0)
+    const hi = axis === 'x' ? (free[free.length - 1].x ?? 0) : (free[free.length - 1].y ?? 0)
+    const step = (hi - lo) / (free.length - 1)
+    const pos = new Map(free.map((n, i) => [n.id, Math.round(lo + step * i)]))
+    applyDoc({
+      ...docRef.current,
+      nodes: docRef.current.nodes.map((n) =>
+        n.layer === 'rack' || !pos.has(n.id) ? n : { ...n, [axis]: pos.get(n.id) },
+      ),
+    })
+    setNotice({ msg: axis === 'x' ? 'Distributed horizontally' : 'Distributed vertically', ok: true })
+  }
+
+  // ── Editor keyboard shortcuts (ignored while typing in inputs) ──
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      const tag = (el?.tagName || '').toLowerCase()
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || el?.isContentEditable) return
+      const mod = e.ctrlKey || e.metaKey
+      if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      } else if ((mod && e.key.toLowerCase() === 'y') || (mod && e.shiftKey && e.key.toLowerCase() === 'z')) {
+        e.preventDefault()
+        redo()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        e.preventDefault()
+        if (window.confirm('Delete the selected node and its links?')) deleteNode(selectedId)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId])
 
   const addNode = (item: LibraryItem) => {
     const cur = docRef.current
@@ -565,19 +685,20 @@ export default function HybridInfraEditor() {
 
   const switchDoc = async (slug: string) => {
     if (savedRef.current !== JSON.stringify(docRef.current) && !window.confirm('Discard unsaved changes?')) return
-    if (slug === 'plan-a') {
-      const seed = planADoc()
+    if (BUILTIN_DOCS[slug]) {
+      const seed = BUILTIN_DOCS[slug]()
       docRef.current = seed
       setDoc(seed)
       setDocId(null)
       setIsSeed(true)
-      setSelectedId('firewall')
+      setSelectedId(seed.nodes[0]?.id ?? null)
       savedRef.current = null
       histRef.current = { past: [], future: [] }
       syncHistButtons()
       try {
         const url = new URL(window.location.href)
-        url.searchParams.delete('diagram')
+        if (slug === 'plan-a') url.searchParams.delete('diagram')
+        else url.searchParams.set('diagram', slug)
         window.history.replaceState(null, '', url.toString())
       } catch {
         /* noop */
@@ -607,7 +728,7 @@ export default function HybridInfraEditor() {
 
   const shareDoc = async () => {
     const cur = docRef.current
-    const slug = isSeed ? 'plan-a' : cur.slug
+    const slug = cur.slug || 'plan-a'
     const url = `${window.location.origin}/hybrid-infra?diagram=${encodeURIComponent(slug)}${selectedId ? `&node=${encodeURIComponent(selectedId)}` : ''}`
     try {
       await navigator.clipboard.writeText(url)
@@ -680,11 +801,12 @@ export default function HybridInfraEditor() {
       >
         <select
           aria-label="Diagram"
-          value={isSeed ? 'plan-a' : doc.slug}
+          value={doc.slug}
           onChange={(e) => void switchDoc(e.target.value)}
           style={{ ...INPUT, width: 'auto', minWidth: 180 }}
         >
-          <option value="plan-a">Plan A (built-in{isSeed ? ' — editing a copy' : ''})</option>
+          <option value="plan-a">Plan A (built-in{isSeed && doc.slug === 'plan-a' ? ' — editing a copy' : ''})</option>
+          <option value="cloud-infra">Plan C — Cloud (built-in{isSeed && doc.slug === 'cloud-infra' ? ' — editing a copy' : ''})</option>
           {diagrams.map((m) => (
             <option key={m.id} value={m.slug}>
               {m.title} {!m.published ? '(draft)' : ''}
@@ -721,14 +843,42 @@ export default function HybridInfraEditor() {
           title={isSeed || !docId ? 'Save first, then publish' : 'Toggle public visibility'}
           style={{
             ...BTN,
-            borderColor: doc.published ? '#43d19e' : '#2b4862',
-            color: doc.published ? '#43d19e' : '#dcecff',
+            borderColor: doc.published ? pal.green : pal.border,
+            color: doc.published ? pal.green : pal.ink,
           }}
         >
           {doc.published ? 'PUBLISHED' : 'DRAFT'}
         </button>
         <button type="button" onClick={undo} disabled={!canUndo} style={BTN}>UNDO</button>
         <button type="button" onClick={redo} disabled={!canRedo} style={BTN}>REDO</button>
+        <button
+          type="button"
+          onClick={arrangeNodes}
+          title="Auto-arrange blocks into layer columns (undo available)"
+          style={BTN}
+        >
+          ARRANGE
+        </button>
+        <button
+          type="button"
+          onClick={cycleSnap}
+          title="Cycle grid snap: 10px → 20px → free placement"
+          style={BTN}
+        >
+          SNAP: {snapSize ?? 'OFF'}
+        </button>
+        <button type="button" onClick={() => alignNodes('x')} title="Align free nodes to the left edge" style={BTN}>
+          ALIGN ←
+        </button>
+        <button type="button" onClick={() => alignNodes('y')} title="Align free nodes to the top edge" style={BTN}>
+          ALIGN ↑
+        </button>
+        <button type="button" onClick={() => spreadNodes('x')} title="Distribute free nodes evenly (horizontal)" style={BTN}>
+          SPREAD ↔
+        </button>
+        <button type="button" onClick={() => spreadNodes('y')} title="Distribute free nodes evenly (vertical)" style={BTN}>
+          SPREAD ↕
+        </button>
         <button type="button" onClick={newDoc} style={BTN}>NEW</button>
         <button type="button" onClick={duplicateDoc} style={BTN}>DUPLICATE</button>
         <button
@@ -753,11 +903,11 @@ export default function HybridInfraEditor() {
         <button type="button" onClick={() => { setEditMode(false); setConnectFrom(null) }} style={BTN}>
           DONE
         </button>
-        <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: isDirty ? '#ffb454' : '#43d19e' }}>
+        <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: isDirty ? pal.amber : pal.green }}>
           {isSeed ? 'built-in seed (edits save as a copy)' : isDirty ? '● unsaved changes' : 'saved'}
         </span>
         {notice && (
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: notice.ok ? '#43d19e' : '#ff6b78' }}>
+          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: notice.ok ? pal.green : pal.red }}>
             {notice.msg}
           </span>
         )}
@@ -767,12 +917,12 @@ export default function HybridInfraEditor() {
       <div className="hi-edit-layout" style={{ display: 'grid', gridTemplateColumns: '230px minmax(0,1fr) 320px', gap: 12, alignItems: 'start' }}>
         {/* Palette */}
         <div style={{ ...PANEL, maxHeight: 720, overflowY: 'auto' }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: '#8fb4d8', marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
             IT LIBRARY — CLICK TO PLACE
           </div>
           {INFRA_LIBRARY.map((g) => (
             <div key={g.id} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#6b849c', marginBottom: 6, fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 6, fontFamily: 'var(--font-mono)' }}>
                 {g.title.toUpperCase()}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -808,7 +958,7 @@ export default function HybridInfraEditor() {
               style={{
                 position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)',
                 zIndex: 5, background: 'rgba(54,215,232,.12)', border: '1px solid rgba(54,215,232,.4)',
-                color: '#9fd2ff', fontSize: 11, fontFamily: 'var(--font-mono)',
+                color: pal.blue, fontSize: 11, fontFamily: 'var(--font-mono)',
                 padding: '7px 12px', borderRadius: 8,
               }}
             >
@@ -832,6 +982,9 @@ export default function HybridInfraEditor() {
             connectFrom={connectFrom}
             onMoveNode={handleMoveNode}
             onAddLink={handleAddLink}
+            tone={tone}
+            snap={snapSize}
+            lockedIds={lockedIds}
           />
         </div>
 
@@ -849,13 +1002,13 @@ export default function HybridInfraEditor() {
           }}
         >
           {!selected ? (
-            <div style={{ fontSize: 12, color: '#8fa7bd', fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
+            <div style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
               Select a node to edit its properties. Drag nodes to move them.
               Use CONNECT to draw animated links between nodes.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: 2, color: '#8fb4d8', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
                 PROPERTIES
               </div>
               <div>
@@ -938,7 +1091,7 @@ export default function HybridInfraEditor() {
                   onChange={(e) => updateNode(selected.id, { notes: e.target.value.slice(0, 2000) || undefined })}
                   rows={2}
                   placeholder="Runbook hint, owner, ticket ref…"
-                  style={{ ...INPUT, resize: 'vertical', borderColor: '#f0c75e55' }}
+                  style={{ ...INPUT, resize: 'vertical', borderColor: `${pal.gold}55` }}
                 />
               </div>
               <div>
@@ -992,11 +1145,11 @@ export default function HybridInfraEditor() {
               <div>
                 <label style={LABEL}>Outgoing links</label>
                 {doc.flows.filter((f) => f.from === selected.id).length === 0 && (
-                  <div style={{ fontSize: 11, color: '#6b849c', fontFamily: 'var(--font-mono)' }}>None yet — use CONNECT.</div>
+                  <div style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)' }}>None yet — use CONNECT.</div>
                 )}
                 {doc.flows.filter((f) => f.from === selected.id).map((f) => (
                   <div key={f.id} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: '#9fd2ff', fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 11, color: pal.blue, fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       → {depNameOf(f.to)}
                     </span>
                     <select
@@ -1019,7 +1172,7 @@ export default function HybridInfraEditor() {
                 <button
                   type="button"
                   onClick={() => setConnectFrom(connectFrom === selected.id ? null : selected.id)}
-                  style={{ ...BTN, borderColor: connectFrom === selected.id ? '#36d7e8' : '#2b4862' }}
+                  style={{ ...BTN, borderColor: connectFrom === selected.id ? pal.cyan : pal.border }}
                 >
                   {connectFrom === selected.id ? 'CONNECTING…' : 'CONNECT'}
                 </button>
@@ -1028,10 +1181,23 @@ export default function HybridInfraEditor() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => toggleLock(selected.id)}
+                  aria-pressed={lockedIds.has(selected.id)}
+                  title={lockedIds.has(selected.id) ? 'Unlock (allow dragging)' : 'Lock (prevent dragging)'}
+                  style={{
+                    ...BTN,
+                    borderColor: lockedIds.has(selected.id) ? pal.amber : pal.border,
+                    color: lockedIds.has(selected.id) ? pal.amber : pal.ink,
+                  }}
+                >
+                  {lockedIds.has(selected.id) ? '🔒 LOCKED' : 'LOCK'}
+                </button>
+                <button
+                  type="button"
                   onClick={() => {
                     if (window.confirm(`Delete "${selected.name}" and its links?`)) deleteNode(selected.id)
                   }}
-                  style={{ ...BTN, borderColor: '#ff6b7855', color: '#ff6b78' }}
+                  style={{ ...BTN, borderColor: `${pal.red}55`, color: pal.red }}
                 >
                   DELETE
                 </button>

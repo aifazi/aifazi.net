@@ -27,7 +27,19 @@ async def sitemap():
             f"<url><loc>{SITE_URL}/blog</loc><changefreq>daily</changefreq></url>",
             f"<url><loc>{SITE_URL}/forum</loc><changefreq>hourly</changefreq></url>",
             f"<url><loc>{SITE_URL}/contact</loc></url>",
-            f"<url><loc>{SITE_URL}/helpdesk</loc></url>",]
+            f"<url><loc>{SITE_URL}/helpdesk</loc></url>",
+            f"<url><loc>{SITE_URL}/hybrid-infra</loc><changefreq>weekly</changefreq></url>",
+            f"<url><loc>{SITE_URL}/privacy</loc><changefreq>yearly</changefreq></url>",
+            f"<url><loc>{SITE_URL}/terms</loc><changefreq>yearly</changefreq></url>",]
+    try:
+        diagrams = supabase.table("infra_diagrams").select("slug,updated_at").eq("published", True).limit(1000).execute().data or []
+    except Exception:
+        diagrams = []
+    for d in diagrams:
+        slug = (d.get("slug") or "").strip()
+        if not slug or slug == "plan-a":
+            continue
+        urls.append(f"<url><loc>{SITE_URL}/hybrid-infra?diagram={slug}</loc><lastmod>{(d.get('updated_at') or '')[:10]}</lastmod></url>")
     for p in posts:
         urls.append(f"<url><loc>{SITE_URL}/blog/{p['slug']}</loc><lastmod>{(p.get('updated_at') or '')[:10]}</lastmod></url>")
     for t in threads:

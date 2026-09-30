@@ -7,20 +7,26 @@ import { useState } from 'react'
  * otherwise degrade silently (realtime/auth off, push dead, CDN rewrite off).
  * Localhost and preview deploys never show this.
  */
-const REQUIRED = [
-  'NEXT_PUBLIC_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'NEXT_PUBLIC_API_URL',
-]
+// NOTE: Next.js only inlines statically-analyzable process.env.NEXT_PUBLIC_*
+// references at build time. A dynamic lookup (process.env[k]) is NEVER
+// substituted and always reads empty client-side — so the check below must
+// stay fully static or the banner false-positives on every production load.
+const CLIENT_ENV = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+}
 
 export default function EnvMisconfigBanner() {
   const [dismissed, setDismissed] = useState(false)
   const [missing] = useState(() => {
     if (typeof window === 'undefined') return []
     const host = window.location.hostname || ''
-    if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app')) return []
+    if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.vercel.app')) return []
     if (!(host === 'aifazi.net' || host.endsWith('.aifazi.net'))) return []
-    return REQUIRED.filter((k) => !process.env[k])
+    return Object.entries(CLIENT_ENV)
+      .filter(([, v]) => !v)
+      .map(([k]) => k)
   })
   if (dismissed || missing.length === 0) return null
   return (
