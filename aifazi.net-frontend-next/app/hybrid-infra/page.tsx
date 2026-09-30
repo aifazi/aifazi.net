@@ -36,14 +36,15 @@ const JSON_LD = {
   mainEntityOfPage: `${SITE}/hybrid-infra`,
 }
 
-export default function HybridInfraPage({
+export default async function HybridInfraPage({
   searchParams,
 }: {
-  searchParams?: { diagram?: string }
+  searchParams?: Promise<{ diagram?: string }>
 }) {
+  const params = (await searchParams) ?? {}
   const activeSlug =
-    typeof searchParams?.diagram === 'string' && searchParams.diagram.trim() !== ''
-      ? searchParams.diagram
+    typeof params.diagram === 'string' && params.diagram.trim() !== ''
+      ? params.diagram
       : 'plan-a'
   return (
     <>
