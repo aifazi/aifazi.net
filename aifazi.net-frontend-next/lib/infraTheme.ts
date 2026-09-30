@@ -110,7 +110,13 @@ export function infraPalette(tone: InfraTone): InfraPalette {
  * for dark glass; on light surfaces the same hues need darkening for text
  * and strokes to stay legible (WCAG small-text contrast).
  */
-export function infraCatColor(category: string, tone: InfraTone): string {
+export function infraCatColor(
+  category: string,
+  tone: InfraTone,
+  overrides?: Record<string, string> | null,
+): string {
+  const custom = overrides?.[category]
+  if (custom) return custom
   if (tone !== 'light') {
     return (
       {

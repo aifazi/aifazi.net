@@ -8,7 +8,7 @@
  * properties + notes, undo/redo, save/publish/share, JSON import/export.
  * Server truth is enforced by require_admin; the UI gate is convenience.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { getRole } from '@/lib/api'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import HybridInfra from './HybridInfra'
@@ -20,9 +20,13 @@ import {
   sanitizeDoc,
   dependencyChainIn,
   CATEGORY_META,
+  catLabel,
+  mergedCatColors,
   type DiagramDoc,
+  type BuiltinCategory,
   type InfraCategory,
   type InfraComponent,
+  type InfraFlow,
 } from '@/data/hybrid-infra'
 import {
   listDiagrams,
@@ -32,6 +36,16 @@ import {
   deleteDiagram,
   type DiagramMeta,
 } from '@/lib/infraApi'
+import {
+  arrangeNodesDoc,
+  alignNodesDoc,
+  spreadNodesDoc,
+  deleteNodesDoc,
+  duplicateNodesDoc,
+  pasteNodesDoc,
+  remapCategoryDoc,
+  type NextId,
+} from '@/lib/infraDocOps'
 
 /* PANEL/BTN/INPUT/LABEL live inside the component now (theme-aware). */
 
@@ -54,6 +68,8 @@ export default function HybridInfraEditor() {
   const [isSeed, setIsSeed] = useState(true)
   const [diagrams, setDiagrams] = useState<DiagramMeta[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Multi-selection (shift-click); always includes selectedId when non-empty.
+  const [selIds, setSelIds] = useState<Set<string>>(new Set())
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
   const [isAdmin, setIsAdmin] = useState(() => {
@@ -108,6 +124,8 @@ export default function HybridInfraEditor() {
   }
   // Odoo-style grid snap step (px). Null = free placement.
   const [snapSize, setSnapSize] = useState<number | null>(10)
+  // Background grid overlay (editor-local view preference).
+  const [showGrid, setShowGrid] = useState(true)
   // Locked nodes can't be dragged (editor-local; never persisted to the doc).
   const [lockedIds, setLockedIds] = useState<Set<string>>(new Set())
   const toggleLock = (id: string) => {
@@ -314,23 +332,8 @@ export default function HybridInfraEditor() {
     a.x < b.x + b.w + 20 && a.x + a.w + 20 > b.x && a.y < b.y + b.h + 20 && a.y + a.h + 20 > b.y
 
   // ── Auto-arrange: grid columns per layer, rows stacked (Odoo-style) ──
-  const LAYER_ORDER = ['edge', 'rack', 'vm', 'cloud', 'users', 'legacy']
   const arrangeNodes = () => {
-    const cur = docRef.current
-    const nextY: Record<string, number> = {}
-    const nodes = cur.nodes.map((n) => {
-      const li = Math.max(0, LAYER_ORDER.indexOf(n.layer || 'cloud'))
-      const y = nextY[n.layer] ?? 40
-      const w = n.w || 160
-      const h = n.h || 60
-      nextY[n.layer] = y + h + 24
-      return {
-        ...n,
-        x: Math.max(0, Math.min(40 + li * 210, 1480 - w)),
-        y: Math.max(0, Math.min(y, 1020 - h)),
-      }
-    })
-    applyDoc({ ...cur, nodes })
+    applyDoc(arrangeNodesDoc(docRef.current))
     setNotice({ msg: 'Auto-arranged by layer (undo available)', ok: true })
   }
 
@@ -338,39 +341,109 @@ export default function HybridInfraEditor() {
     setSnapSize((s) => (s === 10 ? 20 : s === 20 ? null : 10))
   }
 
+  // ── Category palette (doc-level color overrides) ──────────────
+  const setCatColor = (cat: string, color: string) => {
+    const cur = docRef.current
+    applyDoc({
+      ...cur,
+      categoryColors: { ...(cur.categoryColors ?? {}), [cat]: color },
+    })
+  }
+  const resetCatColors = () => {
+    const cur = docRef.current
+    if (!cur.categoryColors) return
+    const { categoryColors: _dropped, ...rest } = cur
+    applyDoc(rest)
+    setNotice({ msg: 'Palette reset to defaults (undo available)', ok: true })
+  }
+  // Effective category color (doc override → custom → canonical meta → fallback).
+  const catColorHex = (cat: string) =>
+    doc.categoryColors?.[cat] ??
+    doc.customCategories?.[cat]?.color ??
+    (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
+    '#35a7ff'
+
+  // ── Custom categories (doc-defined beyond the built-ins) ─────
+  const [newCatLabel, setNewCatLabel] = useState('')
+  const [newCatColor, setNewCatColor] = useState('#ff8a3d')
+  const catSlug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32)
+  const addCustomCat = () => {
+    const label = newCatLabel.trim()
+    if (!label) return
+    const cur = docRef.current
+    const key = catSlug(label) || `cat-${Date.now()}`
+    if (key in CATEGORY_META || key in (cur.customCategories ?? {})) {
+      setNotice({ msg: 'Category id already exists', ok: false })
+      return
+    }
+    if (Object.keys(cur.customCategories ?? {}).length >= 16) {
+      setNotice({ msg: 'Custom category limit reached (16)', ok: false })
+      return
+    }
+    applyDoc({
+      ...cur,
+      customCategories: {
+        ...(cur.customCategories ?? {}),
+        [key]: { label: label.slice(0, 24), color: newCatColor },
+      },
+    })
+    setNewCatLabel('')
+    setNotice({ msg: `Added category "${label.slice(0, 24)}"`, ok: true })
+  }
+  const setCustomCat = (key: string, patch: { label?: string; color?: string }) => {
+    const cur = docRef.current
+    const cc = cur.customCategories ?? {}
+    if (!cc[key]) return
+    // Editing the category's own color supersedes any stale palette override.
+    const pal2 = { ...(cur.categoryColors ?? {}) }
+    if (patch.color) delete pal2[key]
+    applyDoc({
+      ...cur,
+      categoryColors: Object.keys(pal2).length ? pal2 : undefined,
+      customCategories: { ...cc, [key]: { ...cc[key], ...patch } },
+    })
+  }
+  const removeCustomCat = (key: string) => {
+    const cur = docRef.current
+    const cc = { ...(cur.customCategories ?? {}) }
+    delete cc[key]
+    // Nodes/flows still using it fall back to Network so nothing dangles.
+    applyDoc({
+      ...remapCategoryDoc(cur, key, 'network'),
+      customCategories: Object.keys(cc).length ? cc : undefined,
+    })
+    setNotice({ msg: 'Category removed (nodes reset to Network)', ok: true })
+  }
+  // Custom colors merged under doc palette overrides for canvas/reader chips.
+  const mergedCat = () => mergedCatColors(doc)
+  /** All selectable categories: built-ins first, then custom ids. */
+  const allCategoryIds = (): string[] => [
+    ...(Object.keys(CATEGORY_META) as BuiltinCategory[]),
+    ...Object.keys(doc.customCategories ?? {}),
+  ]
+
   // ── Align / distribute free nodes (rack layer excluded — rackU owned) ──
-  const freeNodes = () => docRef.current.nodes.filter((n) => n.layer !== 'rack')
+  // Operates on the multi-selection when 2+ selected, else all free nodes.
+  const selectionForBulk = () => {
+    const ids = selectedNodeIds()
+    return ids.length >= 2 ? ids : null
+  }
   const alignNodes = (axis: 'x' | 'y') => {
-    const free = freeNodes()
-    if (free.length < 2) {
+    const next = alignNodesDoc(docRef.current, selectionForBulk(), axis)
+    if (!next) {
       setNotice({ msg: 'Select at least 2 free nodes to align', ok: false })
       return
     }
-    const v = Math.min(...free.map((n) => (axis === 'x' ? n.x ?? 0 : n.y ?? 0)))
-    applyDoc({
-      ...docRef.current,
-      nodes: docRef.current.nodes.map((n) =>
-        n.layer === 'rack' ? n : { ...n, [axis]: v },
-      ),
-    })
+    applyDoc(next)
     setNotice({ msg: axis === 'x' ? 'Aligned left' : 'Aligned top', ok: true })
   }
   const spreadNodes = (axis: 'x' | 'y') => {
-    const free = [...freeNodes()].sort((a, b) => (axis === 'x' ? (a.x ?? 0) - (b.x ?? 0) : (a.y ?? 0) - (b.y ?? 0)))
-    if (free.length < 3) {
+    const next = spreadNodesDoc(docRef.current, selectionForBulk(), axis)
+    if (!next) {
       setNotice({ msg: 'Need at least 3 free nodes to distribute', ok: false })
       return
     }
-    const lo = axis === 'x' ? (free[0].x ?? 0) : (free[0].y ?? 0)
-    const hi = axis === 'x' ? (free[free.length - 1].x ?? 0) : (free[free.length - 1].y ?? 0)
-    const step = (hi - lo) / (free.length - 1)
-    const pos = new Map(free.map((n, i) => [n.id, Math.round(lo + step * i)]))
-    applyDoc({
-      ...docRef.current,
-      nodes: docRef.current.nodes.map((n) =>
-        n.layer === 'rack' || !pos.has(n.id) ? n : { ...n, [axis]: pos.get(n.id) },
-      ),
-    })
+    applyDoc(next)
     setNotice({ msg: axis === 'x' ? 'Distributed horizontally' : 'Distributed vertically', ok: true })
   }
 
@@ -387,15 +460,28 @@ export default function HybridInfraEditor() {
       } else if ((mod && e.key.toLowerCase() === 'y') || (mod && e.shiftKey && e.key.toLowerCase() === 'z')) {
         e.preventDefault()
         redo()
-      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+      } else if (mod && e.key.toLowerCase() === 'c' && selectedNodeIds().length) {
         e.preventDefault()
-        if (window.confirm('Delete the selected node and its links?')) deleteNode(selectedId)
+        copySelected()
+      } else if (mod && e.key.toLowerCase() === 'v') {
+        e.preventDefault()
+        pasteClipboard()
+      } else if (mod && e.key.toLowerCase() === 'd' && selectedNodeIds().length) {
+        e.preventDefault()
+        duplicateSelected()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIds().length) {
+        e.preventDefault()
+        const ids = selectedNodeIds()
+        const msg = ids.length > 1
+          ? `Delete ${ids.length} selected nodes and their links?`
+          : 'Delete the selected node and its links?'
+        if (window.confirm(msg)) deleteNodes(ids)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId])
+  }, [selectedId, selIds])
 
   const addNode = (item: LibraryItem) => {
     const cur = docRef.current
@@ -469,44 +555,85 @@ export default function HybridInfraEditor() {
     rackH: item.rackH,
   })
 
-  const deleteNode = (id: string) => {
-    const cur = docRef.current
-    applyDoc({
-      ...cur,
-      nodes: cur.nodes.filter((n) => n.id !== id),
-      flows: cur.flows.filter((f) => f.from !== id && f.to !== id),
-    })
-    // Clean dangling dep refs so links never dangle.
-    const cleaned = docRef.current
-    applyDoc(
-      {
-        ...cleaned,
-        nodes: cleaned.nodes.map((n) => ({ ...n, deps: n.deps.filter((d) => d !== id) })),
-      },
-      false,
-    )
-    if (selectedId === id) setSelectedId(null)
-    if (connectFrom === id) setConnectFrom(null)
+  const deleteNodes = (ids: string[]) => {
+    const next = deleteNodesDoc(docRef.current, ids)
+    if (!next) return
+    applyDoc(next)
+    const set = new Set(ids)
+    if (selectedId && set.has(selectedId)) setSelectedId(null)
+    setSelIds((prev) => new Set([...prev].filter((id) => !set.has(id))))
+    if (connectFrom && set.has(connectFrom)) setConnectFrom(null)
+  }
+
+  const deleteNode = (id: string) => deleteNodes([id])
+
+  const selectOnly = (ids: string[]) => {
+    setSelIds(new Set(ids))
+    setSelectedId(ids.length ? ids[ids.length - 1] : null)
+  }
+
+  /** Unique id fragment for duplicated/pasted nodes and flows. */
+  const freshId: NextId = () => {
+    counterRef.current += 1
+    return `c${counterRef.current}`
+  }
+
+  const duplicateSelected = () => {
+    const ids = selectedNodeIds()
+    if (!ids.length) {
+      setNotice({ msg: 'Nothing selected to duplicate', ok: false })
+      return
+    }
+    const res = duplicateNodesDoc(docRef.current, ids, freshId)
+    if (!res) return
+    applyDoc(res.doc)
+    selectOnly(res.newIds)
+    setNotice({ msg: `Duplicated ${res.newIds.length} node(s)`, ok: true })
   }
 
   const duplicateNode = (id: string) => {
+    const ids = selectedNodeIds()
+    const targets = ids.includes(id) && ids.length > 1 ? ids : [id]
+    const res = duplicateNodesDoc(docRef.current, targets, freshId)
+    if (!res) return
+    applyDoc(res.doc)
+    selectOnly(res.newIds)
+  }
+
+  // ── Clipboard (Ctrl+C / Ctrl+V / Ctrl+D) ─────────────────────
+  const clipRef = useRef<InfraComponent[] | null>(null)
+  const pasteSeqRef = useRef(0)
+
+  const copySelected = () => {
     const cur = docRef.current
-    const src = cur.nodes.find((n) => n.id === id)
-    if (!src) return
-    counterRef.current += 1
-    const nid = `${src.id}-copy${counterRef.current}`
-    const copy: InfraComponent = {
-      ...src,
-      id: nid,
-      name: `${src.name} (copy)`,
-      workloads: [...src.workloads],
-      deps: [...src.deps],
-      x: src.x !== undefined ? src.x + 40 : undefined,
-      y: src.y !== undefined ? src.y + 40 : undefined,
-      rackU: src.rackU !== undefined ? Math.min(42, src.rackU + (src.rackH ?? 1)) : undefined,
+    const ids = new Set(selectedNodeIds())
+    const nodes = cur.nodes.filter((n) => ids.has(n.id))
+    if (!nodes.length) {
+      setNotice({ msg: 'Nothing selected to copy', ok: false })
+      return
     }
-    applyDoc({ ...cur, nodes: [...cur.nodes, copy] })
-    setSelectedId(nid)
+    clipRef.current = nodes.map((n) => ({
+      ...n,
+      workloads: [...n.workloads],
+      deps: [...n.deps],
+    }))
+    pasteSeqRef.current = 0
+    setNotice({ msg: `Copied ${nodes.length} node(s)`, ok: true })
+  }
+
+  const pasteClipboard = () => {
+    const clip = clipRef.current
+    if (!clip?.length) {
+      setNotice({ msg: 'Clipboard is empty', ok: false })
+      return
+    }
+    const off = 24 * (pasteSeqRef.current + 1)
+    const res = pasteNodesDoc(docRef.current, clip, freshId, off)
+    if (!res) return
+    pasteSeqRef.current += 1
+    applyDoc(res.doc)
+    selectOnly(res.newIds)
+    setNotice({ msg: `Pasted ${res.newIds.length} node(s)`, ok: true })
   }
 
   const updateNode = (id: string, patch: Partial<InfraComponent>) => {
@@ -549,6 +676,15 @@ export default function HybridInfraEditor() {
     applyDoc({ ...cur, flows: cur.flows.map((f) => (f.id === id ? { ...f, cat } : f)) })
   }
 
+  // Per-flow styling: label, dashed, color.
+  const setLinkStyle = (id: string, patch: Partial<InfraFlow>) => {
+    const cur = docRef.current
+    applyDoc({
+      ...cur,
+      flows: cur.flows.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    })
+  }
+
   // ── Select wrapper (connect-mode aware) ──────────────────────
   const handleSelect = (id: string | null) => {
     if (connectFrom) {
@@ -556,6 +692,29 @@ export default function HybridInfraEditor() {
       return
     }
     setSelectedId(id)
+    setSelIds(id ? new Set([id]) : new Set())
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+        if (selectedId === id) {
+          const rest = [...next]
+          setSelectedId(rest.length ? rest[rest.length - 1] : null)
+        }
+      } else {
+        next.add(id)
+        setSelectedId(id)
+      }
+      return next
+    })
+  }
+
+  const selectedNodeIds = (): string[] => {
+    const ids = selIds.size ? [...selIds] : selectedId ? [selectedId] : []
+    return ids.filter((id) => docRef.current.nodes.some((n) => n.id === id))
   }
 
   // ── Persistence ──────────────────────────────────────────────
@@ -799,7 +958,7 @@ export default function HybridInfraEditor() {
             </button>
           </div>
         )}
-        <HybridInfra doc={isSeed ? null : doc} />
+        <HybridInfra doc={doc} viewKey={docId ?? doc.slug} />
       </div>
     )
   }
@@ -881,6 +1040,37 @@ export default function HybridInfraEditor() {
         >
           SNAP: {snapSize ?? 'OFF'}
         </button>
+        <label
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontFamily: 'var(--font-mono)', color: pal.muted }}
+          title="Custom snap step in px (0 = free placement)"
+        >
+          STEP
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={snapSize ?? 0}
+            onChange={(e) => {
+              const v = Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)))
+              setSnapSize(v > 0 ? v : null)
+            }}
+            style={{ ...INPUT, width: 62, padding: '5px 7px' }}
+            aria-label="Custom snap step in pixels (0 disables snapping)"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowGrid((v) => !v)}
+          aria-pressed={showGrid}
+          title="Toggle the background grid overlay"
+          style={{
+            ...BTN,
+            borderColor: showGrid ? pal.cyan : pal.border,
+            color: showGrid ? pal.cyan : pal.ink,
+          }}
+        >
+          GRID {showGrid ? 'ON' : 'OFF'}
+        </button>
         <button type="button" onClick={() => alignNodes('x')} title="Align free nodes to the left edge" style={BTN}>
           ALIGN ←
         </button>
@@ -892,6 +1082,23 @@ export default function HybridInfraEditor() {
         </button>
         <button type="button" onClick={() => spreadNodes('y')} title="Distribute free nodes evenly (vertical)" style={BTN}>
           SPREAD ↕
+        </button>
+        <button
+          type="button"
+          onClick={copySelected}
+          disabled={!selectedNodeIds().length}
+          title="Copy selected node(s) — Ctrl+C (shift+click nodes to multi-select)"
+          style={BTN}
+        >
+          COPY{selIds.size > 1 ? ` (${selIds.size})` : ''}
+        </button>
+        <button
+          type="button"
+          onClick={pasteClipboard}
+          title="Paste copied node(s) — Ctrl+V"
+          style={BTN}
+        >
+          PASTE
         </button>
         <button type="button" onClick={newDoc} style={BTN}>NEW</button>
         <button type="button" onClick={duplicateDoc} style={BTN}>DUPLICATE</button>
@@ -948,7 +1155,7 @@ export default function HybridInfraEditor() {
                     title={item.desc}
                     style={{
                       ...BTN, textAlign: 'left', fontWeight: 500,
-                      borderLeft: `3px solid ${CATEGORY_META[item.category].color}`,
+                      borderLeft: `3px solid ${catColorHex(item.category)}`,
                     }}
                   >
                     {item.name}
@@ -957,6 +1164,95 @@ export default function HybridInfraEditor() {
               </div>
             </div>
           ))}
+
+          {/* Category palette: live per-category color overrides */}
+          <div style={{ borderTop: `1px solid ${pal.border}`, marginTop: 12, paddingTop: 10 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
+              CATEGORY COLORS
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 6, alignItems: 'center' }}>
+              {(Object.keys(CATEGORY_META) as BuiltinCategory[]).map((c) => (
+                <Fragment key={c}>
+                  <span style={{ fontSize: 11, color: pal.ink, fontFamily: 'var(--font-mono)' }}>
+                    {CATEGORY_META[c].label}
+                  </span>
+                  <input
+                    type="color"
+                    aria-label={`${CATEGORY_META[c].label} color`}
+                    value={doc.categoryColors?.[c] ?? CATEGORY_META[c].color}
+                    onChange={(e) => setCatColor(c, e.target.value)}
+                    style={{ width: 34, height: 24, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+                  />
+                </Fragment>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={resetCatColors}
+              disabled={!doc.categoryColors}
+              style={{ ...BTN, marginTop: 8, width: '100%', opacity: doc.categoryColors ? 1 : 0.5 }}
+            >
+              RESET DEFAULTS
+            </button>
+          </div>
+
+          {/* Custom categories: doc-defined categories beyond the built-ins */}
+          <div style={{ borderTop: `1px solid ${pal.border}`, marginTop: 12, paddingTop: 10 }}>
+            <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
+              CUSTOM CATEGORIES
+            </div>
+            {Object.entries(doc.customCategories ?? {}).map(([k, m]) => (
+              <div
+                key={k}
+                style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 6, alignItems: 'center', marginBottom: 5 }}
+              >
+                <span style={{ fontSize: 11, color: pal.ink, fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.label}
+                </span>
+                <input
+                  type="color"
+                  aria-label={`${m.label} color`}
+                  value={m.color}
+                  onChange={(e) => setCustomCat(k, { color: e.target.value })}
+                  style={{ width: 34, height: 24, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCustomCat(k)}
+                  title="Remove category (its nodes reset to Network)"
+                  style={{ ...BTN, padding: '4px 8px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+            <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+              <input
+                value={newCatLabel}
+                onChange={(e) => setNewCatLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addCustomCat()
+                  }
+                }}
+                placeholder="New category name"
+                maxLength={24}
+                aria-label="New category name"
+                style={{ ...INPUT, flex: 1, minWidth: 0, padding: '5px 7px' }}
+              />
+              <input
+                type="color"
+                aria-label="New category color"
+                value={newCatColor}
+                onChange={(e) => setNewCatColor(e.target.value)}
+                style={{ width: 34, height: 26, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+              />
+              <button type="button" onClick={addCustomCat} disabled={!newCatLabel.trim()} style={{ ...BTN, opacity: newCatLabel.trim() ? 1 : 0.5 }}>
+                ADD
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Canvas */}
@@ -986,6 +1282,8 @@ export default function HybridInfraEditor() {
             activeMode="all"
             edgeVendor="fortigate"
             selectedId={selectedId}
+            selectedIds={selIds}
+            onToggleSelect={handleToggleSelect}
             focusIds={focusIds}
             playStep={-1}
             viewMode="technical"
@@ -999,6 +1297,9 @@ export default function HybridInfraEditor() {
             tone={tone}
             snap={snapSize}
             lockedIds={lockedIds}
+            viewStorageKey={`editor-${docId ?? doc.slug}`}
+            catColors={mergedCat()}
+            grid={showGrid}
           />
         </div>
 
@@ -1019,12 +1320,18 @@ export default function HybridInfraEditor() {
             <div style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
               Select a node to edit its properties. Drag nodes to move them.
               Use CONNECT to draw animated links between nodes.
+              Hold Shift and click nodes to multi-select (group drag, COPY/PASTE, Ctrl+D).
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
                 PROPERTIES
               </div>
+              {selIds.size > 1 && (
+                <div style={{ fontSize: 11, color: pal.cyan, fontFamily: 'var(--font-mono)' }}>
+                  {selIds.size} NODES SELECTED — the panel edits the highlighted one; Delete/COPY/align act on all.
+                </div>
+              )}
               <div>
                 <label style={LABEL}>Name</label>
                 <input
@@ -1049,8 +1356,11 @@ export default function HybridInfraEditor() {
                     onChange={(e) => updateNode(selected.id, { category: e.target.value as InfraCategory })}
                     style={INPUT}
                   >
-                    {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
+                    {(Object.keys(CATEGORY_META) as BuiltinCategory[]).map((c) => (
                       <option key={c} value={c}>{CATEGORY_META[c].label}</option>
+                    ))}
+                    {Object.keys(doc.customCategories ?? {}).map((c) => (
+                      <option key={c} value={c}>{doc.customCategories?.[c]?.label}</option>
                     ))}
                   </select>
                 </div>
@@ -1202,23 +1512,65 @@ export default function HybridInfraEditor() {
                   <div style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)' }}>None yet — use CONNECT.</div>
                 )}
                 {doc.flows.filter((f) => f.from === selected.id).map((f) => (
-                  <div key={f.id} style={{ display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: pal.blue, fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      → {depNameOf(f.to)}
-                    </span>
-                    <select
-                      aria-label="Link category"
-                      value={f.cat}
-                      onChange={(e) => setLinkCat(f.id, e.target.value as InfraCategory)}
-                      style={{ ...INPUT, width: 110 }}
-                    >
-                      {(Object.keys(CATEGORY_META) as InfraCategory[]).map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    <button type="button" onClick={() => deleteLink(f.id)} style={BTN} aria-label={`Delete link to ${depNameOf(f.to)}`}>
-                      ✕
-                    </button>
+                  <div key={f.id} style={{ border: `1px solid ${pal.border}`, borderRadius: 8, padding: 6, marginBottom: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: pal.blue, fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        → {depNameOf(f.to)}
+                      </span>
+                      <select
+                        aria-label="Link category"
+                        value={f.cat}
+                        onChange={(e) => setLinkCat(f.id, e.target.value as InfraCategory)}
+                        style={{ ...INPUT, width: 100 }}
+                      >
+                        {allCategoryIds().map((c) => (
+                          <option key={c} value={c}>{catLabel(c, doc.customCategories)}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => deleteLink(f.id)} style={BTN} aria-label={`Delete link to ${depNameOf(f.to)}`}>
+                        ✕
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
+                      <input
+                        value={f.label ?? ''}
+                        onChange={(e) => setLinkStyle(f.id, { label: e.target.value.slice(0, 40) || undefined })}
+                        placeholder="Label"
+                        aria-label="Link label"
+                        style={{ ...INPUT, flex: 1, width: 'auto' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setLinkStyle(f.id, { dashed: !f.dashed })}
+                        aria-pressed={f.dashed === true}
+                        title="Dashed line"
+                        style={{
+                          ...BTN,
+                          borderColor: f.dashed ? pal.cyan : pal.border,
+                          color: f.dashed ? pal.cyan : pal.ink,
+                        }}
+                      >
+                        DASH
+                      </button>
+                      <input
+                        type="color"
+                        aria-label="Link color"
+                        value={f.color ?? catColorHex(f.cat)}
+                        onChange={(e) => setLinkStyle(f.id, { color: e.target.value })}
+                        title="Line color (defaults to category color)"
+                        style={{ width: 30, height: 26, padding: 0, border: `1px solid ${pal.border}`, background: 'transparent', borderRadius: 6, cursor: 'pointer' }}
+                      />
+                      {f.color && (
+                        <button
+                          type="button"
+                          onClick={() => setLinkStyle(f.id, { color: undefined })}
+                          style={BTN}
+                          title="Reset to category color"
+                        >
+                          ↺
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

@@ -31,12 +31,33 @@ import {
   type InfraFlow,
 } from '@/data/hybrid-infra'
 import { infraPalette, type InfraTone } from '@/lib/infraTheme'
+import { createDrawKit, center, pathBetween, pointAlong, hashId } from './infraCanvasKit'
+import {
+  clampView,
+  effOrigin,
+  effScale,
+  viewCenter,
+  viewForPercent,
+  viewFromCenter,
+  wheelAtBound,
+  wheelZoomFactor,
+  zoomAtPoint,
+  zoomPercent,
+  type InfraFit,
+} from '@/lib/infraView'
 
 export interface HybridInfraCanvasHandle {
   exportPng: () => void
   zoomIn: () => void
   zoomOut: () => void
+  /** Base fit: design centered, zoom 1, pan cleared. */
   resetView: () => void
+  /** Alias of resetView (FIT button). */
+  fit: () => void
+  /** Zoom to a real design-to-screen percent (e.g. 100), keeping center. */
+  setPercent: (pct: number) => void
+  /** Current view for deep-linking (z relative, cx/cy design center). */
+  getView: () => { z: number; cx: number; cy: number; pct: number }
 }
 
 export interface NodeMove {
@@ -49,6 +70,10 @@ interface Props {
   activeMode: InfraCategory | 'all'
   edgeVendor: 'fortigate' | 'unifi'
   selectedId: string | null
+  /** Extra selected ids (shift-click multi-select) drawn with the ring. */
+  selectedIds?: Set<string> | null
+  /** Shift-click on a node: parent toggles it in/out of the selection. */
+  onToggleSelect?: (id: string) => void
   /** Dim everything outside this set. Null = no focus filter. */
   focusIds: Set<string> | null
   /** -1 = off, else index into TIMELINE_CATS. */
@@ -70,6 +95,14 @@ interface Props {
   tone?: InfraTone
   /** Zoom level changed (integer percent, e.g. 125). For the viewer readout. */
   onViewChange?: (pct: number) => void
+  /** Restore a view on first layout (URL deep-link wins over storage). */
+  initialView?: { z: number; cx: number; cy: number } | null
+  /** localStorage key suffix; last view is remembered per key. */
+  viewStorageKey?: string | null
+  /** Per-category color overrides (from DiagramDoc.categoryColors). */
+  catColors?: Record<string, string> | null
+  /** Background grid overlay. Defaults to true. */
+  grid?: boolean
   /** Grid snap step in design px. Null/0 disables snapping. Defaults to 10. */
   snap?: number | null
   /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
@@ -110,14 +143,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
     // transform. Applied to both rendering and hit-testing so clicks stay
     // aligned while zoomed/panned.
     const viewRef = useRef({ z: 1, px: 0, py: 0 })
-    // Zoom-about-point lives inside the mount effect (needs W/H/S); the
-    // imperative handle delegates through this ref.
-    const zoomRef = useRef<(factor: number, mx?: number, my?: number) => void>(
-      () => {},
-    )
+    // Fit transform + view ops live inside the mount effect (need W/H/S);
+    // the imperative handle delegates through these refs.
+    const fitRef = useRef<InfraFit>({ v: 1, ox: 0, oy: 0 })
+    const opsRef = useRef<{
+      zoomBy: (factor: number, mx?: number, my?: number) => void
+      fit: () => void
+      setPercent: (pct: number) => void
+      getView: () => { z: number; cx: number; cy: number; pct: number }
+    } | null>(null)
     const lastPctRef = useRef(100)
     const notifyView = () => {
-      const pct = Math.round(viewRef.current.z * 100)
+      const pct = zoomPercent(fitRef.current, viewRef.current)
       if (pct !== lastPctRef.current) {
         lastPctRef.current = pct
         sRef.current.onViewChange?.(pct)
@@ -141,16 +178,29 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }, 'image/png')
       },
       zoomIn() {
-        zoomRef.current(1.25)
+        opsRef.current?.zoomBy(1.25)
       },
       zoomOut() {
-        zoomRef.current(0.8)
+        opsRef.current?.zoomBy(0.8)
       },
       resetView() {
-        viewRef.current = { z: 1, px: 0, py: 0 }
-        layoutRef.current()
-        kickRef.current()
-        notifyView()
+        opsRef.current?.fit()
+      },
+      fit() {
+        opsRef.current?.fit()
+      },
+      setPercent(pct) {
+        opsRef.current?.setPercent(pct)
+      },
+      getView() {
+        return (
+          opsRef.current?.getView() ?? {
+            z: 1,
+            cx: DESIGN_W / 2,
+            cy: DESIGN_H / 2,
+            pct: 100,
+          }
+        )
       },
     }))
 
@@ -173,13 +223,15 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let running = false
       let offscreen = false
       let docHidden = document.hidden
-      const S = { v: 1, ox: 0, oy: 0 }
+      const S: InfraFit = { v: 1, ox: 0, oy: 0 }
       // Effective transform incl. user zoom + pan (zoom anchors to a point).
-      const effS = () => S.v * viewRef.current.z
-      const effOx = () =>
-        S.ox + (W / 2) * (1 - viewRef.current.z) + viewRef.current.px
-      const effOy = () =>
-        S.oy + (H / 2) * (1 - viewRef.current.z) + viewRef.current.py
+      const effS = () => effScale(S, viewRef.current)
+      const effOx = () => effOrigin(S, viewRef.current, W, H).x
+      const effOy = () => effOrigin(S, viewRef.current, W, H).y
+      // Debounced localStorage write for "remember last view".
+      let persistT = 0
+      // Restore (URL initialView > storage) happens once, after S is known.
+      let viewInitDone = false
       const RACK = { x: 250, y: 250, w: 470, h: 540, unitH: 19.5, topPad: 26 }
       let hoverId: string | null = null
       const boxes = new Map<string, Box>()
@@ -190,6 +242,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let dragDX = 0
       let dragDY = 0
       let dragMoved = false
+      // Multi-select group drag: per-node original positions + shared delta.
+      let dragGroup: { id: string; ox: number; oy: number }[] | null = null
+      let dragStart = { x: 0, y: 0 }
       // View-pan state (empty-space / middle-button drag).
       let panId: number | null = null
       let panSX = 0
@@ -207,119 +262,15 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       const nodeList = () => sRef.current.nodes ?? COMPONENTS
       const flowList = () => sRef.current.flows ?? FLOWS
       const byId = (id: string) => nodeList().find((c) => c.id === id)
+      // Category color: doc override → canonical meta → fallback.
+      const catColor = (cat: string) =>
+        sRef.current.catColors?.[cat] ??
+        (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
+        '#35a7ff'
 
-      // ── helpers ──────────────────────────────────────────────
-      const center = (b: Box) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 })
-
-      function pathBetween(a: Box, b: Box) {
-        const ca = center(a)
-        const cb = center(b)
-        const midX = (ca.x + cb.x) / 2
-        const midY = (ca.y + cb.y) / 2
-        if (Math.abs(ca.x - cb.x) < 50) return [ca, { x: ca.x, y: midY }, cb]
-        if (Math.abs(ca.y - cb.y) < 36) return [ca, { x: midX, y: ca.y }, cb]
-        return [ca, { x: midX, y: ca.y }, { x: midX, y: midY }, { x: cb.x, y: midY }, cb]
-      }
-
-      function roundRect(x: number, y: number, w: number, h: number, r: number) {
-        const rr = Math.min(r, w / 2, h / 2)
-        ctx.beginPath()
-        ctx.moveTo(x + rr, y)
-        ctx.arcTo(x + w, y, x + w, y + h, rr)
-        ctx.arcTo(x + w, y + h, x, y + h, rr)
-        ctx.arcTo(x, y + h, x, y, rr)
-        ctx.arcTo(x, y, x + w, y, rr)
-        ctx.closePath()
-      }
-
-      function fillRound(
-        x: number, y: number, w: number, h: number, r: number,
-        fill: string | CanvasGradient | null,
-        stroke: string | CanvasGradient | null,
-        lw = 1,
-      ) {
-        roundRect(x, y, w, h, r)
-        if (fill) {
-          ctx.fillStyle = fill
-          ctx.fill()
-        }
-        if (stroke) {
-          ctx.strokeStyle = stroke
-          ctx.lineWidth = lw
-          ctx.stroke()
-        }
-      }
-
-      function text(
-        str: string, x: number, y: number,
-        opts: {
-          size?: number; color?: string; align?: CanvasTextAlign;
-          baseline?: CanvasTextBaseline; weight?: string; alpha?: number; maxW?: number;
-        } = {},
-      ) {
-        const {
-          size = 12, color = palRef.current.ink, align = 'left', baseline = 'middle',
-          weight = '500', alpha = 1, maxW,
-        } = opts
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.fillStyle = color
-        ctx.font = `${weight} ${size}px "Segoe UI", Inter, Arial, sans-serif`
-        ctx.textAlign = align
-        ctx.textBaseline = baseline
-        if (maxW) ctx.fillText(str, x, y, maxW)
-        else ctx.fillText(str, x, y)
-        ctx.restore()
-      }
-
-      function led(x: number, y: number, color: string, pulse = 0, size = 3.2) {
-        ctx.save()
-        ctx.globalAlpha = 0.55 + 0.45 * pulse
-        ctx.beginPath()
-        ctx.fillStyle = color
-        ctx.shadowColor = color
-        ctx.shadowBlur = 8
-        ctx.arc(x, y, size, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.restore()
-      }
-
-      function ventGrid(x: number, y: number, w: number, h: number, cols = 12, rows = 2, alpha = 0.28) {
-        ctx.save()
-        ctx.globalAlpha = alpha
-        ctx.fillStyle = P.bg
-        const gap = 3
-        const cellW = (w - (cols - 1) * gap) / cols
-        const cellH = (h - (rows - 1) * gap) / rows
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            ctx.fillRect(x + c * (cellW + gap), y + r * (cellH + gap), cellW, cellH)
-          }
-        }
-        ctx.restore()
-      }
-
-      function ports(x: number, y: number, count = 10, w = 6, h = 8, gap = 3) {
-        for (let i = 0; i < count; i++) {
-          ctx.fillStyle = i % 3 === 0 ? 'rgba(65,200,120,0.8)' : 'rgba(80,160,220,0.55)'
-          ctx.fillRect(x + i * (w + gap), y, w, h)
-          if (i % 4 === 1) led(x + i * (w + gap) + w / 2, y + h + 3, P.blue, 0.6, 1.3)
-        }
-      }
-
-      function driveBays(x: number, y: number, w: number, h: number, count = 5, alpha = 1) {
-        ctx.save()
-        ctx.globalAlpha = alpha
-        const gap = 5
-        const bayW = (w - (count - 1) * gap) / count
-        for (let i = 0; i < count; i++) {
-          const bx = x + i * (bayW + gap)
-          fillRound(bx, y, bayW, h, 3, 'rgba(18,36,56,0.98)', 'rgba(90,150,200,0.4)')
-          fillRound(bx + 4, y + 4, bayW - 8, 4, 1, 'rgba(120,180,220,0.25)', null)
-          led(bx + bayW / 2, y + h - 7, P.green, 0.7, 1.8)
-        }
-        ctx.restore()
-      }
+      // ctx-bound drawing primitives (see components/infraCanvasKit.ts).
+      const { roundRect, fillRound, text, led, ventGrid, ports, driveBays } =
+        createDrawKit(ctx, () => palRef.current)
 
       // ── layout ───────────────────────────────────────────────
       function layoutScene() {
@@ -327,6 +278,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         S.v = s
         S.ox = (W - DESIGN_W * s) / 2
         S.oy = (H - DESIGN_H * s) / 2
+        fitRef.current = S
+        if (!viewInitDone) {
+          viewInitDone = true
+          const iv = readInitialView()
+          if (iv) viewRef.current = viewFromCenter(S, iv.z, W, H, iv.cx, iv.cy)
+        }
         boxes.clear()
         hits.clear()
 
@@ -396,6 +353,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (!ba || !bb) continue
           flowPts.set(f.id, pathBetween(ba, bb))
         }
+        notifyView()
       }
 
       function resize() {
@@ -412,45 +370,93 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
       layoutRef.current = layoutScene
 
-      // ── view: clamp / zoom-to-point / refresh ────────────────
-      // Keep the viewport center inside a generous design-space box so a
-      // pan can never strand the diagram off-screen.
-      function clampView() {
-        const v = viewRef.current
-        v.z = Math.min(2.5, Math.max(0.5, v.z))
-        const cx = Math.min(
-          DESIGN_W * 1.5,
-          Math.max(-DESIGN_W * 0.5, (W / 2 - effOx()) / effS()),
-        )
-        const cy = Math.min(
-          DESIGN_H * 1.5,
-          Math.max(-DESIGN_H * 0.5, (H / 2 - effOy()) / effS()),
-        )
-        v.px = W / 2 - cx * effS() - S.ox - (W / 2) * (1 - v.z)
-        v.py = H / 2 - cy * effS() - S.oy - (H / 2) * (1 - v.z)
+      // ── view: storage / clamp / zoom / presets ───────────────
+      function readInitialView(): { z: number; cx: number; cy: number } | null {
+        const p = sRef.current.initialView
+        if (p && typeof p.z === 'number') return p
+        const key = sRef.current.viewStorageKey
+        if (!key) return null
+        try {
+          const raw = localStorage.getItem(`hi-view:${key}`)
+          if (!raw) return null
+          const v = JSON.parse(raw) as { z?: unknown; cx?: unknown; cy?: unknown }
+          if (typeof v.z === 'number' && typeof v.cx === 'number' && typeof v.cy === 'number') {
+            return { z: v.z, cx: v.cx, cy: v.cy }
+          }
+        } catch {
+          /* noop */
+        }
+        return null
+      }
+
+      // Remember the last view per storage key (debounced).
+      function persistView() {
+        const key = sRef.current.viewStorageKey
+        if (!key) return
+        window.clearTimeout(persistT)
+        persistT = window.setTimeout(() => {
+          try {
+            const { cx, cy } = viewCenter(S, viewRef.current, W, H)
+            localStorage.setItem(
+              `hi-view:${key}`,
+              JSON.stringify({ z: viewRef.current.z, cx, cy }),
+            )
+          } catch {
+            /* noop */
+          }
+        }, 400)
       }
 
       function applyView() {
-        clampView()
+        viewRef.current = clampView(
+          S,
+          viewRef.current,
+          W,
+          H,
+          { w: DESIGN_W, h: DESIGN_H },
+        )
         layoutScene()
         notifyView()
+        persistView()
         kick()
       }
 
       // Zoom while keeping the design point under (mx, my) fixed.
       function zoomBy(factor: number, mx = W / 2, my = H / 2) {
-        const v = viewRef.current
-        const z2 = Math.min(2.5, Math.max(0.5, v.z * factor))
-        if (Math.abs(z2 - v.z) < 1e-4) return
-        const dx = (mx - effOx()) / effS()
-        const dy = (my - effOy()) / effS()
-        v.z = z2
-        const s2 = S.v * z2
-        v.px = mx - dx * s2 - S.ox - (W / 2) * (1 - z2)
-        v.py = my - dy * s2 - S.oy - (H / 2) * (1 - z2)
+        const next = zoomAtPoint(S, viewRef.current, W, H, factor, mx, my)
+        if (next === viewRef.current) return
+        viewRef.current = next
         applyView()
       }
-      zoomRef.current = zoomBy
+
+      function fit() {
+        viewRef.current = { z: 1, px: 0, py: 0 }
+        applyView()
+      }
+
+      function setPercent(pct: number) {
+        viewRef.current = viewForPercent(S, viewRef.current, W, H, pct)
+        applyView()
+      }
+
+      function getView() {
+        const { cx, cy } = viewCenter(S, viewRef.current, W, H)
+        return { z: viewRef.current.z, cx, cy, pct: zoomPercent(S, viewRef.current) }
+      }
+
+      // Keyboard/touch pan: shift the design origin by screen pixels.
+      function panBy(dx: number, dy: number) {
+        viewRef.current = clampView(
+          S,
+          { ...viewRef.current, px: viewRef.current.px + dx, py: viewRef.current.py + dy },
+          W,
+          H,
+          { w: DESIGN_W, h: DESIGN_H },
+        )
+        applyView()
+      }
+
+      opsRef.current = { zoomBy, fit, setPercent, getView }
 
       // ── draw passes ──────────────────────────────────────────
       function dimmed(cat: InfraCategory, extra: Set<string> | null, id: string | null) {
@@ -460,29 +466,35 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         return false
       }
 
+      // Selected = primary selection or part of the multi-selection set.
+      const isSelected = (p: Props, id: string) =>
+        p.selectedId === id || (p.selectedIds?.has(id) ?? false)
+
       function drawBackground() {
         const g = ctx.createLinearGradient(0, 0, 0, DESIGN_H)
         g.addColorStop(0, P.bg2)
         g.addColorStop(1, P.bg)
         ctx.fillStyle = g
         ctx.fillRect(0, 0, DESIGN_W, DESIGN_H)
-        ctx.save()
-        ctx.globalAlpha = 0.045
-        ctx.strokeStyle = P.muted
-        const step = 40
-        for (let x = 0; x < DESIGN_W; x += step) {
-          ctx.beginPath()
-          ctx.moveTo(x, 0)
-          ctx.lineTo(x, DESIGN_H)
-          ctx.stroke()
+        if (sRef.current.grid !== false) {
+          ctx.save()
+          ctx.globalAlpha = 0.045
+          ctx.strokeStyle = P.muted
+          const step = 40
+          for (let x = 0; x < DESIGN_W; x += step) {
+            ctx.beginPath()
+            ctx.moveTo(x, 0)
+            ctx.lineTo(x, DESIGN_H)
+            ctx.stroke()
+          }
+          for (let y = 0; y < DESIGN_H; y += step) {
+            ctx.beginPath()
+            ctx.moveTo(0, y)
+            ctx.lineTo(DESIGN_W, y)
+            ctx.stroke()
+          }
+          ctx.restore()
         }
-        for (let y = 0; y < DESIGN_H; y += step) {
-          ctx.beginPath()
-          ctx.moveTo(0, y)
-          ctx.lineTo(DESIGN_W, y)
-          ctx.stroke()
-        }
-        ctx.restore()
         const glow = ctx.createRadialGradient(520, 480, 20, 520, 480, 360)
         glow.addColorStop(0, 'rgba(50,120,190,0.13)')
         glow.addColorStop(1, 'transparent')
@@ -503,35 +515,6 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.restore()
       }
 
-      function hashId(id: string) {
-        let h = 0
-        for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 997
-        return h / 997
-      }
-
-      function pointAlong(pts: { x: number; y: number }[], t: number) {
-        let total = 0
-        const segs: number[] = []
-        for (let i = 1; i < pts.length; i++) {
-          const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)
-          segs.push(len)
-          total += len
-        }
-        if (!total) return pts[0]
-        let dist = t * total
-        for (let i = 0; i < segs.length; i++) {
-          if (dist <= segs[i] || i === segs.length - 1) {
-            const r = segs[i] ? dist / segs[i] : 0
-            return {
-              x: pts[i].x + (pts[i + 1].x - pts[i].x) * r,
-              y: pts[i].y + (pts[i + 1].y - pts[i].y) * r,
-            }
-          }
-          dist -= segs[i]
-        }
-        return pts[pts.length - 1]
-      }
-
       function playBoost(cat: InfraCategory) {
         const p = sRef.current
         if (p.playStep < 0) return false
@@ -544,7 +527,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         for (const f of flowList()) {
           const pts = flowPts.get(f.id)
           if (!pts) continue
-          const color = CATEGORY_META[f.cat].color
+          const color = f.color ?? catColor(f.cat)
           const isDim =
             (p.activeMode !== 'all' && p.activeMode !== f.cat) ||
             (p.focusIds !== null &&
@@ -556,6 +539,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           ctx.lineWidth = boost ? 2.5 : 1.55
           ctx.lineCap = 'round'
           ctx.lineJoin = 'round'
+          if (f.dashed) ctx.setLineDash([7, 6])
           ctx.shadowColor = color
           ctx.shadowBlur = boost ? 10 : 2
           ctx.beginPath()
@@ -574,6 +558,17 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               ctx.shadowBlur = 10
               ctx.arc(pt.x, pt.y, boost ? 2.9 : 2.1, 0, Math.PI * 2)
               ctx.fill()
+            }
+            if (f.label) {
+              const lp = pointAlong(pts, 0.5)
+              const eff = effScale(S, viewRef.current)
+              text(f.label, lp.x, lp.y - Math.max(7, 10 / eff), {
+                size: Math.max(8, 9 / eff),
+                color,
+                align: 'center',
+                weight: '700',
+                alpha: boost ? 1 : 0.85,
+              })
             }
           }
           ctx.restore()
@@ -693,8 +688,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = c.accent || CATEGORY_META[c.category].color
-        const selected = p.selectedId === c.id
+        const accent = c.accent || catColor(c.category)
+        const selected = isSelected(p, c.id)
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
         const alpha = isDim ? 0.2 : 1
@@ -795,8 +790,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = c.accent || CATEGORY_META[c.category].color
-        const selected = p.selectedId === c.id
+        const accent = c.accent || catColor(c.category)
+        const selected = isSelected(p, c.id)
         const hovered = hoverId === c.id
         const isDim = dimmed(c.category, p.focusIds, c.id)
         const alpha = isDim ? 0.2 : 1
@@ -875,8 +870,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const b = boxes.get(c.id)
         if (!b) return
         const p = sRef.current
-        const accent = c.accent || CATEGORY_META[c.category].color
-        const selected = p.selectedId === c.id
+        const accent = c.accent || catColor(c.category)
+        const selected = isSelected(p, c.id)
         const isDim =
           (p.activeMode !== 'all' && p.activeMode !== c.category) ||
           (p.focusIds !== null && !p.focusIds.has(c.id))
@@ -969,7 +964,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const legacy = byId('legacy')
         const lb = legacy ? boxes.get('legacy') : undefined
         if (legacy && lb) {
-          const selected = p.selectedId === 'legacy'
+          const selected = isSelected(p, 'legacy')
           ctx.save()
           ctx.globalAlpha = 0.48
           const grad = ctx.createLinearGradient(lb.x, lb.y, lb.x, lb.y + lb.h)
@@ -988,8 +983,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (c.layer !== 'users') continue
           const b = boxes.get(c.id)
           if (!b) continue
-          const accent = c.accent || CATEGORY_META[c.category].color
-          const selected = p.selectedId === c.id
+          const accent = c.accent || catColor(c.category)
+          const selected = isSelected(p, c.id)
           const isDim = dimmed(c.category, p.focusIds, c.id)
           ctx.save()
           ctx.globalAlpha = isDim ? 0.18 : 1
@@ -1107,7 +1102,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (!c.pulse) continue
           const b = boxes.get(c.id)
           if (!b) continue
-          const accent = c.accent || CATEGORY_META[c.category].color
+          const accent = c.accent || catColor(c.category)
           const wobble = frozen ? 0 : Math.sin(t * 4)
           const pr = 5 + (frozen ? 0 : 2.5 * wobble)
           ctx.globalAlpha = frozen ? 0.5 : Math.max(0.15, 0.45 + 0.25 * wobble)
@@ -1220,6 +1215,18 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               : 'grab'
         if (dragId) {
           const d = designFromClient(mx, my)
+          if (dragGroup) {
+            const ddx = d.x - dragStart.x
+            const ddy = d.y - dragStart.y
+            if (Math.abs(ddx) > 2 || Math.abs(ddy) > 2) dragMoved = true
+            for (const g of dragGroup) {
+              sRef.current.onMoveNode?.(g.id, {
+                x: snap(g.ox + ddx),
+                y: snap(g.oy + ddy),
+              }, false)
+            }
+            return
+          }
           const node = byId(dragId)
           if (node && sRef.current.onMoveNode) {
             if (node.layer === 'rack') {
@@ -1252,15 +1259,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       // bound the wheel passes through so the page can still scroll.
       function onWheel(e: WheelEvent) {
         const { mx, my } = toDesign(e)
-        const dy =
-          e.deltaMode === 1
-            ? e.deltaY * 16
-            : e.deltaMode === 2
-              ? e.deltaY * H
-              : e.deltaY
-        const factor = Math.exp(-dy * 0.002)
-        const z = viewRef.current.z
-        if ((factor < 1 && z <= 0.5) || (factor > 1 && z >= 2.5)) return
+        const factor = wheelZoomFactor(e.deltaY, e.deltaMode, H)
+        if (wheelAtBound(viewRef.current, factor)) return
         e.preventDefault()
         zoomBy(factor, mx, my)
       }
@@ -1283,6 +1283,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       function endPan(e: PointerEvent) {
         if (panId !== e.pointerId) return
         panId = null
+        persistView()
         try {
           canvas.releasePointerCapture(e.pointerId)
         } catch {
@@ -1305,7 +1306,33 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (primary && p.editable && !p.connectFrom && found) {
           const box = boxes.get(found)
           const d = designFromClient(mx, my)
+          // Group drag when the pressed node belongs to a multi-selection:
+          // locked nodes and rack units (rackU is single-owner) stay put.
+          if (box && p.selectedIds && p.selectedIds.size > 1 && p.selectedIds.has(found)) {
+            const group: { id: string; ox: number; oy: number }[] = []
+            for (const id of p.selectedIds) {
+              if (p.lockedIds?.has(id)) continue
+              const n = byId(id)
+              const b = boxes.get(id)
+              if (!n || n.layer === 'rack' || !b) continue
+              group.push({ id, ox: b.x, oy: b.y })
+            }
+            if (group.length > 1) {
+              dragId = found
+              dragGroup = group
+              dragStart = { x: d.x, y: d.y }
+              dragMoved = false
+              cursorDesign = null
+              try {
+                canvas.setPointerCapture(e.pointerId)
+              } catch {
+                /* noop */
+              }
+              return
+            }
+          }
           dragId = found
+          dragGroup = null
           dragMoved = false
           cursorDesign = null
           if (box) {
@@ -1339,24 +1366,45 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const dx = e.clientX - panSX
         const dy = e.clientY - panSY
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true
-        viewRef.current.px = panPX + dx
-        viewRef.current.py = panPY + dy
-        clampView()
+        viewRef.current = clampView(
+          S,
+          { ...viewRef.current, px: panPX + dx, py: panPY + dy },
+          W,
+          H,
+          { w: DESIGN_W, h: DESIGN_H },
+        )
         layoutScene()
         kick()
       }
 
       function onPointerUp(e: PointerEvent) {
         endPan(e)
-        if (!dragId) return
+        if (!dragId) {
+          dragGroup = null
+          return
+        }
         const doneId = dragId
         const wasMoved = dragMoved
+        const group = dragGroup
         dragId = null
+        dragGroup = null
         dragMoved = false
         try {
           canvas.releasePointerCapture(e.pointerId)
         } catch {
           /* noop */
+        }
+        // Group drag: commit every moved node as one undo checkpoint.
+        if (group) {
+          if (wasMoved && sRef.current.onMoveNode) {
+            for (const g of group) {
+              const b = boxes.get(g.id)
+              if (b) {
+                sRef.current.onMoveNode(g.id, { x: Math.round(b.x), y: Math.round(b.y) }, true)
+              }
+            }
+          }
+          return
         }
         // Commit final position so the editor pushes one undo checkpoint.
         if (wasMoved && sRef.current.onMoveNode) {
@@ -1376,6 +1424,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         endPan(e)
         if (dragId) {
           dragId = null
+          dragGroup = null
           dragMoved = false
         }
       }
@@ -1394,6 +1443,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const { mx, my } = toDesign(e)
         const found = hitAt(mx, my)
         const p = sRef.current
+        // Shift-click toggles membership in the multi-selection.
+        if (found && e.shiftKey && p.onToggleSelect) {
+          p.onToggleSelect(found)
+          return
+        }
         if (p.editable && p.connectFrom && found && found !== p.connectFrom && p.onAddLink) {
           p.onAddLink(p.connectFrom, found)
           return
@@ -1419,8 +1473,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           zoomBy(0.8)
         } else if (k === '0') {
           e.preventDefault()
-          viewRef.current = { z: 1, px: 0, py: 0 }
-          applyView()
+          fit()
         }
       }
 
@@ -1430,16 +1483,92 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         overCanvas = false
       }
 
+      // ── touch: 1-finger horizontal pan, 2-finger pinch zoom ────
+      // touch-action: pan-y keeps vertical scrolling native; horizontal
+      // drags and all pinch gestures are handled here.
+      let touchPan: { sx: number; px: number } | null = null
+      let pinchDist = 0
+
+      const pinchLen = (t: TouchList) =>
+        Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+
+      function onTouchStart(e: TouchEvent) {
+        if (e.touches.length === 1) {
+          pinchDist = 0
+          touchPan = { sx: e.touches[0].clientX, px: viewRef.current.px }
+          panMoved = false
+        } else if (e.touches.length === 2) {
+          touchPan = null
+          pinchDist = pinchLen(e.touches)
+          e.preventDefault()
+        }
+      }
+
+      function onTouchMove(e: TouchEvent) {
+        if (e.touches.length === 2 && pinchDist > 0) {
+          e.preventDefault()
+          const d = pinchLen(e.touches)
+          if (d > 0 && pinchDist > 0) {
+            const rect = canvas.getBoundingClientRect()
+            const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left
+            const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top
+            zoomBy(d / pinchDist, midX, midY)
+          }
+          pinchDist = d
+          panMoved = true
+          return
+        }
+        if (e.touches.length === 1 && touchPan) {
+          const dx = e.touches[0].clientX - touchPan.sx
+          if (Math.abs(dx) < 4) return
+          e.preventDefault()
+          viewRef.current = clampView(
+            S,
+            { ...viewRef.current, px: touchPan.px + dx },
+            W,
+            H,
+            { w: DESIGN_W, h: DESIGN_H },
+          )
+          panMoved = true
+          layoutScene()
+          kick()
+        }
+      }
+
+      function onTouchEnd(e: TouchEvent) {
+        if (e.touches.length === 0) {
+          const wasPan = panMoved
+          touchPan = null
+          pinchDist = 0
+          if (wasPan) {
+            notifyView()
+            persistView()
+          }
+        } else if (e.touches.length === 1 && pinchDist > 0) {
+          // Pinch collapsed to one finger: resume single-finger tracking.
+          pinchDist = 0
+          touchPan = { sx: e.touches[0].clientX, px: viewRef.current.px }
+        }
+      }
+
       let kbIndex = -1
       function onKey(e: KeyboardEvent) {
         const nl = nodeList()
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          kbIndex = (kbIndex + 1) % nl.length
-          sRef.current.onSelect(nl[kbIndex].id)
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-          e.preventDefault()
-          kbIndex = (kbIndex - 1 + nl.length) % nl.length
+          // Shift+arrows pan the viewport; plain arrows cycle components.
+          if (e.shiftKey) {
+            const step = 90
+            const dx = e.key === 'ArrowRight' ? -step : e.key === 'ArrowLeft' ? step : 0
+            const dy = e.key === 'ArrowDown' ? -step : e.key === 'ArrowUp' ? step : 0
+            panBy(dx, dy)
+            return
+          }
+          if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            kbIndex = (kbIndex + 1) % nl.length
+          } else {
+            kbIndex = (kbIndex - 1 + nl.length) % nl.length
+          }
           sRef.current.onSelect(nl[kbIndex].id)
         } else if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
@@ -1498,6 +1627,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       canvas.addEventListener('pointerup', onPointerUp)
       canvas.addEventListener('pointercancel', onPointerCancel)
       canvas.addEventListener('wheel', onWheel, { passive: false })
+      canvas.addEventListener('touchstart', onTouchStart, { passive: false })
+      canvas.addEventListener('touchmove', onTouchMove, { passive: false })
+      canvas.addEventListener('touchend', onTouchEnd)
+      canvas.addEventListener('touchcancel', onTouchEnd)
       window.addEventListener('keydown', onWinKey)
 
       resize()
@@ -1506,6 +1639,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       return () => {
         running = false
+        opsRef.current = null
+        window.clearTimeout(persistT)
         try {
           cancelAnimationFrame(raf)
         } catch {
@@ -1527,6 +1662,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         canvas.removeEventListener('pointerup', onPointerUp)
         canvas.removeEventListener('pointercancel', onPointerCancel)
         canvas.removeEventListener('wheel', onWheel)
+        canvas.removeEventListener('touchstart', onTouchStart)
+        canvas.removeEventListener('touchmove', onTouchMove)
+        canvas.removeEventListener('touchend', onTouchEnd)
+        canvas.removeEventListener('touchcancel', onTouchEnd)
       }
       // frozen is mount-constant (matchMedia sampled once).
     }, [frozen])
@@ -1547,8 +1686,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           className="hi-canvas"
           tabIndex={0}
           role="img"
-          aria-label="Interactive enterprise server rack and hybrid cloud architecture. Click equipment for details. Scroll to zoom, drag to pan, Ctrl or Command plus plus/minus/zero to zoom. Use arrow keys to cycle components, Enter to select."
-          style={{ display: 'block', width: '100%', height: 'auto', outline: 'none' }}
+          aria-label="Interactive enterprise server rack and hybrid cloud architecture. Click equipment for details. Scroll or pinch to zoom, drag to pan, Ctrl or Command plus plus/minus/zero to zoom. Use arrow keys to cycle components, Enter to select, Shift plus arrows to pan. On touch: drag to pan, pinch to zoom."
+          style={{ display: 'block', width: '100%', height: 'auto', outline: 'none', touchAction: 'pan-y' }}
         />
       </div>
     )

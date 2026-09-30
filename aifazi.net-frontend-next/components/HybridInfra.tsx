@@ -19,6 +19,8 @@ import {
   CATEGORY_META,
   depNameIn,
   dependencyChainIn,
+  catLabel,
+  mergedCatColors,
   type DiagramDoc,
   type InfraCategory,
 } from '@/data/hybrid-infra'
@@ -36,8 +38,45 @@ const MODES: { id: InfraCategory | 'all'; label: string }[] = [
 
 /* BTN/PANEL live inside the component now (theme-aware) — see toneChrome. */
 
-export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
-  const [activeMode, setActiveMode] = useState<InfraCategory | 'all'>('all')
+/** Read a persisted/deep-linked view from the current URL (client only). */
+function readViewParam(): { z: number; cx: number; cy: number } | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const p = new URLSearchParams(window.location.search)
+    const z = Number(p.get('z'))
+    const cx = Number(p.get('cx'))
+    const cy = Number(p.get('cy'))
+    if (p.has('z') && Number.isFinite(z) && z > 0) {
+      return {
+        z,
+        cx: Number.isFinite(cx) ? cx : 640,
+        cy: Number.isFinite(cy) ? cy : 460,
+      }
+    }
+  } catch {
+    /* noop */
+  }
+  return null
+}
+
+export default function HybridInfra({
+  doc,
+  viewKey,
+}: {
+  doc?: DiagramDoc | null
+  /** Storage/URL key for remembering the view (defaults to doc id). */
+  viewKey?: string
+}) {
+  const [activeMode, setActiveMode] = useState<InfraCategory | 'all'>(() => {
+    if (typeof window === 'undefined') return 'all'
+    try {
+      const m = new URLSearchParams(window.location.search).get('mode')
+      if (m === 'all' || MODES.some((x) => x.id === m)) return m as InfraCategory | 'all'
+    } catch {
+      /* noop */
+    }
+    return 'all'
+  })
   const [edgeVendor, setEdgeVendor] = useState<'fortigate' | 'unifi'>('fortigate')
   // Deep-link (?node=<id>) honored at init — no effect needed.
   const [selectedId, setSelectedId] = useState<string | null>(() => {
@@ -52,7 +91,20 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
     return 'firewall'
   })
   const [playStep, setPlayStep] = useState(-1)
-  const [viewMode, setViewMode] = useState<'technical' | 'management'>('technical')
+  const [viewMode, setViewMode] = useState<'technical' | 'management'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        if (new URLSearchParams(window.location.search).get('vm') === 'management') {
+          return 'management'
+        }
+      } catch {
+        /* noop */
+      }
+    }
+    return 'technical'
+  })
+  // Shared-link view (?z=&cx=&cy=) — applied once by the canvas on layout.
+  const [initialView] = useState(readViewParam)
   const [zoomPct, setZoomPct] = useState(100)
   const [notesOpen, setNotesOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -87,6 +139,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
 
   const nodes = doc?.nodes ?? COMPONENTS
   const flows = doc?.flows ?? null
+  const catColors = mergedCatColors(doc)
 
   const selected = useMemo(
     () => nodes.find((c) => c.id === selectedId) ?? null,
@@ -112,17 +165,22 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
     return new Set([selectedId, ...up, ...down])
   }, [matches, selectedId, nodes])
 
-  // Deep-link: selection updates the URL (?node=<id>).
+  // Deep-link: selection/mode/view-mode update the URL (?node=&mode=&vm=).
+  // View params (?z=&cx=&cy=) are only composed at copy time — see copyLink.
   useEffect(() => {
     try {
       const url = new URL(window.location.href)
       if (selectedId) url.searchParams.set('node', selectedId)
       else url.searchParams.delete('node')
+      if (activeMode !== 'all') url.searchParams.set('mode', activeMode)
+      else url.searchParams.delete('mode')
+      if (viewMode !== 'technical') url.searchParams.set('vm', viewMode)
+      else url.searchParams.delete('vm')
       window.history.replaceState(null, '', url.toString())
     } catch {
       /* noop */
     }
-  }, [selectedId])
+  }, [selectedId, activeMode, viewMode])
 
   // Flow player + notice timers.
   useEffect(
@@ -134,7 +192,21 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   )
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      const url = new URL(window.location.href)
+      if (selectedId) url.searchParams.set('node', selectedId)
+      else url.searchParams.delete('node')
+      if (activeMode !== 'all') url.searchParams.set('mode', activeMode)
+      else url.searchParams.delete('mode')
+      if (viewMode !== 'technical') url.searchParams.set('vm', viewMode)
+      else url.searchParams.delete('vm')
+      // Freeze the exact view (zoom + pan center) into the shared link.
+      const v = canvasHandle.current?.getView()
+      if (v) {
+        url.searchParams.set('z', String(+v.z.toFixed(3)))
+        url.searchParams.set('cx', String(Math.round(v.cx)))
+        url.searchParams.set('cy', String(Math.round(v.cy)))
+      }
+      await navigator.clipboard.writeText(url.toString())
       flashNotice('LINK COPIED TO CLIPBOARD')
     } catch {
       flashNotice('COPY FAILED — COPY THE URL MANUALLY')
@@ -190,7 +262,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
   const H3: React.CSSProperties = {
     margin: '0 0 10px', fontSize: 11, letterSpacing: 2, color: pal.muted,
   }
-  const accent = selected ? infraCatColor(selected.category, tone) : pal.blue
+  const accent = selected ? infraCatColor(selected.category, tone, catColors) : pal.blue
   const edgeNote =
     selectedId === 'firewall'
       ? EDGE_COPY[edgeVendor].note
@@ -410,7 +482,8 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                 {zoomPct}%
               </span>
               <button type="button" onClick={() => canvasHandle.current?.zoomIn()} title="Zoom in (Ctrl/⌘ + +)" aria-label="Zoom in" style={{ ...BTN, padding: '6px 10px' }}>+</button>
-              <button type="button" onClick={() => canvasHandle.current?.resetView()} title="Reset zoom and pan (Ctrl/⌘ + 0)" style={{ ...BTN, padding: '6px 10px' }}>RESET</button>
+              <button type="button" onClick={() => canvasHandle.current?.fit()} title="Fit diagram to view, clear pan (Ctrl/⌘ + 0)" style={{ ...BTN, padding: '6px 10px' }}>FIT</button>
+              <button type="button" onClick={() => canvasHandle.current?.setPercent(100)} title="Zoom to 100% (actual pixels)" style={{ ...BTN, padding: '6px 10px' }}>100%</button>
               <button type="button" onClick={toggleFullscreen} title="Toggle fullscreen" aria-pressed={isFullscreen} style={{ ...BTN, padding: '6px 10px' }}>
                 {isFullscreen ? 'EXIT FULL' : 'FULLSCREEN'}
               </button>
@@ -420,10 +493,16 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                 .filter(([k]) => !['endpoint', 'power'].includes(k))
                 .map(([k, m]) => (
                   <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: m.color, display: 'inline-block' }} />
+                    <i style={{ width: 9, height: 9, borderRadius: '50%', background: catColors?.[k] ?? m.color, display: 'inline-block' }} />
                     {m.label}
                   </span>
                 ))}
+              {Object.entries(doc?.customCategories ?? {}).map(([k, m]) => (
+                <span key={k} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <i style={{ width: 9, height: 9, borderRadius: '50%', background: catColors?.[k] ?? m.color, display: 'inline-block' }} />
+                  {m.label}
+                </span>
+              ))}
             </div>
           </div>
           <HybridInfraCanvas
@@ -439,6 +518,9 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
             flows={flows ?? undefined}
             tone={tone}
             onViewChange={setZoomPct}
+            initialView={initialView}
+            viewStorageKey={viewKey ?? doc?.id ?? 'plan-a'}
+            catColors={catColors}
           />
         </section>
 
@@ -506,7 +588,7 @@ export default function HybridInfra({ doc }: { doc?: DiagramDoc | null }) {
                       Layer
                     </div>
                     <div style={{ color: pal.sub }}>
-                      {selected.layer} · {CATEGORY_META[selected.category].label}
+                      {selected.layer} · {catLabel(selected.category, doc?.customCategories)}
                     </div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '96px 1fr', gap: 8 }}>
