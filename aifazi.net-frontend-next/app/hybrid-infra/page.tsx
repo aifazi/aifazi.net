@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import HybridInfraLoader from '@/components/HybridInfraLoader'
 import HybridInfraLibrary from '@/components/HybridInfraLibrary'
 import HybridInfraErrorBoundary from '@/components/HybridInfraErrorBoundary'
+import EditSiteFab from '@/components/blocks/EditSiteFab'
 
 const SITE = 'https://aifazi.net'
 
@@ -105,6 +106,7 @@ export default async function HybridInfraPage({
         <HybridInfraErrorBoundary>
           <HybridInfraLoader />
         </HybridInfraErrorBoundary>
+        <EditSiteFab />
         <p
           style={{
             fontFamily: 'var(--font-mono)',
