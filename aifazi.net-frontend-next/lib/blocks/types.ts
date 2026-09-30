@@ -23,6 +23,9 @@ export interface PageLayout {
   title: string
   updatedAt: string
   published: boolean
+  /** SEO overrides for <title>/description on /p/[slug]; '' = derive from title. */
+  seoTitle: string
+  seoDescription: string
   blocks: PageBlock[]
 }
 
@@ -33,6 +36,20 @@ export interface LayoutMeta {
   updatedAt: string
   published: boolean
   blockCount: number
+}
+
+/** Revision history entry (pre-update snapshot; metas only). */
+export interface LayoutRevision {
+  id: string
+  createdAt: string | null
+  title: string
+  published: boolean
+}
+
+export interface LayoutRevisionDetail extends LayoutRevision {
+  seoTitle: string
+  seoDescription: string
+  blocks: PageBlock[]
 }
 
 /** Odoo "Customize tab" equivalent: declares a block's editable props. */

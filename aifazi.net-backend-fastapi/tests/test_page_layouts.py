@@ -24,6 +24,7 @@ class _Query:
         self._store = store
         self._table = table
         self._filters = []
+        self._filters_in = None
         self._op = None
         self._payload = None
         self._slice = None
@@ -60,7 +61,13 @@ class _Query:
         self._slice = (start, end)
         return self
 
+    def in_(self, key, values):
+        self._filters_in = (key, list(values))
+        return self
+
     def _match(self, row):
+        if self._filters_in is not None and row.get(self._filters_in[0]) not in self._filters_in[1]:
+            return False
         return all(row.get(k) == v for k, v in self._filters)
 
     def execute(self):  # type: ignore[no-untyped-def]
@@ -119,7 +126,7 @@ def _load_module():  # type: ignore[no-untyped-def]
     return module
 
 
-def _build_app(monkeypatch, require_admin):  # type: ignore[no-untyped-def]
+def _build_app(monkeypatch, require_admin, module_box=None):  # type: ignore[no-untyped-def]
     fake = _FakeSupabase()
     db_stub = types.ModuleType("database")
     db_stub.supabase = fake
@@ -130,6 +137,8 @@ def _build_app(monkeypatch, require_admin):  # type: ignore[no-untyped-def]
     monkeypatch.setitem(sys.modules, "database", db_stub)
     monkeypatch.setitem(sys.modules, "dependencies", deps_stub)
     module = _load_module()
+    if module_box is not None:
+        module_box.append(module)
     app = FastAPI()
     app.include_router(module.router)
     return TestClient(app)
@@ -298,3 +307,98 @@ def test_list_offset_pagination(client):  # type: ignore[no-untyped-def]
     page2 = client.get("/layouts?offset=2").json()
     assert page1["offset"] == 0 and len(page1["layouts"]) == 3
     assert page2["offset"] == 2 and len(page2["layouts"]) == 1
+
+
+# ── Batch 3 A2: SEO fields + revision history ──────────────────────────────
+
+
+def test_seo_fields_roundtrip(client):  # type: ignore[no-untyped-def]
+    created = client.post("/layouts", json=_layout(
+        slug="seo-page", published=True, seo_title="Meta title", seo_description="Meta desc",
+    )).json()["layout"]
+    assert created["seoTitle"] == "Meta title"
+    assert created["seoDescription"] == "Meta desc"
+    got = client.get("/layouts/seo-page").json()["layout"]
+    assert got["seoTitle"] == "Meta title"
+    upd = client.put(f"/layouts/{created['id']}", json=_layout(
+        slug="seo-page", title="Home v2", seo_title="New title",
+    )).json()["layout"]
+    assert upd["seoTitle"] == "New title"
+    assert upd["seoDescription"] == ""  # omitted → default
+
+
+def test_seo_length_capped_by_schema(client):  # type: ignore[no-untyped-def]
+    r = client.post("/layouts", json=_layout(slug="big-seo", seo_title="x" * 200))
+    assert r.status_code == 422  # pydantic max_length
+
+
+def test_update_snapshots_revision(client):  # type: ignore[no-untyped-def]
+    created = client.post("/layouts", json=_layout(
+        slug="rev-page", title="v1",
+        blocks=[{"id": "b1", "type": "hero", "props": {"title": "v1"}}],
+    )).json()["layout"]
+    r = client.put(f"/layouts/{created['id']}", json=_layout(
+        slug="rev-page", title="v2",
+        blocks=[{"id": "b2", "type": "hero", "props": {"title": "v2"}}],
+    ))
+    assert r.status_code == 200, r.text
+    revs = client.get(f"/layouts/{created['id']}/revisions").json()["revisions"]
+    assert len(revs) == 1
+    assert revs[0]["title"] == "v1"  # snapshot = PRE-update state
+    detail = client.get(
+        f"/layouts/{created['id']}/revisions/{revs[0]['id']}"
+    ).json()["revision"]
+    assert detail["blocks"][0]["props"]["title"] == "v1"
+
+
+def test_restore_revision_roundtrip(client):  # type: ignore[no-untyped-def]
+    created = client.post("/layouts", json=_layout(
+        slug="res-page", title="v1",
+        blocks=[{"id": "b1", "type": "hero", "props": {"title": "v1"}}],
+    )).json()["layout"]
+    client.put(f"/layouts/{created['id']}", json=_layout(
+        slug="res-page", title="v2",
+        blocks=[{"id": "b2", "type": "hero", "props": {"title": "v2"}}],
+    ))
+    revs = client.get(f"/layouts/{created['id']}/revisions").json()["revisions"]
+    r = client.post(f"/layouts/{created['id']}/revisions/{revs[0]['id']}/restore")
+    assert r.status_code == 200, r.text
+    got = r.json()["layout"]
+    assert got["title"] == "v1"
+    assert got["blocks"][0]["props"]["title"] == "v1"
+    # the restore snapshotted v2 first, so it is itself undoable
+    revs2 = client.get(f"/layouts/{created['id']}/revisions").json()["revisions"]
+    assert any(x["title"] == "v2" for x in revs2)
+
+
+def test_restore_missing_revision_404(client):  # type: ignore[no-untyped-def]
+    created = client.post("/layouts", json=_layout(slug="r404")).json()["layout"]
+    assert client.post(f"/layouts/{created['id']}/revisions/nope/restore").status_code == 404
+    assert client.get(f"/layouts/{created['id']}/revisions/nope").status_code == 404
+
+
+def test_revisions_require_admin(denied_client):  # type: ignore[no-untyped-def]
+    assert denied_client.get("/layouts/x/revisions").status_code == 403
+    assert denied_client.get("/layouts/x/revisions/y").status_code == 403
+    assert denied_client.post("/layouts/x/revisions/y/restore").status_code == 403
+
+
+def test_revision_prune_keeps_cap(monkeypatch):  # type: ignore[no-untyped-def]
+    box: list = []
+    client = _build_app(monkeypatch, _fake_require_admin, box)
+    box[0].MAX_REVISIONS = 2
+    created = client.post("/layouts", json=_layout(slug="prune-page")).json()["layout"]
+    for i in range(4):
+        r = client.put(f"/layouts/{created['id']}", json=_layout(slug="prune-page", title=f"v{i}"))
+        assert r.status_code == 200, r.text
+    revs = client.get(f"/layouts/{created['id']}/revisions").json()["revisions"]
+    assert len(revs) == 2
+
+
+def test_delete_layout_cascades_revisions(client):  # type: ignore[no-untyped-def]
+    created = client.post("/layouts", json=_layout(slug="cascade-page")).json()["layout"]
+    client.put(f"/layouts/{created['id']}", json=_layout(slug="cascade-page", title="v2"))
+    assert client.delete(f"/layouts/{created['id']}").status_code == 200
+    # FK ON DELETE CASCADE removes revision rows in the real DB (the fake
+    # store has no FKs); here we only assert the layout itself is gone.
+    assert client.get("/layouts/cascade-page").status_code == 404

@@ -42,6 +42,16 @@ async def sitemap():
             continue
         lastmod = xml_escape((d.get('updated_at') or '')[:10])
         urls.append(f"<url><loc>{SITE_URL}/hybrid-infra?diagram={xml_escape(slug)}</loc><lastmod>{lastmod}</lastmod></url>")
+    try:
+        pages = supabase.table("page_layouts").select("slug,updated_at").eq("published", True).limit(1000).execute().data or []
+    except Exception:
+        pages = []
+    for pg in pages:
+        slug = (pg.get("slug") or "").strip()
+        if not slug:
+            continue
+        lastmod = xml_escape((pg.get("updated_at") or "")[:10])
+        urls.append(f"<url><loc>{SITE_URL}/p/{xml_escape(slug)}</loc><lastmod>{lastmod}</lastmod></url>")
     for p in posts:
         lastmod = xml_escape((p.get('updated_at') or '')[:10])
         urls.append(f"<url><loc>{SITE_URL}/blog/{xml_escape(str(p['slug']))}</loc><lastmod>{lastmod}</lastmod></url>")

@@ -28,7 +28,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { getRole } from '@/lib/api'
 import { getBlockManifest, listBlockManifests, sanitizeProps } from '@/lib/blocks/registry'
-import type { BlockManifest, PageBlock, PropEditor } from '@/lib/blocks/types'
+import type { BlockManifest, LayoutRevision, PageBlock, PropEditor } from '@/lib/blocks/types'
 import PageBlocks from '@/lib/blocks/PageBlocks'
 import {
   listAllLayouts,
@@ -36,6 +36,8 @@ import {
   createLayout,
   updateLayout,
   deleteLayout,
+  listRevisions,
+  restoreRevision,
 } from '@/lib/blocks/blocksApi'
 
 interface Meta {
@@ -43,10 +45,38 @@ interface Meta {
   slug: string
   title: string
   published: boolean
+  seoTitle: string
+  seoDescription: string
 }
 
 let idCounter = 0
 const newId = () => `b-${Date.now().toString(36)}${(idCounter += 1)}`
+
+const BLANK_META: Meta = {
+  id: null,
+  slug: 'page',
+  title: 'Untitled page',
+  published: false,
+  seoTitle: '',
+  seoDescription: '',
+}
+
+/** API layout doc → editor meta (seos may be absent on old payloads). */
+const metaFrom = (doc: {
+  id: string
+  slug: string
+  title: string
+  published: boolean
+  seoTitle?: string
+  seoDescription?: string
+}): Meta => ({
+  id: doc.id,
+  slug: doc.slug,
+  title: doc.title,
+  published: doc.published,
+  seoTitle: doc.seoTitle ?? '',
+  seoDescription: doc.seoDescription ?? '',
+})
 
 const DEVICES = [
   { id: 'desktop', label: 'DESKTOP', width: '100%' },
@@ -276,7 +306,7 @@ function PropField({
 }
 
 export default function BlockEditor() {
-  const [meta, setMeta] = useState<Meta>({ id: null, slug: 'home', title: 'Untitled page', published: false })
+  const [meta, setMeta] = useState<Meta>({ ...BLANK_META, slug: 'home' })
   const [blocks, setBlocks] = useState<PageBlock[]>([])
   const [layouts, setLayouts] = useState<{ id: string; slug: string; title: string; published: boolean }[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -284,6 +314,8 @@ export default function BlockEditor() {
   const [preview, setPreview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
+  const [showHistory, setShowHistory] = useState(false)
+  const [revisions, setRevisions] = useState<LayoutRevision[]>([])
   // Start false so the first client render matches the server HTML (getRole()
   // is null without window); hydrate, then flip in an effect — a lazy
   // initializer here caused a hydration mismatch for staff sessions.
@@ -384,7 +416,7 @@ export default function BlockEditor() {
       try {
         const doc = await getLayout(slug)
         if (!alive || !doc) return
-        setMeta({ id: doc.id, slug: doc.slug, title: doc.title, published: doc.published })
+        setMeta(metaFrom(doc))
         setBlocks(doc.blocks)
         setDirty(false)
       } catch {
@@ -495,12 +527,14 @@ export default function BlockEditor() {
         slug: meta.slug.trim() || 'page',
         title: meta.title.trim() || 'Untitled page',
         published: meta.published,
+        seo_title: meta.seoTitle.slice(0, 150),
+        seo_description: meta.seoDescription.slice(0, 320),
         blocks,
       }
       const saved = meta.id
         ? await updateLayout(meta.id, payload)
         : await createLayout(payload)
-      setMeta({ id: saved.id, slug: saved.slug, title: saved.title, published: saved.published })
+      setMeta(metaFrom(saved))
       setDirty(false)
       try {
         setLayouts(await listAllLayouts())
@@ -519,7 +553,7 @@ export default function BlockEditor() {
     if (!meta.id || !window.confirm(`Delete layout "${meta.title}"?`)) return
     try {
       await deleteLayout(meta.id)
-      setMeta({ id: null, slug: 'page', title: 'Untitled page', published: false })
+      setMeta(BLANK_META)
       applyBlocks([], false, true)
       histRef.current = { past: [], future: [] }
       syncHist()
@@ -527,6 +561,40 @@ export default function BlockEditor() {
       flash('Deleted')
     } catch (e) {
       flash(e instanceof Error ? e.message : 'Delete failed')
+    }
+  }
+
+  const toggleHistory = async () => {
+    if (!meta.id) return
+    if (showHistory) {
+      setShowHistory(false)
+      return
+    }
+    setShowHistory(true)
+    try {
+      setRevisions(await listRevisions(meta.id))
+    } catch {
+      flash('History load failed')
+    }
+  }
+
+  const doRestore = async (revId: string) => {
+    if (!meta.id) return
+    if (!window.confirm('Restore this revision? The current state is snapshotted first, so this is undoable.')) {
+      return
+    }
+    try {
+      const restored = await restoreRevision(meta.id, revId)
+      setMeta(metaFrom(restored))
+      setBlocks(restored.blocks)
+      setDirty(false)
+      histRef.current = { past: [], future: [] }
+      syncHist()
+      setSelectedId(null)
+      setRevisions(await listRevisions(meta.id).catch(() => []))
+      flash('Revision restored')
+    } catch (e) {
+      flash(e instanceof Error ? e.message : 'Restore failed')
     }
   }
 
@@ -632,7 +700,7 @@ export default function BlockEditor() {
           onChange={async (e) => {
             const id = e.target.value
             if (!id) {
-              setMeta({ id: null, slug: 'page', title: 'Untitled page', published: false })
+              setMeta(BLANK_META)
               applyBlocks([], false, true)
               return
             }
@@ -641,7 +709,7 @@ export default function BlockEditor() {
             try {
               const doc = await getLayout(found.slug)
               if (!doc) return
-              setMeta({ id: doc.id, slug: doc.slug, title: doc.title, published: doc.published })
+              setMeta(metaFrom(doc))
               setBlocks(doc.blocks)
               setDirty(false)
               histRef.current = { past: [], future: [] }
@@ -739,6 +807,96 @@ export default function BlockEditor() {
           </span>
         )}
       </div>
+
+      {/* SEO row + revision history */}
+      <div
+        style={{
+          display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+          marginBottom: 12, padding: 12, border: '1px solid var(--border)',
+          borderRadius: 12, background: 'var(--bg)',
+        }}
+      >
+        <input
+          aria-label="SEO title"
+          value={meta.seoTitle}
+          onChange={(e) => setMeta({ ...meta, seoTitle: e.target.value.slice(0, 150) })}
+          placeholder="SEO title (falls back to page title)"
+          style={{ ...BTN, minWidth: 220, cursor: 'text' }}
+        />
+        <input
+          aria-label="SEO description"
+          value={meta.seoDescription}
+          onChange={(e) => setMeta({ ...meta, seoDescription: e.target.value.slice(0, 320) })}
+          placeholder="SEO description"
+          style={{ ...BTN, flex: '1 1 260px', cursor: 'text' }}
+        />
+        {meta.id && (
+          <>
+            <a
+              href={`/p/${encodeURIComponent(meta.slug)}`}
+              target="_blank"
+              rel="noreferrer"
+              title={meta.published ? 'Open the public page' : 'Not published yet — 404 until you publish'}
+              style={{ ...BTN, textDecoration: 'none' }}
+            >
+              LIVE ↗
+            </a>
+            <a
+              href={`/p/${encodeURIComponent(meta.slug)}/preview`}
+              target="_blank"
+              rel="noreferrer"
+              title="Staff-only draft preview (uses your session)"
+              style={{ ...BTN, textDecoration: 'none' }}
+            >
+              PREVIEW ↗
+            </a>
+            <button
+              type="button"
+              onClick={() => void toggleHistory()}
+              style={{ ...BTN, borderColor: showHistory ? 'var(--cyan)' : 'var(--border)' }}
+            >
+              HISTORY
+            </button>
+          </>
+        )}
+      </div>
+      {showHistory && (
+        <div
+          style={{
+            marginBottom: 12, padding: 12, border: '1px solid var(--border)',
+            borderRadius: 12, background: 'var(--bg)', fontSize: 12,
+            color: 'var(--text)', fontFamily: 'var(--font-mono)',
+          }}
+        >
+          <div style={{ fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>
+            REVISION HISTORY — EVERY SAVE SNAPSHOTS THE PREVIOUS STATE
+          </div>
+          {revisions.length === 0 ? (
+            <span style={{ color: 'var(--muted)' }}>No revisions yet.</span>
+          ) : (
+            revisions.map((r) => (
+              <div
+                key={r.id}
+                style={{
+                  display: 'flex', gap: 10, alignItems: 'center',
+                  padding: '6px 0', borderTop: '1px solid var(--border)',
+                }}
+              >
+                <span style={{ color: 'var(--muted)' }}>
+                  {r.createdAt ? new Date(r.createdAt).toLocaleString() : '—'}
+                </span>
+                <span style={{ flex: '1 1 auto' }}>{r.title}</span>
+                <span style={{ color: r.published ? 'var(--green)' : 'var(--orange)', fontSize: 10 }}>
+                  {r.published ? 'PUBLISHED' : 'DRAFT'}
+                </span>
+                <button type="button" onClick={() => void doRestore(r.id)} style={BTN}>
+                  RESTORE
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Editor grid */}
       <div

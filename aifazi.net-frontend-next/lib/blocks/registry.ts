@@ -9,7 +9,7 @@
  */
 import type { BlockManifest } from './types'
 import { safeHref } from '../safeHref'
-import { HeroBlock, FeaturesBlock, CtaBannerBlock } from './seedBlocks'
+import { HeroBlock, FeaturesBlock, CtaBannerBlock, FaqBlock, PricingBlock, GalleryBlock, TestimonialsBlock } from './seedBlocks'
 
 const MANIFESTS: BlockManifest[] = [
   {
@@ -65,6 +65,99 @@ const MANIFESTS: BlockManifest[] = [
     ],
     defaults: { title: 'Get started', subtitle: '', ctaLabel: '', ctaHref: '/' },
     render: CtaBannerBlock,
+  },
+  {
+    type: 'faq',
+    label: 'FAQ',
+    icon: '?',
+    category: 'content',
+    schema: [
+      { key: 'heading', kind: 'text', label: 'Heading', max: 120 },
+      { key: 'q1', kind: 'text', label: 'Question 1', max: 160 },
+      { key: 'a1', kind: 'textarea', label: 'Answer 1', max: 800 },
+      { key: 'q2', kind: 'text', label: 'Question 2', max: 160 },
+      { key: 'a2', kind: 'textarea', label: 'Answer 2', max: 800 },
+      { key: 'q3', kind: 'text', label: 'Question 3', max: 160 },
+      { key: 'a3', kind: 'textarea', label: 'Answer 3', max: 800 },
+    ],
+    defaults: { heading: 'Frequently asked questions', q1: '', a1: '', q2: '', a2: '', q3: '', a3: '' },
+    render: FaqBlock,
+  },
+  {
+    type: 'pricing',
+    label: 'Pricing plans',
+    icon: '$',
+    category: 'commerce',
+    schema: [
+      { key: 'heading', kind: 'text', label: 'Heading', max: 120 },
+      { key: 'plan1Name', kind: 'text', label: 'Plan 1 name', max: 40 },
+      { key: 'plan1Price', kind: 'text', label: 'Plan 1 price', max: 30 },
+      { key: 'plan1Note', kind: 'text', label: 'Plan 1 note', max: 80 },
+      { key: 'plan1CtaLabel', kind: 'text', label: 'Plan 1 button', max: 30 },
+      { key: 'plan1CtaHref', kind: 'text', label: 'Plan 1 link', max: 200 },
+      { key: 'plan2Name', kind: 'text', label: 'Plan 2 name', max: 40 },
+      { key: 'plan2Price', kind: 'text', label: 'Plan 2 price', max: 30 },
+      { key: 'plan2Note', kind: 'text', label: 'Plan 2 note', max: 80 },
+      { key: 'plan2CtaLabel', kind: 'text', label: 'Plan 2 button', max: 30 },
+      { key: 'plan2CtaHref', kind: 'text', label: 'Plan 2 link', max: 200 },
+      { key: 'plan3Name', kind: 'text', label: 'Plan 3 name', max: 40 },
+      { key: 'plan3Price', kind: 'text', label: 'Plan 3 price', max: 30 },
+      { key: 'plan3Note', kind: 'text', label: 'Plan 3 note', max: 80 },
+      { key: 'plan3CtaLabel', kind: 'text', label: 'Plan 3 button', max: 30 },
+      { key: 'plan3CtaHref', kind: 'text', label: 'Plan 3 link', max: 200 },
+    ],
+    defaults: {
+      heading: 'Pricing',
+      plan1Name: 'Basic', plan1Price: '', plan1Note: '', plan1CtaLabel: '', plan1CtaHref: '/',
+      plan2Name: '', plan2Price: '', plan2Note: '', plan2CtaLabel: '', plan2CtaHref: '/',
+      plan3Name: '', plan3Price: '', plan3Note: '', plan3CtaLabel: '', plan3CtaHref: '/',
+    },
+    render: PricingBlock,
+  },
+  {
+    type: 'gallery',
+    label: 'Image gallery',
+    icon: '▣',
+    category: 'media',
+    schema: [
+      { key: 'heading', kind: 'text', label: 'Heading', max: 120 },
+      { key: 'img1Href', kind: 'text', label: 'Image 1 URL', max: 500 },
+      { key: 'img1Alt', kind: 'text', label: 'Image 1 alt text', max: 120 },
+      { key: 'img2Href', kind: 'text', label: 'Image 2 URL', max: 500 },
+      { key: 'img2Alt', kind: 'text', label: 'Image 2 alt text', max: 120 },
+      { key: 'img3Href', kind: 'text', label: 'Image 3 URL', max: 500 },
+      { key: 'img3Alt', kind: 'text', label: 'Image 3 alt text', max: 120 },
+    ],
+    defaults: {
+      heading: '',
+      img1Href: '', img1Alt: '', img2Href: '', img2Alt: '', img3Href: '', img3Alt: '',
+    },
+    render: GalleryBlock,
+  },
+  {
+    type: 'testimonials',
+    label: 'Testimonials',
+    icon: '❝',
+    category: 'content',
+    schema: [
+      { key: 'heading', kind: 'text', label: 'Heading', max: 120 },
+      { key: 'quote1', kind: 'textarea', label: 'Quote 1', max: 400 },
+      { key: 'author1', kind: 'text', label: 'Author 1', max: 60 },
+      { key: 'role1', kind: 'text', label: 'Author 1 role', max: 60 },
+      { key: 'quote2', kind: 'textarea', label: 'Quote 2', max: 400 },
+      { key: 'author2', kind: 'text', label: 'Author 2', max: 60 },
+      { key: 'role2', kind: 'text', label: 'Author 2 role', max: 60 },
+      { key: 'quote3', kind: 'textarea', label: 'Quote 3', max: 400 },
+      { key: 'author3', kind: 'text', label: 'Author 3', max: 60 },
+      { key: 'role3', kind: 'text', label: 'Author 3 role', max: 60 },
+    ],
+    defaults: {
+      heading: 'What people say',
+      quote1: '', author1: '', role1: '',
+      quote2: '', author2: '', role2: '',
+      quote3: '', author3: '', role3: '',
+    },
+    render: TestimonialsBlock,
   },
 ]
 

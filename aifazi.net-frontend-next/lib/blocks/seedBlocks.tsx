@@ -140,3 +140,202 @@ export function CtaBannerBlock({ props }: { props: P }) {
     </section>
   )
 }
+
+export function FaqBlock({ props }: { props: P }) {
+  const items = [1, 2, 3]
+    .map((i) => ({ q: str(props, `q${i}`), a: str(props, `a${i}`) }))
+    .filter((it) => it.q)
+  return (
+    <section style={{ padding: '48px 24px', maxWidth: 800, margin: '0 auto' }}>
+      {str(props, 'heading') && (
+        <h2 style={{ textAlign: 'center', color: 'var(--text)', margin: '0 0 24px' }}>
+          {str(props, 'heading')}
+        </h2>
+      )}
+      {items.map((it, i) => (
+        <details
+          key={i}
+          open={i === 0}
+          style={{
+            background: 'var(--comp-card-bg, var(--bg))',
+            border: '1px solid var(--comp-card-border, var(--border))',
+            borderRadius: 'var(--comp-card-radius, 14px)',
+            padding: '14px 18px',
+            marginBottom: 10,
+          }}
+        >
+          <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--text)', fontSize: 15 }}>
+            {it.q}
+          </summary>
+          {it.a && (
+            <p style={{ margin: '10px 0 0', fontSize: 14, color: 'var(--muted)', lineHeight: 1.6 }}>
+              {it.a}
+            </p>
+          )}
+        </details>
+      ))}
+    </section>
+  )
+}
+
+export function PricingBlock({ props }: { props: P }) {
+  const plans = [1, 2, 3]
+    .map((i) => ({
+      name: str(props, `plan${i}Name`),
+      price: str(props, `plan${i}Price`),
+      note: str(props, `plan${i}Note`),
+      ctaLabel: str(props, `plan${i}CtaLabel`),
+      ctaHref: str(props, `plan${i}CtaHref`),
+    }))
+    .filter((p) => p.name)
+  return (
+    <section style={{ padding: '48px 24px' }}>
+      {str(props, 'heading') && (
+        <h2 style={{ textAlign: 'center', color: 'var(--text)', margin: '0 0 24px' }}>
+          {str(props, 'heading')}
+        </h2>
+      )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 16,
+          maxWidth: 960,
+          margin: '0 auto',
+        }}
+      >
+        {plans.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              background: 'var(--comp-card-bg, var(--bg))',
+              border: '1px solid var(--comp-card-border, var(--border))',
+              borderRadius: 'var(--comp-card-radius, 14px)',
+              padding: 24,
+              textAlign: 'center',
+            }}
+          >
+            <h3 style={{ margin: '0 0 6px', fontSize: 16, color: 'var(--text)' }}>{p.name}</h3>
+            {p.price && (
+              <p style={{ margin: '0 0 4px', fontSize: 28, fontWeight: 800, color: 'var(--cyan)' }}>
+                {p.price}
+              </p>
+            )}
+            {p.note && <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--muted)' }}>{p.note}</p>}
+            {p.ctaLabel && p.ctaHref && (
+              <a
+                href={safeHref(p.ctaHref)}
+                style={{
+                  display: 'inline-block',
+                  padding: '10px 20px',
+                  borderRadius: 'var(--comp-button-radius, 8px)',
+                  background: 'var(--comp-button-bg, var(--cyan))',
+                  color: 'var(--comp-button-text, #fff)',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  fontSize: 13,
+                }}
+              >
+                {p.ctaLabel}
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export function GalleryBlock({ props }: { props: P }) {
+  const imgs = [1, 2, 3]
+    .map((i) => ({ src: str(props, `img${i}Href`), alt: str(props, `img${i}Alt`) }))
+    .filter((im) => im.src)
+  if (!imgs.length) return null
+  return (
+    <section style={{ padding: '48px 24px' }}>
+      {str(props, 'heading') && (
+        <h2 style={{ textAlign: 'center', color: 'var(--text)', margin: '0 0 24px' }}>
+          {str(props, 'heading')}
+        </h2>
+      )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 12,
+          maxWidth: 1000,
+          margin: '0 auto',
+        }}
+      >
+        {imgs.map((im, i) => (
+          // Arbitrary remote sources aren't configured in next.config image
+          // domains, and the builder accepts any https URL — plain <img>.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={safeHref(im.src)}
+            alt={im.alt}
+            loading="lazy"
+            style={{
+              width: '100%',
+              borderRadius: 'var(--comp-card-radius, 14px)',
+              border: '1px solid var(--comp-card-border, var(--border))',
+              display: 'block',
+            }}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+export function TestimonialsBlock({ props }: { props: P }) {
+  const items = [1, 2, 3]
+    .map((i) => ({
+      quote: str(props, `quote${i}`),
+      author: str(props, `author${i}`),
+      role: str(props, `role${i}`),
+    }))
+    .filter((it) => it.quote)
+  return (
+    <section style={{ padding: '48px 24px' }}>
+      {str(props, 'heading') && (
+        <h2 style={{ textAlign: 'center', color: 'var(--text)', margin: '0 0 24px' }}>
+          {str(props, 'heading')}
+        </h2>
+      )}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 16,
+          maxWidth: 1000,
+          margin: '0 auto',
+        }}
+      >
+        {items.map((it, i) => (
+          <figure
+            key={i}
+            style={{
+              background: 'var(--comp-card-bg, var(--bg))',
+              border: '1px solid var(--comp-card-border, var(--border))',
+              borderRadius: 'var(--comp-card-radius, 14px)',
+              padding: 20,
+              margin: 0,
+            }}
+          >
+            <blockquote style={{ margin: '0 0 12px', fontSize: 14, lineHeight: 1.6, color: 'var(--text)' }}>
+              “{it.quote}”
+            </blockquote>
+            {it.author && (
+              <figcaption style={{ fontSize: 12, color: 'var(--muted)' }}>
+                <strong style={{ color: 'var(--text)' }}>{it.author}</strong>
+                {it.role ? ` — ${it.role}` : ''}
+              </figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </section>
+  )
+}

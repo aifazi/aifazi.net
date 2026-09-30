@@ -24,6 +24,10 @@ log = logging.getLogger("pages.layouts")
 MAX_BLOCKS = 100
 MAX_BODY_BYTES = 500 * 1024
 MAX_DEPTH = 2
+# Per-layout revision snapshots kept (newest first; older ones pruned).
+MAX_REVISIONS = 20
+_SEO_TITLE_MAX = 150
+_SEO_DESC_MAX = 320
 _SLUG_RE = re.compile(r"^[a-z0-9-]+$")
 _TYPE_RE = re.compile(r"^[a-z0-9-]{1,64}$")
 # Scheme allowlist for href/url prop keys (mirrors frontend lib/safeHref.js).
@@ -34,6 +38,8 @@ class LayoutIn(BaseModel):
     slug: str = Field(min_length=1, max_length=64)
     title: str = Field(min_length=1, max_length=120)
     published: bool = False
+    seo_title: str = Field(default="", max_length=_SEO_TITLE_MAX)
+    seo_description: str = Field(default="", max_length=_SEO_DESC_MAX)
     blocks: list = Field(default_factory=list, max_length=MAX_BLOCKS)
 
 
@@ -104,6 +110,8 @@ def _row_to_layout(row: dict, include_body: bool = True) -> dict:
         "title": row["title"],
         "updatedAt": row.get("updated_at"),
         "published": bool(row.get("published")),
+        "seoTitle": row.get("seo_title") or "",
+        "seoDescription": row.get("seo_description") or "",
     }
     if include_body:
         out["blocks"] = row.get("blocks", []) or []
@@ -133,6 +141,34 @@ def _optional_admin(request: Request) -> dict | None:
         return require_admin(_enrich_user(decode_token(token)))
     except Exception:
         return None
+
+
+def _prune_revisions(layout_id: str) -> None:
+    res = supabase.table("page_layout_revisions").select("id").eq(
+        "layout_id", layout_id
+    ).order("created_at", desc=True).range(MAX_REVISIONS, MAX_REVISIONS + 199).execute()
+    stale = [r["id"] for r in (res.data or [])]
+    if stale:
+        supabase.table("page_layout_revisions").delete().in_("id", stale).execute()
+
+
+def _snapshot_revision(row: dict) -> None:
+    """Persist the PRE-update state so the save is rollback-able.
+
+    Best-effort: a revision failure must never fail the save itself.
+    """
+    try:
+        supabase.table("page_layout_revisions").insert({
+            "layout_id": row["id"],
+            "title": row.get("title") or "",
+            "seo_title": row.get("seo_title") or "",
+            "seo_description": row.get("seo_description") or "",
+            "published": bool(row.get("published")),
+            "blocks": row.get("blocks") or [],
+        }).execute()
+        _prune_revisions(str(row["id"]))
+    except Exception as e:
+        log.warning("revision snapshot failed for %s: %s", row.get("id"), e)
 
 
 @router.get("/layouts")
@@ -177,6 +213,8 @@ def create_layout(body: LayoutIn, _: dict = Depends(require_admin)):
             "slug": slug,
             "title": body.title.strip(),
             "published": body.published,
+            "seo_title": body.seo_title.strip(),
+            "seo_description": body.seo_description.strip(),
             "blocks": blocks,
             "created_at": now,
             "updated_at": now,
@@ -194,14 +232,21 @@ def create_layout(body: LayoutIn, _: dict = Depends(require_admin)):
 
 @router.put("/layouts/{layout_id}")
 def update_layout(layout_id: str, body: LayoutIn, _: dict = Depends(require_admin)):
-    """Staff: replace a layout (full-document PUT)."""
+    """Staff: replace a layout (full-document PUT). Snapshots the previous
+    state to page_layout_revisions first so the change can be rolled back."""
     slug = _slugify(body.slug)
     blocks = _validate_layout(body.blocks)
+    prev = supabase.table("page_layouts").select("*").eq("id", layout_id[:64]).limit(1).execute()
+    old = (prev.data or [None])[0]
+    if not old:
+        raise HTTPException(404, "Layout not found")
     try:
         res = supabase.table("page_layouts").update({
             "slug": slug,
             "title": body.title.strip(),
             "published": body.published,
+            "seo_title": body.seo_title.strip(),
+            "seo_description": body.seo_description.strip(),
             "blocks": blocks,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", layout_id[:64]).execute()
@@ -213,13 +258,87 @@ def update_layout(layout_id: str, body: LayoutIn, _: dict = Depends(require_admi
     row = (res.data or [None])[0]
     if not row:
         raise HTTPException(404, "Layout not found")
+    _snapshot_revision(old)
     return {"layout": _row_to_layout(row, include_body=True)}
 
 
 @router.delete("/layouts/{layout_id}")
 def delete_layout(layout_id: str, _: dict = Depends(require_admin)):
-    """Staff: delete a layout (404 when the id does not exist)."""
+    """Staff: delete a layout (404 when the id does not exist). Revisions go
+    with it via ON DELETE CASCADE."""
     res = supabase.table("page_layouts").delete().eq("id", layout_id[:64]).execute()
     if not (res.data or []):
         raise HTTPException(404, "Layout not found")
     return {"ok": True}
+
+
+@router.get("/layouts/{layout_id}/revisions")
+def list_revisions(layout_id: str, offset: int = Query(0, ge=0, le=10000),
+                   _: dict = Depends(require_admin)):
+    """Staff: revision history (metas only, newest first, 50 per page)."""
+    res = supabase.table("page_layout_revisions").select(
+        "id,created_at,title,published"
+    ).eq("layout_id", layout_id[:64]).order("created_at", desc=True).range(
+        offset, offset + 49
+    ).execute()
+    out = [{
+        "id": r["id"],
+        "createdAt": r.get("created_at"),
+        "title": r.get("title") or "",
+        "published": bool(r.get("published")),
+    } for r in (res.data or [])]
+    return {"revisions": out, "offset": offset}
+
+
+@router.get("/layouts/{layout_id}/revisions/{revision_id}")
+def get_revision(layout_id: str, revision_id: str, _: dict = Depends(require_admin)):
+    """Staff: one full revision (blocks + seo) for inspection before restore."""
+    res = supabase.table("page_layout_revisions").select("*").eq(
+        "layout_id", layout_id[:64]
+    ).eq("id", revision_id[:64]).limit(1).execute()
+    row = (res.data or [None])[0]
+    if not row:
+        raise HTTPException(404, "Revision not found")
+    return {"revision": {
+        "id": row["id"],
+        "createdAt": row.get("created_at"),
+        "title": row.get("title") or "",
+        "seoTitle": row.get("seo_title") or "",
+        "seoDescription": row.get("seo_description") or "",
+        "published": bool(row.get("published")),
+        "blocks": row.get("blocks") or [],
+    }}
+
+
+@router.post("/layouts/{layout_id}/revisions/{revision_id}/restore")
+def restore_revision(layout_id: str, revision_id: str, _: dict = Depends(require_admin)):
+    """Staff: roll the layout back to a revision.
+
+    The current state is snapshotted first (so a restore is itself
+    undoable). The slug is intentionally NOT restored — it belongs to the
+    live row and an old slug may now belong to a different layout (409).
+    """
+    rev_res = supabase.table("page_layout_revisions").select("*").eq(
+        "layout_id", layout_id[:64]
+    ).eq("id", revision_id[:64]).limit(1).execute()
+    rev = (rev_res.data or [None])[0]
+    if not rev:
+        raise HTTPException(404, "Revision not found")
+    blocks = _validate_layout(rev.get("blocks") or [])
+    cur_res = supabase.table("page_layouts").select("*").eq("id", layout_id[:64]).limit(1).execute()
+    cur = (cur_res.data or [None])[0]
+    if not cur:
+        raise HTTPException(404, "Layout not found")
+    res = supabase.table("page_layouts").update({
+        "title": (rev.get("title") or "Untitled page").strip() or "Untitled page",
+        "published": bool(rev.get("published")),
+        "seo_title": rev.get("seo_title") or "",
+        "seo_description": rev.get("seo_description") or "",
+        "blocks": blocks,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", layout_id[:64]).execute()
+    row = (res.data or [None])[0]
+    if not row:
+        raise HTTPException(500, "Restore failed")
+    _snapshot_revision(cur)
+    return {"layout": _row_to_layout(row, include_body=True)}
