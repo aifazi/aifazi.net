@@ -153,6 +153,9 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
                 raise HTTPException(400, "Node accent must be #rrggbb")
         if "pulse" in n and n["pulse"] not in (None, True, False):
             raise HTTPException(400, "Node pulse must be boolean")
+        if n.get("gid") is not None:
+            if not isinstance(n["gid"], str) or not n["gid"] or len(n["gid"]) > 40:
+                raise HTTPException(400, "Node gid must be a short string")
         if not isinstance(n.get("workloads", []), list) or len(n.get("workloads", [])) > 12:
             raise HTTPException(400, "Invalid node workloads")
         if not isinstance(n.get("deps", []), list) or len(n.get("deps", [])) > 24:

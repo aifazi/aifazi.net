@@ -24,6 +24,6 @@ const HybridInfraEditor = dynamic(() => import('./HybridInfraEditor'), {
   ),
 })
 
-export default function HybridInfraLoader() {
-  return <HybridInfraEditor />
+export default function HybridInfraLoader({ autoEdit }: { autoEdit?: boolean }) {
+  return <HybridInfraEditor startEditing={autoEdit} />
 }

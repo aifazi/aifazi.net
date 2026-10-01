@@ -501,3 +501,19 @@ def test_restore_revalidates_stored_palette(monkeypatch):  # type: ignore[no-unt
     assert r.status_code == 400, r.text
     # Restore is atomic: the live row keeps its title (not the forged one).
     assert client.get("/diagrams/admin/all").json()["diagrams"][0]["title"] == "HQ East"
+
+
+# -- Group field (gid): short strings stored, anything else 400 ----------
+
+
+def test_node_gid_accepted(client):
+    body = _doc()
+    body["nodes"][0]["gid"] = "g-abc123-1"
+    assert client.post("/diagrams", json=body).status_code == 200
+
+
+def test_bad_node_gid_rejected(client):
+    for bad in ("", "x" * 41, 123, ["g-1"], {"id": "g-1"}):
+        body = _doc()
+        body["nodes"][0]["gid"] = bad
+        assert client.post("/diagrams", json=body).status_code == 400, bad
