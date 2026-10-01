@@ -5,6 +5,8 @@ import ForumProfile from './ForumProfile'
 import TrackOrderWidget from '../components/TrackOrderWidget'
 import { Card, NeonButton, Badge } from '../components/community'
 import api from '@/lib/api'
+import { dialog } from '@/core/dialog'
+import { notify } from '@/core/notify'
 
 const G = 'var(--green)', C = 'var(--cyan)'
 
@@ -34,7 +36,7 @@ function VpnSection({ user }) {
   const handleCreate = async (guest = false) => {
     if (creating || peers.length >= 5) return
     const name = `${guest ? 'Guest' : 'Web'} — ${user?.username || 'User'}`
-    if (guest && !confirm('Create a guest device that expires automatically in 24 hours?')) return
+    if (guest && !(await dialog.confirm({ title: 'Create Guest Device', message: 'Create a guest device that expires automatically in 24 hours?', variant: 'info', confirmLabel: 'CREATE' }))) return
     setCreating(true)
     try {
       const res = await api.post('/vpn/peers', {
@@ -45,7 +47,7 @@ function VpnSection({ user }) {
       await fetchPeers().then(setPeers)
       setSelectedPeer(res.data)
     } catch (err) {
-      alert(err?.response?.data?.detail || 'Failed to create device')
+      notify.error(err?.response?.data?.detail || 'Failed to create device')
     } finally {
       setCreating(false)
     }
@@ -58,7 +60,7 @@ function VpnSection({ user }) {
       setSelectedPeer(updated)
       setPeers((ps) => ps.map((p) => (p.id === peer.id ? updated : p)))
     } catch (err) {
-      alert(err?.response?.data?.detail || 'Failed to update alerts')
+      notify.error(err?.response?.data?.detail || 'Failed to update alerts')
     }
   }
 
@@ -99,13 +101,13 @@ function VpnSection({ user }) {
   }
 
   const handleDelete = async (peer) => {
-    if (!confirm(`Remove "${peer.device_name}"?`)) return
+    if (!(await dialog.confirm({ title: 'Remove Device', message: `Remove "${peer.device_name}"?`, variant: 'danger', confirmLabel: 'REMOVE' }))) return
     try {
       await api.delete(`/vpn/peers/${peer.id}`)
       handleCloseConfig()
       fetchPeers().then(setPeers)
     } catch (err) {
-      alert(err?.response?.data?.detail || 'Failed to delete device')
+      notify.error(err?.response?.data?.detail || 'Failed to delete device')
     }
   }
 
@@ -116,14 +118,14 @@ function VpnSection({ user }) {
   }
 
   const handleRename = async (peer) => {
-    const name = window.prompt('Rename device', peer.device_name)
+    const name = await dialog.prompt({ title: 'Rename Device', defaultValue: peer.device_name, confirmLabel: 'RENAME' })
     if (!name) return
     try {
       const res = await api.patch(`/vpn/peers/${peer.id}`, { device_name: name })
       setSelectedPeer({ ...peer, device_name: res.data?.device_name || name })
       fetchPeers().then(setPeers)
     } catch (err) {
-      alert(err?.response?.data?.detail || 'Failed to rename device')
+      notify.error(err?.response?.data?.detail || 'Failed to rename device')
     }
   }
 

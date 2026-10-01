@@ -30,6 +30,7 @@ import { getRole } from '@/lib/api'
 import { getBlockManifest, listBlockManifests, sanitizeProps } from '@/lib/blocks/registry'
 import type { BlockManifest, LayoutRevision, PageBlock, PropEditor } from '@/lib/blocks/types'
 import PageBlocks from '@/lib/blocks/PageBlocks'
+import { dialog } from '@/core/dialog'
 import {
   listAllLayouts,
   getLayout,
@@ -550,7 +551,7 @@ export default function BlockEditor() {
   }
 
   const removeLayout = async () => {
-    if (!meta.id || !window.confirm(`Delete layout "${meta.title}"?`)) return
+    if (!meta.id || !(await dialog.confirm({ title: 'Delete Layout', message: `Delete layout "${meta.title}"?`, variant: 'danger', confirmLabel: 'DELETE' }))) return
     try {
       await deleteLayout(meta.id)
       setMeta(BLANK_META)
@@ -580,7 +581,7 @@ export default function BlockEditor() {
 
   const doRestore = async (revId: string) => {
     if (!meta.id) return
-    if (!window.confirm('Restore this revision? The current state is snapshotted first, so this is undoable.')) {
+    if (!(await dialog.confirm({ title: 'Restore Revision', message: 'Restore this revision? The current state is snapshotted first, so this is undoable.', variant: 'warning', confirmLabel: 'RESTORE' }))) {
       return
     }
     try {
@@ -965,8 +966,8 @@ export default function BlockEditor() {
                       onSelect={() => setSelectedId(b.id)}
                       onMove={(dir) => moveBlock(b.id, dir)}
                       onDuplicate={() => duplicateBlock(b.id)}
-                      onRemove={() => {
-                        if (window.confirm(`Delete "${summarize(b)}"?`)) removeBlock(b.id)
+                      onRemove={async () => {
+                        if (await dialog.confirm({ title: 'Delete Block', message: `Delete "${summarize(b)}"?`, variant: 'danger', confirmLabel: 'DELETE' })) removeBlock(b.id)
                       }}
                     />
                   ))}

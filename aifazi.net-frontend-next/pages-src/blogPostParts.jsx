@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from '@/lib/router-compat'
 import NextImage from 'next/image'
 import api, { mediaUrl } from '@/lib/api'
-import { Slider } from '../core/ui.jsx'
+import { Slider, dialog } from '../core/ui.jsx'
 import { useForum } from '../context/ForumContext'
 import { Card, NeonButton, Badge, Avatar, RoleBadge, EmptyState } from '../components/community'
 import { MediaAttachment } from '../components/MediaPreview'
@@ -387,7 +387,7 @@ function Comments({ slug, postId }) {
     const isOwner = user && (comment.author?._id === (user._id || user.id))
     const isStaff = user && ['admin', 'moderator'].includes(user.role)
     if (!isOwner && !isStaff) return
-    if (!window.confirm('Delete this comment?')) return
+    if (!(await dialog.confirm({ title: 'Delete Comment', message: 'Delete this comment?', variant: 'danger', confirmLabel: 'DELETE' }))) return
     try {
       await api.delete(`/blog/comments/${comment._id}`)
       setComments((comments || []).filter(c => c._id !== comment._id))

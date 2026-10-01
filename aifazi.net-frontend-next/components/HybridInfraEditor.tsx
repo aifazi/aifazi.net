@@ -43,6 +43,7 @@ import {
   type InfraRevisionMeta,
 } from '@/lib/infraApi'
 import { registerDirtyCheck } from '@/lib/infraLeaveGuard'
+import { dialog } from '@/core/dialog'
 import { diffDiagramDocs, type DiagramDiff } from '@/lib/infraDocOps'
 import {
   arrangeNodesDoc,
@@ -255,7 +256,10 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
   const isUnsaved = () =>
     dirtyRef.current && savedRef.current !== JSON.stringify(docRef.current)
 
-  const confirmDiscard = () => !isUnsaved() || window.confirm('Discard unsaved changes?')
+  const confirmDiscard = async () => !isUnsaved() || await dialog.confirm({ title: 'Discard Changes', message: 'Discard unsaved changes?', variant: 'danger', confirmLabel: 'DISCARD' })
+
+  // Guards the async Delete-key confirm against keydown auto-repeat/mash.
+  const delConfirmRef = useRef(false)
 
   // ── Leave guard (F1): warn on reload/tab-close with unsaved edits ──
   useEffect(() => {
@@ -686,9 +690,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
       writeDraft(docRef.current)
     }
   }, [editMode])
-  const acceptDraft = () => {
+  const acceptDraft = async () => {
     if (!draftOffer) return
-    if (isUnsaved() && !window.confirm('Discard current unsaved changes and restore the draft?')) return
+    if (isUnsaved() && !(await dialog.confirm({ title: 'Restore Draft', message: 'Discard current unsaved changes and restore the draft?', variant: 'warning', confirmLabel: 'RESTORE DRAFT' }))) return
     histRef.current = { past: [], future: [] }
     syncHistButtons()
     docRef.current = draftOffer.doc
@@ -796,7 +800,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
 
   // ── Editor keyboard shortcuts (ignored while typing in inputs) ──
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKey = async (e: KeyboardEvent) => {
       // Shortcuts are edit-mode-only: with a lingering selection after DONE
       // they would mutate the read-only viewer's doc (F6).
       if (!editMode) return
@@ -854,11 +858,17 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         setConnectFrom(null)
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIds().length) {
         e.preventDefault()
+        if (delConfirmRef.current) return
         const ids = selectedNodeIds()
         const msg = ids.length > 1
           ? `Delete ${ids.length} selected nodes and their links?`
           : 'Delete the selected node and its links?'
-        if (window.confirm(msg)) deleteNodes(ids)
+        delConfirmRef.current = true
+        try {
+          if (await dialog.confirm({ title: ids.length > 1 ? 'Delete Nodes' : 'Delete Node', message: msg, variant: 'danger', confirmLabel: 'DELETE' })) deleteNodes(ids)
+        } finally {
+          delConfirmRef.current = false
+        }
       }
     }
     window.addEventListener('keydown', onKey)
@@ -1378,8 +1388,8 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     }
   }
 
-  const newDoc = () => {
-    if (!confirmDiscard()) return
+  const newDoc = async () => {
+    if (!(await confirmDiscard())) return
     const d: DiagramDoc = {
       id: `local-${Date.now().toString(36)}`,
       slug: 'untitled',
@@ -1427,7 +1437,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
 
   const removeDoc = async () => {
     if (isSeed || !docId) return
-    if (!window.confirm(`Delete "${docRef.current.title}"?`)) return
+    if (!(await dialog.confirm({ title: 'Delete Diagram', message: `Delete "${docRef.current.title}"?`, variant: 'danger', confirmLabel: 'DELETE' }))) return
     try {
       await deleteDiagram(docId)
       await refreshList()
@@ -1452,7 +1462,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
   }
 
   const switchDoc = async (slug: string) => {
-    if (!confirmDiscard()) return
+    if (!(await confirmDiscard())) return
     const seq = ++loadSeqRef.current
     if (Object.hasOwn(BUILTIN_DOCS, slug)) {
       const seed = BUILTIN_DOCS[slug]()
@@ -1566,7 +1576,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
 
   const applyRevision = async (meta: InfraRevisionMeta) => {
     if (!docId) return
-    if (!window.confirm(`Restore the state from ${fmtRevTime(meta.createdAt)}? The current state is snapshotted first.`)) {
+    if (!(await dialog.confirm({ title: 'Restore Revision', message: `Restore the state from ${fmtRevTime(meta.createdAt)}? The current state is snapshotted first.`, variant: 'warning', confirmLabel: 'RESTORE' }))) {
       return
     }
     try {
@@ -2591,8 +2601,8 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm(`Delete "${selected.name}" and its links?`)) deleteNode(selected.id)
+                  onClick={async () => {
+                    if (await dialog.confirm({ title: 'Delete Node', message: `Delete "${selected.name}" and its links?`, variant: 'danger', confirmLabel: 'DELETE' })) deleteNode(selected.id)
                   }}
                   style={{ ...BTN, borderColor: `${pal.red}55`, color: pal.red }}
                 >

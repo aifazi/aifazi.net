@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Checkbox, Slider } from '../../core/ui.jsx'
+import { Checkbox, Slider, dialog } from '../../core/ui.jsx'
 
 const RS = 1.5 // render scale for backend page images
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
@@ -664,7 +664,7 @@ export default function PDFEditor() {
 
   /* ── Mouse event handlers ─────────────────────────────────────── */
   const toRgba2 = (hex,a) => toRgba(hex,a) // alias
-  const onMouseDown = useCallback(e => {
+  const onMouseDown = useCallback(async e => {
     if (e.button !== 0) return
     const {x,y} = getCoord(e)
     if (tool === 'hand') {
@@ -675,7 +675,7 @@ export default function PDFEditor() {
     }
     if (tool === 'text') { setTextPos({canvasX:x, canvasY:y, ...toPdf(x,y)}); return }
     if (tool === 'note') {
-      const note = window.prompt('Enter note text:')
+      const note = await dialog.prompt({ title: 'Enter note text', confirmLabel: 'ADD' })
       if (note) addOp({type:'add_note', page:currentPage, ...toPdf(x,y), content:note})
       return
     }
@@ -726,7 +726,7 @@ export default function PDFEditor() {
     ctx.restore()
   }, [isPanning, panStart, isDrawing, drawStart, tool, color, opacity, lineWidth, livePoints, getCoord, redrawCanvas])
 
-  const onMouseUp = useCallback(e => {
+  const onMouseUp = useCallback(async e => {
     if (isPanning) { setIsPanning(false); setPanStart(null); return }
     if (!isDrawing) return
     setIsDrawing(false)
@@ -757,7 +757,7 @@ export default function PDFEditor() {
       addOp({type:'add_arrow', ...box, x:pdfS.x, y:pdfS.y, width:0, height:0,
         points:[[pdfS.x,pdfS.y],[pdfE.x,pdfE.y]]})
     } else if (tool === 'articlebox') {
-      const label = window.prompt('Article box label (optional):') || ''
+      const label = (await dialog.prompt({ title: 'Article box label (optional)', confirmLabel: 'OK' })) || ''
       addOp({type:'add_articlebox', ...box, label, color:'#3b82f6', opacity:0.15})
     }
     setLivePoints([])

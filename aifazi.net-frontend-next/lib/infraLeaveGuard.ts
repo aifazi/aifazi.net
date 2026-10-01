@@ -7,6 +7,8 @@
  * editor covers reload/tab-close with the same predicate.
  */
 
+import { dialog } from '../core/dialog'
+
 let dirtyCheck: (() => boolean) | null = null
 
 /** Register the editor's dirty predicate; returns an unregister function. */
@@ -27,10 +29,10 @@ export function hasUnsavedEdits(): boolean {
 }
 
 /** Ask the user before discarding unsaved edits. Returns true to proceed. */
-export function confirmLeave(msg = 'Discard unsaved changes?'): boolean {
+export async function confirmLeave(msg = 'Discard unsaved changes?'): Promise<boolean> {
   try {
     if (!hasUnsavedEdits()) return true
-    return window.confirm(msg)
+    return await dialog.confirm({ title: 'Discard Changes', message: msg, variant: 'danger', confirmLabel: 'DISCARD' })
   } catch {
     return true
   }
