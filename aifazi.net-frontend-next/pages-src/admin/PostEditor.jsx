@@ -4,7 +4,7 @@ import api from '@/lib/api'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { useToast } from '../../components/Toast'
 import { useDialog, dialog } from '../../components/Dialog'
-import { DateTimePicker, Select } from '../../core/ui.jsx'
+import { DateTimePicker, Input, Select, TextArea } from '../../core/ui.jsx'
 import { S, useIsMobile, SLASH_COMMANDS } from './shared'
 import VideoPlayer from './VideoPlayer'
 
@@ -561,7 +561,7 @@ function PostEditor({ post, onSave, onCancel }) {
         {/* Title */}
         <div>
           <label style={S.label}>Title *</label>
-          <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="Post title..." style={{ ...S.input, fontSize: isMobile ? 16 : 20 }} required />
+          <Input value={form.title} onChange={(v) => set('title', v)} placeholder="Post title..." style={{ ...S.input, fontSize: isMobile ? 16 : 20 }} required />
         </div>
 
         {/* Slug */}
@@ -569,9 +569,9 @@ function PostEditor({ post, onSave, onCancel }) {
           <label style={S.label}>Slug *</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>aifazi.net/blog/</span>
-            <input
+            <Input
               value={form.slug}
-              onChange={e => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+              onChange={(v) => set('slug', v.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
               placeholder="auto-generated-from-title"
               style={{ ...S.input, flex: 1 }}
               required
@@ -583,7 +583,7 @@ function PostEditor({ post, onSave, onCancel }) {
         <div>
           <label style={S.label}>Cover Image</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-            <input value={form.cover_image} onChange={e => set('cover_image', e.target.value)} placeholder="URL or browse media library..." style={S.input} />
+            <Input value={form.cover_image} onChange={(v) => set('cover_image', v)} placeholder="URL or browse media library..." style={S.input} />
             <button type="button" onClick={() => { setMediaTarget('cover'); setMediaOpen(true) }}
               style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), border: '1px solid var(--border)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               Browse
@@ -596,7 +596,7 @@ function PostEditor({ post, onSave, onCancel }) {
         <div>
           <label style={S.label}>Video URL <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(YouTube, Vimeo, or direct .mp4)</span></label>
           <div style={{ display: 'flex', gap: 8, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-            <input value={form.video_url} onChange={e => set('video_url', e.target.value)} placeholder="https://youtu.be/..." style={S.input} />
+            <Input value={form.video_url} onChange={(v) => set('video_url', v)} placeholder="https://youtu.be/..." style={S.input} />
             <button type="button" onClick={() => { setMediaTarget('video'); setMediaOpen(true) }}
               style={{ ...S.btn('var(--bg3)', 'var(--cyan)'), border: '1px solid var(--border)', whiteSpace: 'nowrap', flexShrink: 0 }}>
               Browse
@@ -608,7 +608,7 @@ function PostEditor({ post, onSave, onCancel }) {
         {/* Excerpt */}
         <div>
           <label style={S.label}>Excerpt / Summary</label>
-          <textarea value={form.excerpt} onChange={e => set('excerpt', e.target.value)} placeholder="Brief description shown on blog listing..." rows={3} style={{ ...S.input, resize: 'vertical' }} />
+          <TextArea value={form.excerpt} onChange={(v) => set('excerpt', v)} placeholder="Brief description shown on blog listing..." rows={3} style={{ ...S.input, resize: 'vertical' }} />
         </div>
 
         {/* SEO Preview */}
@@ -693,7 +693,7 @@ function PostEditor({ post, onSave, onCancel }) {
           </div>
           <div>
             <label style={S.label}>Tags (comma-separated)</label>
-            <input value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="cisco, vpn, firewall" style={S.input} />
+            <Input value={form.tags} onChange={(v) => set('tags', v)} placeholder="cisco, vpn, firewall" style={S.input} />
           </div>
         </div>
 

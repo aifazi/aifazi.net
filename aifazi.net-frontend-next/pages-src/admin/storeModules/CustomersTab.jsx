@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { UserAvatar, builtinAvatarEmoji, avatarUrl } from '@/lib/avatar'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { Input } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
@@ -77,7 +78,7 @@ export default function CustomersTab() {
     <div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 260px', position: 'relative' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)}
+          <Input value={search} onChange={(v) => setSearch(v)}
             placeholder="Search by username or email…"
             style={{ ...INP, width: '100%', paddingLeft: 32 }} />
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5 }}>🔍</span>
@@ -135,7 +136,7 @@ export default function CustomersTab() {
                 <div style={{ marginBottom: 14 }}>
                   <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>NOTES</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <input value={note} onChange={e => setNote(e.target.value)} placeholder="Add an internal note…" style={{ ...INP, flex: 1 }} />
+                    <Input value={note} onChange={(v) => setNote(v)} placeholder="Add an internal note…" style={{ ...INP, flex: 1 }} />
                     <button onClick={addNote} disabled={noteBusy || !note.trim()} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 16px', background: noteBusy || !note.trim() ? 'var(--bg3)' : 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: noteBusy || !note.trim() ? 'var(--muted)' : G, borderRadius: 6, cursor: noteBusy ? 'not-allowed' : 'pointer' }}>
                       {noteBusy ? '…' : '+ NOTE'}
                     </button>

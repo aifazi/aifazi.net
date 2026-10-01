@@ -7,6 +7,7 @@ import { useTheme } from '@/app/providers'
 
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
+import { Input, TextArea, Select, Checkbox, Slider } from '@/core/forms'
 import { clearSiteSettingsCache } from '@/lib/siteSettings'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Modal } from './ui'
@@ -246,7 +247,7 @@ function ColorRow({ label, value, onChange }) {
         onChange={e => onChange(e.target.value)}
         style={{ width: 28, height: 28, padding: 2, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', borderRadius: 4 }} />
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: '0 0 70px' }}>{label}</span>
-      <input value={value} onChange={e => onChange(e.target.value)}
+      <Input value={value} onChange={(v) => onChange(v)}
         style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', outline: 'none', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', borderRadius: 4 }} />
     </div>
   )
@@ -287,7 +288,7 @@ function FontPicker({ value, options, groups, placeholder = '↺ Theme default',
       </button>
       {open && (
         <div style={{ position: 'absolute', zIndex: 60, left: 0, right: 0, ...(dir === 'up' ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }), background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', borderRadius: 8, boxShadow: '0 18px 40px rgba(0,0,0,0.5), 0 0 18px color-mix(in srgb, var(--green) 12%, transparent)', overflow: 'hidden' }}>
-          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="🔍 Search fonts…"
+          <Input value={query} onChange={(v) => setQuery(v)} placeholder="🔍 Search fonts…"
             style={{ width: '100%', background: 'var(--bg)', border: 'none', borderBottom: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
           <div style={{ maxHeight: 250, overflowY: 'auto' }}>
             {sections.length === 0 && (
@@ -333,7 +334,7 @@ function ColorEdit({ token, label, value, defaultValue, onColor }) {
         style={{ width: 26, height: 26, padding: 1, border: '1px solid var(--border)', background: 'none', cursor: 'pointer', borderRadius: 4 }} />
       <div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>{label.toUpperCase()}</div>
-        <input value={value || ''} onChange={e => onColor(token, e.target.value)}
+        <Input value={value || ''} onChange={(v) => onColor(token, v)}
           style={{ width: 128, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '4px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', borderRadius: 4 }} />
       </div>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', maxWidth: 200 }}>
@@ -653,21 +654,21 @@ function CustomizePreviewModal({ open, onClose, draft, options, colorDefaults, o
                 <div style={{ height: 8 }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>GLOW</span>
-                  <input type="range" min={0} max={1} step={0.05} value={glowVal}
-                    onChange={e => onGlow(Number(e.target.value))}
+                  <Slider min={0} max={1} step={0.05} value={glowVal}
+                    onChange={(v) => onGlow(v)}
                     style={{ width: 110, accentColor: 'var(--green)', cursor: 'pointer' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)' }}>{glowPct}%</span>
                 </div>
                 <div style={{ height: 8 }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>RADIUS</span>
-                  <input type="range" min={0} max={28} step={1} value={radiusVal}
-                    onChange={e => onRadius && onRadius(Number(e.target.value))}
+                  <Slider min={0} max={28} step={1} value={radiusVal}
+                    onChange={(v) => onRadius && onRadius(v)}
                     style={{ width: 90, accentColor: 'var(--purple)', cursor: 'pointer' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--purple)' }}>{radiusVal}px</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, color: 'var(--muted)' }}>BORDER</span>
-                  <input type="range" min={0} max={4} step={1} value={borderWVal}
-                    onChange={e => onBorderWidth && onBorderWidth(Number(e.target.value))}
+                  <Slider min={0} max={4} step={1} value={borderWVal}
+                    onChange={(v) => onBorderWidth && onBorderWidth(v)}
                     style={{ width: 90, accentColor: 'var(--purple)', cursor: 'pointer' }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--purple)' }}>{borderWVal}px</span>
                 </div>
@@ -2068,12 +2069,12 @@ function ThemeLibrary() {
             <div style={{ marginTop: 14 }}>
               <div className="tl-search-wrap">
                 <span className="tl-search-icon" aria-hidden>⌕</span>
-                <input
+                <Input
                   className="tl-search"
                   type="search"
                   placeholder="Search packages by name, mood, or theme…"
                   value={pkgSearch}
-                  onChange={e => setPkgSearch(e.target.value)}
+                  onChange={(v) => setPkgSearch(v)}
                   aria-label="Search theme packages"
                 />
               </div>
@@ -2150,14 +2151,15 @@ function ThemeLibrary() {
               { key: 'framework',  label: 'Framework',  desc: 'Menu, notifications, dialogs, inputs, surfaces, buttons, cards, tables, badges' },
               { key: 'backgrounds',label: 'Backgrounds',desc: 'Background animation + grid pattern' },
             ].map(p => (
-              <label key={p.key} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 12px', borderRadius: 8,
-                background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', marginBottom: 8, cursor: 'pointer' }}>
-                <input type="checkbox" checked={applyParts[p.key]} onChange={() => toggleApplyPart(p.key)} style={{ accentColor: applyTarget.accent }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: _FM, fontSize: 11, color: _TX, fontWeight: 700 }}>{p.label}</div>
-                  <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, marginTop: 2 }}>{p.desc}</div>
-                </div>
-              </label>
+              <Checkbox key={p.key} checked={applyParts[p.key]} onChange={() => toggleApplyPart(p.key)}
+                style={{ display: 'flex', gap: 12, alignItems: 'center', width: '100%', textAlign: 'left', whiteSpace: 'normal', padding: '10px 12px', borderRadius: 8,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)', marginBottom: 8, cursor: 'pointer', accentColor: applyTarget.accent }}
+                label={
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: _FM, fontSize: 11, color: _TX, fontWeight: 700 }}>{p.label}</div>
+                    <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, marginTop: 2 }}>{p.desc}</div>
+                  </div>
+                } />
             ))}
             {!applyParts.appearance && !applyParts.framework && !applyParts.backgrounds && (
               <div style={{ fontFamily: _FM, fontSize: 11, color: '#ff4757', marginTop: 6 }}>Select at least one part to apply.</div>
@@ -2180,8 +2182,8 @@ function ThemeLibrary() {
           {/* Search bar + random + keyboard hint */}
           <div style={{ display: 'flex', gap: 8, marginBottom: 14, alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 220px', position: 'relative' }}>
-              <input
-                value={themeSearch} onChange={e => setThemeSearch(e.target.value)}
+              <Input
+                value={themeSearch} onChange={(v) => setThemeSearch(v)}
                 placeholder="Search themes by name, description, or tag"
                 style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', outline: 'none', padding: '9px 12px 9px 32px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', borderRadius: 6, boxSizing: 'border-box', transition: 'border-color 0.2s' }}
                 onFocus={e => e.target.style.borderColor = 'var(--green)'}
@@ -2851,7 +2853,7 @@ function ThemeLibrary() {
             {/* Name */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 6 }}>THEME NAME</div>
-              <input value={custom.name} onChange={e => setCustom(p => ({ ...p, name: e.target.value, id: e.target.value.toLowerCase().replace(/\s+/g, '-') }))}
+              <Input value={custom.name} onChange={(v) => setCustom(p => ({ ...p, name: v, id: v.toLowerCase().replace(/\s+/g, '-') }))}
                 style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', outline: 'none', padding: '7px 10px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', borderRadius: 4, boxSizing: 'border-box' }} />
             </div>
 
@@ -3130,7 +3132,7 @@ function ThemeLibrary() {
       <Modal open={moreThemesOpen} onClose={() => setMoreThemesOpen(false)} title="🧩 MORE THEMES  browse the full theme menu" width={680}>
         <div style={{ padding: 20 }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-            <input value={moreSearch} onChange={e => setMoreSearch(e.target.value)}
+            <Input value={moreSearch} onChange={(v) => setMoreSearch(v)}
               placeholder="🔍 Search themes…"
               style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -3193,7 +3195,7 @@ function ThemeLibrary() {
             <strong style={{ color: 'var(--green)' }}> LOAD INTO CUSTOMIZE</strong> edits the current theme&apos;s draft (live-previewed), or pick a theme and hit <strong style={{ color: 'var(--cyan)' }}>APPLY</strong> to write it straight onto that theme&apos;s customization.
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-            <input value={styleQuery} onChange={e => setStyleQuery(e.target.value)}
+            <Input value={styleQuery} onChange={(v) => setStyleQuery(v)}
               placeholder="🔍 Search templates…"
               style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -3237,10 +3239,9 @@ function ThemeLibrary() {
                       style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--green)', color: '#000', border: 'none', borderRadius: 6 }}>
                       🧪 LOAD INTO CUSTOMIZE
                     </button>
-                    <select value={pickTheme} onChange={e => setStyleApplyFor(s => ({ ...s, [tpl.id]: e.target.value }))}
-                      style={{ flex: 1, minWidth: 110, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', padding: '7px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                    <Select value={pickTheme} onChange={(v) => setStyleApplyFor(s => ({ ...s, [tpl.id]: v }))}
+                      options={THEME_DEFS.map(t => ({ value: String(t.id), label: t.name }))}
+                      style={{ flex: 1, minWidth: 110 }} />
                     <button onClick={() => applyStyleToTheme(tpl, pickTheme)}
                       style={{ padding: '7px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', background: 'var(--cyan)', color: '#000', border: 'none', borderRadius: 6 }}>
                       APPLY ▶
@@ -3284,10 +3285,9 @@ function ThemeLibrary() {
             {/* Theme selector */}
             <div style={T.card}>
               <div style={T.sec}>SELECT THEME TO CUSTOMIZE</div>
-              <select value={customTarget} onChange={e => setCustomTarget(e.target.value)}
-                style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}  ({t.id})</option>)}
-              </select>
+              <Select value={customTarget} onChange={(v) => setCustomTarget(v)}
+                options={THEME_DEFS.map(t => ({ value: String(t.id), label: `${t.name}  (${t.id})` }))}
+                style={{ width: '100%' }} />
               <div style={{ ...T.sub, marginTop: 10 }}>
                 Currently customizing <strong style={{ color: 'var(--purple)' }}>{THEME_DEFS.find(t => t.id === customTarget)?.name || customTarget}</strong>.
                 {' '}{siteConfig.themeCustom?.[customTarget] ? 'This theme has a saved customization.' : 'This theme uses its built-in look.'}
@@ -3300,7 +3300,7 @@ function ThemeLibrary() {
 
               {/* Search + upload + url + preview */}
               <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 14 }}>
-                <input value={fontSearch} onChange={e => setFontSearch(e.target.value)}
+                <Input value={fontSearch} onChange={(v) => setFontSearch(v)}
                   placeholder="🔍 Search fonts… (Google CDN + your uploads)"
                   style={{ flex: 1, minWidth: 180, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none' }} />
                 <input ref={fontInputRef} type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf,font/woff,font/woff2" style={{ display: 'none' }}
@@ -3400,9 +3400,9 @@ function ThemeLibrary() {
             {/* Glow */}
             <div style={T.card}>
               <div style={T.sec}>GLOW INTENSITY</div>
-              <input type="range" min={0} max={1} step={0.05}
+              <Slider min={0} max={1} step={0.05}
                 value={typeof customDraft.glow === 'number' ? customDraft.glow : 0.5}
-                onChange={e => setDraft({ glow: Number(e.target.value) })}
+                onChange={(v) => setDraft({ glow: v })}
                 style={{ width: '100%', accentColor: 'var(--green)', cursor: 'pointer' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                 <span>OFF</span><span>{Math.round((typeof customDraft.glow === 'number' ? customDraft.glow : 0.5) * 100)}%</span><span>MAX</span>
@@ -3415,18 +3415,18 @@ function ThemeLibrary() {
               <div style={T.sec}>SURFACE &amp; EFFECTS</div>
 
               <label style={T.label}>CORNER RADIUS  ({typeof customDraft.radius === 'number' ? customDraft.radius : 10}px)</label>
-              <input type="range" min={0} max={28} step={1}
+              <Slider min={0} max={28} step={1}
                 value={typeof customDraft.radius === 'number' ? customDraft.radius : 10}
-                onChange={e => setDraft({ radius: Number(e.target.value) })}
+                onChange={(v) => setDraft({ radius: v })}
                 style={{ width: '100%', accentColor: 'var(--purple)', cursor: 'pointer' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                 <span>SHARP</span><span>ROUND</span>
               </div>
 
               <label style={{ ...T.label, marginTop: 16 }}>BORDER WIDTH  ({typeof customDraft.borderWidth === 'number' ? customDraft.borderWidth : 1}px)</label>
-              <input type="range" min={0} max={4} step={1}
+              <Slider min={0} max={4} step={1}
                 value={typeof customDraft.borderWidth === 'number' ? customDraft.borderWidth : 1}
-                onChange={e => setDraft({ borderWidth: Number(e.target.value) })}
+                onChange={(v) => setDraft({ borderWidth: v })}
                 style={{ width: '100%', accentColor: 'var(--purple)', cursor: 'pointer' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                 <span>NONE</span><span>THICK</span>
@@ -3456,9 +3456,9 @@ function ThemeLibrary() {
                   onChange={e => setDraft({ bgGradientTo: e.target.value })}
                   style={{ width: 44, height: 32, background: 'transparent', border: 'none', cursor: 'pointer' }} />
                 <label style={T.label}>ANGLE {typeof customDraft.bgGradientAngle === 'number' ? customDraft.bgGradientAngle : 180}°</label>
-                <input type="range" min={0} max={360} step={5}
+                <Slider min={0} max={360} step={5}
                   value={typeof customDraft.bgGradientAngle === 'number' ? customDraft.bgGradientAngle : 180}
-                  onChange={e => setDraft({ bgGradientAngle: Number(e.target.value) })}
+                  onChange={(v) => setDraft({ bgGradientAngle: v })}
                   style={{ flex: 1, minWidth: 120, accentColor: 'var(--purple)', cursor: 'pointer' }} />
               </div>
               <div style={{ ...T.sub, marginTop: 10 }}>A gradient overrides the pattern. Both are layered over the theme&apos;s default background.</div>
@@ -3603,7 +3603,7 @@ function ThemeLibrary() {
             {/* Custom CSS */}
             <div style={T.card}>
               <div style={T.sec}>CUSTOM CSS  (the &quot;and more&quot; part)</div>
-              <textarea value={customDraft.css || ''} onChange={e => setDraft({ css: e.target.value })}
+              <TextArea value={customDraft.css || ''} onChange={(v) => setDraft({ css: v })}
                 spellCheck={false}
                 placeholder={`/* Drop any CSS rules here. Bare declarations are auto-scoped\nto [data-theme="${customTarget}"] — you can also write full rules. */\n\n/* e.g. */\n--radius: 16px;   /* corner radius of cards, inputs, buttons, toasts */\n.footer { opacity: 0.8; }`}
                 style={{ width: '100%', minHeight: 150, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', resize: 'vertical', lineHeight: 1.6 }} />
@@ -3677,29 +3677,26 @@ function ThemeLibrary() {
                   Paste a direct <strong style={{ color: 'var(--text)' }}>.ttf / .otf / .woff / .woff2</strong> file URL from any CDN — including Google Fonts gstatic links. The file is downloaded, validated, stored on our CDN (Cloudflare R2) and added to your library.
                 </div>
                 <label style={T.label}>FONT FILE URL *</label>
-                <input value={fontUrlInput} onChange={e => setFontUrlInput(e.target.value)}
+                <Input value={fontUrlInput} onChange={(v) => setFontUrlInput(v)}
                   placeholder="https://fonts.gstatic.com/…/font.woff2"
                   onKeyDown={e => { if (e.key === 'Enter' && !savingUrlFont) importFontFromUrl() }}
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <label style={T.label}>FAMILY NAME (optional — auto-detected from the file)</label>
-                <input value={fontUrlFamily} onChange={e => setFontUrlFamily(e.target.value)}
+                <Input value={fontUrlFamily} onChange={(v) => setFontUrlFamily(v)}
                   placeholder="e.g. My Custom Font"
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>WEIGHT</label>
-                    <select value={fontUrlWeight} onChange={e => setFontUrlWeight(e.target.value)}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      {['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => <option key={w} value={w}>{w}</option>)}
-                    </select>
+                    <Select value={fontUrlWeight} onChange={(v) => setFontUrlWeight(v)}
+                      options={['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => ({ value: String(w), label: w }))}
+                      style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>STYLE</label>
-                    <select value={fontUrlStyle} onChange={e => setFontUrlStyle(e.target.value)}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      <option value="normal">normal</option>
-                      <option value="italic">italic</option>
-                    </select>
+                    <Select value={fontUrlStyle} onChange={(v) => setFontUrlStyle(v)}
+                      options={[{ value: 'normal', label: 'normal' }, { value: 'italic', label: 'italic' }]}
+                      style={{ width: '100%' }} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -3723,7 +3720,7 @@ function ThemeLibrary() {
                   (fonts, colors, glow, radius, borders, background, CSS) as a preset you can apply to any theme.
                 </div>
                 <label style={T.label}>PRESET NAME</label>
-                <input value={presetName} onChange={e => setPresetName(e.target.value)}
+                <Input value={presetName} onChange={(v) => setPresetName(v)}
                   onKeyDown={e => { if (e.key === 'Enter') savePreset() }}
                   placeholder="e.g. Midnight Lab"
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 20 }} />
@@ -3796,7 +3793,7 @@ function ThemeLibrary() {
                   />
                 </div>
 
-                <textarea value={importText} onChange={e => setImportText(e.target.value)} spellCheck={false}
+                <TextArea value={importText} onChange={(v) => setImportText(v)} spellCheck={false}
                   rows={6}
                   placeholder={`{\n  "name": "My Look",\n  "draft": { "fontDisplay": "…", "colors": { … }, "glow": 0.5, "css": "" }\n}`}
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 20, resize: 'vertical' }} />
@@ -3817,25 +3814,21 @@ function ThemeLibrary() {
             <Modal open={targetModalOpen} onClose={() => setTargetModalOpen(false)} title="ROLLOUT TARGET" width={520}>
               <div style={{ padding: 20 }}>
                 <label style={T.label}>TARGET NAME</label>
-                <input value={targetForm.name} onChange={e => setTargetForm(f => ({ ...f, name: e.target.value }))}
+                <Input value={targetForm.name} onChange={(v) => setTargetForm(f => ({ ...f, name: v }))}
                   placeholder="e.g. Logged-in users beta"
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>THEME</label>
-                    <select value={targetForm.themeId} onChange={e => setTargetForm(f => ({ ...f, themeId: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      {THEME_DEFS.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
+                    <Select value={targetForm.themeId} onChange={(v) => setTargetForm(f => ({ ...f, themeId: v }))}
+                      options={THEME_DEFS.map(t => ({ value: String(t.id), label: t.name }))}
+                      style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>AUDIENCE</label>
-                    <select value={targetForm.audience} onChange={e => setTargetForm(f => ({ ...f, audience: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      <option value="everyone">everyone</option>
-                      <option value="logged-in">logged-in only</option>
-                      <option value="anonymous">anonymous only</option>
-                    </select>
+                    <Select value={targetForm.audience} onChange={(v) => setTargetForm(f => ({ ...f, audience: v }))}
+                      options={[{ value: 'everyone', label: 'everyone' }, { value: 'logged-in', label: 'logged-in only' }, { value: 'anonymous', label: 'anonymous only' }]}
+                      style={{ width: '100%' }} />
                   </div>
                 </div>
                 <div style={{ ...T.sub, marginBottom: 14 }}>
@@ -3844,12 +3837,12 @@ function ThemeLibrary() {
                 <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>START (optional)</label>
-                    <input type="date" value={targetForm.start} onChange={e => setTargetForm(f => ({ ...f, start: e.target.value }))}
+                    <Input type="date" value={targetForm.start} onChange={(v) => setTargetForm(f => ({ ...f, start: v }))}
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', colorScheme: 'dark' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>END (optional)</label>
-                    <input type="date" value={targetForm.end} onChange={e => setTargetForm(f => ({ ...f, end: e.target.value }))}
+                    <Input type="date" value={targetForm.end} onChange={(v) => setTargetForm(f => ({ ...f, end: v }))}
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', colorScheme: 'dark' }} />
                   </div>
                 </div>
@@ -3877,24 +3870,21 @@ function ThemeLibrary() {
             <Modal open={fontMetaOpen} onClose={() => setFontMetaOpen(false)} title="EDIT FONT" width={440}>
               <div style={{ padding: 20 }}>
                 <label style={T.label}>FAMILY NAME</label>
-                <input value={editFontForm.family} onChange={e => setEditFontForm(f => ({ ...f, family: e.target.value }))}
+                <Input value={editFontForm.family} onChange={(v) => setEditFontForm(f => ({ ...f, family: v }))}
                   placeholder="e.g. Orbitron"
                   style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
                 <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>WEIGHT</label>
-                    <select value={editFontForm.weight} onChange={e => setEditFontForm(f => ({ ...f, weight: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      {['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => <option key={w} value={w}>{w}</option>)}
-                    </select>
+                    <Select value={editFontForm.weight} onChange={(v) => setEditFontForm(f => ({ ...f, weight: v }))}
+                      options={['100', '200', '300', '400', '500', '600', '700', '800', '900'].map(w => ({ value: String(w), label: w }))}
+                      style={{ width: '100%' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={T.label}>STYLE</label>
-                    <select value={editFontForm.style} onChange={e => setEditFontForm(f => ({ ...f, style: e.target.value }))}
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '9px 12px', borderRadius: 8, fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', cursor: 'pointer' }}>
-                      <option value="normal">normal</option>
-                      <option value="italic">italic</option>
-                    </select>
+                    <Select value={editFontForm.style} onChange={(v) => setEditFontForm(f => ({ ...f, style: v }))}
+                      options={[{ value: 'normal', label: 'normal' }, { value: 'italic', label: 'italic' }]}
+                      style={{ width: '100%' }} />
                   </div>
                 </div>
                 <div style={{ ...T.sub, marginBottom: 20 }}>Weight and style are used for the @font-face descriptor (font-weight / font-style) so browsers pick the right file.</div>

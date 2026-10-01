@@ -6,7 +6,7 @@ import { useNavigate } from '@/lib/router-compat'
 import api, { getRole, getUsername, setEffectiveAccess, getAuthToken, setImpersonationToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
-import { Checkbox, Select } from '../../core/ui.jsx'
+import { Checkbox, Input, Select, TextArea } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
 import { canViewKey, canView as canViewAny, resolveNavKey, firstPermittedKey } from './access'
@@ -180,17 +180,13 @@ function AbuseBanModal({ target, onClose }) {
               <label style={S.label}>Surfaces</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {ABUSE_SURFACES.map(([k, label]) => (
-                  <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: surfaces[k] ? 'var(--text)' : 'var(--muted)', border: `1px solid ${surfaces[k] ? 'var(--green)' : 'var(--border)'}`, borderRadius: 6, padding: '7px 10px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={!!surfaces[k]} onChange={() => toggle(k)} />{label}
-                  </label>
+                  <Checkbox key={k} checked={!!surfaces[k]} onChange={() => toggle(k)} label={label} />
                 ))}
               </div>
             </div>
-            <div><label style={S.label}>Reason (required, min 3 chars)</label><input value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Spam, abuse, ban evasion..." style={S.input} /></div>
-            <div><label style={S.label}>Explicit IP <span style={{ textTransform: 'none', letterSpacing: 0 }}>(optional — else last known IP is used)</span></label><input value={ip} onChange={e => setIp(e.target.value)} placeholder="1.2.3.4" style={S.input} /></div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', cursor: 'pointer' }}>
-              <input type="checkbox" checked={understand} onChange={e => setUnderstand(e.target.checked)} />I understand this bans the user everywhere
-            </label>
+            <div><label style={S.label}>Reason (required, min 3 chars)</label><Input value={reason} onChange={v => setReason(v)} placeholder="e.g. Spam, abuse, ban evasion..." style={S.input} /></div>
+            <div><label style={S.label}>Explicit IP <span style={{ textTransform: 'none', letterSpacing: 0 }}>(optional — else last known IP is used)</span></label><Input value={ip} onChange={v => setIp(v)} placeholder="1.2.3.4" style={S.input} /></div>
+            <Checkbox checked={understand} onChange={checked => setUnderstand(checked)} label="I understand this bans the user everywhere" />
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" onClick={runBan} disabled={!canBan} style={{ ...S.btn('rgba(255,71,87,0.15)', '#ff4757'), border: '1px solid rgba(255,71,87,0.4)', flex: 2, opacity: canBan ? 1 : 0.5, cursor: canBan ? 'pointer' : 'not-allowed' }}>{busy ? 'BANNING...' : 'BAN'}</button>
               <button type="button" onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>CANCEL</button>
@@ -993,8 +989,8 @@ function Dashboard({ onLogout }) {
               {/* Search + filter + sort bar */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ flex: '1 1 220px', position: 'relative' }}>
-                  <input
-                    value={postSearch} onChange={e => setPostSearch(e.target.value)}
+                  <Input
+                    value={postSearch} onChange={v => setPostSearch(v)}
                     placeholder="Search posts by title or category"
                     style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 32px' }}
                   />
@@ -1232,12 +1228,12 @@ function Dashboard({ onLogout }) {
                 <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div>
                     <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>SUBJECT</label>
-                    <input value={replySubject} onChange={e => setReplySubject(e.target.value)}
+                    <Input value={replySubject} onChange={v => setReplySubject(v)}
                       style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px', outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                   <div>
                     <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>MESSAGE</label>
-                    <textarea value={replyBody} onChange={e => setReplyBody(e.target.value)} rows={7}
+                    <TextArea value={replyBody} onChange={v => setReplyBody(v)} rows={7}
                       placeholder={replyModal !== 'bulk' ? `Hi ${replyModal.name},\n\nThank you for reaching out...` : 'Hi there,\n\nThank you for reaching out...'}
                       style={{ width: '100%', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, padding: '10px 12px', outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.7 }} />
                     {replyModal === 'bulk' && (
@@ -1354,7 +1350,7 @@ function Dashboard({ onLogout }) {
                       {newStaff.mode === 'existing' && (
                         <div>
                           <label style={S.label}>Search existing user</label>
-                          <input value={staffUserQuery} onChange={e => searchStaffUsers(e.target.value)} placeholder="username, email, Discord, Steam" style={S.input} />
+                          <Input value={staffUserQuery} onChange={v => searchStaffUsers(v)} placeholder="username, email, Discord, Steam" style={S.input} />
                           {staffUserLoading && <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', marginTop:6 }}>Searching...</div>}
                           {staffUserResults.length > 0 && <div style={{ border:'1px solid var(--border)', borderRadius:6, marginTop:6, maxHeight:150, overflowY:'auto' }}>{staffUserResults.map(u => <button key={u.id} type="button" onClick={() => selectStaffUser(u)} style={{ width:'100%', textAlign:'left', padding:'8px 10px', background:'transparent', border:'none', borderBottom:'1px solid rgba(255,255,255,.05)', color:'var(--text)', fontFamily:'var(--font-mono)', cursor:'pointer' }}>{u.username}<span style={{ color:'var(--muted)' }}> · {u.email || u.discord_username || u.steam_username || u.id}</span></button>)}</div>}
                           {newStaff.forum_user_id && <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--green)', marginTop:6 }}>Selected user ID: {newStaff.forum_user_id}</div>}
@@ -1370,9 +1366,9 @@ function Dashboard({ onLogout }) {
                           ))}
                         </div>
                       </div>
-                      <div><label style={S.label}>Username</label><input value={newStaff.username} onChange={e => setNewStaff(p => ({ ...p, username: e.target.value }))} placeholder="username" style={S.input} required /></div>
-                      <div><label style={S.label}>Email</label><input type="email" value={newStaff.email} onChange={e => setNewStaff(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" style={S.input} required={newStaff.mode !== 'existing'} /></div>
-                      {newStaff.mode !== 'existing' && <div><label style={S.label}>Password</label><input type="password" value={newStaff.password} onChange={e => setNewStaff(p => ({ ...p, password: e.target.value }))} placeholder="" style={S.input} required minLength={8} /></div>}
+                      <div><label style={S.label}>Username</label><Input value={newStaff.username} onChange={v => setNewStaff(p => ({ ...p, username: v }))} placeholder="username" style={S.input} required /></div>
+                      <div><label style={S.label}>Email</label><Input type="email" value={newStaff.email} onChange={v => setNewStaff(p => ({ ...p, email: v }))} placeholder="email@example.com" style={S.input} required={newStaff.mode !== 'existing'} /></div>
+                      {newStaff.mode !== 'existing' && <div><label style={S.label}>Password</label><Input type="password" value={newStaff.password} onChange={v => setNewStaff(p => ({ ...p, password: v }))} placeholder="" style={S.input} required minLength={8} /></div>}
                       <PermissionEditor value={newStaff.module_permissions} onChange={module_permissions => setNewStaff(p => ({ ...p, module_permissions }))} />
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button type="submit" disabled={staffSaving} style={{ ...S.btn(), flex: 1, opacity: staffSaving ? 0.7 : 1 }}>{staffSaving ? 'CREATING...' : 'CREATE'}</button>
@@ -1399,9 +1395,9 @@ function Dashboard({ onLogout }) {
                           ))}
                         </div>
                       </div>
-                      <div><label style={S.label}>Username</label><input value={editStaffForm.username} onChange={e => setEditStaffForm(p => ({ ...p, username: e.target.value }))} style={S.input} required /></div>
-                      <div><label style={S.label}>Email</label><input type="email" value={editStaffForm.email} onChange={e => setEditStaffForm(p => ({ ...p, email: e.target.value }))} style={S.input} required /></div>
-                      <div><label style={S.label}>New Password <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank to keep current)</span></label><input type="password" value={editStaffForm.password} onChange={e => setEditStaffForm(p => ({ ...p, password: e.target.value }))} placeholder="" style={S.input} minLength={8} /></div>
+                      <div><label style={S.label}>Username</label><Input value={editStaffForm.username} onChange={v => setEditStaffForm(p => ({ ...p, username: v }))} style={S.input} required /></div>
+                      <div><label style={S.label}>Email</label><Input type="email" value={editStaffForm.email} onChange={v => setEditStaffForm(p => ({ ...p, email: v }))} style={S.input} required /></div>
+                      <div><label style={S.label}>New Password <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank to keep current)</span></label><Input type="password" value={editStaffForm.password} onChange={v => setEditStaffForm(p => ({ ...p, password: v }))} placeholder="" style={S.input} minLength={8} /></div>
                       <PermissionEditor value={editStaffForm.module_permissions} onChange={module_permissions => setEditStaffForm(p => ({ ...p, module_permissions }))} />
                       <div style={{ border: '1px solid rgba(255,71,87,0.35)', background: 'rgba(255,71,87,0.06)', borderRadius: 8, padding: 12 }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: '#ff4757', marginBottom: 8 }}>DANGER ZONE</div>

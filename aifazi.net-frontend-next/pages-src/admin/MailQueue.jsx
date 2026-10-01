@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import api from '@/lib/api'
-import { Checkbox } from '../../core/ui.jsx'
+import { Checkbox, Input } from '../../core/ui.jsx'
 import { useDialog } from '../../components/Dialog'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Btn as KitBtn, Badge as KitBadge } from './ui'
@@ -304,7 +304,7 @@ export default function MailQueue() {
           ))}
         </div>
         <div style={{ position:'relative', flex:1, minWidth:200 }}>
-          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
+          <Input value={search} onChange={(v) => { setSearch(v); setPage(1) }}
             placeholder="Search recipient, subject, type…"
             style={{ width:'100%', boxSizing:'border-box', padding:'8px 32px 8px 12px',
               fontFamily:C.mono, fontSize:11, background:C.bg2, border:`1px solid ${C.border}`,

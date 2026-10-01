@@ -5,6 +5,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
+import { Checkbox, Input, Select, TextArea } from '@/core/forms'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { PageHeader } from './shared'
@@ -43,7 +44,7 @@ function RelTime({ iso }) {
 function money(cents) { return `$${((cents || 0) / 100).toFixed(2)}` }
 
 function input(v, onChange, mono = true) {
-  return <input value={v ?? ''} onChange={e => onChange(e.target.value)} style={{
+  return <Input value={v ?? ''} onChange={next => onChange(next)} style={{
     width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
     fontFamily: mono ? MONO : 'var(--font-display)', fontSize: mono ? 13 : 14, padding: '9px 12px',
     outline: 'none', borderRadius: 6, boxSizing: 'border-box',
@@ -51,7 +52,7 @@ function input(v, onChange, mono = true) {
 }
 
 function numberInput(v, onChange) {
-  return <input type="number" value={v ?? ''} onChange={e => onChange(Number(e.target.value) || 0)} style={{
+  return <Input type="number" value={v ?? ''} onChange={next => onChange(Number(next) || 0)} style={{
     width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
     fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box',
   }} />
@@ -237,10 +238,8 @@ export function ProductsTab({ categories, onOpenVariants }) {
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
-                <select value={form.category_id || ''} onChange={e => inp('category_id', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
-                  <option value="">— None —</option>
-                  {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <Select value={form.category_id || ''} onChange={v => inp('category_id', v)}
+                  options={[{ value: '', label: '— None —' }, ...(categories || []).map(c => ({ value: String(c.id), label: c.name }))]} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>SKU</label>
@@ -256,15 +255,12 @@ export function ProductsTab({ categories, onOpenVariants }) {
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Compare-at price (cents)</label>
-                <input type="number" value={form.compare_at_cents || ''} onChange={e => inp('compare_at_cents', e.target.value ? Number(e.target.value) : null)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
+                <Input type="number" value={form.compare_at_cents || ''} onChange={v => inp('compare_at_cents', v ? Number(v) : null)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Type</label>
-                <select value={form.type} onChange={e => inp('type', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
-                  <option value="physical">Physical</option>
-                  <option value="digital">Digital</option>
-                  <option value="service">Service</option>
-                </select>
+                <Select value={form.type} onChange={v => inp('type', v)}
+                  options={[{ value: 'physical', label: 'Physical' }, { value: 'digital', label: 'Digital' }, { value: 'service', label: 'Service' }]} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Stock qty</label>
@@ -277,7 +273,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
             </div>
             <div style={{ marginTop: 12 }}>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
-              <textarea value={form.description} onChange={e => inp('description', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+              <TextArea value={form.description} onChange={v => inp('description', v)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
             </div>
             <div style={{ marginTop: 12 }}>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Product image</label>
@@ -309,9 +305,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
             )}
             <div style={{ display: 'flex', gap: 16, margin: '14px 0', flexWrap: 'wrap' }}>
               {[{ k: 'track_inventory', label: 'Track inventory' }, { k: 'active', label: 'Active (visible)' }, { k: 'featured', label: 'Featured' }].map(t => (
-                <label key={t.k} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>
-                  <input type="checkbox" checked={!!form[t.k]} onChange={e => inp(t.k, e.target.checked)} style={{ accentColor: G }} /> {t.label}
-                </label>
+                <Checkbox key={t.k} checked={!!form[t.k]} onChange={checked => inp(t.k, checked)} label={t.label} style={{ accentColor: G }} />
               ))}
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -423,24 +417,24 @@ export function CategoriesTab() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Name *</label>
-            <input value={form.name} onChange={e => inp('name', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
+            <Input value={form.name} onChange={v => inp('name', v)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Slug *</label>
-            <input value={form.slug} onChange={e => inp('slug', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
+            <Input value={form.slug} onChange={v => inp('slug', v)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Icon (emoji)</label>
-            <input value={form.icon} onChange={e => inp('icon', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
+            <Input value={form.icon} onChange={v => inp('icon', v)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
           <div>
             <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
-            <input type="number" value={form.display_order} onChange={e => inp('display_order', Number(e.target.value) || 0)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
+            <Input type="number" value={form.display_order} onChange={v => inp('display_order', Number(v) || 0)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 13, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
           </div>
         </div>
         <div style={{ marginTop: 12 }}>
           <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
-          <input value={form.description} onChange={e => inp('description', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
+          <Input value={form.description} onChange={v => inp('description', v)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }} />
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
           {editing && <Btn onClick={() => { setEditing(null); setForm(EMPTY_CAT) }} color="var(--muted)">CANCEL</Btn>}
@@ -793,9 +787,8 @@ export function PlansTab({ categories }) {
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Interval</label>
-                <select value={form.interval} onChange={e => inp('interval', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
-                  <option value="month">month</option><option value="year">year</option><option value="week">week</option>
-                </select>
+                <Select value={form.interval} onChange={v => inp('interval', v)}
+                  options={[{ value: 'month', label: 'month' }, { value: 'year', label: 'year' }, { value: 'week', label: 'week' }]} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Level</label>
@@ -803,19 +796,15 @@ export function PlansTab({ categories }) {
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Category</label>
-                <select value={form.category_id || ''} onChange={e => inp('category_id', e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box' }}>
-                  <option value="">— None —</option>
-                  {(categories || []).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <Select value={form.category_id || ''} onChange={v => inp('category_id', v)}
+                  options={[{ value: '', label: '— None —' }, ...(categories || []).map(c => ({ value: String(c.id), label: c.name }))]} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Display order</label>
                 {numberInput(form.display_order, v => inp('display_order', v))}
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 8 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>
-                  <input type="checkbox" checked={!!form.active} onChange={e => inp('active', e.target.checked)} style={{ accentColor: G }} /> Active (visible)
-                </label>
+                <Checkbox checked={!!form.active} onChange={checked => inp('active', checked)} label="Active (visible)" style={{ accentColor: G }} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Headline</label>
@@ -823,15 +812,15 @@ export function PlansTab({ categories }) {
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Description</label>
-                <textarea value={form.description} onChange={e => inp('description', e.target.value)} rows={2} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+                <TextArea value={form.description} onChange={v => inp('description', v)} rows={2} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 14, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Perks (JSON object)</label>
-                <textarea value={form.perks} onChange={e => inp('perks', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+                <TextArea value={form.perks} onChange={v => inp('perks', v)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
               <div style={{ gridColumn: '1 / -1' }}>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', textTransform: 'uppercase', display: 'block', marginBottom: 5 }}>Features (JSON array)</label>
-                <textarea value={form.features} onChange={e => inp('features', e.target.value)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
+                <TextArea value={form.features} onChange={v => inp('features', v)} rows={3} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 12, padding: '9px 12px', outline: 'none', borderRadius: 6, boxSizing: 'border-box', resize: 'vertical' }} />
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
@@ -871,6 +860,7 @@ export function SubscriptionsTab() {
   const toast = useToast()
   const [subs, setSubs] = useState([])
   const [loading, setLoading] = useState(true)
+  const [statusPick, setStatusPick] = useState({})
 
   const load = useCallback(() => {
     api.get('/store/admin/subscriptions').then(r => setSubs(r.data || [])).catch(() => toast.error('Failed to load subscriptions'))
@@ -901,10 +891,8 @@ export function SubscriptionsTab() {
           </div>
           <StatusBadge status={s.status} />
           <Badge color={s.sync_status === 'synced' ? G : s.sync_status === 'failed' ? R : Y}>{s.sync_status}</Badge>
-          <select defaultValue="" onChange={e => { if (e.target.value) patch(s, { status: e.target.value }) }} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: MONO, fontSize: 11, padding: '6px 8px', borderRadius: 6, outline: 'none' }}>
-            <option value="">status…</option>
-            {['active', 'trialing', 'past_due', 'canceled'].map(st => <option key={st} value={st}>{st}</option>)}
-          </select>
+          <Select value={statusPick[s.id] || ''} placeholder="status…" onChange={v => { if (v) { setStatusPick(p => ({ ...p, [s.id]: v })); patch(s, { status: v }) } }}
+            options={['active', 'trialing', 'past_due', 'canceled']} />
           <Btn onClick={() => patch(s, { cancel_at_period_end: !s.cancel_at_period_end })} small color={s.cancel_at_period_end ? R : C}>{s.cancel_at_period_end ? 'UNCANCEL' : 'CANCEL AT END'}</Btn>
           <Btn onClick={() => resync(s)} small color={Y}>SYNC</Btn>
         </div>

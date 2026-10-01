@@ -6,6 +6,7 @@ import api, { getAuthToken, saveTokens } from '@/lib/api'
 import { useForum } from '@/context/ForumContext'
 import { authProviderLoginRoute } from '@/lib/authRoutes'
 import { useFiveMRoute } from '@/lib/fivemRoutes'
+import { Input } from '@/core/forms'
 
 const G = 'var(--green)'
 const C = 'var(--cyan)'
@@ -72,13 +73,13 @@ export default function FiveMLogin() {
 
             <div>
               <label style={{ fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>EMAIL</label>
-              <input type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required
+              <Input type="email" placeholder="your@email.com" value={email} onChange={v => setEmail(v)} required
                 style={{ width: '100%', padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
             </div>
 
             <div>
               <label style={{ fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>PASSWORD</label>
-              <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required
+              <Input type="password" placeholder="••••••••" value={password} onChange={v => setPassword(v)} required
                 style={{ width: '100%', padding: '12px 14px', background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 14, outline: 'none', borderRadius: 8, boxSizing: 'border-box' }} />
             </div>
 

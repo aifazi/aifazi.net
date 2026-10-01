@@ -5,7 +5,7 @@ import { getSupabase } from '@/lib/supabase'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { useIsMobile, PageHeader } from './shared'
-import { DateTimePicker } from '../../core/ui.jsx'
+import { Checkbox, DateTimePicker, Input, Select, TextArea } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { useNow } from '../../hooks/useNow'
 import { EmptyState, Pagination } from './ui'
@@ -69,10 +69,9 @@ export function PageContentPanel() {
       <PageHeader eyebrow="ADMIN - CONTENT" title="Page Editor" subtitle="Edit public/private page copy and animation presets from one place." />
       <div style={{ border:'1px solid var(--border)', background:'var(--bg2)', borderRadius:8, overflow:'hidden' }}>
         <div style={{ padding:16, borderBottom:'1px solid var(--border)', display:'flex', gap:10, justifyContent:'space-between', flexWrap:'wrap' }}>
-          <select value={pageKey} onChange={e => setPageKey(e.target.value)}
-            style={{ minWidth:260, background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'10px 12px', fontFamily:'var(--font-mono)' }}>
-            {PAGE_CONFIG_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
+          <Select value={pageKey} onChange={v => setPageKey(v)}
+            options={PAGE_CONFIG_KEYS}
+            style={{ minWidth: 260 }} />
           <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             <button onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/${pageKey === 'home' ? '' : pageKey}`); toast.success('URL copied', { title:'Pages' }) }}
               style={{ background:'color-mix(in srgb, var(--cyan) 8%, transparent)', border:'1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', color:'var(--cyan)', borderRadius:6, padding:'9px 13px', fontFamily:'var(--font-mono)', cursor:'pointer' }}>
@@ -90,28 +89,23 @@ export function PageContentPanel() {
         </div>
         <div style={{ padding:16, display:'grid', gap:12 }}>
           <label style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>TITLE</label>
-          <input value={current.title || ''} onChange={e => set('title', e.target.value)}
+          <Input value={current.title || ''} onChange={v => set('title', v)}
             style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }} />
           <label style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>SUBTITLE</label>
-          <input value={current.subtitle || ''} onChange={e => set('subtitle', e.target.value)}
+          <Input value={current.subtitle || ''} onChange={v => set('subtitle', v)}
             style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }} />
           <label style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)' }}>BODY / HELPER CONTENT</label>
-          <textarea rows={6} value={current.body || ''} onChange={e => set('body', e.target.value)}
+          <TextArea rows={6} value={current.body || ''} onChange={v => set('body', v)}
             style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)', resize:'vertical' }} />
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:10 }}>
-            <input value={current.buttonLabel || ''} onChange={e => set('buttonLabel', e.target.value)} placeholder="Button label"
+            <Input value={current.buttonLabel || ''} onChange={v => set('buttonLabel', v)} placeholder="Button label"
               style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }} />
-            <input value={current.buttonHref || ''} onChange={e => set('buttonHref', e.target.value)} placeholder="/target-url"
+            <Input value={current.buttonHref || ''} onChange={v => set('buttonHref', v)} placeholder="/target-url"
               style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }} />
-            <select value={current.animation || 'none'} onChange={e => set('animation', e.target.value)}
-              style={{ background:'var(--bg3)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:6, padding:'12px 13px', fontFamily:'var(--font-mono)' }}>
-              {PAGE_ANIMATIONS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
-            </select>
+            <Select value={current.animation || 'none'} onChange={v => set('animation', v)}
+              options={PAGE_ANIMATIONS} />
           </div>
-          <label style={{ display:'flex', alignItems:'center', gap:10, fontFamily:'var(--font-mono)', color:'var(--text)' }}>
-            <input type="checkbox" checked={current.visible !== false} onChange={e => set('visible', e.target.checked)} />
-            Visible / enabled
-          </label>
+          <Checkbox checked={current.visible !== false} onChange={checked => set('visible', checked)} label="Visible / enabled" />
         </div>
       </div>
     </div>
@@ -396,11 +390,11 @@ function AdminProfilePanel() {
           </div>
         )}
         <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>NEW USERNAME</label>
-        <input value={unameForm.newUsername} onChange={e => setUnameForm(p => ({ ...p, newUsername: e.target.value }))}
+        <Input value={unameForm.newUsername} onChange={v => setUnameForm(p => ({ ...p, newUsername: v }))}
           placeholder="Enter new display name"
           style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 12 }} />
         <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>CURRENT PASSWORD (to confirm)</label>
-        <input type="password" value={unameForm.currentPassword} onChange={e => setUnameForm(p => ({ ...p, currentPassword: e.target.value }))}
+        <Input type="password" value={unameForm.currentPassword} onChange={v => setUnameForm(p => ({ ...p, currentPassword: v }))}
           placeholder="Your current password"
           style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', padding: '10px 12px', fontFamily: 'var(--font-mono)', fontSize: 11, outline: 'none', marginBottom: 14 }} />
         <button onClick={handleUsernameChange} disabled={unameSaving}
@@ -413,11 +407,11 @@ function AdminProfilePanel() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', padding: 24, marginBottom: 20 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)', marginBottom: 16 }}>CHANGE PASSWORD</div>
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div><label style={T.label}>Current Password</label><input type="password" value={form.currentPassword} onChange={e => set('currentPassword', e.target.value)} placeholder="" style={T.inp} required /></div>
-          <div><label style={T.label}>New Password</label><input type="password" value={form.newPassword} onChange={e => set('newPassword', e.target.value)} placeholder="" style={T.inp} required minLength={8} /></div>
-          <div><label style={T.label}>Confirm New Password</label><input type="password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} placeholder="" style={T.inp} required /></div>
+          <div><label style={T.label}>Current Password</label><Input type="password" value={form.currentPassword} onChange={v => set('currentPassword', v)} placeholder="" style={T.inp} required /></div>
+          <div><label style={T.label}>New Password</label><Input type="password" value={form.newPassword} onChange={v => set('newPassword', v)} placeholder="" style={T.inp} required minLength={8} /></div>
+          <div><label style={T.label}>Confirm New Password</label><Input type="password" value={form.confirmPassword} onChange={v => set('confirmPassword', v)} placeholder="" style={T.inp} required /></div>
           {twoFA.enabled && (
-            <div><label style={T.label}>2FA Code</label><input type="text" value={form.currentCode} onChange={e => set('currentCode', e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''))} placeholder="6-digit code or recovery code" style={T.inp} autoComplete="one-time-code" /></div>
+            <div><label style={T.label}>2FA Code</label><Input value={form.currentCode} onChange={v => set('currentCode', v.replace(/[^A-Za-z0-9 \-]/g, ''))} placeholder="6-digit code or recovery code" style={T.inp} autoComplete="one-time-code" /></div>
           )}
           {form.newPassword && form.confirmPassword && form.newPassword !== form.confirmPassword && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757' }}>❌ Passwords do not match</div>
@@ -479,11 +473,11 @@ function AdminProfilePanel() {
                 )}
                 <div>
                   <label style={T.label}>Confirm Code</label>
-                  <input
-                    type="text" inputMode="numeric" maxLength={7}
+                  <Input
+                    inputMode="numeric" maxLength={7}
                     placeholder="000 000"
                     value={twoFA.code}
-                    onChange={e => setTF({ code: e.target.value.replace(/[^0-9 ]/g, ''), error: '' })}
+                    onChange={v => setTF({ code: v.replace(/[^0-9 ]/g, ''), error: '' })}
                     style={{ ...T.inp, textAlign: 'center', fontSize: 18, letterSpacing: 6, width: 160 }}
                   />
                 </div>
@@ -543,15 +537,15 @@ function AdminProfilePanel() {
             </p>
             <div>
               <label style={T.label}>Current Password</label>
-              <input type="password" value={twoFA.regenPw} onChange={e => setTF({ regenPw: e.target.value, error: '' })} placeholder="" style={{ ...T.inp, maxWidth: 280 }} />
+              <Input type="password" value={twoFA.regenPw} onChange={v => setTF({ regenPw: v, error: '' })} placeholder="" style={{ ...T.inp, maxWidth: 280 }} />
             </div>
             <div>
               <label style={T.label}>Authenticator / Recovery Code</label>
-              <input
-                type="text" pattern="[A-Za-z0-9 \-]*" maxLength={23}
+              <Input
+                pattern="[A-Za-z0-9 \-]*" maxLength={23}
                 placeholder="000 000  ·  XXXX-XXXX-XXXX"
                 value={twoFA.code}
-                onChange={e => setTF({ code: e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''), error: '' })}
+                onChange={v => setTF({ code: v.replace(/[^A-Za-z0-9 \-]/g, ''), error: '' })}
                 style={{ ...T.inp, maxWidth: 260, textAlign: 'center', fontSize: 14, letterSpacing: 3, fontFamily: 'var(--font-mono)' }}
               />
             </div>
@@ -574,15 +568,15 @@ function AdminProfilePanel() {
             </p>
             <div>
               <label style={T.label}>Current Password</label>
-              <input type="password" value={twoFA.disablePw} onChange={e => setTF({ disablePw: e.target.value, error: '' })} placeholder="" style={{ ...T.inp, maxWidth: 280 }} />
+              <Input type="password" value={twoFA.disablePw} onChange={v => setTF({ disablePw: v, error: '' })} placeholder="" style={{ ...T.inp, maxWidth: 280 }} />
             </div>
             <div>
               <label style={T.label}>Authenticator / Recovery Code</label>
-              <input
-                type="text" pattern="[A-Za-z0-9 \-]*" maxLength={23}
+              <Input
+                pattern="[A-Za-z0-9 \-]*" maxLength={23}
                 placeholder="000 000  ·  XXXX-XXXX-XXXX"
                 value={twoFA.code}
-                onChange={e => setTF({ code: e.target.value.replace(/[^A-Za-z0-9 \-]/g, ''), error: '' })}
+                onChange={v => setTF({ code: v.replace(/[^A-Za-z0-9 \-]/g, ''), error: '' })}
                 style={{ ...T.inp, maxWidth: 260, textAlign: 'center', fontSize: 14, letterSpacing: 3, fontFamily: 'var(--font-mono)' }}
               />
             </div>
@@ -958,9 +952,9 @@ function AnnouncementsPanel() {
             {/* message */}
             <div>
               <label style={lbl}>Message</label>
-              <textarea
+              <TextArea
                 value={form.message}
-                onChange={e => set('message', e.target.value)}
+                onChange={v => set('message', v)}
                 placeholder="Site maintenance scheduled for Friday at 2AM UTC..."
                 rows={3}
                 className="ann-inp"
@@ -973,14 +967,14 @@ function AnnouncementsPanel() {
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
               <div>
                 <label style={lbl}>Link URL <span style={{ opacity: 0.45 }}>(opt.)</span></label>
-                <input className="ann-inp" value={form.link}
-                  onChange={e => set('link', e.target.value)}
+                <Input className="ann-inp" value={form.link}
+                  onChange={v => set('link', v)}
                   placeholder="https://..." style={inp} />
               </div>
               <div>
                 <label style={lbl}>Link Label</label>
-                <input className="ann-inp" value={form.linkLabel}
-                  onChange={e => set('linkLabel', e.target.value)}
+                <Input className="ann-inp" value={form.linkLabel}
+                  onChange={v => set('linkLabel', v)}
                   placeholder="Learn more" style={inp} />
               </div>
             </div>
@@ -1364,12 +1358,12 @@ function NewsletterPanel() {
                 <>
                   <div>
                     <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>SUBJECT *</label>
-                    <input value={bSubject} onChange={e => setBSubject(e.target.value)} placeholder="Monthly Update — April 2026"
+                    <Input value={bSubject} onChange={v => setBSubject(v)} placeholder="Monthly Update — April 2026"
                       style={{ ...T.inp, width: '100%', boxSizing: 'border-box', padding: '10px 12px' }} />
                   </div>
                   <div>
                     <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BODY *</label>
-                    <textarea value={bBody} onChange={e => setBBody(e.target.value)} rows={12} placeholder={'Hi there,\n\nHere is this month\'s update from aifazi.net...\n\nBest regards,\nTanvir'}
+                    <TextArea value={bBody} onChange={v => setBBody(v)} rows={12} placeholder={'Hi there,\n\nHere is this month\'s update from aifazi.net...\n\nBest regards,\nTanvir'}
                       style={{ ...T.inp, width: '100%', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.7, padding: '10px 12px' }} />
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
                       {bBody.trim().split(/\s+/).filter(Boolean).length} words · Plain text, line breaks preserved
@@ -1403,7 +1397,7 @@ function NewsletterPanel() {
       )}
 
       <div style={T.card}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by email" style={{ ...T.inp, width: '100%', boxSizing: 'border-box', marginBottom: 16 }} />
+        <Input value={search} onChange={v => setSearch(v)} placeholder="Search by email" style={{ ...T.inp, width: '100%', boxSizing: 'border-box', marginBottom: 16 }} />
         {loading ? <div className="loader" /> : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
             {search ? 'No results for that search.' : 'No subscribers yet.'}

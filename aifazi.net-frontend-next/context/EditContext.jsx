@@ -6,6 +6,7 @@ import AnimationPicker from '../components/AnimationPicker'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { safeHref } from '@/lib/safeHref'
 import { isGsapAnimationValue, useGsapAnimation } from '@/lib/animate'
+import { Input, TextArea } from '@/core/forms'
 
 const SANITIZE_CONFIG = {
   ALLOWED_TAGS: ['b','i','u','em','strong','a','p','br','ul','ol','li','h1','h2','h3','h4','h5','h6','span','div','img','blockquote','code','pre','sup','sub','table','tr','td','th','hr'],
@@ -513,7 +514,7 @@ export function EditableNumber({ contentKey, defaultValue, suffix = '', style })
     if (parsed !== value) save(parsed)
   }
 
-  if (editing) return <input autoFocus value={draft} onChange={e => setDraft(e.target.value)} onBlur={commit} onKeyDown={e => e.key === 'Enter' && commit()} style={{ ...style, width: '80px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.5)', outline: 'none', padding: '2px 6px', color: 'inherit', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', borderRadius: 2, textAlign: 'center' }} />
+  if (editing) return <Input autoFocus value={draft} onChange={v => setDraft(v)} onBlur={commit} onKeyDown={e => e.key === 'Enter' && commit()} style={{ ...style, width: '80px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.5)', outline: 'none', padding: '2px 6px', color: 'inherit', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', borderRadius: 2, textAlign: 'center' }} />
 
   return <span style={{ ...style, cursor: 'text', borderBottom: '1px dashed rgba(0,255,136,0.35)' }} onClick={() => setEditing(true)} title="Click to edit">{value}{suffix}</span>
 }
@@ -712,10 +713,10 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
                 {field.type === 'emoji'
                   ? <IconField value={draft[field.key] ?? ''} onChange={val => setDraft(d => ({ ...d, [field.key]: val }))} />
                   : field.type === 'textarea'
-                  ? <textarea value={draft[field.key] ?? ''} rows={3} onChange={e => setDraft(d => ({ ...d, [field.key]: e.target.value }))} style={modalInput} />
+                  ? <TextArea value={draft[field.key] ?? ''} rows={3} onChange={v => setDraft(d => ({ ...d, [field.key]: v }))} style={modalInput} />
                   : field.type === 'tags'
-                    ? <input value={Array.isArray(draft[field.key]) ? draft[field.key].join(', ') : draft[field.key] ?? ''} onChange={e => setDraft(d => ({ ...d, [field.key]: e.target.value.split(',').map(t => t.trim()).filter(Boolean) }))} placeholder="tag1, tag2, tag3" style={modalInput} />
-                    : <input type={field.type || 'text'} value={draft[field.key] ?? ''} onChange={e => setDraft(d => ({ ...d, [field.key]: field.type === 'number' ? Number(e.target.value) : e.target.value }))} style={modalInput} />
+                    ? <Input value={Array.isArray(draft[field.key]) ? draft[field.key].join(', ') : draft[field.key] ?? ''} onChange={v => setDraft(d => ({ ...d, [field.key]: v.split(',').map(t => t.trim()).filter(Boolean) }))} placeholder="tag1, tag2, tag3" style={modalInput} />
+                    : <Input type={field.type || 'text'} value={draft[field.key] ?? ''} onChange={v => setDraft(d => ({ ...d, [field.key]: field.type === 'number' ? Number(v) : v }))} style={modalInput} />
                 }
               </div>
             ))}
@@ -1100,7 +1101,7 @@ function ContentSearchPalette({ open, query, onQuery, onClose }) {
       }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 13, opacity: 0.6 }}>🔍</span>
-          <input autoFocus value={query} onChange={e => onQuery(e.target.value)} placeholder="Search content keys on this page…"
+          <Input autoFocus value={query} onChange={v => onQuery(v)} placeholder="Search content keys on this page…"
             spellCheck={false} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13 }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>ESC</span>
         </div>
@@ -1480,7 +1481,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>IMAGE URL</label>
               <div style={{ display: 'flex', gap: 6 }}>
-                <input value={draftUrl} onChange={e => setDraftUrl(e.target.value)} spellCheck={false} style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+                <Input value={draftUrl} onChange={v => setDraftUrl(v)} spellCheck={false} style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
                 <input ref={fileRef} type="file" accept="image/*" onChange={onPickFile} style={{ display: 'none' }} />
                 <button onClick={() => fileRef.current?.click()} disabled={uploading} style={{
                   fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 12px', flexShrink: 0, cursor: uploading ? 'not-allowed' : 'pointer',
@@ -1490,7 +1491,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>ALT TEXT</label>
-              <input value={draftAlt} onChange={e => setDraftAlt(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+              <Input value={draftAlt} onChange={v => setDraftAlt(v)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>
@@ -1560,11 +1561,11 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>LABEL</label>
-              <input value={draftLabel} onChange={e => setDraftLabel(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+              <Input value={draftLabel} onChange={v => setDraftLabel(v)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DESTINATION URL</label>
-              <input value={draftHref} onChange={e => setDraftHref(e.target.value)} spellCheck={false} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
+              <Input value={draftHref} onChange={v => setDraftHref(v)} spellCheck={false} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setOpen(false)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}>CANCEL</button>

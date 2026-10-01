@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { Checkbox, Input, Select } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
@@ -107,56 +108,47 @@ export default function CouponsTab() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 10 }}>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>CODE</label>
-              <input value={form.code} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="SAVE20" style={{ ...input, width: '100%' }} />
+              <Input value={form.code} onChange={(v) => setForm({ ...form, code: v.toUpperCase() })} placeholder="SAVE20" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>TYPE</label>
-              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={{ ...input, width: '100%' }}>
-                <option value="percent">Percent %</option>
-                <option value="fixed">Fixed $</option>
-              </select>
+              <Select value={form.type} onChange={(v) => setForm({ ...form, type: v })} options={[{ value: 'percent', label: 'Percent %' }, { value: 'fixed', label: 'Fixed $' }]} style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{form.type === 'percent' ? 'PERCENT (0–100)' : 'AMOUNT (CENTS)'}</label>
-              <input type="number" value={form.type === 'percent' ? form.value_percent : form.value_cents} onChange={e => setForm(form.type === 'percent' ? { ...form, value_percent: Number(e.target.value) } : { ...form, value_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.type === 'percent' ? form.value_percent : form.value_cents} onChange={(v) => setForm(form.type === 'percent' ? { ...form, value_percent: Number(v) } : { ...form, value_cents: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>MIN SUBTOTAL (CENTS)</label>
-              <input type="number" value={form.min_subtotal_cents} onChange={e => setForm({ ...form, min_subtotal_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.min_subtotal_cents} onChange={(v) => setForm({ ...form, min_subtotal_cents: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>MAX USES (0 = ∞)</label>
-              <input type="number" value={form.max_uses} onChange={e => setForm({ ...form, max_uses: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.max_uses} onChange={(v) => setForm({ ...form, max_uses: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PER-USER LIMIT (0 = ∞)</label>
-              <input type="number" value={form.per_user_limit} onChange={e => setForm({ ...form, per_user_limit: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.per_user_limit} onChange={(v) => setForm({ ...form, per_user_limit: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>STARTS</label>
-              <input type="datetime-local" value={form.starts_at || ''} onChange={e => setForm({ ...form, starts_at: e.target.value })} style={{ ...input, width: '100%' }} />
+              <Input type="datetime-local" value={form.starts_at || ''} onChange={(v) => setForm({ ...form, starts_at: v })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>EXPIRES</label>
-              <input type="datetime-local" value={form.expires_at || ''} onChange={e => setForm({ ...form, expires_at: e.target.value })} style={{ ...input, width: '100%' }} />
+              <Input type="datetime-local" value={form.expires_at || ''} onChange={(v) => setForm({ ...form, expires_at: v })} style={{ ...input, width: '100%' }} />
             </div>
           </div>
 
           <div style={{ marginTop: 12 }}>
             <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>DESCRIPTION</label>
-            <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="10% off for launch week" style={{ ...input, width: '100%' }} />
+            <Input value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="10% off for launch week" style={{ ...input, width: '100%' }} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
-            <select value={pid} onChange={e => setPid(e.target.value)} style={{ ...input }}>
-              <option value="">+ restrict to product…</option>
-              {products.filter(p => !form.product_ids.includes(p.id)).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <Select value={pid} onChange={(v) => setPid(v)} options={[{ value: '', label: '+ restrict to product…' }, ...products.filter(p => !form.product_ids.includes(p.id)).map(p => ({ value: String(p.id), label: p.name }))]} />
             <button onClick={addProduct} disabled={!pid} style={{ fontFamily: MONO, fontSize: 11, padding: '8px 12px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: pid ? 'pointer' : 'not-allowed' }}>+ PRODUCT</button>
-            <select value={cid} onChange={e => setCid(e.target.value)} style={{ ...input }}>
-              <option value="">+ restrict to category…</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <Select value={cid} onChange={(v) => setCid(v)} options={[{ value: '', label: '+ restrict to category…' }, ...categories.map(c => ({ value: String(c.id), label: c.name }))]} />
             <button onClick={addCat} disabled={!cid} style={{ fontFamily: MONO, fontSize: 11, padding: '8px 12px', background: 'rgba(250,204,21,.1)', border: '1px solid rgba(250,204,21,.4)', color: Y, borderRadius: 6, cursor: cid ? 'pointer' : 'not-allowed' }}>+ CATEGORY</button>
           </div>
 
@@ -173,9 +165,7 @@ export default function CouponsTab() {
             ) })()}
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> Active
-          </label>
+          <Checkbox checked={form.active} onChange={(checked) => setForm({ ...form, active: checked })} label="Active" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }} />
 
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE COUPON'}</button>

@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react'
 import api from '@/lib/api'
-import { Checkbox, Select } from '../../core/ui.jsx'
+import { Checkbox, Input, Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { SITE_URL } from '@/lib/config'
 
@@ -327,7 +327,7 @@ function MailSettings() {
                       </button>
                     </div>
                   ) : (
-                    <input type="password" value={cfg.brevoApiKey || ''} onChange={e => set('brevoApiKey', e.target.value)}
+                    <Input type="password" value={cfg.brevoApiKey || ''} onChange={(v) => set('brevoApiKey', v)}
                       placeholder="xkeysib-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       style={T.inp} autoComplete="new-password" autoFocus />
                   )}
@@ -338,7 +338,7 @@ function MailSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>From Email <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input type="email" value={cfg.brevoFromEmail || ''} onChange={e => set('brevoFromEmail', e.target.value)}
+                    <Input type="email" value={cfg.brevoFromEmail || ''} onChange={(v) => set('brevoFromEmail', v)}
                       placeholder="noreply@yourdomain.com"
                       style={{ ...T.inp, borderColor: isBrevoRelayAddress(cfg.brevoFromEmail) ? '#ff4757' : undefined }} />
                     {isBrevoRelayAddress(cfg.brevoFromEmail) && (
@@ -352,7 +352,7 @@ function MailSettings() {
                   </div>
                   <div>
                     <label style={T.label}>From Name</label>
-                    <input value={cfg.brevoFromName || ''} onChange={e => set('brevoFromName', e.target.value)}
+                    <Input value={cfg.brevoFromName || ''} onChange={(v) => set('brevoFromName', v)}
                       placeholder="T.Tanvir Community" style={T.inp} />
                   </div>
                 </div>
@@ -392,7 +392,7 @@ function MailSettings() {
                       </button>
                     </div>
                   ) : (
-                    <input type="password" value={cfg.resendApiKey || ''} onChange={e => set('resendApiKey', e.target.value)}
+                    <Input type="password" value={cfg.resendApiKey || ''} onChange={(v) => set('resendApiKey', v)}
                       placeholder="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       style={T.inp} autoComplete="new-password" autoFocus />
                   )}
@@ -403,13 +403,13 @@ function MailSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>From Email <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input type="email" value={cfg.resendFromEmail || ''} onChange={e => set('resendFromEmail', e.target.value)}
+                    <Input type="email" value={cfg.resendFromEmail || ''} onChange={(v) => set('resendFromEmail', v)}
                       placeholder="noreply@yourdomain.com" style={T.inp} />
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Must match a verified domain in Resend</div>
                   </div>
                   <div>
                     <label style={T.label}>From Name</label>
-                    <input value={cfg.resendFromName || ''} onChange={e => set('resendFromName', e.target.value)}
+                    <Input value={cfg.resendFromName || ''} onChange={(v) => set('resendFromName', v)}
                       placeholder="T.Tanvir Community" style={T.inp} />
                   </div>
                 </div>
@@ -452,12 +452,12 @@ function MailSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 100px 140px', gap: 10 }}>
                   <div>
                     <label style={T.label}>SMTP Host <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.smtpHost || ''} onChange={e => set('smtpHost', e.target.value)}
+                    <Input value={cfg.smtpHost || ''} onChange={(v) => set('smtpHost', v)}
                       placeholder="smtp.example.com" style={T.inp} />
                   </div>
                   <div>
                     <label style={T.label}>Port</label>
-                    <input type="number" value={cfg.smtpPort || 587} onChange={e => set('smtpPort', parseInt(e.target.value))} style={T.inp} />
+                    <Input type="number" value={cfg.smtpPort || 587} onChange={(v) => set('smtpPort', parseInt(v))} style={T.inp} />
                   </div>
                   <div>
                     <label style={T.label}>Encryption</label>
@@ -468,12 +468,12 @@ function MailSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Username <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.smtpUsername || ''} onChange={e => set('smtpUsername', e.target.value)}
+                    <Input value={cfg.smtpUsername || ''} onChange={(v) => set('smtpUsername', v)}
                       placeholder="your@email.com" style={T.inp} autoComplete="username" />
                   </div>
                   <div>
                     <label style={T.label}>Password <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input type="password" value={cfg.smtpPassword || ''} onChange={e => set('smtpPassword', e.target.value)}
+                    <Input type="password" value={cfg.smtpPassword || ''} onChange={(v) => set('smtpPassword', v)}
                       placeholder="App password or SMTP password" style={T.inp} autoComplete="new-password" />
                     <p style={{ margin: '4px 0 0', fontSize: 12, color: '#f39c12' }}>
                       If your mail server uses LDAP auth, update this password whenever you change it in LDAP.
@@ -483,12 +483,12 @@ function MailSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>From Name</label>
-                    <input value={cfg.smtpFromName || ''} onChange={e => set('smtpFromName', e.target.value)}
+                    <Input value={cfg.smtpFromName || ''} onChange={(v) => set('smtpFromName', v)}
                       placeholder="T.Tanvir Community" style={T.inp} />
                   </div>
                   <div>
                     <label style={T.label}>From Email</label>
-                    <input type="email" value={cfg.smtpFromEmail || ''} onChange={e => set('smtpFromEmail', e.target.value)}
+                    <Input type="email" value={cfg.smtpFromEmail || ''} onChange={(v) => set('smtpFromEmail', v)}
                       placeholder="noreply@yourdomain.com" style={T.inp} />
                   </div>
                 </div>
@@ -515,7 +515,7 @@ function MailSettings() {
           <div style={{ marginTop: 16, ...T.card, background: 'var(--bg)' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 12 }}>SEND TEST EMAIL</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input value={testTo} onChange={e => setTestTo(e.target.value)} type="email"
+              <Input value={testTo} onChange={(v) => setTestTo(v)} type="email"
                 placeholder="Send a test email to..." style={{ ...T.inp, flex: 1 }} />
               <button onClick={sendTest} disabled={testing || !testTo} style={{ ...T.btn('secondary'), opacity: !testTo ? 0.4 : 1 }}>
                 📤 SEND TEST
@@ -575,12 +575,12 @@ function MailSettings() {
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 100px 140px', gap: 10 }}>
                 <div>
                   <label style={T.label}>Host <span style={{ color: '#ff4757' }}>*</span></label>
-                  <input value={cfg.incomingHost || ''} onChange={e => set('incomingHost', e.target.value)}
+                  <Input value={cfg.incomingHost || ''} onChange={(v) => set('incomingHost', v)}
                     placeholder={cfg.incomingProtocol === 'imap' ? 'imap.gmail.com' : 'pop.gmail.com'} style={T.inp} />
                 </div>
                 <div>
                   <label style={T.label}>Port</label>
-                  <input type="number" value={cfg.incomingPort || 993} onChange={e => set('incomingPort', parseInt(e.target.value))} style={T.inp} />
+                  <Input type="number" value={cfg.incomingPort || 993} onChange={(v) => set('incomingPort', parseInt(v))} style={T.inp} />
                 </div>
                 <div>
                   <label style={T.label}>Encryption</label>
@@ -591,19 +591,19 @@ function MailSettings() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={T.label}>Username / Email <span style={{ color: '#ff4757' }}>*</span></label>
-                  <input value={cfg.incomingUsername || ''} onChange={e => set('incomingUsername', e.target.value)}
+                  <Input value={cfg.incomingUsername || ''} onChange={(v) => set('incomingUsername', v)}
                     placeholder="your@email.com" style={T.inp} />
                 </div>
                 <div>
                   <label style={T.label}>Password <span style={{ color: '#ff4757' }}>*</span></label>
-                  <input type="password" value={cfg.incomingPassword || ''} onChange={e => set('incomingPassword', e.target.value)}
+                  <Input type="password" value={cfg.incomingPassword || ''} onChange={(v) => set('incomingPassword', v)}
                     placeholder="" style={T.inp} autoComplete="new-password" />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={T.label}>Mailbox Folder</label>
-                  <input value={cfg.incomingFolder || 'INBOX'} onChange={e => set('incomingFolder', e.target.value)} style={T.inp} />
+                  <Input value={cfg.incomingFolder || 'INBOX'} onChange={(v) => set('incomingFolder', v)} style={T.inp} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 24 }}>
                   <Checkbox
@@ -638,19 +638,19 @@ function MailSettings() {
             <div style={{ display: 'grid', gap: 16 }}>
               <div>
                 <label style={T.label}>Site Name</label>
-                <input value={cfg.siteName || ''} onChange={e => set('siteName', e.target.value)}
+                <Input value={cfg.siteName || ''} onChange={(v) => set('siteName', v)}
                   placeholder="T.Tanvir Community" style={T.inp} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Appears in email subject lines and footers</div>
               </div>
               <div>
                 <label style={T.label}>Site URL</label>
-                <input value={cfg.siteUrl || ''} onChange={e => set('siteUrl', e.target.value)}
+                <Input value={cfg.siteUrl || ''} onChange={(v) => set('siteUrl', v)}
                   placeholder={SITE_URL} style={T.inp} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Used to generate links in verification and reset emails</div>
               </div>
               <div>
                 <label style={T.label}>Global Reply-To Address</label>
-                <input type="email" value={cfg.replyTo || ''} onChange={e => set('replyTo', e.target.value)}
+                <Input type="email" value={cfg.replyTo || ''} onChange={(v) => set('replyTo', v)}
                   placeholder="support@yourdomain.com" style={T.inp} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>When set, all emails include this Reply-To header</div>
               </div>
@@ -660,7 +660,7 @@ function MailSettings() {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 3, marginBottom: 16 }}>ADMIN NOTIFICATIONS EMAIL</div>
             <div>
               <label style={T.label}>Send Admin Alerts To</label>
-              <input type="email" value={cfg.adminNotifyEmail || ''} onChange={e => set('adminNotifyEmail', e.target.value)}
+              <Input type="email" value={cfg.adminNotifyEmail || ''} onChange={(v) => set('adminNotifyEmail', v)}
                 placeholder="admin@yourdomain.com" style={T.inp} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Receives all system alerts  contact form submissions, new users, login alerts etc.</div>
             </div>
