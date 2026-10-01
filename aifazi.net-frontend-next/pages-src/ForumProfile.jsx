@@ -4,7 +4,7 @@ import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
 import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
 import { useForum } from '../context/ForumContext'
-import { Select, useDialog } from '../core/ui.jsx'
+import { Input, Select, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
@@ -693,10 +693,9 @@ function OrdersDocumentsTab({ user }) {
         </label>
       }>
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-          <input value={docName} onChange={e => setDocName(e.target.value)} placeholder="Document name (optional)" style={inputStyle} />
-          <select value={docCategory} onChange={e => setDocCategory(e.target.value)} style={{ ...inputStyle, maxWidth: 140 }}>
-            {['other', 'id', 'license', 'proof', 'contract'].map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+          <Input value={docName} onChange={v => setDocName(v)} placeholder="Document name (optional)" style={inputStyle} />
+          <Select value={docCategory} onChange={v => setDocCategory(v)} style={{ maxWidth: 140 }}
+            options={['other', 'id', 'license', 'proof', 'contract'].map(c => ({ value: String(c), label: c }))} />
         </div>
         {docsLoading ? <div className="loader" /> : docs.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>No documents uploaded yet. Upload an ID, license or proof document above.</div>

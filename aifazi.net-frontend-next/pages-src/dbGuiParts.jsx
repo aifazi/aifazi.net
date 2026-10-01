@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDialog } from '../core/dialog.jsx'
 import { useNotify } from '../core/notify.jsx'
 import { Checkbox, Select } from '../core/ui.jsx'
+import { Input, TextArea } from '@/core/forms'
 import Clickable from '../core/Clickable.jsx'
 import api from '../lib/api'
 
@@ -258,7 +259,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                   </div>
                 ) : (
                   <div>
-                    <input value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Ban reason (optional)" aria-label="Ban reason" style={{...inp, marginBottom:10}} />
+                    <Input value={banReason} onChange={(v) => setBanReason(v)} placeholder="Ban reason (optional)" aria-label="Ban reason" style={{...inp, marginBottom:10}} />
                     <Btn label={busy==="ban"?"BANNING...":"BAN BAN USER"} danger disabled={!!busy} onClick={() => run("ban",`users/${u._id}/ban`,{reason:banReason})} />
                   </div>
                 )}
@@ -279,7 +280,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                 WARN Immediately changes the password with no notification to the user.
               </div>
               <div style={{ position:"relative", marginBottom:10 }}>
-                <input type={showPass?"text":"password"} value={newPass} onChange={e => setNewPass(e.target.value)}
+                <Input type={showPass?"text":"password"} value={newPass} onChange={(v) => setNewPass(v)}
                   placeholder="New password (min 8 chars)" aria-label="New password" style={{...inp, paddingRight:40}} />
                 <button onClick={() => setShowPass(p=>!p)} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:"var(--muted)", cursor:"pointer", fontSize:13 }}>{showPass?"HIDE":"SHOW"}</button>
               </div>
@@ -327,8 +328,8 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {tab==="email" && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>SEND EMAIL TO {u.email}</div>
-              <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Subject" aria-label="Email subject" style={{...inp, marginBottom:10}} />
-              <textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} placeholder="Message body..." rows={6} aria-label="Email body"
+              <Input value={emailSubject} onChange={(v) => setEmailSubject(v)} placeholder="Subject" aria-label="Email subject" style={{...inp, marginBottom:10}} />
+              <TextArea value={emailBody} onChange={(v) => setEmailBody(v)} placeholder="Message body..." rows={6} aria-label="Email body"
                 style={{...inp, resize:"vertical", marginBottom:12, lineHeight:1.6}} />
               <Btn label={busy==="send-email"?"SENDING...":` EMAIL SEND EMAIL`} color="var(--cyan,var(--cyan))"
                 disabled={!emailSubject.trim()||!emailBody.trim()||!!busy}
@@ -404,8 +405,8 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
                   {key.toUpperCase()}{isRO&&<span style={{color:"var(--border)"}}> (READ-ONLY)</span>}
                 </div>
                 {isLong
-                  ? <textarea value={val} onChange={e => setFields(f=>({...f,[key]:e.target.value}))} readOnly={isRO} rows={Math.min(8,val.split("\n").length+1)} style={{...inp, border:`1px solid ${isRO?"var(--border)":"var(--border)"}`, color:isRO?"var(--border)":"var(--text)", resize:"vertical"}} />
-                  : <input    value={val} onChange={e => setFields(f=>({...f,[key]:e.target.value}))} readOnly={isRO}                                                 style={{...inp, border:`1px solid ${isRO?"var(--border)":"var(--border)"}`, color:isRO?"var(--border)":"var(--text)"}} />
+                  ? <TextArea value={val} onChange={(v) => setFields(f=>({...f,[key]:v}))} readOnly={isRO} rows={Math.min(8,val.split("\n").length+1)} style={{...inp, border:`1px solid ${isRO?"var(--border)":"var(--border)"}`, color:isRO?"var(--border)":"var(--text)", resize:"vertical"}} />
+                  : <Input    value={val} onChange={(v) => setFields(f=>({...f,[key]:v}))} readOnly={isRO}                                                 style={{...inp, border:`1px solid ${isRO?"var(--border)":"var(--border)"}`, color:isRO?"var(--border)":"var(--text)"}} />
                 }
               </div>
             );
@@ -535,7 +536,7 @@ function CollectionBrowser({ token, toast }) {
 
       {/* Search */}
       <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){setPage(1);setQuery(search);}}}
+        <Input value={search} onChange={(v)=>setSearch(v)} onKeyDown={e=>{if(e.key==="Enter"){setPage(1);setQuery(search);}}}
           placeholder={`Search ${coll}...`} aria-label={`Search ${coll}`}
           style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"8px 12px", outline:"none" }} />
         <button onClick={()=>{setPage(1);setQuery(search);}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"8px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,var(--cyan))", border:"1px solid var(--cyan)33", cursor:"pointer" }}>SEARCH</button>
@@ -702,7 +703,7 @@ function ExportPanel({ token, toast, stats }) {
           </div>
           <div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:8 }}>MAX RECORDS</div>
-            <input type="number" value={limit} onChange={e => setLimit(Math.max(1, Math.min(10000, Number(e.target.value))))} style={inp} min={1} max={10000} />
+            <Input type="number" value={limit} onChange={(v) => setLimit(Math.max(1, Math.min(10000, Number(v))))} style={inp} min={1} max={10000} />
           </div>
         </div>
         <div style={{ padding:"12px 14px", background:"color-mix(in srgb, var(--green) 3%, transparent)", border:"1px solid var(--green)20", fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)", lineHeight:1.6 }}>
@@ -767,15 +768,15 @@ function QueryPanel({ token, toast }) {
           </div>
           <div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>SEARCH FIELD</div>
-            <input value={filterKey} onChange={e => setFilterKey(e.target.value)} placeholder="e.g. email, username" style={inp} />
+            <Input value={filterKey} onChange={(v) => setFilterKey(v)} placeholder="e.g. email, username" style={inp} />
           </div>
           <div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>SEARCH VALUE</div>
-            <input value={filterVal} onChange={e => setFilterVal(e.target.value)} placeholder="search text..." style={inp} onKeyDown={e => e.key==="Enter" && runQuery()} />
+            <Input value={filterVal} onChange={(v) => setFilterVal(v)} placeholder="search text..." style={inp} onKeyDown={e => e.key==="Enter" && runQuery()} />
           </div>
           <div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>LIMIT</div>
-            <input type="number" value={limit} onChange={e => setLimit(Math.max(1,Math.min(100,Number(e.target.value))))} style={inp} min={1} max={100} />
+            <Input type="number" value={limit} onChange={(v) => setLimit(Math.max(1,Math.min(100,Number(v))))} style={inp} min={1} max={100} />
           </div>
         </div>
         <button onClick={runQuery} disabled={loading} style={{ padding:"11px 28px", background:"var(--cyan,var(--cyan))", color:"#000", fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, fontWeight:700, border:"none", cursor:"pointer" }}>

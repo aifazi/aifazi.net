@@ -4,7 +4,7 @@ import { Link, useNavigate } from '@/lib/router-compat'
 import api, { getAuthToken, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { UserAvatar } from '@/lib/avatar'
-import { Checkbox, Select } from '../core/ui.jsx'
+import { Checkbox, Input, Select } from '../core/ui.jsx'
 import {
   S, StatCard, useNotify, ConfirmModal, UserEditModal, ThreadEditModal, ReplyEditModal, BanModal, Pagination,
 } from './forumAdminModals'
@@ -350,16 +350,16 @@ export default function ForumAdmin({ embedded = false }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <label style={S.label}>NAME *</label>
-                <input value={catForm.name} onChange={e => setCatForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. General Discussion" maxLength={100} style={S.input} />
+                <Input value={catForm.name} onChange={v => setCatForm(f => ({ ...f, name: v }))} placeholder="e.g. General Discussion" maxLength={100} style={S.input} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{catForm.name.length}/100</div>
               </div>
               <div>
                 <label style={S.label}>ICON (emoji)</label>
-                <input value={catForm.icon} onChange={e => setCatForm(f => ({ ...f, icon: e.target.value }))} placeholder="💬" style={{ ...S.input, width: 80 }} />
+                <Input value={catForm.icon} onChange={v => setCatForm(f => ({ ...f, icon: v }))} placeholder="💬" style={{ ...S.input, width: 80 }} />
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={S.label}>DESCRIPTION</label>
-                <input value={catForm.description} onChange={e => setCatForm(f => ({ ...f, description: e.target.value }))} placeholder="What this category is about..." maxLength={500} style={S.input} />
+                <Input value={catForm.description} onChange={v => setCatForm(f => ({ ...f, description: v }))} placeholder="What this category is about..." maxLength={500} style={S.input} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{catForm.description.length}/500</div>
               </div>
               <div>
@@ -373,7 +373,7 @@ export default function ForumAdmin({ embedded = false }) {
               </div>
               <div>
                 <label style={S.label}>ORDER (lower = first)</label>
-                <input type="number" value={catForm.order} onChange={e => setCatForm(f => ({ ...f, order: Number(e.target.value) }))} style={{ ...S.input, width: 80 }} />
+                <Input type="number" value={catForm.order} onChange={v => setCatForm(f => ({ ...f, order: Number(v) }))} style={{ ...S.input, width: 80 }} />
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={S.label}>PERMISSIONS MATRIX</label>
@@ -395,14 +395,13 @@ export default function ForumAdmin({ embedded = false }) {
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{perm.label}</div>
                       {ROLE_OPTIONS.map(r => (
                         <label key={r} style={{ display: 'flex', justifyContent: 'center' }}>
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={(catForm[perm.key] || []).includes(r)}
-                            onChange={e => {
+                            onChange={checked => {
                               const arr = catForm[perm.key] || []
                               setCatForm(f => ({
                                 ...f,
-                                [perm.key]: e.target.checked ? [...arr, r] : arr.filter(p => p !== r)
+                                [perm.key]: checked ? [...arr, r] : arr.filter(p => p !== r)
                               }))
                             }}
                             style={{ accentColor: 'var(--cyan)' }}
@@ -464,7 +463,7 @@ export default function ForumAdmin({ embedded = false }) {
       {/* ── USERS ── */}
       {tab === 'users' && (
         <div>
-          <input value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1) }}
+          <Input value={userSearch} onChange={v => { setUserSearch(v); setUserPage(1) }}
             placeholder="🔍 Search by username or email..." style={{ ...S.input, marginBottom: 16 }} />
 
           {loading
@@ -524,7 +523,7 @@ export default function ForumAdmin({ embedded = false }) {
       {/* ── THREADS ── */}
       {tab === 'threads' && (
         <div>
-          <input value={threadSearch} onChange={e => { setThreadSearch(e.target.value); setThreadPage(1) }}
+          <Input value={threadSearch} onChange={v => { setThreadSearch(v); setThreadPage(1) }}
             placeholder="🔍 Search threads by title or content..." style={{ ...S.input, marginBottom: 16 }} />
 
           {loading
@@ -574,7 +573,7 @@ export default function ForumAdmin({ embedded = false }) {
       {/* ── REPLIES ── */}
       {tab === 'replies' && (
         <div>
-          <input value={replySearch} onChange={e => { setReplySearch(e.target.value); setReplyPage(1) }}
+          <Input value={replySearch} onChange={v => { setReplySearch(v); setReplyPage(1) }}
             placeholder="🔍 Search reply content..." style={{ ...S.input, marginBottom: 16 }} />
 
           {loading

@@ -8,6 +8,7 @@ import { notify } from '../core/notify.jsx'
 import { Card, Badge, NeonButton, Avatar, RoleBadge, timeAgo } from '../components/community'
 import { MediaAttachment, MediaUploader } from '../components/MediaPreview'
 import { ErrorRetry } from '../core/Feedback.jsx'
+import { TextArea } from '@/core/forms'
 
 const EMOJIS = ['👍', '❤️', '🔥', '😂', '😮']
 
@@ -320,7 +321,7 @@ export default function ForumThread() {
 
           {editingThread ? (
             <div style={{ marginBottom: 20 }}>
-              <textarea value={editThreadText} onChange={e => setEditThreadText(e.target.value)}
+              <TextArea value={editThreadText} onChange={v => setEditThreadText(v)}
                 rows={8} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '10px 14px', outline: 'none', resize: 'vertical' }} />
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <NeonButton variant="outline-green" size="sm" onClick={handleEditThread}>Save</NeonButton>
@@ -389,7 +390,7 @@ export default function ForumThread() {
 
                     {editingReply === reply._id ? (
                       <div>
-                        <textarea value={editText} onChange={e => setEditText(e.target.value)}
+                        <TextArea value={editText} onChange={v => setEditText(v)}
                           rows={4} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '10px 14px', outline: 'none', resize: 'vertical' }} />
                         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                           <NeonButton variant="outline-green" size="sm" onClick={() => handleEditReply(reply._id)}>Save</NeonButton>
@@ -420,7 +421,7 @@ export default function ForumThread() {
         {!thread.locked && user ? (
           <Card style={{ padding: 'clamp(20px, 3vw, 30px)', marginTop: 34 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 2, marginBottom: 16 }}>POST A REPLY</div>
-            <textarea ref={replyRef} value={replyText} onChange={e => setReplyText(e.target.value)}
+            <TextArea ref={replyRef} value={replyText} onChange={v => setReplyText(v)}
               placeholder="Write your reply..."
               rows={5} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 15, padding: '12px 16px', outline: 'none', resize: 'vertical' }}
             />

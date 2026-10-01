@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useDialog } from "../core/dialog.jsx";
 import { useNotify } from "../core/notify.jsx";
 import { Checkbox, Select } from "../core/ui.jsx";
+import { Input } from '@/core/forms'
 import Clickable from "../core/Clickable.jsx";
 import { getAuthToken } from "../lib/api";
 import api from "../lib/api";  // <- use the internal axios proxy (handles /api prefix + auth token)
@@ -102,7 +103,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         <div style={{ fontSize: 11, letterSpacing:4, color:"var(--green,var(--green))", marginBottom:10 }}>{'// AIFAZI.NET'}</div>
         <div style={{ fontSize:24, fontWeight:700, color:"var(--text)", marginBottom:6 }}>DB Monitor</div>
         <div style={{ fontSize:11, color:"var(--muted)", marginBottom:28, lineHeight:1.7 }}>Paste your admin JWT token to connect. Stored in memory only - clears on refresh.</div>
-        <input type="password" value={tokenInput} onChange={e=>setTokenInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&tokenInput&&setToken(tokenInput)}
+        <Input type="password" value={tokenInput} onChange={(v)=>setTokenInput(v)} onKeyDown={e=>e.key==="Enter"&&tokenInput&&setToken(tokenInput)}
           placeholder="eyJhbGciOiJIUzI1NiIs..." autoFocus
           style={{ width:"100%", background:"var(--bg)", border:"1px solid var(--border)", borderRadius:5, color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:12, padding:"12px 14px", outline:"none", marginBottom:14, boxSizing:"border-box" }} />
         <button onClick={()=>tokenInput&&setToken(tokenInput)} disabled={!tokenInput}

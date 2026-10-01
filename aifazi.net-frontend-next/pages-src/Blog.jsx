@@ -7,6 +7,7 @@ import { BlogCardSkeleton } from '../components/Skeleton'
 import PageMeta from '../components/PageMeta'
 import { getSupabase } from '@/lib/supabase'
 import { Card, NeonButton, Badge, EmptyState } from '../components/community'
+import { Input } from '@/core/forms'
 
 const CATEGORIES = ['All', 'Networking', 'Security', 'Cloud', 'Linux', 'Tutorial', 'General']
 
@@ -119,7 +120,7 @@ export default function Blog({ initialPosts }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '26px 0 20px', marginBottom: 8 }}>
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
             <form onSubmit={handleSearch} style={{ display: 'flex', flex: 1, minWidth: 240, maxWidth: 420 }}>
-              <input value={searchInput} onChange={e => setSearchInput(e.target.value)}
+              <Input value={searchInput} onChange={v => setSearchInput(v)}
                 placeholder="Search posts..."
                 style={{
                   flex: 1, background: 'var(--bg2)', border: '1px solid var(--border)',

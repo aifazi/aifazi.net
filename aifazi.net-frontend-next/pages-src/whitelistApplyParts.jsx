@@ -5,6 +5,7 @@ import { Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { authProviderLoginRoute } from '@/lib/authRoutes'
 import { useFiveMRoute, useFiveMLoginRoute } from '@/lib/fivemRoutes'
+import { Input as CoreInput, TextArea as CoreTextArea } from '@/core/forms'
 
 const G = '#00FF88'
 const C = '#00D4FF'
@@ -38,7 +39,7 @@ function Field({ label, required, children, error, hint }) {
 
 function Input({ value, onChange, placeholder, type = 'text', disabled, readOnly }) {
   return (
-    <input type={type} value={value} onChange={e => onChange && onChange(e.target.value)}
+    <CoreInput type={type} value={value} onChange={(v) => onChange && onChange(v)}
       placeholder={placeholder} disabled={disabled} readOnly={readOnly}
       style={{
         background: readOnly ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'rgba(255,255,255,0.04)',
@@ -57,7 +58,7 @@ function Input({ value, onChange, placeholder, type = 'text', disabled, readOnly
 
 function TextArea({ value, onChange, placeholder, rows = 5, disabled }) {
   return (
-    <textarea value={value} onChange={e => onChange(e.target.value)}
+    <CoreTextArea value={value} onChange={(v) => onChange(v)}
       placeholder={placeholder} rows={rows} disabled={disabled}
       style={{
         background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',

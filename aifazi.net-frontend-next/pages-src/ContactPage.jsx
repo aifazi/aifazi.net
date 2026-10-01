@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from '@/lib/router-compat'
 import { useReveal } from '../hooks/useReveal'
 import { EditableText } from '../context/EditContext'
 import api from '@/lib/api'
-import { Select } from '../core/ui.jsx'
+import { Input, Select, TextArea } from '../core/ui.jsx'
 
 export default function ContactPage() {
   const navigate  = useNavigate()
@@ -100,11 +100,11 @@ export default function ContactPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="contact-name-row">
             <div className="form-group">
               <label>Your Name</label>
-              <input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="John Doe" required />
+              <Input value={form.name} onChange={v => setForm(f => ({...f, name: v}))} placeholder="John Doe" required />
             </div>
             <div className="form-group">
               <label>Email Address</label>
-              <input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="john@company.com" required />
+              <Input type="email" value={form.email} onChange={v => setForm(f => ({...f, email: v}))} placeholder="john@company.com" required />
             </div>
           </div>
 
@@ -117,7 +117,7 @@ export default function ContactPage() {
 
           <div className="form-group">
             <label>Message</label>
-            <textarea value={form.message} onChange={e => setForm(f => ({...f, message: e.target.value}))} rows={6} placeholder="Describe your project or inquiry..." required />
+            <TextArea value={form.message} onChange={v => setForm(f => ({...f, message: v}))} rows={6} placeholder="Describe your project or inquiry..." required />
           </div>
 
           {status && (

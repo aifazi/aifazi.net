@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
 import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
-import { Select } from '../core/ui.jsx'
+import { Input, Select } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 
@@ -103,11 +103,13 @@ function SectionCard({ title, tag, children, action, noPad }) {
   )
 }
 
-function Inp({ label, id, ...props }) {
+function Inp({ label, id, onChange, ...props }) {
   return (
     <div>
       {label && <label htmlFor={id} style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>}
-      <input id={id} {...props} style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
+      <Input id={id} {...props}
+        onChange={onChange ? (v, e) => onChange(e) : undefined}
+        style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',
         color: 'var(--text)', ...M, fontSize: 12, padding: '10px 13px', borderRadius: 10,
         outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s', ...props.style }}
         onFocus={e => { e.target.style.borderColor = 'var(--cyan)'; e.target.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--cyan) 12%, transparent)' }}

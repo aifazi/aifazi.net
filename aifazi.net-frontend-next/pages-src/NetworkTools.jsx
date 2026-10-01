@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { notify } from '../core/notify.jsx'
+import { Input } from '@/core/forms'
 import NetworkSim from '@/components/NetworkSim'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ const InfoCard = ({ icon, label, value, color, onClick }) => (
 const Field = ({ label, value, onChange, placeholder, color }) => (
   <div style={{ marginBottom: 12 }}>
     <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{label}</label>
-    <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+    <Input value={value} onChange={(v) => onChange(v)} placeholder={placeholder}
       style={{ ...S.input, color: color || 'var(--text)', fontFamily: 'var(--font-mono)' }} />
   </div>
 )
@@ -105,9 +106,9 @@ function SubnetCalc() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        <input
+        <Input
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(v) => setInput(v)}
           onKeyDown={e => e.key === 'Enter' && calculate()}
           placeholder="e.g. 192.168.1.0/24"
           style={{ ...S.input, minWidth: 160 }}
@@ -327,8 +328,8 @@ function IpInfo() {
     <div>
       {/* Search bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-        <input
-          value={ip} onChange={e => setIp(e.target.value)}
+        <Input
+          value={ip} onChange={(v) => setIp(v)}
           onKeyDown={e => e.key === 'Enter' && handleLookup()}
           placeholder="Enter IP address (blank = your IP)"
           style={{ ...S.input, minWidth: 180 }}
@@ -480,8 +481,8 @@ function WildcardCalc() {
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input value={network} onChange={e => setNetwork(e.target.value)} placeholder="Network IP" style={{ ...S.input, flex: '2 1 140px' }} />
-        <input value={cidr} onChange={e => setCidr(e.target.value)} placeholder="CIDR" style={{ ...S.input, flex: '1 1 60px', maxWidth: 90 }} />
+        <Input value={network} onChange={(v) => setNetwork(v)} placeholder="Network IP" style={{ ...S.input, flex: '2 1 140px' }} />
+        <Input value={cidr} onChange={(v) => setCidr(v)} placeholder="CIDR" style={{ ...S.input, flex: '1 1 60px', maxWidth: 90 }} />
         <button onClick={calculate} style={S.btn}>GENERATE</button>
       </div>
       {result && (

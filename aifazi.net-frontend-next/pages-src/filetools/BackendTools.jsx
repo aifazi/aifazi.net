@@ -7,6 +7,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { S, fmtBytes } from './shared.jsx'
 import { Checkbox, Select, Slider } from '../../core/ui.jsx'
+import { Input, TextArea } from '@/core/forms'
 
 const API = '/api/file-tools'
 
@@ -163,7 +164,7 @@ export function SplitPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Pages to extract (e.g. 1,3,5-7)">
-        <input value={pages} onChange={e => setPages(e.target.value)} style={S.input} placeholder="1,3,5-7" />
+        <Input value={pages} onChange={(v) => setPages(v)} style={S.input} placeholder="1,3,5-7" />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="SPLIT →" />
@@ -205,7 +206,7 @@ export function RotatePDFB() {
           options={['90','180','270'].map(a => [a, `${a}°`])} />
       </Field>
       <Field label="Pages (all or e.g. 1,3,5-7)">
-        <input value={pages} onChange={e => setPages(e.target.value)} style={S.input} placeholder="all" />
+        <Input value={pages} onChange={(v) => setPages(v)} style={S.input} placeholder="all" />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="ROTATE →" />
@@ -225,7 +226,7 @@ export function RemovePagesPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Pages to remove (e.g. 1,3,5-7)">
-        <input value={pages} onChange={e => setPages(e.target.value)} style={S.input} placeholder="2,4,6-8" />
+        <Input value={pages} onChange={(v) => setPages(v)} style={S.input} placeholder="2,4,6-8" />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0] || !pages} label="REMOVE →" />
@@ -248,10 +249,10 @@ export function WatermarkPDFB() {
   return (
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
-      <Field label="Watermark text"><input value={text} onChange={e => setText(e.target.value)} style={S.input} /></Field>
+      <Field label="Watermark text"><Input value={text} onChange={(v) => setText(v)} style={S.input} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Opacity (0–1)"><input type="number" min="0" max="1" step="0.05" value={opacity} onChange={e => setOpacity(e.target.value)} style={S.input} /></Field>
-        <Field label="Angle (degrees)"><input type="number" value={angle} onChange={e => setAngle(e.target.value)} style={S.input} /></Field>
+        <Field label="Opacity (0–1)"><Input type="number" min="0" max="1" step="0.05" value={opacity} onChange={(v) => setOpacity(v)} style={S.input} /></Field>
+        <Field label="Angle (degrees)"><Input type="number" value={angle} onChange={(v) => setAngle(v)} style={S.input} /></Field>
       </div>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0] || !text} label="WATERMARK →" />
@@ -278,7 +279,7 @@ export function PageNumbersPDFB() {
             options={['bottom-center','bottom-left','bottom-right','top-center','top-left','top-right'].map(p => [p, p])} />
         </Field>
         <Field label="Start number">
-          <input type="number" min="1" value={start} onChange={e => setStart(e.target.value)} style={S.input} />
+          <Input type="number" min="1" value={start} onChange={(v) => setStart(v)} style={S.input} />
         </Field>
       </div>
       <StatusBox error={error} success={success} />
@@ -337,7 +338,7 @@ export function ProtectPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Password">
-        <input type="password" value={pw} onChange={e => setPw(e.target.value)} style={S.input} placeholder="Enter password" />
+        <Input type="password" value={pw} onChange={(v) => setPw(v)} style={S.input} placeholder="Enter password" />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0] || !pw} label="PROTECT →" />
@@ -357,7 +358,7 @@ export function UnlockPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Password (if known, leave blank to try without)">
-        <input type="password" value={pw} onChange={e => setPw(e.target.value)} style={S.input} placeholder="Optional" />
+        <Input type="password" value={pw} onChange={(v) => setPw(v)} style={S.input} placeholder="Optional" />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="UNLOCK →" />
@@ -378,7 +379,7 @@ export function OrganizePDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="New page order (e.g. 3,1,2 or 1,3,5-7,2)">
-        <input value={order} onChange={e => setOrder(e.target.value)} style={S.input} placeholder="3,1,2,4" />
+        <Input value={order} onChange={(v) => setOrder(v)} style={S.input} placeholder="3,1,2,4" />
       </Field>
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
         Tip: Use comma-separated page numbers in the order you want them.
@@ -405,7 +406,7 @@ export function CropPDFB() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {['top', 'bottom', 'left', 'right'].map(k => (
           <Field key={k} label={`${k.toUpperCase()} margin (pts)`}>
-            <input type="number" min="0" value={margins[k]} onChange={e => setM(k, e.target.value)} style={S.input} />
+            <Input type="number" min="0" value={margins[k]} onChange={(v) => setM(k, v)} style={S.input} />
           </Field>
         ))}
       </div>
@@ -431,7 +432,7 @@ export function EditPDFMetaB() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {['title', 'author', 'subject', 'keywords'].map(k => (
           <Field key={k} label={k.toUpperCase()}>
-            <input value={meta[k]} onChange={e => setM(k, e.target.value)} style={S.input} placeholder={k} />
+            <Input value={meta[k]} onChange={(v) => setM(k, v)} style={S.input} placeholder={k} />
           </Field>
         ))}
       </div>
@@ -507,10 +508,10 @@ export function HeaderFooterPDFB() {
     <div>
       <DropZone onFiles={setFiles} accept=".pdf" files={files} />
       <Field label="Header text (leave blank to skip)">
-        <input value={header} onChange={e => setHeader(e.target.value)} style={S.input} placeholder="My Document" />
+        <Input value={header} onChange={(v) => setHeader(v)} style={S.input} placeholder="My Document" />
       </Field>
       <Field label="Footer text (leave blank to skip)">
-        <input value={footer} onChange={e => setFooter(e.target.value)} style={S.input} placeholder="Page {page}" />
+        <Input value={footer} onChange={(v) => setFooter(v)} style={S.input} placeholder="Page {page}" />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0] || (!header && !footer)} label="APPLY →" />
@@ -587,7 +588,7 @@ export function SignPDFB() {
         </button>
       </Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Page number"><input type="number" min="1" value={page} onChange={e => setPage(e.target.value)} style={S.input} /></Field>
+        <Field label="Page number"><Input type="number" min="1" value={page} onChange={(v) => setPage(v)} style={S.input} /></Field>
         <Field label="Position">
           <Select value={pos} onChange={setPos}
             options={['bottom-right','bottom-left','bottom-center','top-right','top-left','center'].map(p => [p, p])} />
@@ -757,7 +758,7 @@ export function HTMLToPDFB() {
   return (
     <div>
       <Field label="HTML content">
-        <textarea value={html} onChange={e => setHtml(e.target.value)} rows={10}
+        <TextArea value={html} onChange={(v) => setHtml(v)} rows={10}
           style={{ ...S.input, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
           placeholder="<html><body><h1>Hello</h1></body></html>" />
       </Field>
@@ -785,7 +786,7 @@ export function TextToPDFB() {
   return (
     <div>
       <Field label="Plain text or Markdown">
-        <textarea value={text} onChange={e => setText(e.target.value)} rows={10}
+        <TextArea value={text} onChange={(v) => setText(v)} rows={10}
           style={{ ...S.input, resize: 'vertical' }} placeholder="# My Document&#10;&#10;Content here..." />
       </Field>
       <StatusBox error={error} success={success} />
@@ -835,8 +836,8 @@ export function ResizeImageB() {
     <div>
       <DropZone onFiles={setFiles} accept=".jpg,.jpeg,.png,.webp,.bmp" files={files} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Width (px)"><input type="number" min="1" value={width} onChange={e => setWidth(e.target.value)} style={S.input} placeholder="e.g. 1920" /></Field>
-        <Field label="Height (px)"><input type="number" min="1" value={height} onChange={e => setHeight(e.target.value)} style={S.input} placeholder="e.g. 1080" /></Field>
+        <Field label="Width (px)"><Input type="number" min="1" value={width} onChange={(v) => setWidth(v)} style={S.input} placeholder="e.g. 1920" /></Field>
+        <Field label="Height (px)"><Input type="number" min="1" value={height} onChange={(v) => setHeight(v)} style={S.input} placeholder="e.g. 1080" /></Field>
       </div>
       <Checkbox checked={keepAspect} onChange={setKeepAspect} label="Keep aspect ratio"
         style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }} />
@@ -908,9 +909,9 @@ export function ImageWatermarkB() {
   return (
     <div>
       <DropZone onFiles={setFiles} accept=".jpg,.jpeg,.png,.webp" files={files} />
-      <Field label="Watermark text"><input value={text} onChange={e => setText(e.target.value)} style={S.input} /></Field>
+      <Field label="Watermark text"><Input value={text} onChange={(v) => setText(v)} style={S.input} /></Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <Field label="Opacity (0–1)"><input type="number" min="0.05" max="1" step="0.05" value={opacity} onChange={e => setOpacity(e.target.value)} style={S.input} /></Field>
+        <Field label="Opacity (0–1)"><Input type="number" min="0.05" max="1" step="0.05" value={opacity} onChange={(v) => setOpacity(v)} style={S.input} /></Field>
         <Field label="Position">
           <Select value={pos} onChange={setPos}
             options={['bottom-right','bottom-left','bottom-center','top-right','top-left','center'].map(p => [p, p])} />
@@ -1011,7 +1012,7 @@ export function XlsxToCsvB() {
     <div>
       <DropZone onFiles={setFiles} accept=".xlsx,.xls" files={files} />
       <Field label="Sheet index (0 = first sheet)">
-        <input type="number" min="0" value={sheet} onChange={e => setSheet(e.target.value)} style={S.input} />
+        <Input type="number" min="0" value={sheet} onChange={(v) => setSheet(v)} style={S.input} />
       </Field>
       <StatusBox error={error} success={success} />
       <RunBtn onClick={go} loading={loading} disabled={!files[0]} label="EXPORT CSV →" />
@@ -1069,7 +1070,7 @@ export function TextStatsB() {
   return (
     <div>
       <Field label="Paste your text">
-        <textarea value={text} onChange={e => setText(e.target.value)} rows={8}
+        <TextArea value={text} onChange={(v) => setText(v)} rows={8}
           style={{ ...S.input, resize: 'vertical' }} placeholder="Paste any text here…" />
       </Field>
       <StatusBox error={error} />
@@ -1169,7 +1170,7 @@ export function Base64ToolB() {
   return (
     <div>
       <Field label="Input text or Base64 string">
-        <textarea value={input} onChange={e => setInput(e.target.value)} rows={5}
+        <TextArea value={input} onChange={(v) => setInput(v)} rows={5}
           style={{ ...S.input, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
           placeholder="Enter text to encode, or Base64 to decode…" />
       </Field>
@@ -1210,7 +1211,7 @@ export function JsonFormatterB() {
   return (
     <div>
       <Field label="JSON input">
-        <textarea value={input} onChange={e => setInput(e.target.value)} rows={8}
+        <TextArea value={input} onChange={(v) => setInput(v)} rows={8}
           style={{ ...S.input, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
           placeholder='{"key": "value"}' />
       </Field>
