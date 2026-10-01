@@ -110,6 +110,13 @@ interface Props {
   snap?: number | null
   /** Editor-locked node ids (drag-blocked). Shown with a lock badge. */
   lockedIds?: Set<string> | null
+  /** Edit mode: a library item was dropped on the canvas (design coords). */
+  onDropLibraryItem?: (key: string, x: number, y: number) => void
+  /** Edit mode: rubber-band finished — replaces the selection with the ids. */
+  onMarqueeSelect?: (ids: string[]) => void
+  /** Edit mode: resize-handle drag on the selected node (checkpoint contract
+   *  like onMoveNode — done=true fires once on pointer-up). */
+  onResizeNode?: (id: string, box: { x: number; y: number; w: number; h: number }, done: boolean) => void
 }
 
 interface Box {
@@ -316,6 +323,31 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let panPX = 0
       let panPY = 0
       let panMoved = false
+      // Rubber-band marquee (edit mode: primary drag on empty space).
+      // Ends are design coords; origin is also kept in client px for the
+      // small movement threshold that distinguishes drag from click.
+      let mqId: number | null = null
+      let mqX0 = 0
+      let mqY0 = 0
+      let mqX1 = 0
+      let mqY1 = 0
+      let mqCX = 0
+      let mqCY = 0
+      let mqMoved = false
+      // Single-node resize: active handle + original box (design coords).
+      type ResizeDir = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
+      let rzId: string | null = null
+      let rzDir: ResizeDir = 'se'
+      let rzO = { x: 0, y: 0, w: 0, h: 0 }
+      let rzBox = { x: 0, y: 0, w: 0, h: 0 }
+      let rzSX = 0
+      let rzSY = 0
+      let rzMoved = false
+      const RES_MIN_W = 60
+      const RES_MIN_H = 36
+      // Smart-snap alignment guides shown while dragging (design coords).
+      type Guide = { axis: 'x' | 'y'; pos: number; from: number; to: number }
+      let guides: Guide[] = []
       let overCanvas = false
       let cursorDesign: { x: number; y: number } | null = null
       // Live theme palette: refreshed every frame from palRef (tone prop),
@@ -674,6 +706,147 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.fillStyle = P.cyan
         ctx.arc(cursorDesign.x, cursorDesign.y, 4, 0, Math.PI * 2)
         ctx.fill()
+        ctx.restore()
+      }
+
+      // ── resize handles (single selected free node) ───────────
+      // Only when edit mode owns exactly one selected non-rack node.
+      function resizeTarget(): string | null {
+        const p = sRef.current
+        if (!p.editable || !p.onResizeNode || !p.selectedId || p.connectFrom) return null
+        if (p.selectedIds && p.selectedIds.size > 1) return null
+        const n = byId(p.selectedId)
+        if (!n || n.layer === 'rack') return null
+        return boxes.get(p.selectedId) ? p.selectedId : null
+      }
+
+      function handlePoints(b: Box): { dir: ResizeDir; x: number; y: number }[] {
+        const cx = b.x + b.w / 2
+        const cy = b.y + b.h / 2
+        return [
+          { dir: 'nw', x: b.x, y: b.y },
+          { dir: 'n', x: cx, y: b.y },
+          { dir: 'ne', x: b.x + b.w, y: b.y },
+          { dir: 'e', x: b.x + b.w, y: cy },
+          { dir: 'se', x: b.x + b.w, y: b.y + b.h },
+          { dir: 's', x: cx, y: b.y + b.h },
+          { dir: 'sw', x: b.x, y: b.y + b.h },
+          { dir: 'w', x: b.x, y: cy },
+        ]
+      }
+
+      function hitHandle(dx: number, dy: number): ResizeDir | null {
+        const id = resizeTarget()
+        if (!id) return null
+        const b = boxes.get(id)
+        if (!b) return null
+        const hs = 6 / effS()
+        for (const hp of handlePoints(b)) {
+          if (Math.abs(dx - hp.x) <= hs && Math.abs(dy - hp.y) <= hs) return hp.dir
+        }
+        return null
+      }
+
+      function resizeCursor(dir: ResizeDir): string {
+        if (dir === 'n' || dir === 's') return 'ns-resize'
+        if (dir === 'e' || dir === 'w') return 'ew-resize'
+        if (dir === 'nw' || dir === 'se') return 'nwse-resize'
+        return 'nesw-resize'
+      }
+
+      function updateResize(px: number, py: number) {
+        if (!rzId) return
+        const p = sRef.current
+        if (!p.onResizeNode) return
+        if (Math.abs(px - rzSX) > 2 || Math.abs(py - rzSY) > 2) rzMoved = true
+        let { x, y, w, h } = rzO
+        const right = rzO.x + rzO.w
+        const bottom = rzO.y + rzO.h
+        const step = p.snap && p.snap > 0 ? p.snap : 0
+        const snapv = (v: number) => (step ? Math.round(v / step) * step : Math.round(v))
+        if (rzDir === 'w' || rzDir === 'nw' || rzDir === 'sw') {
+          const nx = Math.max(-200, Math.min(snapv(px), right - RES_MIN_W))
+          x = nx
+          w = right - nx
+        }
+        if (rzDir === 'e' || rzDir === 'ne' || rzDir === 'se') {
+          w = Math.max(RES_MIN_W, snapv(px) - rzO.x)
+        }
+        if (rzDir === 'n' || rzDir === 'nw' || rzDir === 'ne') {
+          const ny = Math.max(-100, Math.min(snapv(py), bottom - RES_MIN_H))
+          y = ny
+          h = bottom - ny
+        }
+        if (rzDir === 's' || rzDir === 'sw' || rzDir === 'se') {
+          h = Math.max(RES_MIN_H, snapv(py) - rzO.y)
+        }
+        rzBox = { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) }
+        p.onResizeNode(rzId, rzBox, false)
+      }
+
+      function finalizeResize() {
+        if (!rzId) return
+        const id = rzId
+        const moved = rzMoved
+        const box = moved ? rzBox : { ...rzO }
+        rzId = null
+        rzMoved = false
+        if (moved) suppressClick = true
+        sRef.current.onResizeNode?.(id, box, true)
+      }
+
+      function drawResizeHandles() {
+        const id = rzId ?? resizeTarget()
+        if (!id) return
+        const b = boxes.get(id)
+        if (!b) return
+        const hs = 4.5 / effS()
+        ctx.save()
+        ctx.lineWidth = 1.5 / effS()
+        for (const hp of handlePoints(b)) {
+          ctx.fillStyle = P.bg
+          ctx.fillRect(hp.x - hs, hp.y - hs, hs * 2, hs * 2)
+          ctx.strokeStyle = P.cyan
+          ctx.strokeRect(hp.x - hs, hp.y - hs, hs * 2, hs * 2)
+        }
+        ctx.restore()
+      }
+
+      function drawGuides() {
+        if (!guides.length) return
+        ctx.save()
+        ctx.strokeStyle = P.red
+        ctx.lineWidth = 1.2 / effS()
+        ctx.setLineDash([5 / effS(), 4 / effS()])
+        for (const g of guides) {
+          ctx.beginPath()
+          if (g.axis === 'x') {
+            ctx.moveTo(g.pos, g.from)
+            ctx.lineTo(g.pos, g.to)
+          } else {
+            ctx.moveTo(g.from, g.pos)
+            ctx.lineTo(g.to, g.pos)
+          }
+          ctx.stroke()
+        }
+        ctx.setLineDash([])
+        ctx.restore()
+      }
+
+      function drawMarquee() {
+        if (mqId === null) return
+        const x = Math.min(mqX0, mqX1)
+        const y = Math.min(mqY0, mqY1)
+        const w = Math.abs(mqX1 - mqX0)
+        const h = Math.abs(mqY1 - mqY0)
+        ctx.save()
+        ctx.fillStyle = 'rgba(54,215,232,0.10)'
+        ctx.fillRect(x, y, w, h)
+        ctx.strokeStyle = P.cyan
+        ctx.lineWidth = 1.5 / effS()
+        ctx.setLineDash([6 / effS(), 4 / effS()])
+        ctx.strokeRect(x, y, w, h)
+        ctx.setLineDash([])
         ctx.restore()
       }
 
@@ -1205,6 +1378,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         drawZoneLabels()
         drawFlows(t)
         drawPendingLink(t)
+        drawMarquee()
         if (nodeList().some((c) => c.layer === 'rack')) drawRackFrame()
         for (const c of nodeList()) {
           if (c.layer === 'rack') drawRackDevice(c, t)
@@ -1214,6 +1388,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           if (c.layer === 'edge' || c.layer === 'cloud') drawChip(c, t)
         }
         drawLockBadges()
+        drawResizeHandles()
+        drawGuides()
         drawPulseRings(t)
         drawManagementOverlay()
         drawPlayPulse(t)
@@ -1268,6 +1444,28 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         return { x: (mx - effOx()) / effS(), y: (my - effOy()) / effS() }
       }
 
+      // Library drag-and-drop: accept drops only in edit mode; convert the
+      // drop point to design coords and let the parent place the node.
+      const onDragOver = (e: DragEvent) => {
+        if (!sRef.current.editable || !sRef.current.onDropLibraryItem) return
+        e.preventDefault()
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+      }
+      const onLibDrop = (e: DragEvent) => {
+        if (!sRef.current.editable || !sRef.current.onDropLibraryItem) return
+        // Always swallow once accepted in onDragOver — dropping foreign
+        // payloads (plain text from another window) must not navigate.
+        e.preventDefault()
+        const key =
+          e.dataTransfer?.getData('application/x-infra-library') ||
+          e.dataTransfer?.getData('text/plain') ||
+          ''
+        if (!key) return
+        const { mx, my } = toDesign(e)
+        const { x, y } = designFromClient(mx, my)
+        sRef.current.onDropLibraryItem(key, x, y)
+      }
+
       // Grid snap (Odoo-style placement): step from props, null/0 = free move.
       const snap = (v: number) => {
         const step = sRef.current.snap ?? 10
@@ -1280,6 +1478,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (!dragId) return
         const d = designFromClient(mx, my)
         if (dragGroup) {
+          guides = []
           const ddx = d.x - dragStart.x
           const ddy = d.y - dragStart.y
           if (Math.abs(ddx) > 2 || Math.abs(ddy) > 2) dragMoved = true
@@ -1295,6 +1494,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const node = byId(dragId)
         if (node && sRef.current.onMoveNode) {
           if (node.layer === 'rack') {
+            guides = []
             const rackU = Math.max(
               1,
               Math.min(
@@ -1309,8 +1509,19 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           } else {
             const box = boxes.get(dragId)
             if (box) {
-              const nx = snap(d.x - dragDX)
-              const ny = snap(d.y - dragDY)
+              let nx = snap(d.x - dragDX)
+              let ny = snap(d.y - dragDY)
+              // Smart snap: snap edges/centers onto nearby nodes (screen-space
+              // threshold so it feels the same at any zoom); grid keeps the
+              // axis that finds no alignment.
+              const ss = smartSnap(dragId, nx, ny, box.w, box.h)
+              if (ss) {
+                nx = ss.x
+                ny = ss.y
+                guides = ss.guides
+              } else {
+                guides = []
+              }
               if (Math.abs(nx - box.x) > 2 || Math.abs(ny - box.y) > 2) dragMoved = true
               dragTouched = true
               sRef.current.onMoveNode(dragId, { x: nx, y: ny }, false)
@@ -1319,10 +1530,79 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
       }
 
+      // Alignment candidates: every free node's left/center/right and
+      // top/middle/bottom vs the dragged box. Best hit within a 6-px
+      // screen threshold wins and returns a visible guide line.
+      function smartSnap(
+        dragId: string,
+        x: number,
+        y: number,
+        w: number,
+        h: number,
+      ): { x: number; y: number; guides: Guide[] } | null {
+        const thr = 6 / effS()
+        let bx = x
+        let by = y
+        let gx: { pos: number; from: number; to: number } | null = null
+        let gy: { pos: number; from: number; to: number } | null = null
+        let bestX = thr
+        let bestY = thr
+        const dragXs = [x, x + w / 2, x + w]
+        const dragYs = [y, y + h / 2, y + h]
+        for (const o of nodeList()) {
+          if (o.id === dragId || o.layer === 'rack') continue
+          const ob = boxes.get(o.id)
+          if (!ob) continue
+          for (const tx of [ob.x, ob.x + ob.w / 2, ob.x + ob.w]) {
+            for (let i = 0; i < dragXs.length; i++) {
+              const diff = Math.abs(dragXs[i] - tx)
+              if (diff <= bestX) {
+                bestX = diff
+                bx = x - (dragXs[i] - tx)
+                gx = { pos: tx, from: Math.min(y, ob.y), to: Math.max(y + h, ob.y + ob.h) }
+              }
+            }
+          }
+          for (const ty of [ob.y, ob.y + ob.h / 2, ob.y + ob.h]) {
+            for (let i = 0; i < dragYs.length; i++) {
+              const diff = Math.abs(dragYs[i] - ty)
+              if (diff <= bestY) {
+                bestY = diff
+                by = y - (dragYs[i] - ty)
+                gy = { pos: ty, from: Math.min(x, ob.x), to: Math.max(x + w, ob.x + ob.w) }
+              }
+            }
+          }
+        }
+        if (!gx && !gy) return null
+        const out: Guide[] = []
+        if (gx) out.push({ axis: 'x', ...gx })
+        if (gy) out.push({ axis: 'y', ...gy })
+        return { x: bx, y: by, guides: out }
+      }
+
       function updateCursor(mx: number, my: number) {
         const found = hitAt(mx, my)
         hoverId = found
-        canvas.style.cursor = dragId || panId !== null
+        if (rzId) {
+          canvas.style.cursor = resizeCursor(rzDir)
+          return
+        }
+        if (
+          sRef.current.editable &&
+          !dragId &&
+          panId === null &&
+          mqId === null &&
+          !spaceHeld
+        ) {
+          const d = designFromClient(mx, my)
+          const dir = hitHandle(d.x, d.y)
+          if (dir) {
+            canvas.style.cursor = resizeCursor(dir)
+            return
+          }
+        }
+        canvas.style.cursor = dragId || panId !== null || mqId !== null
           ? 'grabbing'
           : sRef.current.editable && sRef.current.connectFrom
             ? 'crosshair'
@@ -1382,6 +1662,46 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
       }
 
+      function startMarquee(e: PointerEvent, mx: number, my: number) {
+        const d = designFromClient(mx, my)
+        mqId = e.pointerId
+        mqX0 = mqX1 = d.x
+        mqY0 = mqY1 = d.y
+        mqCX = e.clientX
+        mqCY = e.clientY
+        mqMoved = false
+        try {
+          canvas.setPointerCapture(e.pointerId)
+        } catch {
+          /* noop */
+        }
+      }
+
+      function endMarquee(e: PointerEvent) {
+        if (mqId !== e.pointerId) return
+        mqId = null
+        try {
+          canvas.releasePointerCapture(e.pointerId)
+        } catch {
+          /* noop */
+        }
+        if (!mqMoved) return
+        suppressClick = true
+        const p = sRef.current
+        if (!p.onMarqueeSelect) return
+        const x0 = Math.min(mqX0, mqX1)
+        const x1 = Math.max(mqX0, mqX1)
+        const y0 = Math.min(mqY0, mqY1)
+        const y1 = Math.max(mqY0, mqY1)
+        const ids: string[] = []
+        for (const c of nodeList()) {
+          const b = boxes.get(c.id)
+          if (!b) continue
+          if (b.x < x1 && b.x + b.w > x0 && b.y < y1 && b.y + b.h > y0) ids.push(c.id)
+        }
+        p.onMarqueeSelect(ids)
+      }
+
       function onPointerDown(e: PointerEvent) {
         const primary = e.button === 0
         const middle = e.button === 1
@@ -1399,6 +1719,32 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
         // Locked nodes: click-to-select only (no drag, no pan-through).
         if (primary && found && p.lockedIds?.has(found)) return
+        // Resize handles sit on the selected node — checked before the
+        // node-drag branch so a press on a handle resizes, never moves.
+        if (primary && p.editable && !p.connectFrom) {
+          const d0 = designFromClient(mx, my)
+          const dir = hitHandle(d0.x, d0.y)
+          const tid = dir ? resizeTarget() : null
+          if (dir && tid && !p.lockedIds?.has(tid)) {
+            const b = boxes.get(tid)
+            if (b) {
+              rzId = tid
+              rzDir = dir
+              rzO = { x: b.x, y: b.y, w: b.w, h: b.h }
+              rzBox = { ...rzO }
+              rzSX = d0.x
+              rzSY = d0.y
+              rzMoved = false
+              cursorDesign = null
+              try {
+                canvas.setPointerCapture(e.pointerId)
+              } catch {
+                /* noop */
+              }
+              return
+            }
+          }
+        }
         // Edit mode: a press on a node starts a node drag (never a pan).
         // Link mode must not start a move either — the click completes the
         // connection, otherwise press-drag-release both moves and links.
@@ -1450,12 +1796,21 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           }
           return
         }
-        // Pan: middle button anywhere, primary button on empty space (edit
-        // mode) or anywhere (view mode). Touch is excluded so the page can
-        // still scroll under a finger (node drag above still works via
-        // pointer capture + pointermove).
+        // Pan: middle button anywhere, primary button on empty space in view
+        // mode. Touch is excluded so the page can still scroll under a finger
+        // (node drag above still works via pointer capture + pointermove).
+        // Edit mode: primary drag on empty space starts the selection
+        // marquee (pan stays on space+drag / middle button, Figma-style).
         if (e.pointerType === 'touch') return
-        if (middle || (primary && (!found || !p.editable))) startPan(e)
+        if (middle) {
+          startPan(e)
+          return
+        }
+        if (primary && p.editable && !p.connectFrom && p.onMarqueeSelect && !found) {
+          startMarquee(e, mx, my)
+          return
+        }
+        if (primary && (!found || !p.editable)) startPan(e)
       }
 
       // Block middle-click autoscroll (pan owns the middle button).
@@ -1485,6 +1840,24 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           return
         }
 
+        // Rubber-band selection: track the live end + movement threshold.
+        if (mqId === e.pointerId) {
+          const d = designFromClient(mx, my)
+          mqX1 = d.x
+          mqY1 = d.y
+          if (Math.abs(e.clientX - mqCX) > 4 || Math.abs(e.clientY - mqCY) > 4) mqMoved = true
+          kick()
+          return
+        }
+
+        // Resize-handle drag: recompute the box and checkpoint each frame.
+        if (rzId) {
+          const d = designFromClient(mx, my)
+          updateResize(d.x, d.y)
+          kick()
+          return
+        }
+
         // Hold-and-move a node (or multi-selection). Pointer capture keeps
         // events on the canvas even when the cursor leaves it mid-drag.
         if (dragId) {
@@ -1507,6 +1880,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       // drag — pointer-up, pointer-cancel, and sub-threshold jitter alike —
       // so the next drag always pushes its own undo history.
       function finalizeDrag() {
+        guides = []
         if (!dragId) {
           dragGroup = null
           return
@@ -1549,9 +1923,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       function onPointerUp(e: PointerEvent) {
         endPan(e)
+        endMarquee(e)
+        const hadRz = Boolean(rzId)
+        finalizeResize()
         const hadDrag = Boolean(dragId)
         finalizeDrag()
-        if (hadDrag) {
+        if (hadDrag || hadRz) {
           try {
             canvas.releasePointerCapture(e.pointerId)
           } catch {
@@ -1562,6 +1939,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       function onPointerCancel(e: PointerEvent) {
         endPan(e)
+        endMarquee(e)
+        finalizeResize()
         finalizeDrag()
       }
 
@@ -1832,6 +2211,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       canvas.addEventListener('touchend', onTouchEnd)
       canvas.addEventListener('touchcancel', onTouchEnd)
       window.addEventListener('keydown', onWinKey)
+      canvas.addEventListener('dragover', onDragOver)
+      canvas.addEventListener('drop', onLibDrop)
 
       resize()
       // Initial selection handled by parent (defaults to firewall).
@@ -1869,6 +2250,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         canvas.removeEventListener('touchmove', onTouchMove)
         canvas.removeEventListener('touchend', onTouchEnd)
         canvas.removeEventListener('touchcancel', onTouchEnd)
+        canvas.removeEventListener('dragover', onDragOver)
+        canvas.removeEventListener('drop', onLibDrop)
       }
       // frozen is mount-constant (matchMedia sampled once).
     }, [frozen])

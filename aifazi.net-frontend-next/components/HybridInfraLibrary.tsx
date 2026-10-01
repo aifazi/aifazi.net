@@ -4,14 +4,13 @@
  * HybridInfraLibrary — thread-style index of case-study diagrams.
  *
  * Lists the built-in Plan A seed plus every published diagram from the
- * backend (and drafts for admins). Selecting a row deep-links ?diagram=<slug>
- * which HybridInfraEditor already honors — the viewer below swaps content
- * without a full page load.
+ * backend (and drafts for admins). Selecting a row hands the slug to the
+ * page shell (HybridInfraBody), which switches to the enter view via
+ * history.pushState — no full page reload.
  */
 import { useEffect, useState } from 'react'
 import { getRole } from '@/lib/api'
 import { listAllDiagrams, listDiagrams, type DiagramMeta } from '@/lib/infraApi'
-import { confirmLeave } from '@/lib/infraLeaveGuard'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import { BUILTIN_STUDIES } from '@/data/cloud-infra'
 
@@ -26,7 +25,13 @@ function timeAgo(iso: string): string {
   return d === 1 ? 'yesterday' : `${d}d ago`
 }
 
-export default function HybridInfraLibrary({ activeSlug }: { activeSlug: string }) {
+export default function HybridInfraLibrary({
+  activeSlug,
+  onOpen,
+}: {
+  activeSlug: string
+  onOpen: (slug: string, title?: string) => void
+}) {
   const pal = infraPalette(useInfraTone())
   const [diagrams, setDiagrams] = useState<DiagramMeta[]>([])
   const [failed, setFailed] = useState(false)
@@ -58,19 +63,6 @@ export default function HybridInfraLibrary({ activeSlug }: { activeSlug: string 
     return () => { alive = false }
   }, [])
 
-  const open = (slug: string) => {
-    // Unsaved editor changes must never be lost to a silent full reload (F1).
-    if (!confirmLeave()) return
-    try {
-      const url = new URL(window.location.href)
-      if (slug === 'plan-a') url.searchParams.delete('diagram')
-      else url.searchParams.set('diagram', slug)
-      window.location.assign(url.toString())
-    } catch {
-      /* noop */
-    }
-  }
-
   return (
     <section aria-label="Case study library" style={{ marginBottom: 16 }}>
       <h2
@@ -86,7 +78,7 @@ export default function HybridInfraLibrary({ activeSlug }: { activeSlug: string 
           <button
             key={s.slug}
             type="button"
-            onClick={() => open(s.slug)}
+            onClick={() => onOpen(s.slug, s.title)}
             aria-current={activeSlug === s.slug}
             style={{
               display: 'grid', gridTemplateColumns: '1fr auto', gap: 4, alignItems: 'center',
@@ -123,7 +115,7 @@ export default function HybridInfraLibrary({ activeSlug }: { activeSlug: string 
           <button
             key={m.id}
             type="button"
-            onClick={() => open(m.slug)}
+            onClick={() => onOpen(m.slug, m.title)}
             aria-current={activeSlug === m.slug}
             style={{
               display: 'grid', gridTemplateColumns: '1fr auto', gap: 4, alignItems: 'center',

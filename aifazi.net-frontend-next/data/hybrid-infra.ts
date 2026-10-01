@@ -50,6 +50,8 @@ export interface InfraComponent {
   w?: number
   h?: number
   shape?: 'chip' | 'cloud' | 'firewall'
+  /** Persistent group id: members select and drag together. */
+  gid?: string
 }
 
 export interface InfraFlow {
@@ -578,6 +580,7 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
       w: num(c.w) ? Math.max(40, Math.min(1280, c.w)) : undefined,
       h: num(c.h) ? Math.max(20, Math.min(920, c.h)) : undefined,
       shape: c.shape === 'chip' || c.shape === 'cloud' || c.shape === 'firewall' ? c.shape : undefined,
+      ...(typeof c.gid === 'string' && /^[a-z0-9-]{1,40}$/.test(c.gid) ? { gid: c.gid } : {}),
     })
   }
   if (nodes.length === 0) return null

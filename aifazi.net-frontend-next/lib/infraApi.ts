@@ -46,7 +46,13 @@ export async function createDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
   return r.data.diagram as DiagramDoc
 }
 
-export async function updateDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
+export interface SaveResult {
+  diagram: DiagramDoc
+  /** Backend couldn't write the rollback revision; the save itself succeeded. */
+  snapshotFailed?: boolean
+}
+
+export async function updateDiagram(doc: DiagramDoc): Promise<SaveResult> {
   const r = await api.put(`/infra/diagrams/${encodeURIComponent(doc.id)}`, {
     slug: doc.slug,
     title: doc.title,
@@ -55,9 +61,15 @@ export async function updateDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
     flows: doc.flows,
     categoryColors: doc.categoryColors,
     customCategories: doc.customCategories,
+    // Optimistic concurrency: the last server stamp we adopted. The backend
+    // 409s when it no longer matches instead of clobbering a concurrent save.
+    expectedUpdatedAt: doc.updatedAt || null,
   })
   if (!r.data?.diagram) throw new Error('Update failed')
-  return r.data.diagram as DiagramDoc
+  return {
+    diagram: r.data.diagram as DiagramDoc,
+    snapshotFailed: r.data.snapshotFailed === true,
+  }
 }
 
 export async function deleteDiagram(id: string): Promise<void> {

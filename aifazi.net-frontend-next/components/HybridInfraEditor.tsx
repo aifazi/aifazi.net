@@ -95,6 +95,16 @@ const readDraft = (slug: string): { doc: DiagramDoc; at: string } | null => {
   }
 }
 
+/** Best user-facing message for an API failure: axios rejections keep the
+ * FastAPI `detail` (409 conflict text from save/publish), everything else
+ * falls back to Error.message or the supplied generic wording. */
+const apiErrMsg = (e: unknown, fallback: string): string => {
+  const resp = (e as { response?: { status?: number; data?: { detail?: unknown } } })?.response
+  const detail = resp?.data?.detail
+  if (resp?.status && typeof detail === 'string' && detail) return detail
+  return e instanceof Error && e.message ? e.message : fallback
+}
+
 function slugify(s: string) {
   return (
     s.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) ||
@@ -111,7 +121,7 @@ function fmtRevTime(iso: string | null): string {
   }
 }
 
-export default function HybridInfraEditor() {
+export default function HybridInfraEditor({ startEditing = false }: { startEditing?: boolean }) {
   const [doc, setDoc] = useState<DiagramDoc>(() => planADoc())
   const [docId, setDocId] = useState<string | null>(null)
   const [isSeed, setIsSeed] = useState(true)
@@ -121,6 +131,13 @@ export default function HybridInfraEditor() {
   const [selIds, setSelIds] = useState<Set<string>>(new Set())
   const [connectFrom, setConnectFrom] = useState<string | null>(null)
   const [editMode, setEditMode] = useState(false)
+  const editRootRef = useRef<HTMLDivElement>(null)
+  const [editFs, setEditFs] = useState(false)
+  const [zoomPct, setZoomPct] = useState(100)
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [quickQuery, setQuickQuery] = useState('')
+  const [quickIdx, setQuickIdx] = useState(0)
+  const [helpOpen, setHelpOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(() => {
     try {
       return getRole() === 'admin'
@@ -368,6 +385,31 @@ export default function HybridInfraEditor() {
     }
   }, [])
 
+  // Entered via the EDIT SITE FAB from the list view: open edit mode once
+  // the admin role resolves (the FAB itself is admin-gated).
+  const autoEditUsedRef = useRef(false)
+  useEffect(() => {
+    if (!startEditing || !isAdmin || autoEditUsedRef.current) return
+    autoEditUsedRef.current = true
+    setEditMode(true)
+  }, [startEditing, isAdmin])
+
+  // Fullscreen editing: the whole edit shell (bar + library + canvas +
+  // properties) goes through the browser Fullscreen API, like the viewer.
+  useEffect(() => {
+    const sync = () => setEditFs(document.fullscreenElement === editRootRef.current)
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [])
+  const toggleEditFullscreen = () => {
+    try {
+      if (document.fullscreenElement === editRootRef.current) void document.exitFullscreen()
+      else void editRootRef.current?.requestFullscreen()
+    } catch {
+      /* fullscreen unsupported/denied */
+    }
+  }
+
   // When the admin role appears mid-session, upgrade the diagram list so
   // drafts (and the slug-collision set) become visible (F5).
   useEffect(() => {
@@ -483,6 +525,45 @@ export default function HybridInfraEditor() {
 
   const boxesOverlap = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
     a.x < b.x + b.w + 20 && a.x + a.w + 20 > b.x && a.y < b.y + b.h + 20 && a.y + a.h + 20 > b.y
+
+  // Resize-handle drag: same checkpoint discipline as handleMoveNode (F4) —
+  // history only when the box actually changes, one reset per gesture.
+  const handleResizeNode = (
+    id: string,
+    box: { x: number; y: number; w: number; h: number },
+    done: boolean,
+  ) => {
+    if (lockedIds.has(id)) return
+    const cur = docRef.current
+    const node = cur.nodes.find((n) => n.id === id)
+    const nextX = Math.max(-200, Math.min(1480, Math.round(box.x)))
+    const nextY = Math.max(-100, Math.min(1020, Math.round(box.y)))
+    const nextW = Math.max(60, Math.min(1600, Math.round(box.w)))
+    const nextH = Math.max(36, Math.min(900, Math.round(box.h)))
+    const changed =
+      !!node &&
+      (nextX !== node.x || nextY !== node.y || nextW !== node.w || nextH !== node.h)
+    if (changed && !dragRef.current) {
+      pushHistory()
+      dragRef.current = true
+    }
+    if (changed) {
+      applyDoc(
+        {
+          ...cur,
+          nodes: cur.nodes.map((n) =>
+            n.id === id ? { ...n, x: nextX, y: nextY, w: nextW, h: nextH } : n,
+          ),
+        },
+        false,
+      )
+    }
+    if (done) {
+      queueMicrotask(() => {
+        dragRef.current = false
+      })
+    }
+  }
 
   // ── Auto-arrange: grid columns per layer, rows stacked (Odoo-style) ──
   const arrangeNodes = () => {
@@ -673,11 +754,32 @@ export default function HybridInfraEditor() {
       // Shortcuts are edit-mode-only: with a lingering selection after DONE
       // they would mutate the read-only viewer's doc (F6).
       if (!editMode) return
+      // Overlays close first — before the typing guard, so Escape works
+      // inside the quick-add input too.
+      if (e.key === 'Escape' && (quickOpen || helpOpen)) {
+        e.preventDefault()
+        setQuickOpen(false)
+        setHelpOpen(false)
+        return
+      }
       const el = e.target as HTMLElement | null
       const tag = (el?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || el?.isContentEditable) return
       const mod = e.ctrlKey || e.metaKey
-      if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        if (quickOpen) {
+          setQuickOpen(false)
+        } else {
+          openQuickAdd()
+        }
+      } else if (e.key === '?') {
+        e.preventDefault()
+        setHelpOpen((h) => !h)
+      } else if (e.key === '/' && !mod) {
+        e.preventDefault()
+        openQuickAdd()
+      } else if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault()
         undo()
       } else if ((mod && e.key.toLowerCase() === 'y') || (mod && e.shiftKey && e.key.toLowerCase() === 'z')) {
@@ -716,7 +818,7 @@ export default function HybridInfraEditor() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editMode, selectedId, selIds, connectFrom])
+  }, [editMode, selectedId, selIds, connectFrom, quickOpen, helpOpen])
 
   const addNode = (item: LibraryItem) => {
     const cur = docRef.current
@@ -789,6 +891,31 @@ export default function HybridInfraEditor() {
     shape: item.shape,
     rackH: item.rackH,
   })
+
+  // Palette drop on the canvas: place the node centered at the drop point
+  // (grid-snapped). Rack-layer items keep their U-slot auto-placement.
+  const handleDropItem = (key: string, dx: number, dy: number) => {
+    const item = INFRA_LIBRARY.flatMap((g) => g.items).find((i) => i.key === key)
+    if (!item) return
+    if (item.layer === 'rack') {
+      addNode(item)
+      return
+    }
+    const cur = docRef.current
+    const snapV = (v: number) => (snapSize ? Math.round(v / snapSize) * snapSize : Math.round(v))
+    const x = Math.max(-200, Math.min(1480, snapV(dx - item.defaultW / 2)))
+    const y = Math.max(-100, Math.min(1020, snapV(dy - item.defaultH / 2)))
+    counterRef.current += 1
+    const node: InfraComponent = {
+      ...stampBase(item),
+      id: `${item.key.replace(/^tpl-/, '')}-${Date.now().toString(36)}${counterRef.current}`,
+      x,
+      y,
+    }
+    applyDoc({ ...cur, nodes: [...cur.nodes, node] })
+    setSelectedId(node.id)
+    setNotice({ msg: `Placed ${item.name} at the drop point`, ok: true })
+  }
 
   const deleteNodes = (ids: string[]) => {
     const next = deleteNodesDoc(docRef.current, ids)
@@ -939,6 +1066,19 @@ export default function HybridInfraEditor() {
       if (id === null || id === connectFrom) setConnectFrom(null)
       return
     }
+    // Grouped node: expand the selection to every member so the next
+    // drag moves the whole group (canvas group-drag needs membership).
+    if (id) {
+      const node = docRef.current.nodes.find((n) => n.id === id)
+      if (node?.gid) {
+        const members = docRef.current.nodes.filter((n) => n.gid === node.gid)
+        if (members.length > 1) {
+          setSelectedId(id)
+          setSelIds(new Set(members.map((n) => n.id)))
+          return
+        }
+      }
+    }
     setSelectedId(id)
     setSelIds(id ? new Set([id]) : new Set())
   }
@@ -962,9 +1102,86 @@ export default function HybridInfraEditor() {
     if (nextSelected !== selectedId) setSelectedId(nextSelected)
   }
 
+  // Rubber-band marquee finished: replace the selection wholesale (the
+  // primary id is the last intersecting node so properties target it).
+  const handleMarqueeSelect = (ids: string[]) => {
+    if (connectFrom) return
+    setSelIds(new Set(ids))
+    const last = ids.length ? ids[ids.length - 1] : null
+    if (last !== selectedId) setSelectedId(last)
+  }
+
+  // ── Z-order: node array order drives stacking within each draw
+  // class — push the selection to the ends of the array. ─────────
+  const zOrder = (toFront: boolean) => {
+    const ids = new Set(selectedNodeIds())
+    const cur = docRef.current
+    const sel = cur.nodes.filter((n) => ids.has(n.id))
+    if (!sel.length || sel.length === cur.nodes.length) return
+    const rest = cur.nodes.filter((n) => !ids.has(n.id))
+    applyDoc({ ...cur, nodes: toFront ? [...rest, ...sel] : [...sel, ...rest] })
+    setNotice({ msg: toFront ? 'Brought selection to front' : 'Sent selection to back', ok: true })
+  }
+
+  // ── Groups: persistent multi-select — clicking any member selects
+  // the whole group (see handleSelect). ──────────────────────────
+  const groupSelection = () => {
+    const ids = selectedNodeIds()
+    if (ids.length < 2) return
+    counterRef.current += 1
+    const gid = `g-${Date.now().toString(36)}-${counterRef.current}`
+    const cur = docRef.current
+    const idSet = new Set(ids)
+    applyDoc({ ...cur, nodes: cur.nodes.map((n) => (idSet.has(n.id) ? { ...n, gid } : n)) })
+    setNotice({ msg: `Grouped ${ids.length} nodes — clicking one selects all`, ok: true })
+  }
+  const ungroupSelection = () => {
+    const idSet = new Set(selectedNodeIds())
+    const cur = docRef.current
+    if (!cur.nodes.some((n) => n.gid && idSet.has(n.id))) return
+    applyDoc({
+      ...cur,
+      nodes: cur.nodes.map((n) => (n.gid && idSet.has(n.id) ? { ...n, gid: undefined } : n)),
+    })
+    setNotice({ msg: 'Ungrouped', ok: true })
+  }
+
   const selectedNodeIds = (): string[] => {
     const ids = selIds.size ? [...selIds] : selectedId ? [selectedId] : []
     return ids.filter((id) => docRef.current.nodes.some((n) => n.id === id))
+  }
+  // Any selected node already in a group? (drives GROUP/UNGROUP button)
+  const selectionHasGid = selectedNodeIds().some((id) =>
+    docRef.current.nodes.find((n) => n.id === id)?.gid,
+  )
+
+  // ── Quick add (Ctrl+K / "/"): place the match at the current view
+  // center — no hunting through the palette. ────────────────────
+  const quickItems = (() => {
+    const all = INFRA_LIBRARY.flatMap((g) => g.items)
+    const q = quickQuery.trim().toLowerCase()
+    if (!q) return all.slice(0, 8)
+    return all
+      .filter(
+        (i) =>
+          i.name.toLowerCase().includes(q) ||
+          i.category.toLowerCase().includes(q) ||
+          i.role.toLowerCase().includes(q),
+      )
+      .slice(0, 8)
+  })()
+  const placeQuick = (item: LibraryItem) => {
+    const v = canvasHandle.current?.getView()
+    setQuickOpen(false)
+    setQuickQuery('')
+    setQuickIdx(0)
+    handleDropItem(item.key, v?.cx ?? 640, v?.cy ?? 460)
+  }
+  const openQuickAdd = () => {
+    setQuickQuery('')
+    setQuickIdx(0)
+    setQuickOpen(true)
+    setHelpOpen(false)
   }
 
   // ── Persistence ──────────────────────────────────────────────
@@ -994,6 +1211,7 @@ export default function HybridInfraEditor() {
     // adopt the server echo when the local doc is byte-identical, so edits
     // made while the request was in flight are never reverted (F2).
     const outgoing = JSON.stringify(docRef.current)
+    let snapFailed = false
     try {
       if (isSeed || !docId) {
         // "Save as new": derive a storable, unique slug. Builtin seed slugs
@@ -1029,15 +1247,22 @@ export default function HybridInfraEditor() {
           /* noop */
         }
       } else {
-        const updated = await updateDiagram({ ...cur, updatedAt: new Date().toISOString() })
-        const clean = sanitizeDoc(updated)
+        // Send the doc as-is: updateDiagram carries doc.updatedAt (the last
+        // server stamp) as expectedUpdatedAt, so the backend 409s us instead
+        // of clobbering a concurrent edit (B8/N5).
+        const res = await updateDiagram(cur)
+        snapFailed = res.snapshotFailed === true
+        const clean = sanitizeDoc(res.diagram)
         if (!clean) throw new Error('Server returned an invalid doc')
         adoptResponse(clean, outgoing)
       }
       await refreshList()
-      setNotice({ msg: 'Saved', ok: true })
+      setNotice({
+        msg: snapFailed ? 'Saved (revision history unavailable)' : 'Saved',
+        ok: true,
+      })
     } catch (e) {
-      setNotice({ msg: e instanceof Error ? e.message : 'Save failed', ok: false })
+      setNotice({ msg: apiErrMsg(e, 'Save failed'), ok: false })
     } finally {
       inFlightRef.current = false
       setSaving(false)
@@ -1084,19 +1309,23 @@ export default function HybridInfraEditor() {
     dirtyRef.current = true
     const outgoing = JSON.stringify(docRef.current)
     try {
-      const updated = await updateDiagram(cur)
-      const clean = sanitizeDoc(updated)
+      const res = await updateDiagram(cur)
+      const clean = sanitizeDoc(res.diagram)
       if (!clean) throw new Error('Server returned an invalid doc')
       adoptResponse(clean, outgoing)
       await refreshList()
-      setNotice({ msg: clean.published ? 'Published' : 'Unpublished', ok: true })
+      const verb = clean.published ? 'Published' : 'Unpublished'
+      setNotice({
+        msg: res.snapshotFailed ? `${verb} (revision history unavailable)` : verb,
+        ok: true,
+      })
     } catch (e) {
       // Roll the optimistic flag back so the button can't lie (F4/N4).
       const reverted = { ...docRef.current, published: !cur.published }
       docRef.current = reverted
       setDoc(reverted)
       if (savedRef.current === JSON.stringify(reverted)) dirtyRef.current = false
-      setNotice({ msg: e instanceof Error ? e.message : 'Publish failed', ok: false })
+      setNotice({ msg: apiErrMsg(e, 'Publish failed'), ok: false })
     } finally {
       inFlightRef.current = false
       setSaving(false)
@@ -1381,7 +1610,13 @@ export default function HybridInfraEditor() {
   }
 
   return (
-    <div id="hybrid-infra-editor">
+    <div id="hybrid-infra-editor" ref={editRootRef}>
+      {/* Fullscreen editing: fill the display and let the grid stretch. */}
+      <style>{`
+        #hybrid-infra-editor:fullscreen { background: #071120; padding: 12px; overflow: auto; }
+        #hybrid-infra-editor:fullscreen .hi-edit-layout { align-items: stretch; }
+        #hybrid-infra-editor:fullscreen .hi-edit-layout > div { max-height: calc(100vh - 24px); }
+      `}</style>
       {/* Diagram bar */}
       <div
         style={{
@@ -1572,6 +1807,15 @@ export default function HybridInfraEditor() {
         />
         <button
           type="button"
+          onClick={toggleEditFullscreen}
+          aria-pressed={editFs}
+          title="Edit in fullscreen (Esc exits)"
+          style={BTN}
+        >
+          {editFs ? 'EXIT FULL' : 'FULLSCREEN'}
+        </button>
+        <button
+          type="button"
           onClick={() => { setEditMode(false); setConnectFrom(null); resetTransient() }}
           style={BTN}
         >
@@ -1744,7 +1988,7 @@ export default function HybridInfraEditor() {
         {/* Palette */}
         <div style={{ ...PANEL, maxHeight: 720, overflowY: 'auto' }}>
           <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
-            IT LIBRARY — CLICK TO PLACE
+            IT LIBRARY — DRAG OR CLICK TO PLACE
           </div>
           <input
             value={libQuery}
@@ -1768,11 +2012,18 @@ export default function HybridInfraEditor() {
                   <button
                     key={item.key}
                     type="button"
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData('application/x-infra-library', item.key)
+                      e.dataTransfer.setData('text/plain', item.key)
+                      e.dataTransfer.effectAllowed = 'copy'
+                    }}
                     onClick={() => addNode(item)}
-                    title={item.desc}
+                    title={`${item.desc} — drag onto the canvas, or click to auto-place`}
                     style={{
                       ...BTN, textAlign: 'left', fontWeight: 500,
                       borderLeft: `3px solid ${catColorHex(item.category)}`,
+                      cursor: 'grab',
                     }}
                   >
                     {item.name}
@@ -1872,14 +2123,36 @@ export default function HybridInfraEditor() {
           </div>
         </div>
 
-        {/* Canvas */}
-        <div
-          style={{
-            position: 'relative', border: '1px solid #203a55', borderRadius: 18,
-            overflow: 'hidden', background: 'linear-gradient(180deg,rgba(12,27,45,.95),rgba(8,18,32,.98))',
-            minHeight: 480,
-          }}
-        >
+          {/* Canvas */}
+          <div
+            style={{
+              position: 'relative', border: '1px solid #203a55', borderRadius: 18,
+              overflow: 'hidden', background: 'linear-gradient(180deg,rgba(12,27,45,.95),rgba(8,18,32,.98))',
+              minHeight: 480,
+            }}
+          >
+            <div
+              role="toolbar"
+              aria-label="Canvas zoom"
+              title="Scroll to zoom · drag to pan · Ctrl/⌘ + +/−/0"
+              style={{
+                position: 'absolute', top: 10, right: 10, zIndex: 5,
+                display: 'flex', gap: 4, alignItems: 'center',
+                background: 'rgba(8,18,32,.88)', border: '1px solid #203a55',
+                borderRadius: 8, padding: '4px 6px',
+              }}
+            >
+              <button type="button" onClick={() => canvasHandle.current?.zoomOut()} aria-label="Zoom out" style={{ ...BTN, padding: '5px 9px' }}>−</button>
+              <span
+                aria-live="polite"
+                style={{ ...BTN, padding: '5px 6px', minWidth: 48, textAlign: 'center', cursor: 'default' }}
+              >
+                {zoomPct}%
+              </span>
+              <button type="button" onClick={() => canvasHandle.current?.zoomIn()} aria-label="Zoom in" style={{ ...BTN, padding: '5px 9px' }}>+</button>
+              <button type="button" onClick={() => canvasHandle.current?.fit()} title="Fit diagram (Ctrl/⌘ + 0)" style={{ ...BTN, padding: '5px 8px' }}>FIT</button>
+              <button type="button" onClick={() => canvasHandle.current?.setPercent(100)} title="Zoom to 100%" style={{ ...BTN, padding: '5px 8px' }}>100%</button>
+            </div>
           {connectFrom && (
             <div
               style={{
@@ -1918,6 +2191,10 @@ export default function HybridInfraEditor() {
             viewStorageKey={`editor-${docId ?? doc.slug}`}
             catColors={mergedCat()}
             grid={showGrid}
+            onViewChange={setZoomPct}
+            onDropLibraryItem={handleDropItem}
+            onMarqueeSelect={handleMarqueeSelect}
+            onResizeNode={handleResizeNode}
           />
         </div>
 
@@ -1937,9 +2214,10 @@ export default function HybridInfraEditor() {
           {!selected ? (
             <div style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
               Select a node to edit its properties.
-              <br />Drag nodes to move · Space+drag or empty-space drag pans · scroll zooms.
+              <br />Drag nodes to move · drag empty space selects (marquee) · Space+drag or middle-drag pans · scroll zooms.
               <br />CONNECT draws animated links · Shift+click multi-selects.
               <br />Shortcuts: Ctrl+Z/Y undo/redo · Ctrl+C/V/D copy/paste/dup · Ctrl+A select all · arrows nudge (Alt=10px) · Del deletes · Esc cancels link.
+              <br />Ctrl+K or / quick-adds at the view center · ? opens the full shortcut sheet.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1951,6 +2229,28 @@ export default function HybridInfraEditor() {
                   {selIds.size} NODES SELECTED — the panel edits the highlighted one; Delete/COPY/align act on all.
                 </div>
               )}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+                  ARRANGE
+                </span>
+                <button type="button" onClick={() => zOrder(false)} title="Move selection behind its layer peers" style={{ ...BTN, padding: '5px 8px' }}>
+                  SEND BACK
+                </button>
+                <button type="button" onClick={() => zOrder(true)} title="Bring selection in front of its layer peers" style={{ ...BTN, padding: '5px 8px' }}>
+                  TO FRONT
+                </button>
+                {selIds.size > 1 && (
+                  selectionHasGid ? (
+                    <button type="button" onClick={ungroupSelection} title="Dissolve the group" style={{ ...BTN, padding: '5px 8px' }}>
+                      UNGROUP
+                    </button>
+                  ) : (
+                    <button type="button" onClick={groupSelection} title="Group: clicking one member selects all, drag moves all" style={{ ...BTN, padding: '5px 8px' }}>
+                      GROUP
+                    </button>
+                  )
+                )}
+              </div>
               <div>
                 <label style={LABEL}>Name</label>
                 <input
@@ -2254,6 +2554,126 @@ export default function HybridInfraEditor() {
           if (f) void importDoc(f)
         }}
       />
+
+      {quickOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(4,10,18,.62)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '12vh',
+          }}
+          onClick={() => setQuickOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="Quick add component"
+            onClick={(e) => e.stopPropagation()}
+            style={{ ...PANEL, width: 480, maxWidth: '92vw', maxHeight: '70vh', overflowY: 'auto' }}
+          >
+            <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
+              QUICK ADD — ENTER PLACES AT VIEW CENTER
+            </div>
+            <input
+              autoFocus
+              value={quickQuery}
+              onChange={(e) => {
+                setQuickQuery(e.target.value)
+                setQuickIdx(0)
+              }}
+              placeholder="Firewall, switch, VM… (Esc closes)"
+              aria-label="Quick add search"
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setQuickIdx((i) => Math.min(i + 1, quickItems.length - 1))
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setQuickIdx((i) => Math.max(i - 1, 0))
+                } else if (e.key === 'Enter' && quickItems[quickIdx]) {
+                  e.preventDefault()
+                  placeQuick(quickItems[quickIdx])
+                }
+              }}
+              style={{ ...INPUT, marginBottom: 8 }}
+            />
+            {quickItems.length === 0 ? (
+              <div style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+                No library items match “{quickQuery}”.
+              </div>
+            ) : (
+              quickItems.map((it, i) => (
+                <button
+                  key={it.key}
+                  type="button"
+                  onClick={() => placeQuick(it)}
+                  onMouseEnter={() => setQuickIdx(i)}
+                  style={{
+                    ...BTN, display: 'block', width: '100%', textAlign: 'left', marginBottom: 4,
+                    borderLeft: `3px solid ${i === quickIdx ? pal.cyan : catColorHex(it.category)}`,
+                    background: i === quickIdx ? 'rgba(54,215,232,.10)' : BTN.background,
+                  }}
+                >
+                  {it.name}
+                  <span style={{ color: pal.muted, marginLeft: 8, fontSize: 10 }}>{it.category}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {helpOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(4,10,18,.62)',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '10vh',
+          }}
+          onClick={() => setHelpOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="Keyboard shortcuts"
+            onClick={(e) => e.stopPropagation()}
+            style={{ ...PANEL, width: 540, maxWidth: '92vw', maxHeight: '76vh', overflowY: 'auto' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <span style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+                SHORTCUTS
+              </span>
+              <button type="button" onClick={() => setHelpOpen(false)} style={{ ...BTN, padding: '4px 9px' }}>
+                CLOSE (Esc)
+              </button>
+            </div>
+            {[
+              ['Ctrl/⌘ K  ·  /', 'Quick add — places at the view center'],
+              ['?', 'This shortcut sheet'],
+              ['Esc', 'Close overlays · cancel a pending link'],
+              ['Ctrl/⌘ Z  ·  Ctrl/⌘ Shift Z', 'Undo · redo'],
+              ['Ctrl/⌘ C  ·  V  ·  D', 'Copy · paste · duplicate'],
+              ['Ctrl/⌘ A  ·  Del', 'Select all · delete selection'],
+              ['Arrow keys (Alt = 10px)', 'Nudge the selection'],
+              ['Shift+click  ·  drag empty space', 'Multi-select · rubber-band marquee'],
+              ['Drag from the library', 'Drop onto the canvas at the pointer'],
+              ['Drag a selection handle', 'Resize (8 handles; racks excluded)'],
+              ['Space/middle-drag  ·  scroll', 'Pan · zoom toward cursor'],
+              ['TO FRONT / SEND BACK', 'Z-order within the layer'],
+              ['GROUP / UNGROUP', 'Persistent group (click = select all)'],
+              ['CONNECT, then click a node', 'Draw a link (Esc cancels)'],
+            ].map(([keys, what]) => (
+              <div
+                key={keys}
+                style={{
+                  display: 'grid', gridTemplateColumns: 'minmax(170px,auto) 1fr', gap: 12,
+                  fontSize: 11, fontFamily: 'var(--font-mono)', padding: '4px 0',
+                  borderTop: `1px solid ${pal.border}`,
+                }}
+              >
+                <span style={{ color: pal.cyan }}>{keys}</span>
+                <span style={{ color: pal.muted }}>{what}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <style>{`
         @media (max-width: 1100px) {

@@ -11,6 +11,7 @@ import json
 import logging
 import math
 import re
+import uuid as uuid_mod
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -18,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from database import supabase
 from dependencies import _enrich_user, decode_token, require_admin
+from utils import audit
 
 router = APIRouter()
 log = logging.getLogger("infra.diagrams")
@@ -45,6 +47,9 @@ class DiagramIn(BaseModel):
     flows: list = Field(default_factory=list, max_length=MAX_FLOWS)
     categoryColors: dict | None = None
     customCategories: dict | None = None
+    # Optimistic concurrency (B8): last-updated stamp the client believes in.
+    # On mismatch the PUT 409s instead of clobbering a concurrent save.
+    expectedUpdatedAt: str | None = Field(default=None, max_length=64)
 
 
 BUILTIN_CATEGORIES = {
@@ -153,6 +158,9 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
                 raise HTTPException(400, "Node accent must be #rrggbb")
         if "pulse" in n and n["pulse"] not in (None, True, False):
             raise HTTPException(400, "Node pulse must be boolean")
+        if n.get("gid") is not None:
+            if not isinstance(n["gid"], str) or not n["gid"] or len(n["gid"]) > 40:
+                raise HTTPException(400, "Node gid must be a short string")
         if not isinstance(n.get("workloads", []), list) or len(n.get("workloads", [])) > 12:
             raise HTTPException(400, "Invalid node workloads")
         if not isinstance(n.get("deps", []), list) or len(n.get("deps", [])) > 24:
@@ -183,6 +191,30 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
     return clean_nodes, clean_flows
 
 
+def _require_uuid(value: str) -> None:
+    """404 (not a 500 from PostgREST) when a path id isn't a uuid (B2)."""
+    try:
+        uuid_mod.UUID(value)
+    except (ValueError, AttributeError, TypeError):
+        raise HTTPException(404, "Diagram not found")
+
+
+def _client_ip(request: Request) -> str:
+    try:
+        return (request.client.host if request.client else "") or ""
+    except Exception:
+        return ""
+
+
+def _audit(request: Request, admin: dict | None, action: str, target: str,
+           details: dict | None = None) -> None:
+    """Attribute diagram writes to the acting admin (B9). audit.record never raises."""
+    actor = "admin"
+    if isinstance(admin, dict):
+        actor = admin.get("username") or admin.get("id") or "admin"
+    audit.record(actor, action, target, details or {}, _client_ip(request))
+
+
 def _row_to_doc(row: dict, include_body: bool = True) -> dict:
     doc = row.get("doc") or {}
     out = {
@@ -200,10 +232,14 @@ def _row_to_doc(row: dict, include_body: bool = True) -> dict:
         if isinstance(doc.get("customCategories"), dict) and doc["customCategories"]:
             out["customCategories"] = doc["customCategories"]
     else:
+        # Prefer the stored counts (B1: list queries no longer select `doc`);
+        # fall back to the body for legacy rows/tests that only carry `doc`.
         nodes = doc.get("nodes", [])
         flows = doc.get("flows", [])
-        out["nodeCount"] = len(nodes) if isinstance(nodes, list) else 0
-        out["flowCount"] = len(flows) if isinstance(flows, list) else 0
+        nc = row.get("node_count")
+        fc = row.get("flow_count")
+        out["nodeCount"] = nc if isinstance(nc, int) else (len(nodes) if isinstance(nodes, list) else 0)
+        out["flowCount"] = fc if isinstance(fc, int) else (len(flows) if isinstance(flows, list) else 0)
     return out
 
 
@@ -230,18 +266,23 @@ def _optional_admin(request: Request) -> dict | None:
 
 
 def _prune_revisions(diagram_id: str) -> None:
+    # N8: tiebreak on id so equal created_at stamps (microsecond ties) still
+    # prune deterministically under concurrency.
     res = supabase.table("infra_diagram_revisions").select("id").eq(
         "diagram_id", diagram_id
-    ).order("created_at", desc=True).range(MAX_REVISIONS, MAX_REVISIONS + 199).execute()
+    ).order("created_at", desc=True).order("id", desc=True).range(
+        MAX_REVISIONS, MAX_REVISIONS + 199
+    ).execute()
     stale = [r["id"] for r in (res.data or [])]
     if stale:
         supabase.table("infra_diagram_revisions").delete().in_("id", stale).execute()
 
 
-def _snapshot_revision(row: dict) -> None:
+def _snapshot_revision(row: dict) -> bool:
     """Persist the PRE-update state so the save is rollback-able.
 
-    Best-effort: a revision failure must never fail the save itself.
+    Best-effort: a revision failure must never fail the save itself. Returns
+    False when the snapshot failed so callers can surface it (N7).
     """
     try:
         supabase.table("infra_diagram_revisions").insert({
@@ -251,8 +292,10 @@ def _snapshot_revision(row: dict) -> None:
             "doc": row.get("doc") or {"nodes": [], "flows": []},
         }).execute()
         _prune_revisions(str(row["id"]))
+        return True
     except Exception as e:
         log.warning("diagram revision snapshot failed for %s: %s", row.get("id"), e)
+        return False
 
 
 @router.get("/diagrams")
@@ -261,7 +304,8 @@ def list_diagrams(offset: int = Query(0, ge=0, le=10000)):
     try:
         res = (
             supabase.table("infra_diagrams")
-            .select("id,slug,title,updated_at,published,doc")
+            # B1: meta-only select — counts are stored columns, never the body.
+            .select("id,slug,title,updated_at,published,node_count,flow_count")
             .eq("published", True)
             .order("updated_at", desc=True)
             .range(offset, offset + 99)
@@ -279,7 +323,7 @@ def list_all_diagrams(offset: int = Query(0, ge=0, le=10000), admin: dict = Depe
     try:
         res = (
             supabase.table("infra_diagrams")
-            .select("id,slug,title,updated_at,published,doc")
+            .select("id,slug,title,updated_at,published,node_count,flow_count")
             .order("updated_at", desc=True)
             .range(offset, offset + 199)
             .execute()
@@ -314,7 +358,7 @@ def get_diagram(slug: str, request: Request):
 
 
 @router.post("/diagrams")
-def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
+def create_diagram(body: DiagramIn, request: Request, admin: dict = Depends(require_admin)):
     slug = _slugify(body.slug or body.title)
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
@@ -336,6 +380,9 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
                 "published": body.published,
                 "created_at": now,
                 "updated_at": now,
+                # B1: counts live as columns so list queries never fetch `doc`.
+                "node_count": len(nodes),
+                "flow_count": len(flows),
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
@@ -357,13 +404,20 @@ def create_diagram(body: DiagramIn, admin: dict = Depends(require_admin)):
     rows = res.data or []
     if not rows:
         raise HTTPException(500, "Could not create diagram")
+    _audit(request, admin, "infra.create", slug, {"published": body.published})
     return {"diagram": _row_to_doc(rows[0], include_body=True)}
 
 
 @router.put("/diagrams/{doc_id}")
-def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_admin)):
-    """Replace a diagram (full-document PUT). Snapshots the previous state
-    to infra_diagram_revisions first so the change can be rolled back."""
+def update_diagram(doc_id: str, body: DiagramIn, request: Request, admin: dict = Depends(require_admin)):
+    """Replace a diagram (full-document PUT).
+
+    Concurrency: the UPDATE is conditional on the updated_at we just read
+    (B8/N5) — a concurrent writer gets a 409 instead of a silent clobber,
+    and the loser never snapshots the same pre-state. The snapshot runs
+    AFTER the claim succeeds and reports failure via `snapshotFailed` (N7).
+    """
+    _require_uuid(doc_id)
     slug = _slugify(body.slug or body.title)
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
@@ -374,14 +428,20 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
     old = (prev.data or [None])[0]
     if not old:
         raise HTTPException(404, "Diagram not found")
+    # Legacy rows may lack a stamp — then there is nothing to gate against.
+    if (body.expectedUpdatedAt is not None and old.get("updated_at")
+            and body.expectedUpdatedAt != old["updated_at"]):
+        raise HTTPException(409, "Diagram was modified by someone else — reload and retry")
     try:
-        res = (
+        query = (
             supabase.table("infra_diagrams")
             .update({
                 "slug": slug,
                 "title": body.title.strip(),
                 "published": body.published,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
+                "node_count": len(nodes),
+                "flow_count": len(flows),
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
@@ -390,8 +450,10 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
                 },
             })
             .eq("id", doc_id[:64])
-            .execute()
         )
+        if old.get("updated_at"):
+            query = query.eq("updated_at", old["updated_at"])
+        res = query.execute()
     except Exception as exc:
         msg = str(exc).lower()
         if "unique" in msg or "duplicate" in msg or "23505" in msg:
@@ -400,13 +462,32 @@ def update_diagram(doc_id: str, body: DiagramIn, admin: dict = Depends(require_a
         raise HTTPException(500, "Could not update diagram")
     rows = res.data or []
     if not rows:
-        raise HTTPException(404, "Diagram not found")
-    _snapshot_revision(old)
-    return {"diagram": _row_to_doc(rows[0], include_body=True)}
+        # Conditional filter missed: either the row is gone (404) or it moved
+        # on since our read (409 conflict — another writer won the race).
+        cur = (
+            supabase.table("infra_diagrams").select("id").eq("id", doc_id[:64]).limit(1).execute()
+        )
+        if not (cur.data or []):
+            raise HTTPException(404, "Diagram not found")
+        raise HTTPException(409, "Diagram was modified by someone else — reload and retry")
+    snap_ok = _snapshot_revision(old)
+    if bool(old.get("published")) != body.published:
+        action = "infra.publish" if body.published else "infra.unpublish"
+    else:
+        action = "infra.update"
+    _audit(request, admin, action, slug, {
+        "title": body.title.strip(),
+        "published": body.published,
+    })
+    return {
+        "diagram": _row_to_doc(rows[0], include_body=True),
+        **({} if snap_ok else {"snapshotFailed": True}),
+    }
 
 
 @router.delete("/diagrams/{doc_id}")
-def delete_diagram(doc_id: str, admin: dict = Depends(require_admin)):
+def delete_diagram(doc_id: str, request: Request, admin: dict = Depends(require_admin)):
+    _require_uuid(doc_id)
     try:
         res = supabase.table("infra_diagrams").delete().eq("id", doc_id[:64]).execute()
     except Exception as exc:
@@ -414,6 +495,7 @@ def delete_diagram(doc_id: str, admin: dict = Depends(require_admin)):
         raise HTTPException(500, "Could not delete diagram")
     if not (res.data or []):
         raise HTTPException(404, "Diagram not found")
+    _audit(request, admin, "infra.delete", doc_id[:64])
     return {"deleted": True}
 
 
@@ -421,6 +503,7 @@ def delete_diagram(doc_id: str, admin: dict = Depends(require_admin)):
 def list_revisions(doc_id: str, offset: int = Query(0, ge=0, le=10000),
                    admin: dict = Depends(require_admin)):
     """Admin: revision history (metas only, newest first, 50 per page)."""
+    _require_uuid(doc_id)
     res = supabase.table("infra_diagram_revisions").select(
         "id,created_at,title,published"
     ).eq("diagram_id", doc_id[:64]).order("created_at", desc=True).range(
@@ -438,6 +521,8 @@ def list_revisions(doc_id: str, offset: int = Query(0, ge=0, le=10000),
 @router.get("/diagrams/{doc_id}/revisions/{revision_id}")
 def get_revision(doc_id: str, revision_id: str, admin: dict = Depends(require_admin)):
     """Admin: one full revision (doc body) for inspection before restore."""
+    _require_uuid(doc_id)
+    _require_uuid(revision_id)
     res = supabase.table("infra_diagram_revisions").select("*").eq(
         "diagram_id", doc_id[:64]
     ).eq("id", revision_id[:64]).limit(1).execute()
@@ -458,13 +543,16 @@ def get_revision(doc_id: str, revision_id: str, admin: dict = Depends(require_ad
 
 
 @router.post("/diagrams/{doc_id}/revisions/{revision_id}/restore")
-def restore_revision(doc_id: str, revision_id: str, admin: dict = Depends(require_admin)):
+def restore_revision(doc_id: str, revision_id: str, request: Request,
+                     admin: dict = Depends(require_admin)):
     """Admin: roll the diagram back to a revision.
 
     The current state is snapshotted first (so a restore is itself
     undoable). The slug is intentionally NOT restored — it belongs to the
     live row and an old slug may now belong to a different diagram (409).
     """
+    _require_uuid(doc_id)
+    _require_uuid(revision_id)
     prev = supabase.table("infra_diagrams").select("*").eq("id", doc_id[:64]).limit(1).execute()
     old = (prev.data or [None])[0]
     if not old:
@@ -483,12 +571,14 @@ def restore_revision(doc_id: str, revision_id: str, admin: dict = Depends(requir
     palette = _validate_palette(doc.get("categoryColors"))
     custom = _validate_custom_categories(doc.get("customCategories"))
     try:
-        updated = (
+        query = (
             supabase.table("infra_diagrams")
             .update({
                 "title": (rev.get("title") or old.get("title") or "Untitled diagram").strip()[:120],
                 "published": bool(rev.get("published")),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
+                "node_count": len(nodes),
+                "flow_count": len(flows),
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
@@ -497,13 +587,29 @@ def restore_revision(doc_id: str, revision_id: str, admin: dict = Depends(requir
                 },
             })
             .eq("id", doc_id[:64])
-            .execute()
         )
+        if old.get("updated_at"):
+            query = query.eq("updated_at", old["updated_at"])
+        updated = query.execute()
     except Exception as exc:
         log.error("infra restore failed: %s", exc)
         raise HTTPException(500, "Could not restore revision")
     rows = updated.data or []
     if not rows:
-        raise HTTPException(404, "Diagram not found")
-    _snapshot_revision(old)
-    return {"diagram": _row_to_doc(rows[0], include_body=True)}
+        # Conditional filter missed: vanished (404) or a concurrent write
+        # landed first (409) — see update_diagram.
+        cur = (
+            supabase.table("infra_diagrams").select("id").eq("id", doc_id[:64]).limit(1).execute()
+        )
+        if not (cur.data or []):
+            raise HTTPException(404, "Diagram not found")
+        raise HTTPException(409, "Diagram was modified by someone else — reload and retry")
+    snap_ok = _snapshot_revision(old)
+    _audit(request, admin, "infra.restore", old.get("slug") or doc_id[:64], {
+        "revision_id": revision_id[:64],
+        "published": bool(rev.get("published")),
+    })
+    return {
+        "diagram": _row_to_doc(rows[0], include_body=True),
+        **({} if snap_ok else {"snapshotFailed": True}),
+    }

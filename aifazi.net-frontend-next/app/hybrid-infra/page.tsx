@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
-import HybridInfraLoader from '@/components/HybridInfraLoader'
-import HybridInfraLibrary from '@/components/HybridInfraLibrary'
-import HybridInfraErrorBoundary from '@/components/HybridInfraErrorBoundary'
+import HybridInfraBody from '@/components/HybridInfraBody'
 import EditSiteFab from '@/components/blocks/EditSiteFab'
 
 const SITE = 'https://aifazi.net'
@@ -43,10 +41,8 @@ export default async function HybridInfraPage({
   searchParams?: Promise<{ diagram?: string }>
 }) {
   const params = (await searchParams) ?? {}
-  const activeSlug =
-    typeof params.diagram === 'string' && params.diagram.trim() !== ''
-      ? params.diagram
-      : 'plan-a'
+  const hasDiagram = typeof params.diagram === 'string' && params.diagram.trim() !== ''
+  const activeSlug = hasDiagram ? (params.diagram as string) : 'plan-a'
   return (
     <>
       <script
@@ -62,66 +58,8 @@ export default async function HybridInfraPage({
       }}
     >
       <div style={{ maxWidth: 1440, margin: '0 auto' }}>
-        <div style={{ marginBottom: 18 }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 11,
-              letterSpacing: 3,
-              color: 'var(--cyan)',
-              fontWeight: 700,
-              marginBottom: 8,
-            }}
-          >
-            CASE STUDY · IT MODERNIZATION
-          </div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(30px, 4vw, 54px)',
-              fontWeight: 800,
-              color: 'var(--text)',
-              margin: '0 0 8px',
-              letterSpacing: -0.5,
-            }}
-          >
-            Plan A — Hybrid Infrastructure
-          </h1>
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: 13,
-              color: 'var(--muted)',
-              margin: 0,
-              maxWidth: 760,
-              lineHeight: 1.6,
-            }}
-          >
-            On-premises core + Microsoft 365 / Entra ID / Defender / Purview.
-            Select any component to inspect its role, workloads, and
-            dependencies.
-          </p>
-        </div>
-        <HybridInfraLibrary activeSlug={activeSlug} />
-        <HybridInfraErrorBoundary>
-          <HybridInfraLoader />
-        </HybridInfraErrorBoundary>
+        <HybridInfraBody initialSlug={activeSlug} initialEntered={hasDiagram} />
         <EditSiteFab />
-        <p
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 11,
-            color: 'var(--muted)',
-            lineHeight: 1.6,
-            marginTop: 18,
-            maxWidth: 900,
-          }}
-        >
-          Plan A is hybrid: on-premises AD + Entra ID · Synology +
-          SharePoint/OneDrive · Proxmox compute · Veeam + QNAP + off-site
-          immutable copy. Presented as an interactive case study; identifying
-          client details are omitted.
-        </p>
       </div>
     </main>
     </>

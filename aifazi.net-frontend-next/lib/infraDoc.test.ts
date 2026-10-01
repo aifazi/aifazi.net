@@ -41,6 +41,23 @@ describe('sanitizeDoc style fields', () => {
   })
 })
 
+describe('sanitizeDoc group id', () => {
+  it('keeps a well-formed gid and drops anything else', () => {
+    const ok = sanitizeDoc({
+      ...base,
+      nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge', gid: 'g-abc-1' }],
+    })
+    expect(ok?.nodes[0].gid).toBe('g-abc-1')
+    for (const bad of ['x'.repeat(41), 'UPPER!', 42 as unknown as string, ['g-1'] as unknown as string]) {
+      const clean = sanitizeDoc({
+        ...base,
+        nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge', gid: bad }],
+      })
+      expect(clean?.nodes[0].gid).toBeUndefined()
+    }
+  })
+})
+
 describe('sanitizeDoc category palette', () => {
   it('keeps valid hex overrides and drops bad keys/values', () => {
     const clean = sanitizeDoc({
