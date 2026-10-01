@@ -400,6 +400,78 @@ export default function HybridInfraEditor() {
     (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
     '#35a7ff'
 
+  // ── Palette filter (library search) ─────────────────────────
+  const [libQuery, setLibQuery] = useState('')
+  const libFiltered = useMemo(() => {
+    const q = libQuery.trim().toLowerCase()
+    if (!q) return INFRA_LIBRARY
+    return INFRA_LIBRARY.map((g) => ({
+      ...g,
+      items: g.items.filter(
+        (it) =>
+          it.name.toLowerCase().includes(q) ||
+          it.role.toLowerCase().includes(q) ||
+          it.desc.toLowerCase().includes(q) ||
+          it.category.toLowerCase().includes(q),
+      ),
+    })).filter((g) => g.items.length > 0)
+  }, [libQuery])
+
+  // ── Draft autosave (localStorage) ───────────────────────────
+  const DRAFT_KEY = 'hi-editor-draft'
+  const [draftOffer, setDraftOffer] = useState<{ doc: DiagramDoc; at: string } | null>(null)
+  useEffect(() => {
+    if (!editMode || !isAdmin) return
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { doc?: unknown; at?: string }
+      const clean = parsed.doc ? sanitizeDoc(parsed.doc) : null
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration of an external-system (localStorage) draft offer
+      if (clean && parsed.at) setDraftOffer({ doc: clean, at: parsed.at })
+    } catch {
+      /* noop */
+    }
+  }, [editMode, isAdmin])
+  useEffect(() => {
+    if (!editMode || !isAdmin) return
+    const t = window.setTimeout(() => {
+      try {
+        if (savedRef.current === JSON.stringify(doc)) return
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({ doc, at: new Date().toISOString() }),
+        )
+      } catch {
+        /* quota / private mode */
+      }
+    }, 1200)
+    return () => window.clearTimeout(t)
+  }, [doc, editMode, isAdmin])
+  const acceptDraft = () => {
+    if (!draftOffer) return
+    histRef.current = { past: [], future: [] }
+    syncHistButtons()
+    docRef.current = draftOffer.doc
+    setDoc(draftOffer.doc)
+    setDocId(null)
+    setIsSeed(false)
+    resetTransient()
+    setSelectedId(draftOffer.doc.nodes[0]?.id ?? null)
+    savedRef.current = null
+    setDraftOffer(null)
+    setNotice({ msg: 'Draft restored — save to keep it', ok: true })
+  }
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY)
+    } catch {
+      /* noop */
+    }
+    setDraftOffer(null)
+    setNotice({ msg: 'Draft discarded', ok: true })
+  }
+
   // ── Custom categories (doc-defined beyond the built-ins) ─────
   const [newCatLabel, setNewCatLabel] = useState('')
   const [newCatColor, setNewCatColor] = useState('#ff8a3d')
@@ -497,6 +569,11 @@ export default function HybridInfraEditor() {
       } else if ((mod && e.key.toLowerCase() === 'y') || (mod && e.shiftKey && e.key.toLowerCase() === 'z')) {
         e.preventDefault()
         redo()
+      } else if (mod && e.key.toLowerCase() === 'a') {
+        e.preventDefault()
+        const ids = docRef.current.nodes.map((n) => n.id)
+        selectOnly(ids)
+        setNotice({ msg: `Selected ${ids.length} node(s)`, ok: true })
       } else if (mod && e.key.toLowerCase() === 'c' && selectedNodeIds().length) {
         e.preventDefault()
         copySelected()
@@ -506,6 +583,9 @@ export default function HybridInfraEditor() {
       } else if (mod && e.key.toLowerCase() === 'd' && selectedNodeIds().length) {
         e.preventDefault()
         duplicateSelected()
+      } else if (e.key === 'Escape' && connectFrom) {
+        e.preventDefault()
+        setConnectFrom(null)
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && connectFrom) {
         // In link mode Delete/Backspace cancels the link, never deletes nodes.
         e.preventDefault()
@@ -1467,7 +1547,19 @@ export default function HybridInfraEditor() {
           <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
             IT LIBRARY — CLICK TO PLACE
           </div>
-          {INFRA_LIBRARY.map((g) => (
+          <input
+            value={libQuery}
+            onChange={(e) => setLibQuery(e.target.value)}
+            placeholder="Filter library…"
+            aria-label="Filter library items"
+            style={{ ...INPUT, marginBottom: 10 }}
+          />
+          {libFiltered.length === 0 && (
+            <div style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
+              No library items match “{libQuery}”.
+            </div>
+          )}
+          {libFiltered.map((g) => (
             <div key={g.id} style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 6, fontFamily: 'var(--font-mono)' }}>
                 {g.title.toUpperCase()}
@@ -1645,9 +1737,10 @@ export default function HybridInfraEditor() {
         >
           {!selected ? (
             <div style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
-              Select a node to edit its properties. Drag nodes to move them.
-              Use CONNECT to draw animated links between nodes.
-              Hold Shift and click nodes to multi-select (group drag, COPY/PASTE, Ctrl+D).
+              Select a node to edit its properties.
+              <br />Drag nodes to move · Space+drag or empty-space drag pans · scroll zooms.
+              <br />CONNECT draws animated links · Shift+click multi-selects.
+              <br />Shortcuts: Ctrl+Z/Y undo/redo · Ctrl+C/V/D copy/paste/dup · Ctrl+A select all · arrows nudge (Alt=10px) · Del deletes · Esc cancels link.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

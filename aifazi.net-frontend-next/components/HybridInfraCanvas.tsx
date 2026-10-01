@@ -1269,62 +1269,73 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         return Math.round(v / step) * step
       }
 
-      function onMove(e: MouseEvent) {
-        const rect = canvas.getBoundingClientRect()
-        const mx = e.clientX - rect.left
-        const my = e.clientY - rect.top
+      /** Shared drag update for mouse + pointer (incl. pen/touch capture). */
+      function updateDrag(mx: number, my: number) {
+        if (!dragId) return
+        const d = designFromClient(mx, my)
+        if (dragGroup) {
+          const ddx = d.x - dragStart.x
+          const ddy = d.y - dragStart.y
+          if (Math.abs(ddx) > 2 || Math.abs(ddy) > 2) dragMoved = true
+          dragTouched = true
+          for (const g of dragGroup) {
+            sRef.current.onMoveNode?.(g.id, {
+              x: snap(g.ox + ddx),
+              y: snap(g.oy + ddy),
+            }, false)
+          }
+          return
+        }
+        const node = byId(dragId)
+        if (node && sRef.current.onMoveNode) {
+          if (node.layer === 'rack') {
+            const rackU = Math.max(
+              1,
+              Math.min(
+                42,
+                Math.round((d.y - (RACK.y + RACK.topPad)) / RACK.unitH) + 1,
+              ),
+            )
+            if (rackU !== node.rackU) {
+              dragTouched = true
+              sRef.current.onMoveNode(dragId, { rackU }, false)
+            }
+          } else {
+            const box = boxes.get(dragId)
+            if (box) {
+              const nx = snap(d.x - dragDX)
+              const ny = snap(d.y - dragDY)
+              if (Math.abs(nx - box.x) > 2 || Math.abs(ny - box.y) > 2) dragMoved = true
+              dragTouched = true
+              sRef.current.onMoveNode(dragId, { x: nx, y: ny }, false)
+            }
+          }
+        }
+      }
+
+      function updateCursor(mx: number, my: number) {
         const found = hitAt(mx, my)
         hoverId = found
-        canvas.style.cursor = dragId || panId
+        canvas.style.cursor = dragId || panId !== null
           ? 'grabbing'
           : sRef.current.editable && sRef.current.connectFrom
             ? 'crosshair'
             : found
               ? 'pointer'
               : 'grab'
+      }
+
+      // Hover + (mouse-compat) drag updates. Pointer capture on pen/touch
+      // delivers pointermove only, so drag also lives in onPointerMove.
+      function onMove(e: MouseEvent) {
+        const rect = canvas.getBoundingClientRect()
+        const mx = e.clientX - rect.left
+        const my = e.clientY - rect.top
+        updateCursor(mx, my)
         if (dragId) {
-          const d = designFromClient(mx, my)
-          if (dragGroup) {
-            const ddx = d.x - dragStart.x
-            const ddy = d.y - dragStart.y
-            if (Math.abs(ddx) > 2 || Math.abs(ddy) > 2) dragMoved = true
-            dragTouched = true
-            for (const g of dragGroup) {
-              sRef.current.onMoveNode?.(g.id, {
-                x: snap(g.ox + ddx),
-                y: snap(g.oy + ddy),
-              }, false)
-            }
-            return
-          }
-          const node = byId(dragId)
-          if (node && sRef.current.onMoveNode) {
-            if (node.layer === 'rack') {
-              const rackU = Math.max(
-                1,
-                Math.min(
-                  42,
-                  Math.round((d.y - (RACK.y + RACK.topPad)) / RACK.unitH) + 1,
-                ),
-              )
-              if (rackU !== node.rackU) {
-                dragTouched = true
-                sRef.current.onMoveNode(dragId, { rackU }, false)
-              }
-            } else {
-              const box = boxes.get(dragId)
-              if (box) {
-                const nx = snap(d.x - dragDX)
-                const ny = snap(d.y - dragDY)
-                if (Math.abs(nx - box.x) > 2 || Math.abs(ny - box.y) > 2) dragMoved = true
-                dragTouched = true
-                sRef.current.onMoveNode(dragId, { x: nx, y: ny }, false)
-              }
-            }
-          }
-        } else if (sRef.current.editable) {
-          const d = designFromClient(mx, my)
-          cursorDesign = d
+          updateDrag(mx, my)
+        } else if (sRef.current.editable && panId === null) {
+          cursorDesign = designFromClient(mx, my)
         }
       }
 
@@ -1374,6 +1385,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const { mx, my } = toDesign(e)
         const found = hitAt(mx, my)
         const p = sRef.current
+        // Space+drag always pans (even over nodes) — design-tool convention.
+        if (spaceHeld && primary) {
+          startPan(e)
+          return
+        }
+        // Locked nodes: click-to-select only (no drag, no pan-through).
+        if (primary && found && p.lockedIds?.has(found)) return
         // Edit mode: a press on a node starts a node drag (never a pan).
         // Link mode must not start a move either — the click completes the
         // connection, otherwise press-drag-release both moves and links.
@@ -1427,7 +1445,8 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
         // Pan: middle button anywhere, primary button on empty space (edit
         // mode) or anywhere (view mode). Touch is excluded so the page can
-        // still scroll under a finger.
+        // still scroll under a finger (node drag above still works via
+        // pointer capture + pointermove).
         if (e.pointerType === 'touch') return
         if (middle || (primary && (!found || !p.editable))) startPan(e)
       }
@@ -1438,19 +1457,42 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
 
       function onPointerMove(e: PointerEvent) {
-        if (panId !== e.pointerId) return
-        const dx = e.clientX - panSX
-        const dy = e.clientY - panSY
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true
-        viewRef.current = clampView(
-          S,
-          { ...viewRef.current, px: panPX + dx, py: panPY + dy },
-          W,
-          H,
-          { w: DESIGN_W, h: DESIGN_H },
-        )
-        layoutScene()
-        kick()
+        const rect = canvas.getBoundingClientRect()
+        const mx = e.clientX - rect.left
+        const my = e.clientY - rect.top
+
+        // Hold-and-move the view (middle-button / empty-space drag).
+        if (panId === e.pointerId) {
+          const dx = e.clientX - panSX
+          const dy = e.clientY - panSY
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panMoved = true
+          viewRef.current = clampView(
+            S,
+            { ...viewRef.current, px: panPX + dx, py: panPY + dy },
+            W,
+            H,
+            { w: DESIGN_W, h: DESIGN_H },
+          )
+          layoutScene()
+          kick()
+          return
+        }
+
+        // Hold-and-move a node (or multi-selection). Pointer capture keeps
+        // events on the canvas even when the cursor leaves it mid-drag.
+        if (dragId) {
+          updateCursor(mx, my)
+          updateDrag(mx, my)
+          kick()
+          return
+        }
+
+        if (sRef.current.editable) {
+          cursorDesign = designFromClient(mx, my)
+          // Live rubber-band for the pending connect line.
+          if (sRef.current.connectFrom) kick()
+        }
+        updateCursor(mx, my)
       }
 
       // Close the editor's drag checkpoint: commit the final position (or at
@@ -1579,6 +1621,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
 
       function onTouchStart(e: TouchEvent) {
+        // A live node drag owns the finger — don't also pan the view, and
+        // don't let the page scroll under the drag.
+        if (dragId) {
+          e.preventDefault()
+          return
+        }
+        if (panId !== null) return
         if (e.touches.length === 1) {
           pinchDist = 0
           touchPan = { sx: e.touches[0].clientX, px: viewRef.current.px }
@@ -1591,6 +1640,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
 
       function onTouchMove(e: TouchEvent) {
+        if (dragId || panId !== null) return
         if (e.touches.length === 2 && pinchDist > 0) {
           e.preventDefault()
           const d = pinchLen(e.touches)
@@ -1638,17 +1688,62 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
 
       let kbIndex = -1
+      // Space+drag pans the view (design-tool hold-to-move).
+      let spaceHeld = false
+      function onSpaceKey(e: KeyboardEvent) {
+        if (e.code !== 'Space' && e.key !== ' ') return
+        const ae = document.activeElement
+        const tag = (ae?.tagName || '').toLowerCase()
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return
+        if (ae && ae !== canvas && ae !== document.body && ae !== wrap) return
+        if (e.type === 'keydown') {
+          spaceHeld = true
+          canvas.style.cursor = 'grab'
+          if (ae === canvas || ae === document.body) e.preventDefault()
+        } else {
+          spaceHeld = false
+          if (panId === null && !dragId) canvas.style.cursor = 'grab'
+        }
+      }
+
       function onKey(e: KeyboardEvent) {
         const nl = nodeList()
         if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
           e.preventDefault()
-          // Shift+arrows pan the viewport; plain arrows cycle components.
+          // Shift+arrows pan the viewport.
           if (e.shiftKey) {
             const step = 90
             const dx = e.key === 'ArrowRight' ? -step : e.key === 'ArrowLeft' ? step : 0
             const dy = e.key === 'ArrowDown' ? -step : e.key === 'ArrowUp' ? step : 0
             panBy(dx, dy)
             return
+          }
+          // Edit mode: arrows nudge the selection (1px / 10px with Alt).
+          if (sRef.current.editable && sRef.current.onMoveNode) {
+            const ids = [
+              ...(sRef.current.selectedIds?.size
+                ? sRef.current.selectedIds
+                : sRef.current.selectedId
+                  ? [sRef.current.selectedId]
+                  : []),
+            ].filter((id) => !sRef.current.lockedIds?.has(id))
+            if (ids.length) {
+              const step = e.altKey ? 10 : 1
+              const dx = e.key === 'ArrowRight' ? step : e.key === 'ArrowLeft' ? -step : 0
+              const dy = e.key === 'ArrowDown' ? step : e.key === 'ArrowUp' ? -step : 0
+              for (const id of ids) {
+                const n = byId(id)
+                const b = boxes.get(id)
+                if (!n || n.layer === 'rack') continue
+                if (b) {
+                  sRef.current.onMoveNode(id, { x: Math.round(b.x) + dx, y: Math.round(b.y) + dy }, true)
+                } else if (typeof n.x === 'number' && typeof n.y === 'number') {
+                  sRef.current.onMoveNode(id, { x: n.x + dx, y: n.y + dy }, true)
+                }
+              }
+              kick()
+              return
+            }
           }
           // Empty doc (NEW or everything deleted): nothing to cycle.
           if (!nl.length) return
@@ -1711,7 +1806,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       canvas.addEventListener('mousedown', onMouseDown)
       canvas.addEventListener('click', onClick)
       canvas.addEventListener('keydown', onKey)
+      window.addEventListener('keydown', onSpaceKey)
+      window.addEventListener('keyup', onSpaceKey)
       canvas.addEventListener('pointerdown', onPointerDown)
+      canvas.addEventListener('pointermove', onPointerMove)
       canvas.addEventListener('pointerup', onPointerUp)
       canvas.addEventListener('pointercancel', onPointerCancel)
       canvas.addEventListener('wheel', onWheel, { passive: false })
@@ -1746,7 +1844,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         canvas.removeEventListener('mousedown', onMouseDown)
         canvas.removeEventListener('click', onClick)
         canvas.removeEventListener('keydown', onKey)
+        window.removeEventListener('keydown', onSpaceKey)
+        window.removeEventListener('keyup', onSpaceKey)
         canvas.removeEventListener('pointerdown', onPointerDown)
+        canvas.removeEventListener('pointermove', onPointerMove)
         canvas.removeEventListener('pointerup', onPointerUp)
         canvas.removeEventListener('pointercancel', onPointerCancel)
         canvas.removeEventListener('wheel', onWheel)
