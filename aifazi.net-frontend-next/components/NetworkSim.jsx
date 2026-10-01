@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import api, { getAuthToken } from '@/lib/api'
+import { Input } from '@/core/forms'
 
 const BANNER = [
   '╔══════════════════════════════════════════════════════╗',
@@ -726,11 +727,11 @@ export default function NetworkSim({ embedded }) {
 
         <div className="terminal-prompt-row" style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 2 }}>
           <span className="terminal-prompt-label" style={{ color: 'var(--cyan)', whiteSpace: 'nowrap', fontSize: 12 }}>{getPrompt()} </span>
-          <input
+          <Input
             className="terminal-command-input"
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={v => setInput(v)}
             onKeyDown={handleKey}
             autoFocus
             spellCheck={false}

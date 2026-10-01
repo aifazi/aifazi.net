@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useInlineEdit } from '../../context/EditContext'
+import { Input } from '../../core/forms'
 import { SvgWrap } from './shared'
 
 function AvatarMode({ visibleRef }) {
@@ -353,10 +354,10 @@ function AvatarMode({ visibleRef }) {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>
               PASTE IMAGE URL (jpg, png, webp, gif)
             </div>
-            <input
+            <Input
               type="text"
               value={draftUrl}
-              onChange={e => setDraftUrl(e.target.value)}
+              onChange={v => setDraftUrl(v)}
               placeholder="https://example.com/avatar.jpg"
               autoFocus
               style={{

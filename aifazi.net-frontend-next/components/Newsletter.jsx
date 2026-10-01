@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import { EditableText } from '../context/EditContext'
 import api, { getAuthToken } from '@/lib/api'
+import { Input } from '@/core/forms'
 
 export default function Newsletter() {
   const headerRef = useReveal()
@@ -146,10 +147,10 @@ export default function Newsletter() {
               <form onSubmit={submit}>
                 <div className="terminal-prompt-row newsletter-prompt-row" style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
                   <span className="terminal-prompt-label" style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--cyan)', flexShrink: 0 }}>{'>'}</span>
-                  <input
+                  <Input
                     className="terminal-command-input newsletter-command-input"
                     ref={inputRef}
-                    type="email" value={email} onChange={e => setEmail(e.target.value)}
+                    type="email" value={email} onChange={v => setEmail(v)}
                     placeholder="your@email.com" required disabled={status === 'loading'}
                     style={{ flex: 1, color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, caretColor: 'var(--green)' }}
                   />

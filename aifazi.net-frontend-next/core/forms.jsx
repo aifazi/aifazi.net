@@ -64,6 +64,18 @@ function inputAccent() {
   }
 }
 
+/**
+ * Shared props for the field components. Declared via JSDoc so TypeScript
+ * consumers (.tsx call sites) get proper contextual typing for `onChange`
+ * and the event handlers, and see every prop as optional, while arbitrary
+ * native attributes (aria-*, min, max, readOnly, autoFocus, …) still pass
+ * through the index signature.
+ * @typedef {{ [key: string]: any, value?: any, onChange?: (value: string, event: any) => void, placeholder?: string, type?: string, style?: any, disabled?: boolean, onKeyDown?: (e: any) => void, onKeyUp?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void, onInput?: (e: any) => void, onClick?: (e: any) => void, onMouseEnter?: (e: any) => void, onMouseLeave?: (e: any) => void }} InputProps
+ */
+
+/**
+ * @param {InputProps} props
+ */
 export function Input({ value, onChange, placeholder, type = 'text', style = {}, disabled, ...props }) {
   if (type === 'datetime-local') {
     return (
@@ -100,6 +112,9 @@ export function Input({ value, onChange, placeholder, type = 'text', style = {},
   )
 }
 
+/**
+ * @param {{ [key: string]: any, value?: any, onChange?: (value: string, event: any) => void, placeholder?: string, rows?: number, style?: any, disabled?: boolean, onKeyDown?: (e: any) => void, onKeyUp?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void, onInput?: (e: any) => void, onClick?: (e: any) => void }} props
+ */
 export function TextArea({ value, onChange, placeholder, rows = 3, style = {}, disabled, ...props }) {
   return (
     <textarea
@@ -125,6 +140,9 @@ export function TextArea({ value, onChange, placeholder, rows = 3, style = {}, d
   )
 }
 
+/**
+ * @param {{ [key: string]: any, value?: any, onChange?: (value: any, option: any) => void, options?: any[], placeholder?: string, style?: any, disabled?: boolean, placement?: 'bottom-left' | 'bottom-right', menuStyle?: any, onKeyDown?: (e: any) => void, onKeyUp?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void }} props
+ */
 export function Select({
   value,
   onChange,
@@ -255,6 +273,9 @@ export function Select({
   )
 }
 
+/**
+ * @param {{ [key: string]: any, checked?: boolean, onChange?: (checked: boolean) => void, disabled?: boolean, label?: any, style?: any, onKeyDown?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void }} props
+ */
 export function Checkbox({ checked, onChange, disabled, label, style = {}, ...props }) {
   const accent = inputAccent()
   // Historic look used green for the default (cyan-group) styles — preserve it
@@ -306,6 +327,9 @@ export function Checkbox({ checked, onChange, disabled, label, style = {}, ...pr
   )
 }
 
+/**
+ * @param {{ [key: string]: any, value?: any, onChange?: (value: number) => void, min?: number, max?: number, step?: number, disabled?: boolean, style?: any, onKeyDown?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void }} props
+ */
 export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled, style = {}, ...props }) {
   const ref = useRef(null)
   const num = Number(value ?? min)
@@ -321,7 +345,8 @@ export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled
     const r = ref.current.getBoundingClientRect()
     const raw = min + ((clientX - r.left) / r.width) * (max - min)
     const stepped = Math.round(raw / step) * step
-    const next = Math.min(max, Math.max(min, stepped))
+    const clean = Number(stepped.toPrecision(12))
+    const next = Math.min(max, Math.max(min, clean))
     onChange?.(next)
   }
 

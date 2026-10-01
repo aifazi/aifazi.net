@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Input } from '@/core/forms'
 
 // ─── Icon data ─────────────────────────────────────────────────────────────
 export const LORDICON_ICONS = [
@@ -192,9 +193,9 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
           {tab === 'custom' && (
             <div>
               <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>IMAGE OR LORDICON URL</div>
-              <input
+              <Input
                 value={customUrl}
-                onChange={e => { setCustomUrl(e.target.value); setSelected(e.target.value) }}
+                onChange={v => { setCustomUrl(v); setSelected(v) }}
                 placeholder="https://... (.png / .svg / .json)"
                 style={{
                   width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',

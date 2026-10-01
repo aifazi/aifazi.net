@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { Input } from '@/core/forms'
 
 const COMMANDS = {
   help: {
@@ -226,11 +227,11 @@ export default function AboutTerminal() {
 
         <div className="terminal-prompt-row" style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 2 }}>
           <span className="terminal-prompt-label" style={{ color: 'var(--cyan)', whiteSpace: 'nowrap', fontSize: 13 }}>tanvir@about:~$ </span>
-          <input
+          <Input
             className="terminal-command-input"
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={v => setInput(v)}
             onKeyDown={handleKey}
             autoFocus
             spellCheck={false}
