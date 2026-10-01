@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { Select } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
@@ -69,13 +70,7 @@ export default function PaymentsTab() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, marginBottom: 18 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
           <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>REFUND A PAID ORDER</div>
-          <select value={orderFilter} onChange={e => setOrderFilter(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '6px 10px' }}>
-            <option value="all">All orders</option>
-            <option value="paid">Paid</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="refunded">Refunded</option>
-          </select>
+          <Select value={orderFilter} onChange={(v) => setOrderFilter(v)} options={[{ value: 'all', label: 'All orders' }, { value: 'paid', label: 'Paid' }, { value: 'processing', label: 'Processing' }, { value: 'shipped', label: 'Shipped' }, { value: 'refunded', label: 'Refunded' }]} />
         </div>
         {orders.length === 0 ? <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>No orders.</div> : (
           <div style={{ display: 'grid', gap: 6 }}>

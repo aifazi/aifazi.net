@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api, { getAuthToken } from '@/lib/api'
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
+import { Checkbox, TextArea } from '@/core/forms'
 import { CollectionBrowser, MaintenancePanel, ExportPanel, QueryPanel, MiniChart, FeedRow } from '../dbGuiParts'
 import { AuditLogTab, DbHealthTab, SessionsTab } from '../dbGuiTabs'
 
@@ -131,7 +132,7 @@ function SqlConsoleTab() {
       </div>
       <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', overflow:'hidden' }}>
         <div style={{ borderBottom:'1px solid #0f1a26' }}>
-          <textarea value={sql} onChange={e => setSql(e.target.value)} placeholder='Enter SQL... e.g. SELECT * FROM users LIMIT 10'
+          <TextArea value={sql} onChange={(v) => setSql(v)} placeholder='Enter SQL... e.g. SELECT * FROM users LIMIT 10'
             onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) run() }}
             style={{ width:'100%', minHeight:60, maxHeight:200, background:'var(--bg)', border:'none', color:'var(--text)', fontFamily:'var(--font-mono,monospace)', fontSize:11, padding:'10px 14px', outline:'none', resize:'vertical', boxSizing:'border-box' }} />
         </div>
@@ -407,7 +408,7 @@ function BackupTab() {
           {/* Schema checkbox */}
           <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding:'8px 12px', background:'var(--bg3)', border:'1px solid var(--border)', userSelect:'none' }}
             onClick={() => toggle('schema')}>
-            <input type="checkbox" checked={options.schema} onChange={() => {}} style={{ accentColor:'var(--green,#00ff88)', width:16, height:16, cursor:'pointer' }} />
+            <Checkbox checked={options.schema} onChange={() => {}} />
             <div>
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--text)', fontWeight:600 }}>Schema</div>
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:2 }}>
@@ -420,7 +421,7 @@ function BackupTab() {
           {options.schema && (
             <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding:'6px 12px 6px 38px', userSelect:'none' }}
               onClick={() => toggle('ifNotExists')}>
-              <input type="checkbox" checked={options.ifNotExists} onChange={() => {}} style={{ accentColor:'var(--cyan,#00d4ff)', width:14, height:14, cursor:'pointer' }} />
+              <Checkbox checked={options.ifNotExists} onChange={() => {}} />
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>
                 Use <span style={{ color:'var(--cyan,#00d4ff)' }}>IF NOT EXISTS</span> (safer for migrations)
               </div>
@@ -430,7 +431,7 @@ function BackupTab() {
           {/* Data checkbox */}
           <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding:'8px 12px', background:'var(--bg3)', border:'1px solid var(--border)', userSelect:'none' }}
             onClick={() => toggle('data')}>
-            <input type="checkbox" checked={options.data} onChange={() => {}} style={{ accentColor:'var(--green,#00ff88)', width:16, height:16, cursor:'pointer' }} />
+            <Checkbox checked={options.data} onChange={() => {}} />
             <div>
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--text)', fontWeight:600 }}>Data</div>
               <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:2 }}>INSERT INTO statements (passwords and secrets excluded)</div>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import api from '@/lib/api'
 import { SITE_URL } from '@/lib/config'
+import { Input, TextArea } from '@/core/forms'
 
 /* ── design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -356,7 +357,7 @@ const [saveError, setSaveError] = useState('')
       {/* Subject */}
       <div>
         <label style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, display:'block', marginBottom:6 }}>EMAIL SUBJECT</label>
-        <input value={subject} onChange={e => { setSubject(e.target.value); setDirty(true) }}
+        <Input value={subject} onChange={(v) => { setSubject(v); setDirty(true) }}
           style={{ width:'100%', boxSizing:'border-box', padding:'10px 14px',
             fontFamily:C.mono, fontSize:12, background:C.bg2, border:`1px solid ${C.border}`,
             color:C.text, borderRadius:4, outline:'none' }} />
@@ -379,8 +380,8 @@ const [saveError, setSaveError] = useState('')
 
       {/* Editor / Preview / Plain Text panes */}
       {tab === 'editor' && (
-        <textarea ref={textareaRef} value={html}
-          onChange={e => { setHtml(e.target.value); setDirty(true) }}
+        <TextArea ref={textareaRef} value={html}
+          onChange={(v) => { setHtml(v); setDirty(true) }}
           spellCheck={false}
           style={{ width:'100%', boxSizing:'border-box', minHeight:320, padding:'14px',
             fontFamily:C.mono, fontSize:11, lineHeight:1.8, background:C.bg2,

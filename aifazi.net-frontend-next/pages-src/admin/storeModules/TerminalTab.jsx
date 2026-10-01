@@ -5,6 +5,7 @@ import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
 import { usePausableInterval } from '../../../hooks/usePausableInterval'
 import ScanCam from './ScanCam'
+import { Input, Select } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
@@ -65,8 +66,8 @@ export default function TerminalTab() {
     }
   }
 
-  const pickProduct = e => {
-    const pid = e.target.value
+  const pickProduct = v => {
+    const pid = v
     if (!pid) return
     const p = products.find(x => x.id === pid)
     setLines(prev => {
@@ -74,7 +75,7 @@ export default function TerminalTab() {
       if (ex) return prev.map(x => x.id === ex.id ? { ...x, qty: x.qty + 1 } : x)
       return [...prev, { kind: 'product', id: pid, product_id: pid, name: p.name, price_cents: p.price_cents, qty: 1 }]
     })
-    e.target.value = ''
+    v = ''
   }
 
   const subtotal = lines.reduce((a, l) => a + l.price_cents * l.qty, 0)
@@ -201,11 +202,8 @@ export default function TerminalTab() {
           <ScanCam onScan={scan} label="SCAN ITEMS" placeholder="Scan a barcode to add" />
 
           <div style={{ display: 'flex', gap: 8, margin: 10, marginTop: 12 }}>
-            <select onChange={pickProduct} style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }}>
-              <option value="">Add from catalog…</option>
-              {products.map(p => <option key={p.id} value={p.id}>{p.name} · {money(p.price_cents)}</option>)}
-            </select>
-            <input value={custName} onChange={e => setCustName(e.target.value)} placeholder="Customer (optional)" style={{ width: 140, fontFamily: MONO, fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+            <Select onChange={(v) => pickProduct(v)} options={[{ value: '', label: 'Add from catalog…' }, ...products.map(p => ({ value: String(p.id), label: `${p.name} · ${money(p.price_cents)}` }))]} placeholder="Add from catalog…" style={{ flex: 1 }} />
+            <Input value={custName} onChange={(v) => setCustName(v)} placeholder="Customer (optional)" style={{ width: 140, fontFamily: MONO, fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
           </div>
 
           {lines.length === 0 ? (

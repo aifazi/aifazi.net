@@ -6,6 +6,7 @@ import { useDialog } from '../../components/Dialog'
 import { useNow } from '../../hooks/useNow'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Modal, EmptyState } from './ui'
+import { Checkbox, Input, Select } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = 'var(--green)'
@@ -141,34 +142,29 @@ function MonitorsTab() {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={lbl}>NAME</label><input value={form.name} onChange={e => set('name')(e.target.value)} placeholder="My server / My page / DB backup job" style={inp} /></div>
-            <div><label style={lbl}>TARGET</label><input value={form.target} onChange={e => set('target')(e.target.value)} placeholder={form.type === 'port' ? 'host' : form.type === 'cron' ? 'job name (e.g. cron-cleanup)' : form.type === 'dns' ? 'example.com' : 'https://...'} style={inp} /></div>
+            <div><label style={lbl}>NAME</label><Input value={form.name} onChange={(v) => set('name')(v)} placeholder="My server / My page / DB backup job" style={inp} /></div>
+            <div><label style={lbl}>TARGET</label><Input value={form.target} onChange={(v) => set('target')(v)} placeholder={form.type === 'port' ? 'host' : form.type === 'cron' ? 'job name (e.g. cron-cleanup)' : form.type === 'dns' ? 'example.com' : 'https://...'} style={inp} /></div>
           </div>
           {form.type === 'port' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div><label style={lbl}>PORT</label><input type="number" min={1} max={65535} value={form.port} onChange={e => set('port')(e.target.value)} placeholder="443 / 25 / 3306" style={inp} /></div>
+              <div><label style={lbl}>PORT</label><Input type="number" min={1} max={65535} value={form.port} onChange={(v) => set('port')(v)} placeholder="443 / 25 / 3306" style={inp} /></div>
             </div>
           )}
           {(form.type === 'keyword' || form.type === 'dns') && (
             <div style={{ display: 'grid', gridTemplateColumns: form.type === 'keyword' ? '2fr 1fr' : '1fr', gap: 12 }}>
               <div><label style={lbl}>{form.type === 'keyword' ? 'KEYWORD' : 'EXPECTED IP (optional)'}</label>
-                <input value={form.expected} onChange={e => set('expected')(e.target.value)} placeholder={form.type === 'keyword' ? 'e.g. "We are online"' : 'e.g. 1.2.3.4 (alert if it changes)'} style={inp} /></div>
+                <Input value={form.expected} onChange={(v) => set('expected')(v)} placeholder={form.type === 'keyword' ? 'e.g. "We are online"' : 'e.g. 1.2.3.4 (alert if it changes)'} style={inp} /></div>
               {form.type === 'keyword' && (
                 <div><label style={lbl}>MODE</label>
-                  <select value={form.mode} onChange={e => set('mode')(e.target.value)} style={inp}>
-                    <option value="contains">Alert when MISSING</option>
-                    <option value="not_contains">Alert when PRESENT</option>
-                  </select>
+                  <Select value={form.mode} onChange={(v) => set('mode')(v)} options={[{ value: 'contains', label: 'Alert when MISSING' }, { value: 'not_contains', label: 'Alert when PRESENT' }]} style={{ width: '100%' }} />
                 </div>
               )}
             </div>
           )}
           {form.type === 'cron' && (
-            <div><label style={lbl}>EXPECTED MAX GAP (seconds)</label><input type="number" min={5} value={form.interval_seconds} onChange={e => set('interval_seconds')(e.target.value)} style={inp} /></div>
+            <div><label style={lbl}>EXPECTED MAX GAP (seconds)</label><Input type="number" min={5} value={form.interval_seconds} onChange={(v) => set('interval_seconds')(v)} style={inp} /></div>
           )}
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.enabled} onChange={e => set('enabled')(e.target.checked)} /> Enabled
-          </label>
+          <Checkbox checked={form.enabled} onChange={(checked) => set('enabled')(checked)} label="Enabled" style={{ display: 'flex', gap: 8, alignItems: 'center', fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }} />
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => setEditing(null)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)', cursor: 'pointer', borderRadius: 8, flex: 1 }}>CANCEL</button>
             <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '10px 18px', background: G, color: '#000', border: 'none', cursor: 'pointer', borderRadius: 8, flex: 1, fontWeight: 800 }}>{saving ? 'SAVING…' : '✓ SAVE MONITOR'}</button>
@@ -521,7 +517,7 @@ function SettingsTab() {
       {/* Alert emails */}
       <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg2)', marginBottom: 12 }}>
         <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ALERT EMAILS</label>
-        <input value={emails} onChange={e => setEmails(e.target.value)} placeholder="admin@example.com, other@example.com"
+        <Input value={emails} onChange={(v) => setEmails(v)} placeholder="admin@example.com, other@example.com"
           style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 13, padding: '10px 12px', borderRadius: 8, outline: 'none' }} />
         <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Comma-separated. Sent via your configured email provider (Resend/Brevo/SMTP).</div>
       </div>
@@ -529,7 +525,7 @@ function SettingsTab() {
       {/* Threshold */}
       <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: 16, background: 'var(--bg2)', marginBottom: 12 }}>
         <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ALERT AFTER (CONSECUTIVE FAILURES)</label>
-        <input type="number" min="1" max="10" value={threshold} onChange={e => setThreshold(Number(e.target.value) || 2)}
+        <Input type="number" min="1" max="10" value={threshold} onChange={(v) => setThreshold(Number(v) || 2)}
           style={{ width: 80, background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 13, padding: '8px 10px', borderRadius: 8, outline: 'none' }} />
         <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>Avoids noisy alerts from single transient blips. Default 2.</div>
       </div>
@@ -539,12 +535,10 @@ function SettingsTab() {
         <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 10 }}>MONITORED SERVICES</label>
         <div style={{ display: 'grid', gap: 8 }}>
           {(cfg.available_services || []).map(s => (
-            <label key={s.name} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)' }}>
-              <input type="checkbox" checked={!!enabled[s.name]} onChange={e => setEnabled(prev => ({ ...prev, [s.name]: e.target.checked }))}
-                style={{ accentColor: 'var(--green)', width: 16, height: 16 }} />
-              {s.label}
-              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{s.name}</span>
-            </label>
+            <Checkbox key={s.name}
+              checked={!!enabled[s.name]} onChange={(checked) => setEnabled(prev => ({ ...prev, [s.name]: checked }))}
+              label={<span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>{s.label}<span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{s.name}</span></span>}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontFamily: 'var(--font-display)', fontSize: 13, color: 'var(--text)' }} />
           ))}
         </div>
       </div>
@@ -584,13 +578,8 @@ function ErrorsTab() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {sources.length > 0 && (
-            <select value={src} onChange={e => setSrc(e.target.value)} style={{
-              fontFamily: MONO, fontSize: 11, padding: '7px 10px', background: 'var(--bg3)', color: 'var(--text)',
-              border: '1px solid var(--border)', borderRadius: 8, outline: 'none', cursor: 'pointer',
-            }}>
-              <option value="">ALL SOURCES</option>
-              {sources.map(s => <option key={s} value={s}>{s.toUpperCase()}</option>)}
-            </select>
+            <Select value={src} onChange={(v) => setSrc(v)}
+              options={[{ value: '', label: 'ALL SOURCES' }, ...sources.map(s => ({ value: String(s), label: s.toUpperCase() }))]} />
           )}
           <button onClick={load} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', cursor: 'pointer', background: 'transparent', color: C, border: `1px solid ${C}45`, borderRadius: 8, fontWeight: 700 }}>↻ REFRESH</button>
         </div>

@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { Input, Select, TextArea } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
@@ -129,32 +130,28 @@ export default function ReviewsTab() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>AUTHOR</label>
-                <input value={testiForm.author_name} onChange={e => setTestiForm({ ...testiForm, author_name: e.target.value })} placeholder="Jane Doe" style={{ ...input, width: '100%' }} />
+                <Input value={testiForm.author_name} onChange={(v) => setTestiForm({ ...testiForm, author_name: v })} placeholder="Jane Doe" style={{ ...input, width: '100%' }} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ROLE</label>
-                <input value={testiForm.role} onChange={e => setTestiForm({ ...testiForm, role: e.target.value })} placeholder="Happy customer" style={{ ...input, width: '100%' }} />
+                <Input value={testiForm.role} onChange={(v) => setTestiForm({ ...testiForm, role: v })} placeholder="Happy customer" style={{ ...input, width: '100%' }} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>RATING</label>
-                <input type="number" min="1" max="5" value={testiForm.rating} onChange={e => setTestiForm({ ...testiForm, rating: Math.max(1, Math.min(5, Number(e.target.value))) })} style={{ ...input, width: '100%' }} />
+                <Input type="number" min="1" max="5" value={testiForm.rating} onChange={(v) => setTestiForm({ ...testiForm, rating: Math.max(1, Math.min(5, Number(v))) })} style={{ ...input, width: '100%' }} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>STATUS</label>
-                <select value={testiForm.status} onChange={e => setTestiForm({ ...testiForm, status: e.target.value })} style={{ ...input, width: '100%' }}>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <Select value={testiForm.status} onChange={(v) => setTestiForm({ ...testiForm, status: v })} options={[{ value: 'pending', label: 'Pending' }, { value: 'approved', label: 'Approved' }, { value: 'rejected', label: 'Rejected' }]} style={{ width: '100%' }} />
               </div>
               <div>
                 <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>DISPLAY ORDER</label>
-                <input type="number" value={testiForm.display_order} onChange={e => setTestiForm({ ...testiForm, display_order: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+                <Input type="number" value={testiForm.display_order} onChange={(v) => setTestiForm({ ...testiForm, display_order: Number(v) })} style={{ ...input, width: '100%' }} />
               </div>
             </div>
             <div style={{ marginTop: 10 }}>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>CONTENT</label>
-              <textarea value={testiForm.content} onChange={e => setTestiForm({ ...testiForm, content: e.target.value })} placeholder="Amazing quality and lightning-fast delivery…" rows={3} style={{ ...input, width: '100%', resize: 'vertical' }} />
+              <TextArea value={testiForm.content} onChange={(v) => setTestiForm({ ...testiForm, content: v })} placeholder="Amazing quality and lightning-fast delivery…" rows={3} style={{ ...input, width: '100%', resize: 'vertical' }} />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={saveTestimonial} disabled={savingT} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--cyan) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: savingT ? 'not-allowed' : 'pointer' }}>{savingT ? '…' : editingT ? 'UPDATE' : '+ CREATE'}</button>

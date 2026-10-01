@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { Input, Select } from '@/core/forms'
 import ScanCam from './ScanCam'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
@@ -156,25 +157,16 @@ export default function InventoryTab() {
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
               <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: OP[op].color, marginBottom: 10 }}>{OP[op].hint}</div>
               {op !== 'transfer' ? (
-                <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ width: '100%', fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px', marginBottom: 8 }}>
-                  <option value="">Location…</option>
-                  {locations.map(l => <option key={l.id} value={l.id}>{l.name}{l.is_default ? ' (default)' : ''}</option>)}
-                </select>
+                <Select value={opLoc} onChange={(v) => setOpLoc(v)} options={[{ value: '', label: 'Location…' }, ...locations.map(l => ({ value: String(l.id), label: `${l.name}${l.is_default ? ' (default)' : ''}` }))]} style={{ width: '100%' }} />
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-                  <select value={opLoc} onChange={e => setOpLoc(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px' }}>
-                    <option value="">From…</option>
-                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select>
-                  <select value={opTo} onChange={e => setOpTo(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 10px' }}>
-                    <option value="">To…</option>
-                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                  </select>
+                  <Select value={opLoc} onChange={(v) => setOpLoc(v)} options={[{ value: '', label: 'From…' }, ...locations.map(l => ({ value: String(l.id), label: l.name }))]} />
+                  <Select value={opTo} onChange={(v) => setOpTo(v)} options={[{ value: '', label: 'To…' }, ...locations.map(l => ({ value: String(l.id), label: l.name }))]} />
                 </div>
               )}
               <div style={{ display: 'flex', gap: 8 }}>
-                <input value={opQty} onChange={e => setOpQty(e.target.value)} type="number" min="1" placeholder="Qty" style={{ width: 90, fontFamily: MONO, fontSize: 12, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
-                <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note (optional)" style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+                <Input value={opQty} onChange={(v) => setOpQty(v)} type="number" min="1" placeholder="Qty" style={{ width: 90, fontFamily: MONO, fontSize: 12, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+                <Input value={note} onChange={(v) => setNote(v)} placeholder="Note (optional)" style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
               </div>
               <button onClick={runOp} disabled={busy} style={{ width: '100%', marginTop: 10, fontFamily: MONO, fontSize: 11, letterSpacing: 1.5, padding: '10px', background: `${OP[op].color}1a`, border: `1px solid ${OP[op].color}55`, color: OP[op].color, borderRadius: 6, cursor: busy ? 'wait' : 'pointer' }}>
                 {busy ? '…' : `${OP[op].label} ${picked ? picked.name : 'ITEM'}`}
@@ -186,11 +178,8 @@ export default function InventoryTab() {
         {/* Stock by location */}
         <div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Filter name / sku / barcode…" style={{ flex: 1, minWidth: 180, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 12px' }} />
-            <select value={locFilter} onChange={e => setLocFilter(e.target.value)} style={{ fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }}>
-              <option value="">All locations</option>
-              {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-            </select>
+            <Input value={search} onChange={(v) => setSearch(v)} placeholder="Filter name / sku / barcode…" style={{ flex: 1, minWidth: 180, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 12px' }} />
+            <Select value={locFilter} onChange={(v) => setLocFilter(v)} options={[{ value: '', label: 'All locations' }, ...locations.map(l => ({ value: String(l.id), label: l.name }))]} />
             <button onClick={() => setShowLocs(v => !v)} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 12px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>{showLocs ? 'HIDE LOCATIONS' : 'LOCATIONS'}</button>
           </div>
 
@@ -198,8 +187,8 @@ export default function InventoryTab() {
             <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, marginBottom: 12 }}>
               <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: C, marginBottom: 8 }}>WAREHOUSE LOCATIONS</div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-                <input value={locForm.name} onChange={e => setLocForm({ ...locForm, name: e.target.value })} placeholder="Name (e.g. Backroom)" style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
-                <input value={locForm.code} onChange={e => setLocForm({ ...locForm, code: e.target.value })} placeholder="Code" style={{ width: 90, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+                <Input value={locForm.name} onChange={(v) => setLocForm({ ...locForm, name: v })} placeholder="Name (e.g. Backroom)" style={{ flex: 1, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
+                <Input value={locForm.code} onChange={(v) => setLocForm({ ...locForm, code: v })} placeholder="Code" style={{ width: 90, fontFamily: MONO, fontSize: 11, background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '8px 10px' }} />
                 <button onClick={saveLoc} disabled={busy === 'loc'} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: `${G}14`, border: `1px solid ${G}44`, color: G, borderRadius: 6, cursor: busy === 'loc' ? 'wait' : 'pointer' }}>{busy === 'loc' ? '…' : '+ ADD'}</button>
               </div>
               {locations.map(l => (

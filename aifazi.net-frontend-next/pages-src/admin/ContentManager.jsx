@@ -5,6 +5,7 @@ import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { S, PageHeader } from './shared'
 import { EmptyState } from './ui'
+import { Input, TextArea } from '@/core/forms'
 
 /**
  * ContentManager — edit ANY content_blocks entry from the admin console.
@@ -192,7 +193,7 @@ export default function ContentManager() {
       {/* Search + prefix filter */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ flex: '1 1 220px', position: 'relative' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search content keys…" style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 32px' }} />
+          <Input value={search} onChange={(v) => setSearch(v)} placeholder="Search content keys…" style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 32px' }} />
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, opacity: 0.5 }}>🔍</span>
           {search && <button onClick={() => setSearch('')} aria-label="Clear search" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>✕</button>}
         </div>
@@ -260,9 +261,9 @@ export default function ContentManager() {
           <div style={modalStyle} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 6 }}>EDIT BLOCK</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', wordBreak: 'break-all', marginBottom: 12 }}>{editing.key}</div>
-            <textarea
+            <TextArea
               value={editing.text}
-              onChange={e => setEditing({ ...editing, text: e.target.value })}
+              onChange={(v) => setEditing({ ...editing, text: v })}
               spellCheck={false}
               style={{ flex: 1, minHeight: 260, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 12, fontFamily: 'var(--font-mono)', padding: 10, borderRadius: 8, resize: 'vertical', lineHeight: 1.6 }}
             />
@@ -296,9 +297,9 @@ function NewBlockForm({ onAdd, onCancel, existingKeys }) {
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       <div>
-        <input value={key} onChange={e => { setKey(e.target.value); setError('') }} placeholder="page.section.field" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)' }} />
+        <Input value={key} onChange={(v) => { setKey(v); setError('') }} placeholder="page.section.field" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)' }} />
       </div>
-      <textarea value={value} onChange={e => setValue(e.target.value)} placeholder="Value — plain text, or JSON for structured content" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', minHeight: 90, resize: 'vertical', lineHeight: 1.5 }} />
+      <TextArea value={value} onChange={(v) => setValue(v)} placeholder="Value — plain text, or JSON for structured content" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', minHeight: 90, resize: 'vertical', lineHeight: 1.5 }} />
       {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>{error}</div>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button onClick={onCancel} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '7px 12px' }}>CANCEL</button>

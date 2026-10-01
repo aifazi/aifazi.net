@@ -6,6 +6,7 @@ import { useDialog } from '../../components/Dialog'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary } from './shared'
 import { StatCard, Badge, Btn, EmptyState, Skeleton, Modal, Pagination } from './ui'
+import { Input } from '@/core/forms'
 
 /* ─────────────────────────────────────────────────────────────────────────────
    VPN Admin Panel — Manage all WireGuard peers, sessions, and server status.
@@ -371,7 +372,7 @@ function VpnPanelInner() {
       {/* Search */}
       {tab === 'peers' && (
         <div style={{ marginBottom: 16 }}>
-          <input value={search} onChange={e => setSearch(e.target.value)}
+          <Input value={search} onChange={(v) => setSearch(v)}
             placeholder="Search by name, IP, user, OS..."
             style={{ ...S.input, width: isMobile ? '100%' : 320 }} />
         </div>

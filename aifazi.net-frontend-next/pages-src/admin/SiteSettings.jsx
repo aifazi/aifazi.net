@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
-import { Slider } from '../../core/ui.jsx'
+import { Input, Slider, TextArea } from '../../core/ui.jsx'
 import { S, useIsMobile } from './shared'
 import { useTheme } from '@/app/providers'
 import { clearSiteSettingsCache, getSiteSettings } from '@/lib/siteSettings'
@@ -583,12 +583,12 @@ function SiteSettings() {
       <div style={T.card}>
         <div style={T.sec}>IDENTITY</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-          <div><label style={T.label}>SITE NAME</label><input value={cfg.siteName || ''} onChange={e => set('siteName', e.target.value)} placeholder="aifazi.net" style={T.inp} /></div>
-          <div><label style={T.label}>TAGLINE</label><input value={cfg.tagline || ''} onChange={e => set('tagline', e.target.value)} placeholder="A short description" style={T.inp} /></div>
+          <div><label style={T.label}>SITE NAME</label><Input value={cfg.siteName || ''} onChange={(v) => set('siteName', v)} placeholder="aifazi.net" style={T.inp} /></div>
+          <div><label style={T.label}>TAGLINE</label><Input value={cfg.tagline || ''} onChange={(v) => set('tagline', v)} placeholder="A short description" style={T.inp} /></div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div><label style={T.label}>SITE URL</label><input value={cfg.siteUrl || ''} onChange={e => set('siteUrl', e.target.value)} placeholder={SITE_URL} style={T.inp} /></div>
-          <div><label style={T.label}>LOGO URL</label><input value={cfg.logo || ''} onChange={e => set('logo', e.target.value)} placeholder="https:///logo.png" style={T.inp} /></div>
+          <div><label style={T.label}>SITE URL</label><Input value={cfg.siteUrl || ''} onChange={(v) => set('siteUrl', v)} placeholder={SITE_URL} style={T.inp} /></div>
+          <div><label style={T.label}>LOGO URL</label><Input value={cfg.logo || ''} onChange={(v) => set('logo', v)} placeholder="https:///logo.png" style={T.inp} /></div>
         </div>
       </div>
 
@@ -597,7 +597,7 @@ function SiteSettings() {
         <div style={T.sec}>SOCIAL LINKS</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           {[['twitter','🐦 Twitter/X'],['github','🐙 GitHub'],['linkedin','in LinkedIn']].map(([key, label]) => (
-            <div key={key}><label style={T.label}>{label}</label><input value={cfg[key] || ''} onChange={e => set(key, e.target.value)} placeholder="https://" style={T.inp} /></div>
+            <div key={key}><label style={T.label}>{label}</label><Input value={cfg[key] || ''} onChange={(v) => set(key, v)} placeholder="https://" style={T.inp} /></div>
           ))}
         </div>
       </div>
@@ -665,7 +665,7 @@ function SiteSettings() {
           {/* Message */}
           <div>
             <label style={T.label}>MESSAGE</label>
-            <textarea value={sget('maintenanceMessage') || ''} onChange={e => sset('maintenanceMessage', e.target.value)} rows={2} placeholder="We're performing scheduled upgrades. We'll be back online shortly." style={{ ...T.inp, resize: 'vertical', lineHeight: 1.6 }} />
+            <TextArea value={sget('maintenanceMessage') || ''} onChange={(v) => sset('maintenanceMessage', v)} rows={2} placeholder="We're performing scheduled upgrades. We'll be back online shortly." style={{ ...T.inp, resize: 'vertical', lineHeight: 1.6 }} />
           </div>
 
           {/* Style + Status side-by-side */}
@@ -686,11 +686,11 @@ function SiteSettings() {
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 16 }}>
             <div>
               <label style={T.label}>ICON / EMOJI</label>
-              <input value={sget('maintenanceIcon') || '○'} onChange={e => sset('maintenanceIcon', e.target.value)} placeholder="🚧" style={{ ...T.inp, fontSize: 20, textAlign: 'center' }} />
+              <Input value={sget('maintenanceIcon') || '○'} onChange={(v) => sset('maintenanceIcon', v)} placeholder="🚧" style={{ ...T.inp, fontSize: 20, textAlign: 'center' }} />
             </div>
             <div>
               <label style={T.label}>ESTIMATED RETURN TIME</label>
-              <input value={sget('maintenanceReturnTime') || ''} onChange={e => sset('maintenanceReturnTime', e.target.value)} placeholder="e.g.  ~15 MIN  or  3:00 PM UTC" style={T.inp} />
+              <Input value={sget('maintenanceReturnTime') || ''} onChange={(v) => sset('maintenanceReturnTime', v)} placeholder="e.g.  ~15 MIN  or  3:00 PM UTC" style={T.inp} />
               <div style={T.sub}>Shown on the page. Leave blank to hide.</div>
             </div>
           </div>

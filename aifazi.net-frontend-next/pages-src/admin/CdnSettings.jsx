@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import api, { refreshCdnConfig } from '@/lib/api'
 import { useDialog } from '../../components/Dialog'
-import { Select } from '../../core/ui.jsx'
+import { Checkbox, Input, Select } from '../../core/ui.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
 import { CDN_URL } from '@/lib/config'
@@ -24,7 +24,7 @@ const SecretField = ({ label, placeholder, help, value, onChange, T }) => {
           <button type="button" onClick={() => onChange('')} style={{ ...T.btn('ghost'), padding: '11px 14px', fontSize: 11 }}>CHANGE</button>
         </div>
       ) : (
-        <input type="password" value={val} onChange={e => onChange(e.target.value)}
+        <Input type="password" value={val} onChange={(v) => onChange(v)}
           placeholder={placeholder} style={T.inp} autoComplete="new-password" />
       )}
       {help && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>{help}</div>}
@@ -126,10 +126,10 @@ function OrphanSweeper({ T, flash }) {
             <thead>
               <tr style={{ textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
                 <th style={{ padding: '8px' }}>
-                  <input type="checkbox" checked={allChecked}
-                    onChange={e => {
+                  <Checkbox checked={allChecked}
+                    onChange={(checked) => {
                       const next = {}
-                      if (e.target.checked) orphans.forEach(o => { next[o.key] = true })
+                      if (checked) orphans.forEach(o => { next[o.key] = true })
                       setSelected(next)
                     }} />
                 </th>
@@ -142,8 +142,8 @@ function OrphanSweeper({ T, flash }) {
               {orphans.map(o => (
                 <tr key={o.key} style={{ borderTop: '1px solid var(--border)' }}>
                   <td style={{ padding: '8px' }}>
-                    <input type="checkbox" checked={!!selected[o.key]}
-                      onChange={e => setSelected(p => ({ ...p, [o.key]: e.target.checked }))} />
+                    <Checkbox checked={!!selected[o.key]}
+                      onChange={(checked) => setSelected(p => ({ ...p, [o.key]: checked }))} />
                   </td>
                   <td style={{ padding: '8px', fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>{o.key}</td>
                   <td style={{ padding: '8px', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{formatBytes(o.size)}</td>
@@ -418,18 +418,18 @@ function CdnSettings() {
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
                   <label style={T.label}>Cloud Name <span style={{ color: '#ff4757' }}>*</span></label>
-                  <input value={cfg.cloudinaryCloudName || ''} onChange={e => set('cloudinaryCloudName', e.target.value)} placeholder="mycloud" style={T.inp} />
+                  <Input value={cfg.cloudinaryCloudName || ''} onChange={(v) => set('cloudinaryCloudName', v)} placeholder="mycloud" style={T.inp} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>API Key <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.cloudinaryApiKey || ''} onChange={e => set('cloudinaryApiKey', e.target.value)} placeholder="123456789012345" style={T.inp} />
+                    <Input value={cfg.cloudinaryApiKey || ''} onChange={(v) => set('cloudinaryApiKey', v)} placeholder="123456789012345" style={T.inp} />
                   </div>
                   <SecretField label="API Secret" placeholder="" help="Never share this. Shown once in Cloudinary." value={cfg.cloudinaryApiSecret} onChange={v => set('cloudinaryApiSecret', v)} T={T} />
                 </div>
                 <div>
                   <label style={T.label}>Upload Folder</label>
-                  <input value={cfg.cloudinaryFolder || ''} onChange={e => set('cloudinaryFolder', e.target.value)} placeholder="portfolio" style={T.inp} />
+                  <Input value={cfg.cloudinaryFolder || ''} onChange={(v) => set('cloudinaryFolder', v)} placeholder="portfolio" style={T.inp} />
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Folder path inside your Cloudinary media library.</div>
                 </div>
               </div>
@@ -447,24 +447,24 @@ function CdnSettings() {
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
                   <label style={T.label}>Account ID <span style={{ color: '#ff4757' }}>*</span></label>
-                  <input value={cfg.r2AccountId || ''} onChange={e => set('r2AccountId', e.target.value)} placeholder="abcdef1234567890abcdef1234567890" style={T.inp} />
+                  <Input value={cfg.r2AccountId || ''} onChange={(v) => set('r2AccountId', v)} placeholder="abcdef1234567890abcdef1234567890" style={T.inp} />
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Found in Cloudflare Dashboard ? right sidebar &quot;Account ID&quot;</div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Access Key ID <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.r2AccessKeyId || ''} onChange={e => set('r2AccessKeyId', e.target.value)} placeholder="R2 access key ID" style={T.inp} />
+                    <Input value={cfg.r2AccessKeyId || ''} onChange={(v) => set('r2AccessKeyId', v)} placeholder="R2 access key ID" style={T.inp} />
                   </div>
                   <SecretField label="Secret Access Key" placeholder="R2 secret key" help="Shown once on token creation." value={cfg.r2SecretAccessKey} onChange={v => set('r2SecretAccessKey', v)} T={T} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Bucket Name <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.r2BucketName || ''} onChange={e => set('r2BucketName', e.target.value)} placeholder="my-portfolio" style={T.inp} />
+                    <Input value={cfg.r2BucketName || ''} onChange={(v) => set('r2BucketName', v)} placeholder="my-portfolio" style={T.inp} />
                   </div>
                   <div>
                     <label style={T.label}>Public Bucket URL</label>
-                    <input value={cfg.r2PublicUrl || ''} onChange={e => set('r2PublicUrl', e.target.value)} placeholder="https://pub-xxx.r2.dev" style={T.inp} />
+                    <Input value={cfg.r2PublicUrl || ''} onChange={(v) => set('r2PublicUrl', v)} placeholder="https://pub-xxx.r2.dev" style={T.inp} />
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Enable Public Access on the bucket, or use a custom domain below.</div>
                   </div>
                 </div>
@@ -484,18 +484,18 @@ function CdnSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Key ID (applicationKeyId) <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.b2KeyId || ''} onChange={e => set('b2KeyId', e.target.value)} placeholder="0012345abc..." style={T.inp} />
+                    <Input value={cfg.b2KeyId || ''} onChange={(v) => set('b2KeyId', v)} placeholder="0012345abc..." style={T.inp} />
                   </div>
                   <SecretField label="Application Key" placeholder="K001xxxxxxxxxxxx" help="Shown once on key creation." value={cfg.b2AppKey} onChange={v => set('b2AppKey', v)} T={T} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Bucket Name <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.b2BucketName || ''} onChange={e => set('b2BucketName', e.target.value)} placeholder="my-portfolio" style={T.inp} />
+                    <Input value={cfg.b2BucketName || ''} onChange={(v) => set('b2BucketName', v)} placeholder="my-portfolio" style={T.inp} />
                   </div>
                   <div>
                     <label style={T.label}>Bucket ID</label>
-                    <input value={cfg.b2BucketId || ''} onChange={e => set('b2BucketId', e.target.value)} placeholder="abc123def456..." style={T.inp} />
+                    <Input value={cfg.b2BucketId || ''} onChange={(v) => set('b2BucketId', v)} placeholder="abc123def456..." style={T.inp} />
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -507,7 +507,7 @@ function CdnSettings() {
                   </div>
                   <div>
                     <label style={T.label}>Download URL</label>
-                    <input value={cfg.b2DownloadUrl || ''} onChange={e => set('b2DownloadUrl', e.target.value)} placeholder="https://f004.backblazeb2.com" style={T.inp} />
+                    <Input value={cfg.b2DownloadUrl || ''} onChange={(v) => set('b2DownloadUrl', v)} placeholder="https://f004.backblazeb2.com" style={T.inp} />
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Found in Bucket Details page.</div>
                   </div>
                 </div>
@@ -526,19 +526,19 @@ function CdnSettings() {
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
                   <label style={T.label}>URL Endpoint <span style={{ color: '#ff4757' }}>*</span></label>
-                  <input value={cfg.imagekitUrlEndpoint || ''} onChange={e => set('imagekitUrlEndpoint', e.target.value)} placeholder="https://ik.imagekit.io/yourid" style={T.inp} />
+                  <Input value={cfg.imagekitUrlEndpoint || ''} onChange={(v) => set('imagekitUrlEndpoint', v)} placeholder="https://ik.imagekit.io/yourid" style={T.inp} />
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Found in ImageKit Dashboard ? URL Endpoints.</div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Public Key <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.imagekitPublicKey || ''} onChange={e => set('imagekitPublicKey', e.target.value)} placeholder="public_xxxxxxxxxxxx" style={T.inp} />
+                    <Input value={cfg.imagekitPublicKey || ''} onChange={(v) => set('imagekitPublicKey', v)} placeholder="public_xxxxxxxxxxxx" style={T.inp} />
                   </div>
                   <SecretField label="Private Key" placeholder="private_xxxxxxxxxxxx" help="Keep secret  used for authenticated uploads." value={cfg.imagekitPrivateKey} onChange={v => set('imagekitPrivateKey', v)} T={T} />
                 </div>
                 <div>
                   <label style={T.label}>Upload Folder</label>
-                  <input value={cfg.imagekitFolder || ''} onChange={e => set('imagekitFolder', e.target.value)} placeholder="/portfolio" style={T.inp} />
+                  <Input value={cfg.imagekitFolder || ''} onChange={(v) => set('imagekitFolder', v)} placeholder="/portfolio" style={T.inp} />
                 </div>
               </div>
             </>
@@ -556,7 +556,7 @@ function CdnSettings() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={T.label}>Storage Zone Name <span style={{ color: '#ff4757' }}>*</span></label>
-                    <input value={cfg.bunnyStorageZone || ''} onChange={e => set('bunnyStorageZone', e.target.value)} placeholder="my-portfolio-zone" style={T.inp} />
+                    <Input value={cfg.bunnyStorageZone || ''} onChange={(v) => set('bunnyStorageZone', v)} placeholder="my-portfolio-zone" style={T.inp} />
                   </div>
                   <SecretField label="Storage Access Key" placeholder="xxxx-xxxx-xxxx-xxxx" help="Shown in Storage ? FTP & API Access." value={cfg.bunnyAccessKey} onChange={v => set('bunnyAccessKey', v)} T={T} />
                 </div>
@@ -568,7 +568,7 @@ function CdnSettings() {
                   </div>
                   <div>
                     <label style={T.label}>Pull Zone URL</label>
-                    <input value={cfg.bunnyPullZoneUrl || ''} onChange={e => set('bunnyPullZoneUrl', e.target.value)} placeholder="https://myzone.b-cdn.net" style={T.inp} />
+                    <Input value={cfg.bunnyPullZoneUrl || ''} onChange={(v) => set('bunnyPullZoneUrl', v)} placeholder="https://myzone.b-cdn.net" style={T.inp} />
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5 }}>Pull Zone ? hostname of the zone linked to your storage zone.</div>
                   </div>
                 </div>
@@ -601,7 +601,7 @@ function CdnSettings() {
             </div>
             <div>
               <label style={T.label}>Custom CDN Domain</label>
-              <input value={cfg.customDomain || ''} onChange={e => set('customDomain', e.target.value)}
+              <Input value={cfg.customDomain || ''} onChange={(v) => set('customDomain', v)}
                 placeholder={CDN_URL}
                 style={{ ...T.inp, borderColor: cfg.customDomain ? 'var(--green)' : undefined }} />
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#334155', marginTop: 5, lineHeight: 1.6 }}>

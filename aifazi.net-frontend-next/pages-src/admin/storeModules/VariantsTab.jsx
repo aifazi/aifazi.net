@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
+import { Input, Select } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
@@ -118,33 +119,31 @@ export default function VariantsTab({ focusProductId }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10 }}>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PRODUCT</label>
-              <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} style={{ ...input, width: '100%' }}>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              <Select value={form.product_id} onChange={(v) => setForm({ ...form, product_id: v })} options={products.map(p => ({ value: String(p.id), label: p.name }))} style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>VARIANT NAME</label>
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Size M · Color Red" style={{ ...input, width: '100%' }} />
+              <Input value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Size M · Color Red" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>SKU</label>
-              <input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} placeholder="SKU-001" style={{ ...input, width: '100%' }} />
+              <Input value={form.sku} onChange={(v) => setForm({ ...form, sku: v })} placeholder="SKU-001" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>BARCODE (scan on phone)</label>
-              <input value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} placeholder="EAN / UPC" style={{ ...input, width: '100%' }} />
+              <Input value={form.barcode} onChange={(v) => setForm({ ...form, barcode: v })} placeholder="EAN / UPC" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PRICE (CENTS)</label>
-              <input type="number" value={form.price_cents} onChange={e => setForm({ ...form, price_cents: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.price_cents} onChange={(v) => setForm({ ...form, price_cents: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>STOCK</label>
-              <input type="number" value={form.stock_qty} onChange={e => setForm({ ...form, stock_qty: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.stock_qty} onChange={(v) => setForm({ ...form, stock_qty: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ATTRIBUTES (key:value)</label>
-              <input value={form.attributes} onChange={e => setForm({ ...form, attributes: e.target.value })} placeholder="Size:M, Color:Red" style={{ ...input, width: '100%' }} />
+              <Input value={form.attributes} onChange={(v) => setForm({ ...form, attributes: v })} placeholder="Size:M, Color:Red" style={{ ...input, width: '100%' }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
@@ -157,10 +156,7 @@ export default function VariantsTab({ focusProductId }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 18px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>+ NEW VARIANT</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <select value={fProduct} onChange={e => setFProduct(e.target.value)} style={{ ...input, maxWidth: 260 }}>
-            <option value="">All products</option>
-            {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <Select value={fProduct} onChange={(v) => setFProduct(v)} options={[{ value: '', label: 'All products' }, ...products.map(p => ({ value: String(p.id), label: p.name }))]} style={{ maxWidth: 260 }} />
           <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{variants.length} variant{variants.length !== 1 ? 's' : ''}{fProduct ? ' shown' : ` across ${products.length} products`}</span>
         </div>
       </div>
@@ -188,7 +184,7 @@ export default function VariantsTab({ focusProductId }) {
                 <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: out ? R : low ? Y : 'var(--text)', minWidth: 46, textAlign: 'right' }}>{stock}</span>
                 {editing === v.id ? null : (
                   <>
-                    <input type="number" value={stockQty} onChange={e => setStockQty(e.target.value)} style={{ ...input, width: 70, padding: '5px 8px' }} />
+                    <Input type="number" value={stockQty} onChange={(v) => setStockQty(v)} style={{ ...input, width: 70, padding: '5px 8px' }} />
                     <button onClick={() => setStock(v, stockQty)} disabled={stockBusy === v.id} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--green) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>SET</button>
                   </>
                 )}

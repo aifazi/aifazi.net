@@ -5,7 +5,7 @@ import { getSupabase } from '@/lib/supabase'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { useNow } from '../../hooks/useNow'
-import { Select } from '../../core/ui.jsx'
+import { Checkbox, Input, Select, TextArea } from '../../core/ui.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader } from './shared'
 
@@ -187,7 +187,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
       {/* Staff Reply */}
       <div style={{ padding: '14px 20px' }}>
         <label style={lbl}>ADD STAFF REPLY</label>
-        <textarea value={reply} onChange={e => setReply(e.target.value)}
+        <TextArea value={reply} onChange={v => setReply(v)}
           placeholder="Type your reply to the user..."
           rows={3} style={{ ...inp, width: '100%', resize: 'vertical', lineHeight: 1.7, marginBottom: 10, borderRadius: 6 }}
           onFocus={e => e.target.style.borderColor = 'var(--cyan)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
@@ -205,7 +205,7 @@ function TicketDetailView({ ticket, onBack, onSave }) {
             </div>
             <div>
               <label style={{ ...lbl, fontSize: 11, marginBottom: 2 }}>INTERNAL NOTE</label>
-              <input value={form.internal_note} onChange={e => set('internal_note', e.target.value)}
+              <Input value={form.internal_note} onChange={v => set('internal_note', v)}
                 placeholder="Team note..." style={{ ...inp, fontSize: 11, padding: '6px 10px', borderRadius: 4, width: 200, borderColor: 'rgba(255,215,0,0.2)' }} />
             </div>
           </div>
@@ -330,9 +330,9 @@ function HelpDeskSettings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(config.categories || []).map((cat, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input value={cat} onChange={e => {
+              <Input value={cat} onChange={v => {
                 const cats = [...(config.categories || [])]
-                cats[i] = e.target.value
+                cats[i] = v
                 set('categories', cats)
               }} style={{ ...inp, flex: 1 }} />
               <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
@@ -355,28 +355,28 @@ function HelpDeskSettings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {(config.priorities || []).map((p, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input value={p.value} placeholder="value" style={{ ...inp, width: 110 }}
-                onChange={e => {
+              <Input value={p.value} placeholder="value" style={{ ...inp, width: 110 }}
+                onChange={v => {
                   const ps = [...(config.priorities || [])]
-                  ps[i] = { ...ps[i], value: e.target.value }
+                  ps[i] = { ...ps[i], value: v }
                   set('priorities', ps)
                 }} />
-              <input value={p.label} placeholder="Label" style={{ ...inp, width: 100 }}
-                onChange={e => {
+              <Input value={p.label} placeholder="Label" style={{ ...inp, width: 100 }}
+                onChange={v => {
                   const ps = [...(config.priorities || [])]
-                  ps[i] = { ...ps[i], label: e.target.value }
+                  ps[i] = { ...ps[i], label: v }
                   set('priorities', ps)
                 }} />
-              <input value={p.color} placeholder="#hex" style={{ ...inp, width: 90, fontFamily: 'monospace' }}
-                onChange={e => {
+              <Input value={p.color} placeholder="#hex" style={{ ...inp, width: 90, fontFamily: 'monospace' }}
+                onChange={v => {
                   const ps = [...(config.priorities || [])]
-                  ps[i] = { ...ps[i], color: e.target.value }
+                  ps[i] = { ...ps[i], color: v }
                   set('priorities', ps)
                 }} />
-              <input value={p.eta} placeholder="ETA text" style={{ ...inp, flex: 1 }}
-                onChange={e => {
+              <Input value={p.eta} placeholder="ETA text" style={{ ...inp, flex: 1 }}
+                onChange={v => {
                   const ps = [...(config.priorities || [])]
-                  ps[i] = { ...ps[i], eta: e.target.value }
+                  ps[i] = { ...ps[i], eta: v }
                   set('priorities', ps)
                 }} />
               <span style={{ width: 16, height: 16, borderRadius: '50%', background: p.color, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
@@ -396,8 +396,8 @@ function HelpDeskSettings() {
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>AUTO-CLOSE</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Auto-close resolved tickets after</span>
-          <input type="number" min={0} value={config.auto_close_days || 7}
-            onChange={e => set('auto_close_days', parseInt(e.target.value) || 7)}
+          <Input type="number" min={0} value={config.auto_close_days || 7}
+            onChange={v => set('auto_close_days', parseInt(v) || 7)}
             style={{ ...inp, width: 70, textAlign: 'center' }} />
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>days</span>
         </div>
@@ -407,13 +407,13 @@ function HelpDeskSettings() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 16 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>AUTO-RESPONSE</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <input type="checkbox" checked={config.auto_respond_enabled !== false}
-            onChange={e => set('auto_respond_enabled', e.target.checked)}
-            style={{ accentColor: 'var(--green)', width: 16, height: 16 }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>Send auto-response on new ticket</span>
+          <Checkbox checked={config.auto_respond_enabled !== false}
+            onChange={checked => set('auto_respond_enabled', checked)}
+            label="Send auto-response on new ticket"
+            style={{ accentColor: 'var(--green)' }} />
         </div>
-        <textarea value={config.auto_respond_message || ''}
-          onChange={e => set('auto_respond_message', e.target.value)}
+        <TextArea value={config.auto_respond_message || ''}
+          onChange={v => set('auto_respond_message', v)}
           rows={3} style={{ ...inp, width: '100%', resize: 'vertical', lineHeight: 1.7 }}
           placeholder="Auto-response message..." />
       </div>
@@ -422,22 +422,22 @@ function HelpDeskSettings() {
       <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 24 }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--cyan)', marginBottom: 12 }}>ATTACHMENTS</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <input type="checkbox" checked={config.allow_attachments === true}
-            onChange={e => set('allow_attachments', e.target.checked)}
-            style={{ accentColor: 'var(--green)', width: 16, height: 16 }} />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>Allow file attachments</span>
+          <Checkbox checked={config.allow_attachments === true}
+            onChange={checked => set('allow_attachments', checked)}
+            label="Allow file attachments"
+            style={{ accentColor: 'var(--green)' }} />
         </div>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <label style={lbl}>MAX ATTACHMENTS</label>
-            <input type="number" min={0} value={config.max_attachments || 5}
-              onChange={e => set('max_attachments', parseInt(e.target.value) || 5)}
+            <Input type="number" min={0} value={config.max_attachments || 5}
+              onChange={v => set('max_attachments', parseInt(v) || 5)}
               style={{ ...inp, width: 70 }} />
           </div>
           <div>
             <label style={lbl}>MAX FILE SIZE (MB)</label>
-            <input type="number" min={0} value={config.max_file_size_mb || 10}
-              onChange={e => set('max_file_size_mb', parseInt(e.target.value) || 10)}
+            <Input type="number" min={0} value={config.max_file_size_mb || 10}
+              onChange={v => set('max_file_size_mb', parseInt(v) || 10)}
               style={{ ...inp, width: 70 }} />
           </div>
         </div>
@@ -658,7 +658,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
         {/* Filters */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: '1 1 220px' }}>
-            <input value={search} onChange={e => setSearch(e.target.value)}
+            <Input value={search} onChange={v => setSearch(v)}
               onKeyDown={e => e.key === 'Enter' && load(1)}
               placeholder="Search by name, email, subject, ID..."
               style={{ ...S.input, fontSize: 12, padding: '9px 12px 9px 30px', width: '100%', boxSizing: 'border-box' }} />

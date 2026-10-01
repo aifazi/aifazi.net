@@ -1,6 +1,7 @@
 'use client'
 import React, { useCallback, useEffect, useState } from 'react'
 import api from '@/lib/api'
+import { Checkbox, Input, TextArea } from '@/core/forms'
 import { useDialog } from '../../components/Dialog'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
@@ -313,33 +314,30 @@ function OAuthSettings() {
           }}>{ldap.enabled ? 'ON' : 'OFF'}</span>
         </div>
 
-        <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: 14 }}>
-          <input type="checkbox" checked={!!ldap.enabled} onChange={e => setLdap('enabled', e.target.checked)} />
-          Enable LLDAP login / OAuth
-        </label>
+        <Checkbox style={{ marginBottom: 14 }} checked={!!ldap.enabled} onChange={checked => setLdap('enabled', checked)} label="Enable LLDAP login / OAuth" />
 
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>LDAP URL</label>
-            <input style={inputStyle} value={ldap.url || ''} onChange={e => setLdap('url', e.target.value)} placeholder="ldap://lldap:3890" />
+            <Input style={inputStyle} value={ldap.url || ''} onChange={v => setLdap('url', v)} placeholder="ldap://lldap:3890" />
           </div>
           <div>
             <label style={labelStyle}>Base DN</label>
-            <input style={inputStyle} value={ldap.base_dn || ''} onChange={e => setLdap('base_dn', e.target.value)} placeholder="dc=aifazi,dc=net" />
+            <Input style={inputStyle} value={ldap.base_dn || ''} onChange={v => setLdap('base_dn', v)} placeholder="dc=aifazi,dc=net" />
           </div>
           <div>
             <label style={labelStyle}>Bind DN</label>
-            <input style={inputStyle} value={ldap.bind_dn || ''} onChange={e => setLdap('bind_dn', e.target.value)} placeholder="uid=admin,ou=people,dc=aifazi,dc=net" />
+            <Input style={inputStyle} value={ldap.bind_dn || ''} onChange={v => setLdap('bind_dn', v)} placeholder="uid=admin,ou=people,dc=aifazi,dc=net" />
           </div>
           <div>
             <label style={labelStyle}>Users OU (optional)</label>
-            <input style={inputStyle} value={ldap.users_ou || ''} onChange={e => setLdap('users_ou', e.target.value)} placeholder="ou=people,dc=aifazi,dc=net" />
+            <Input style={inputStyle} value={ldap.users_ou || ''} onChange={v => setLdap('users_ou', v)} placeholder="ou=people,dc=aifazi,dc=net" />
           </div>
           <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
             <label style={labelStyle}>
               Bind password {ldap.bind_password_set ? `(set — ${ldap.bind_password_masked || '••••'})` : '(not set)'}
             </label>
-            <input style={inputStyle} type="password" value={ldapPw} onChange={e => setLdapPw(e.target.value)}
+            <Input style={inputStyle} type="password" value={ldapPw} onChange={v => setLdapPw(v)}
               placeholder={ldap.bind_password_set ? 'Leave blank to keep current password' : 'Enter bind password'} />
           </div>
         </div>
@@ -416,22 +414,22 @@ function OAuthSettings() {
                     <>
                       <div>
                         <label style={labelStyle}>Client ID</label>
-                        <input style={inputStyle} value={d.client_id ?? p.client_id ?? ''}
-                          onChange={e => setProv(p.id, 'client_id', e.target.value)}
+                        <Input style={inputStyle} value={d.client_id ?? p.client_id ?? ''}
+                          onChange={v => setProv(p.id, 'client_id', v)}
                           placeholder={p.client_id_set ? '•••• (set)' : 'OAuth app client id'} />
                       </div>
                       <div>
                         <label style={labelStyle}>
                           Client secret {p.secret_set ? `(set — ${p.secret_masked || '••••'})` : ''}
                         </label>
-                        <input style={inputStyle} type="password" value={d.client_secret || ''}
-                          onChange={e => setProv(p.id, 'client_secret', e.target.value)}
+                        <Input style={inputStyle} type="password" value={d.client_secret || ''}
+                          onChange={v => setProv(p.id, 'client_secret', v)}
                           placeholder={p.secret_set ? 'Leave blank to keep' : 'OAuth app secret'} />
                       </div>
                       <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
                         <label style={labelStyle}>Redirect URI (must match the OAuth app)</label>
-                        <input style={inputStyle} value={d.redirect_uri ?? p.redirect_uri ?? ''}
-                          onChange={e => setProv(p.id, 'redirect_uri', e.target.value)}
+                        <Input style={inputStyle} value={d.redirect_uri ?? p.redirect_uri ?? ''}
+                          onChange={v => setProv(p.id, 'redirect_uri', v)}
                           placeholder={p.redirect_hint} />
                       </div>
                     </>
@@ -441,8 +439,8 @@ function OAuthSettings() {
                       <label style={labelStyle}>
                         Steam Web API key {p.secret_set ? `(set — ${p.secret_masked || '••••'})` : ''}
                       </label>
-                      <input style={inputStyle} type="password" value={d.api_key || ''}
-                        onChange={e => setProv(p.id, 'api_key', e.target.value)}
+                      <Input style={inputStyle} type="password" value={d.api_key || ''}
+                        onChange={v => setProv(p.id, 'api_key', v)}
                         placeholder={p.secret_set ? 'Leave blank to keep' : 'From steamcommunity.com/dev/apikey'} />
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
                         Callback: {p.redirect_hint}
@@ -452,12 +450,10 @@ function OAuthSettings() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0 }}>
-                    <input type="checkbox"
-                      checked={d.enabled ?? p.enabled}
-                      onChange={e => setProv(p.id, 'enabled', e.target.checked)} />
-                    Enabled
-                  </label>
+                  <Checkbox
+                    checked={d.enabled ?? p.enabled}
+                    onChange={checked => setProv(p.id, 'enabled', checked)}
+                    label="Enabled" />
                   <button type="button" onClick={() => saveProvider(p.id)} disabled={saving}
                     style={{
                       padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -594,27 +590,24 @@ function OAuthSettings() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
               <label style={labelStyle}>Client ID</label>
-              <input style={inputStyle} value={newClient.client_id} onChange={e => setNewClient(p => ({ ...p, client_id: e.target.value }))} placeholder="my-app" />
+              <Input style={inputStyle} value={newClient.client_id} onChange={v => setNewClient(p => ({ ...p, client_id: v }))} placeholder="my-app" />
             </div>
             <div>
               <label style={labelStyle}>Display name</label>
-              <input style={inputStyle} value={newClient.name} onChange={e => setNewClient(p => ({ ...p, name: e.target.value }))} placeholder="My App" />
+              <Input style={inputStyle} value={newClient.name} onChange={v => setNewClient(p => ({ ...p, name: v }))} placeholder="My App" />
             </div>
             <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
               <label style={labelStyle}>Redirect URIs (one per line)</label>
-              <textarea style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }}
+              <TextArea style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }}
                 value={newClient.redirect_uris}
-                onChange={e => setNewClient(p => ({ ...p, redirect_uris: e.target.value }))}
+                onChange={v => setNewClient(p => ({ ...p, redirect_uris: v }))}
                 placeholder="https://app.example.com/callback" />
             </div>
             <div>
               <label style={labelStyle}>Secret (optional — auto-generated if empty)</label>
-              <input style={inputStyle} type="password" value={newClient.secret} onChange={e => setNewClient(p => ({ ...p, secret: e.target.value }))} />
+              <Input style={inputStyle} type="password" value={newClient.secret} onChange={v => setNewClient(p => ({ ...p, secret: v }))} />
             </div>
-            <label style={{ ...labelStyle, display: 'flex', alignItems: 'center', gap: 8, alignSelf: 'end', cursor: 'pointer' }}>
-              <input type="checkbox" checked={newClient.public} onChange={e => setNewClient(p => ({ ...p, public: e.target.checked }))} />
-              Public client (SPA / PKCE, no secret)
-            </label>
+            <Checkbox style={{ alignSelf: 'end' }} checked={newClient.public} onChange={checked => setNewClient(p => ({ ...p, public: checked }))} label="Public client (SPA / PKCE, no secret)" />
           </div>
           <button type="button" onClick={createClient}
             style={{

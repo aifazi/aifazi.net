@@ -7,6 +7,7 @@ import { getSupabase } from '@/lib/supabase'
 import { Icon, NAV_ICONS } from './icons'
 import { canViewKey } from './access'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
+import { Input } from '@/core/forms'
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Design tokens — CSS-variable-first with sensible dark fallbacks
@@ -142,7 +143,7 @@ function SearchModal({ onClose, setView, navItems }) {
         {/* Input row */}
         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 16px', borderBottom:`1px solid ${C.border}` }}>
           <Icon name="search" size={16} style={{ opacity:0.4 }} />
-          <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)}
+          <Input ref={inputRef} value={q} onChange={(v) => setQ(v)}
             placeholder="Search pages and actions…"
             style={{ flex:1, background:'none', border:'none', outline:'none', fontSize:14,
               color:C.text, fontFamily:C.fontUi }} />

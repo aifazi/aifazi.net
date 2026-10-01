@@ -23,6 +23,7 @@ import {
   isRow, getAtPath, setAtPath, removeAtPath, insertAtPath,
   midpointIndex, samePath, normalizeRow,
 } from './builder/layoutUtils'
+import { Input, Select, TextArea } from '@/core/forms'
 
 const genId = () => { try { return `b_${crypto.randomUUID().slice(0, 8)}` } catch { return `b_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}` } }
 
@@ -39,22 +40,21 @@ const DRAG_TYPE = 'application/x-block'
 function FieldInput({ field, value, onChange }) {
   const base = { ...S.input, fontSize: 12, padding: '8px 10px', fontFamily: 'var(--font-mono)' }
   if (field.type === 'textarea') {
-    return <textarea value={value ?? ''} rows={3} onChange={e => onChange(e.target.value)} spellCheck={false} style={{ ...base, minHeight: 80, resize: 'vertical', lineHeight: 1.5 }} />
+    return <TextArea value={value ?? ''} rows={3} onChange={(v) => onChange(v)} spellCheck={false} style={{ ...base, minHeight: 80, resize: 'vertical', lineHeight: 1.5 }} />
   }
   if (field.type === 'select') {
     return (
-      <select value={value ?? ''} onChange={e => onChange(e.target.value)} style={{ ...base, cursor: 'pointer' }}>
-        {field.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
+      <Select value={value ?? ''} onChange={(v) => onChange(v)}
+        options={field.options.map(([v, l]) => ({ value: String(v), label: String(l) }))} />
     )
   }
   if (field.type === 'number') {
-    return <input type="number" value={value ?? ''} onChange={e => onChange(e.target.value)} style={base} />
+    return <Input type="number" value={value ?? ''} onChange={(v) => onChange(v)} style={base} />
   }
   if (field.type === 'emoji') {
-    return <input value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder="⚡" style={{ ...base, textAlign: 'center', width: 90 }} />
+    return <Input value={value ?? ''} onChange={(v) => onChange(v)} placeholder="⚡" style={{ ...base, textAlign: 'center', width: 90 }} />
   }
-  return <input value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={field.placeholder || ''} style={base} />
+  return <Input value={value ?? ''} onChange={(v) => onChange(v)} placeholder={field.placeholder || ''} style={base} />
 }
 
 function BlockEditor({ block, onClose, onSave }) {
@@ -412,7 +412,7 @@ export default function PageBuilder() {
 
       {/* Slug + page selector */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input value={slug} onChange={e => { setSlug(e.target.value.replace(/[^a-z0-9-_]/gi, '')); setDirty(false) }} placeholder="page slug" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', width: 160 }} />
+        <Input value={slug} onChange={(v) => { setSlug(v.replace(/[^a-z0-9-_]/gi, '')); setDirty(false) }} placeholder="page slug" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', width: 160 }} />
         <button onClick={() => loadPage(slug)} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '8px 14px' }}>LOAD</button>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>→ /pages/{slug || '…'}</span>
         <div style={{ flex: 1 }} />

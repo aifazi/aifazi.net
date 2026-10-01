@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
 import { useNow } from '../../../hooks/useNow'
+import { Checkbox, Input, Select } from '@/core/forms'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15', O = '#ff6b35'
@@ -84,34 +85,30 @@ export default function DealsTab() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 10 }}>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>PRODUCT</label>
-              <select value={form.product_id} onChange={e => setForm({ ...form, product_id: e.target.value })} style={{ ...input, width: '100%' }}>
-                {products.map(p => <option key={p.id} value={p.id}>{p.name} — {money(p.price_cents)}</option>)}
-              </select>
+              <Select value={form.product_id} onChange={(v) => setForm({ ...form, product_id: v })} options={products.map(p => ({ value: String(p.id), label: `${p.name} — ${money(p.price_cents)}` }))} style={{ width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>DEAL NAME</label>
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Midnight Flash Sale" style={{ ...input, width: '100%' }} />
+              <Input value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Midnight Flash Sale" style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>DISCOUNT %</label>
-              <input type="number" value={form.discount_percent} onChange={e => setForm({ ...form, discount_percent: Number(e.target.value) })} style={{ ...input, width: '100%' }} />
+              <Input type="number" value={form.discount_percent} onChange={(v) => setForm({ ...form, discount_percent: Number(v) })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>STARTS</label>
-              <input type="datetime-local" value={form.starts_at || ''} onChange={e => setForm({ ...form, starts_at: e.target.value })} style={{ ...input, width: '100%' }} />
+              <Input type="datetime-local" value={form.starts_at || ''} onChange={(v) => setForm({ ...form, starts_at: v })} style={{ ...input, width: '100%' }} />
             </div>
             <div>
               <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ENDS</label>
-              <input type="datetime-local" value={form.ends_at || ''} onChange={e => setForm({ ...form, ends_at: e.target.value })} style={{ ...input, width: '100%' }} />
+              <Input type="datetime-local" value={form.ends_at || ''} onChange={(v) => setForm({ ...form, ends_at: v })} style={{ ...input, width: '100%' }} />
             </div>
           </div>
           <div style={{ marginTop: 12 }}>
             <label style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>SUBTITLE</label>
-            <input value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="24 hours only — ends midnight" style={{ ...input, width: '100%' }} />
+            <Input value={form.subtitle} onChange={(v) => setForm({ ...form, subtitle: v })} placeholder="24 hours only — ends midnight" style={{ ...input, width: '100%' }} />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} /> Active
-          </label>
+          <Checkbox checked={form.active} onChange={(checked) => setForm({ ...form, active: checked })} label="Active" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
             <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE DEAL'}</button>
             <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
