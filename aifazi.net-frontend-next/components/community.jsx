@@ -7,6 +7,7 @@
 
 import { Link } from '@/lib/router-compat'
 import { UserAvatar } from '@/lib/avatar'
+import { Input } from '@/core/forms'
 
 export const CLR = {
   green: 'var(--green)',
@@ -219,11 +220,12 @@ export function SearchBox({ value, onChange, placeholder = 'Search...', style = 
   return (
     <div className="community-search" style={style}>
       <span className="community-search-icon">⌕</span>
-      <input
+      <Input
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={onChange}
         placeholder={placeholder}
         className="community-search-input"
+        style={{ padding: '12px 38px', background: 'var(--bg2)', border: 'var(--border-w, 1px) solid var(--border)', borderRadius: 'var(--radius, 12px)', fontFamily: 'var(--font-display)', fontSize: 15 }}
       />
       {value && (
         <button className="community-search-clear" onClick={() => onChange('')} aria-label="Clear search">✕</button>

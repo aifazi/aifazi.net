@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@/lib/router-compat'
 import { getAuthToken } from '@/lib/api'
+import { Input } from '@/core/forms'
 
 const BANNER = [
   '╔══════════════════════════════════════════════════╗',
@@ -356,11 +357,11 @@ export default function Terminal({ onClose }) {
           <div className="terminal-prompt-row" style={{ display: 'flex', alignItems: 'center', gap: 0, marginTop: 2 }}>
             <span className="terminal-prompt-label" style={{ color: 'var(--cyan)', whiteSpace: 'nowrap' }}>visitor@t.tanvir:~$ </span>
             <div style={{ position: 'relative', flex: 1 }}>
-              <input
+              <Input
                 className="terminal-command-input"
                 ref={inputRef}
                 value={input}
-                onChange={e => setInput(e.target.value)}
+                onChange={v => setInput(v)}
                 onKeyDown={handleKey}
                 autoFocus
                 spellCheck={false}

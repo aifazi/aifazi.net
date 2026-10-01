@@ -6,6 +6,7 @@ import { clearSiteSettingsCache } from '@/lib/siteSettings'
 import { HEADER_PRESETS, FOOTER_PRESETS, HeaderPreviewSVG, FooterPreviewSVG } from '../pages-src/admin/SiteSettings'
 import { THEME_PACKAGES } from '../core/framework-styles.js'
 import { notify } from '../core/notify.jsx'
+import { Input, Slider, TextArea } from '../core/forms'
 import { THEMES, PACKAGE_LOOKUP } from './themePickerData'
 import {
   flags, isLightTheme, radius, synthBg, auroraBg, noirBg, pastelBg, getExtraBg, getCardStyle,
@@ -736,9 +737,9 @@ export default function ThemePicker({ open, onClose }) {
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>PROGRESS</span>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#f59e0b', fontWeight: 700 }}>{globalDraft.maintenanceProgress}%</span>
                         </div>
-                        <input type="range" min={0} max={100} value={globalDraft.maintenanceProgress}
-                          onChange={e => setGlobalDraft(d => ({ ...d, maintenanceProgress: +e.target.value }))}
-                          style={{ width: '100%', accentColor: '#f59e0b', cursor: 'pointer' }} />
+                        <Slider min={0} max={100} value={globalDraft.maintenanceProgress}
+                          onChange={v => setGlobalDraft(d => ({ ...d, maintenanceProgress: v }))}
+                          style={{ width: '100%', accentColor: '#f59e0b' }} />
                         <div style={{ height: 4, borderRadius: 2, background: 'var(--border)', marginTop: 4, overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${globalDraft.maintenanceProgress}%`, background: 'linear-gradient(90deg,#f59e0b,#00d4ff)', borderRadius: 2, transition: 'width .2s' }}/>
                         </div>
@@ -749,7 +750,7 @@ export default function ThemePicker({ open, onClose }) {
                   {/* ── Expected return time ── */}
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>EXPECTED RETURN TIME</div>
-                    <input value={globalDraft.maintenanceReturnTime} onChange={e => setGlobalDraft(d => ({ ...d, maintenanceReturnTime: e.target.value }))}
+                    <Input value={globalDraft.maintenanceReturnTime} onChange={v => setGlobalDraft(d => ({ ...d, maintenanceReturnTime: v }))}
                       placeholder="e.g. Today at 6:00 PM UTC"
                       style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
@@ -762,8 +763,8 @@ export default function ThemePicker({ open, onClose }) {
                   {/* ── Message ── */}
                   <div style={{ marginBottom: 4 }}>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 5 }}>MAINTENANCE MESSAGE</div>
-                    <textarea value={globalDraft.maintenanceMessage} onChange={e => setGlobalDraft(d => ({ ...d, maintenanceMessage: e.target.value }))} rows={3} placeholder="We are currently performing maintenance..."
-                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.4)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, resize: 'vertical', outline: 'none', boxSizing: 'border-box' }} />
+                    <TextArea value={globalDraft.maintenanceMessage} onChange={v => setGlobalDraft(d => ({ ...d, maintenanceMessage: v }))} rows={3} placeholder="We are currently performing maintenance..."
+                      style={{ width: '100%', background: 'var(--bg3)', border: '1px solid rgba(245,158,11,0.4)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '8px 10px', borderRadius: 6, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
 
                   {/* ── Live preview strip ── */}

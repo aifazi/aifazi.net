@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useEdit } from '../context/EditContext'
+import { Select, Slider } from '@/core/forms'
 import {
   GSAP_ANIMATION_PRESETS,
   buildGsapAnimationValue,
@@ -327,11 +328,11 @@ export default function AnimationPicker() {
             <div>
               <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DURATION</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input
-                  type="range" min="0.1" max="10" step="0.1"
+                <Slider
+                  min={0.1} max={10} step={0.1}
                   value={params.duration}
-                  onChange={e => { setParams(p => ({ ...p, duration: parseFloat(e.target.value) })); setPreviewKey(k => k + 1) }}
-                  style={{ flex: 1, accentColor: 'var(--green)', height: 2 }}
+                  onChange={v => { setParams(p => ({ ...p, duration: v })); setPreviewKey(k => k + 1) }}
+                  style={{ flex: 1, accentColor: 'var(--green)' }}
                 />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', minWidth: 24 }}>{params.duration}s</span>
               </div>
@@ -340,11 +341,11 @@ export default function AnimationPicker() {
             <div>
               <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>DELAY</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <input
-                  type="range" min="0" max="5" step="0.1"
+                <Slider
+                  min={0} max={5} step={0.1}
                   value={params.delay}
-                  onChange={e => { setParams(p => ({ ...p, delay: parseFloat(e.target.value) })); setPreviewKey(k => k + 1) }}
-                  style={{ flex: 1, accentColor: 'var(--green)', height: 2 }}
+                  onChange={v => { setParams(p => ({ ...p, delay: v })); setPreviewKey(k => k + 1) }}
+                  style={{ flex: 1, accentColor: 'var(--green)' }}
                 />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', minWidth: 24 }}>{params.delay}s</span>
               </div>
@@ -352,13 +353,11 @@ export default function AnimationPicker() {
             {/* Easing */}
             <div>
               <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>EASING</label>
-              <select
+              <Select
                 value={params.easing}
-                onChange={e => { setParams(p => ({ ...p, easing: e.target.value })); setPreviewKey(k => k + 1) }}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 5px', borderRadius: 4, outline: 'none', cursor: 'pointer' }}
-              >
-                {easingOptions.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
-              </select>
+                onChange={v => { setParams(p => ({ ...p, easing: v })); setPreviewKey(k => k + 1) }}
+                options={easingOptions}
+              />
             </div>
           </div>
         </div>

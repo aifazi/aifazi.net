@@ -25,6 +25,7 @@ import {
   type InfraCategory,
 } from '@/data/hybrid-infra'
 import { useInfraTone, infraPalette, infraCatColor } from '@/lib/infraTheme'
+import { Input } from '@/core/forms'
 
 const MODES: { id: InfraCategory | 'all'; label: string }[] = [
   { id: 'all', label: 'FULL ARCHITECTURE' },
@@ -373,9 +374,9 @@ export default function HybridInfra({
             </button>
           ))}
         </div>
-        <input
+        <Input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(v) => setQuery(v)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && matches && matches.size > 0) {
               setSelectedId([...matches][0])

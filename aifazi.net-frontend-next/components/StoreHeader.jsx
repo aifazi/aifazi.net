@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import { useForum } from '../context/ForumContext'
 import api from '@/lib/api'
+import { Input } from '@/core/forms'
 import { UserAvatar } from '@/lib/avatar'
 
 const S = 'var(--green)', C = 'var(--cyan)'
@@ -91,9 +92,9 @@ export default function StoreHeader() {
         {/* Search */}
         <form onSubmit={handleSearch} style={{ position: 'relative', flex: '0 1 280px', minWidth: 0 }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'var(--muted)', pointerEvents: 'none' }}>⌕</span>
-          <input
+          <Input
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={v => setSearchQuery(v)}
             placeholder="Search products..."
             style={{
               width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)',

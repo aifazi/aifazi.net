@@ -44,6 +44,7 @@ import {
 } from '@/lib/infraApi'
 import { registerDirtyCheck } from '@/lib/infraLeaveGuard'
 import { dialog } from '@/core/dialog'
+import { Input, Select, TextArea } from '@/core/forms'
 import { diffDiagramDocs, type DiagramDiff } from '@/lib/infraDocOps'
 import {
   arrangeNodesDoc,
@@ -1695,33 +1696,27 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           marginBottom: 12, ...PANEL,
         }}
       >
-        <select
+        <Select
           aria-label="Diagram"
           value={doc.slug}
-          onChange={(e) => void switchDoc(e.target.value)}
-          style={{ ...INPUT, width: 'auto', minWidth: 180 }}
-        >
-          {BUILTIN_STUDIES.map((s) => (
-            <option key={s.slug} value={s.slug}>
-              {s.title} (built-in{isSeed && doc.slug === s.slug ? ' — editing a copy' : ''})
-            </option>
-          ))}
-          {diagrams.map((m) => (
-            <option key={m.id} value={m.slug}>
-              {m.title} {!m.published ? '(draft)' : ''}
-            </option>
-          ))}
-          {/* Current doc not in the list yet (fresh draft / offline): keep
-              the controlled <select> from rendering blank (F5). */}
-          {doc.slug &&
+          onChange={(v) => void switchDoc(v)}
+          options={[
+            ...BUILTIN_STUDIES.map((s) => ({
+              value: s.slug,
+              label: `${s.title} (built-in${isSeed && doc.slug === s.slug ? ' — editing a copy' : ''})`,
+            })),
+            ...diagrams.map((m) => ({ value: m.slug, label: `${m.title} ${!m.published ? '(draft)' : ''}` })),
+            // Current doc not in the list yet (fresh draft / offline): keep
+            // the controlled select from rendering blank (F5).
+            ...(doc.slug &&
             !BUILTIN_STUDIES.some((s) => s.slug === doc.slug) &&
-            !diagrams.some((m) => m.slug === doc.slug) && (
-              <option key={`cur-${doc.slug}`} value={doc.slug}>
-                {doc.title} {!doc.published ? '(draft)' : ''}
-              </option>
-            )}
-        </select>
-        <input
+            !diagrams.some((m) => m.slug === doc.slug)
+              ? [{ value: doc.slug, label: `${doc.title} ${!doc.published ? '(draft)' : ''}` }]
+              : []),
+          ]}
+          style={{ width: 'auto', minWidth: 180 }}
+        />
+        <Input
           aria-label="Diagram title"
           value={doc.title}
           onFocus={() => {
@@ -1733,13 +1728,13 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           onBlur={() => {
             focusPushed.current = false
           }}
-          onChange={(e) => {
+          onChange={(v) => {
             const cur = docRef.current
-            const next = { ...cur, title: e.target.value.slice(0, 120) }
+            const next = { ...cur, title: v.slice(0, 120) }
             docRef.current = next
             setDoc(next)
           }}
-          style={{ ...INPUT, width: 220 }}
+          style={{ width: 220 }}
         />
         <button type="button" onClick={() => void save()} disabled={saving} style={BTN}>
           {saving ? 'SAVING…' : isSeed || !docId ? 'SAVE AS NEW' : 'SAVE'}
@@ -1780,13 +1775,13 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           title="Custom snap step in px (0 = free placement)"
         >
           STEP
-          <input
+          <Input
             type="number"
             min={0}
             max={100}
             value={snapSize ?? 0}
-            onChange={(e) => {
-              const v = Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)))
+            onChange={(val) => {
+              const v = Math.max(0, Math.min(100, Math.round(Number(val) || 0)))
               setSnapSize(v > 0 ? v : null)
             }}
             style={{ ...INPUT, width: 62, padding: '5px 7px' }}
@@ -1938,7 +1933,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           )}
           <label style={LABEL}>PUBLIC LINK</label>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <input readOnly value={shareUrls.page} style={INPUT} onFocus={(e) => e.target.select()} />
+            <Input readOnly value={shareUrls.page} style={INPUT} onFocus={(e) => e.target.select()} />
             <button
               type="button"
               onClick={() => void copyText(shareUrls.page, 'Share link copied')}
@@ -1949,7 +1944,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           </div>
           <label style={LABEL}>EMBED (IFRAME)</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input readOnly value={shareUrls.snippet} style={INPUT} onFocus={(e) => e.target.select()} />
+            <Input readOnly value={shareUrls.snippet} style={INPUT} onFocus={(e) => e.target.select()} />
             <button
               type="button"
               onClick={() => void copyText(shareUrls.snippet, 'Embed snippet copied')}
@@ -2061,9 +2056,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
             IT LIBRARY — DRAG OR CLICK TO PLACE
           </div>
-          <input
+          <Input
             value={libQuery}
-            onChange={(e) => setLibQuery(e.target.value)}
+            onChange={setLibQuery}
             placeholder="Filter library…"
             aria-label="Filter library items"
             style={{ ...INPUT, marginBottom: 10 }}
@@ -2166,9 +2161,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               </div>
             ))}
             <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-              <input
+              <Input
                 value={newCatLabel}
-                onChange={(e) => setNewCatLabel(e.target.value)}
+                onChange={setNewCatLabel}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
@@ -2324,42 +2319,44 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               </div>
               <div>
                 <label style={LABEL}>Name</label>
-                <input
+                <Input
                   value={selected.name}
-                  onChange={(e) => updateNode(selected.id, { name: e.target.value.slice(0, 80) })}
+                  onChange={(v) => updateNode(selected.id, { name: v.slice(0, 80) })}
                   style={INPUT}
                 />
               </div>
               <div>
                 <label style={LABEL}>Role</label>
-                <input
+                <Input
                   value={selected.role}
-                  onChange={(e) => updateNode(selected.id, { role: e.target.value.slice(0, 80) })}
+                  onChange={(v) => updateNode(selected.id, { role: v.slice(0, 80) })}
                   style={INPUT}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
                   <label style={LABEL}>Category</label>
-                  <select
+                  <Select
                     value={selected.category}
-                    onChange={(e) => updateNode(selected.id, { category: e.target.value as InfraCategory })}
-                    style={INPUT}
-                  >
-                    {(Object.keys(CATEGORY_META) as BuiltinCategory[]).map((c) => (
-                      <option key={c} value={c}>{CATEGORY_META[c].label}</option>
-                    ))}
-                    {Object.keys(doc.customCategories ?? {}).map((c) => (
-                      <option key={c} value={c}>{doc.customCategories?.[c]?.label}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => updateNode(selected.id, { category: v as InfraCategory })}
+                    options={[
+                      ...(Object.keys(CATEGORY_META) as BuiltinCategory[]).map((c) => ({
+                        value: c,
+                        label: CATEGORY_META[c].label,
+                      })),
+                      ...Object.keys(doc.customCategories ?? {}).map((c) => ({
+                        value: c,
+                        label: doc.customCategories?.[c]?.label,
+                      })),
+                    ]}
+                  />
                 </div>
                 <div>
                   <label style={LABEL}>Layer</label>
-                  <select
+                  <Select
                     value={selected.layer}
-                    onChange={(e) => {
-                      const layer = e.target.value as InfraComponent['layer']
+                    onChange={(v) => {
+                      const layer = v as InfraComponent['layer']
                       const patch: Partial<InfraComponent> = { layer }
                       if (layer === 'rack' && selected.rackU === undefined) {
                         patch.rackU = 1
@@ -2381,31 +2378,30 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                       }
                       updateNode(selected.id, patch)
                     }}
-                    style={INPUT}
-                  >
-                    {(['edge', 'cloud', 'rack', 'vm', 'users', 'legacy'] as const).map((l) => (
-                      <option key={l} value={l}>{l}</option>
-                    ))}
-                  </select>
+                    options={(['edge', 'cloud', 'rack', 'vm', 'users', 'legacy'] as const).map((l) => ({
+                      value: l,
+                      label: l,
+                    }))}
+                  />
                 </div>
               </div>
               <div>
                 <label style={LABEL}>Description</label>
-                <textarea
+                <TextArea
                   value={selected.desc}
-                  onChange={(e) => updateNode(selected.id, { desc: e.target.value.slice(0, 2000) })}
+                  onChange={(v) => updateNode(selected.id, { desc: v.slice(0, 2000) })}
                   rows={3}
-                  style={{ ...INPUT, resize: 'vertical' }}
+                  style={INPUT}
                 />
               </div>
               <div>
                 <label style={LABEL}>Operator note</label>
-                <textarea
+                <TextArea
                   value={selected.notes ?? ''}
-                  onChange={(e) => updateNode(selected.id, { notes: e.target.value.slice(0, 2000) || undefined })}
+                  onChange={(v) => updateNode(selected.id, { notes: v.slice(0, 2000) || undefined })}
                   rows={2}
                   placeholder="Runbook hint, owner, ticket ref…"
-                  style={{ ...INPUT, resize: 'vertical', borderColor: `${pal.gold}55` }}
+                  style={{ ...INPUT, borderColor: `${pal.gold}55` }}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -2450,11 +2446,11 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               </div>
               <div>
                 <label style={LABEL}>Workloads (comma separated)</label>
-                <input
+                <Input
                   value={selected.workloads.join(', ')}
-                  onChange={(e) =>
+                  onChange={(v) =>
                     updateNode(selected.id, {
-                      workloads: e.target.value.split(',').map((w) => w.trim()).filter(Boolean).slice(0, 12),
+                      workloads: v.split(',').map((w) => w.trim()).filter(Boolean).slice(0, 12),
                     })
                   }
                   style={INPUT}
@@ -2464,19 +2460,19 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <div>
                     <label style={LABEL}>Rack U</label>
-                    <input
+                    <Input
                       type="number" min={1} max={42}
                       value={selected.rackU ?? 1}
-                      onChange={(e) => updateNode(selected.id, { rackU: Math.max(1, Math.min(42, Number(e.target.value) || 1)) })}
+                      onChange={(v) => updateNode(selected.id, { rackU: Math.max(1, Math.min(42, Number(v) || 1)) })}
                       style={INPUT}
                     />
                   </div>
                   <div>
                     <label style={LABEL}>U height</label>
-                    <input
+                    <Input
                       type="number" min={1} max={8}
                       value={selected.rackH ?? 1}
-                      onChange={(e) => updateNode(selected.id, { rackH: Math.max(1, Math.min(8, Number(e.target.value) || 1)) })}
+                      onChange={(v) => updateNode(selected.id, { rackH: Math.max(1, Math.min(8, Number(v) || 1)) })}
                       style={INPUT}
                     />
                   </div>
@@ -2486,14 +2482,14 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                   {(['x', 'y', 'w', 'h'] as const).map((k) => (
                     <div key={k}>
                       <label style={LABEL}>{k.toUpperCase()}</label>
-                      <input
+                      <Input
                         type="number"
                         value={selected[k] ?? 0}
-                        onChange={(e) => {
+                        onChange={(val) => {
                           // Clamp to the same bounds the drags and sanitizeDoc
                           // enforce: negative w/h would crash the canvas render
                           // loop (arcTo IndexSizeError) (F7).
-                          const raw = Math.round(Number(e.target.value) || 0)
+                          const raw = Math.round(Number(val) || 0)
                           const v =
                             k === 'x' ? Math.max(-200, Math.min(1480, raw))
                             : k === 'y' ? Math.max(-100, Math.min(1020, raw))
@@ -2518,24 +2514,24 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                       <span style={{ fontSize: 11, color: pal.blue, fontFamily: 'var(--font-mono)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         → {depNameOf(f.to)}
                       </span>
-                      <select
+                      <Select
                         aria-label="Link category"
                         value={f.cat}
-                        onChange={(e) => setLinkCat(f.id, e.target.value as InfraCategory)}
-                        style={{ ...INPUT, width: 100 }}
-                      >
-                        {allCategoryIds().map((c) => (
-                          <option key={c} value={c}>{catLabel(c, doc.customCategories)}</option>
-                        ))}
-                      </select>
+                        onChange={(v) => setLinkCat(f.id, v as InfraCategory)}
+                        options={allCategoryIds().map((c) => ({
+                          value: c,
+                          label: catLabel(c, doc.customCategories),
+                        }))}
+                        style={{ width: 100 }}
+                      />
                       <button type="button" onClick={() => deleteLink(f.id)} style={BTN} aria-label={`Delete link to ${depNameOf(f.to)}`}>
                         ✕
                       </button>
                     </div>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 6 }}>
-                      <input
+                      <Input
                         value={f.label ?? ''}
-                        onChange={(e) => setLinkStyle(f.id, { label: e.target.value.slice(0, 40) || undefined })}
+                        onChange={(v) => setLinkStyle(f.id, { label: v.slice(0, 40) || undefined })}
                         placeholder="Label"
                         aria-label="Link label"
                         style={{ ...INPUT, flex: 1, width: 'auto' }}
@@ -2643,11 +2639,11 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
             <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
               QUICK ADD — ENTER PLACES AT VIEW CENTER
             </div>
-            <input
+            <Input
               autoFocus
               value={quickQuery}
-              onChange={(e) => {
-                setQuickQuery(e.target.value)
+              onChange={(v) => {
+                setQuickQuery(v)
                 setQuickIdx(0)
               }}
               placeholder="Firewall, switch, VM… (Esc closes)"

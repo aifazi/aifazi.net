@@ -1,6 +1,7 @@
 'use client'
 import { Link } from '@/lib/router-compat'
 import { SITE_URL, DISCORD_URL } from '@/lib/config'
+import { Input } from '@/core/forms'
 
 const MUTED = 'var(--muted)', S = 'var(--green)'
 
@@ -91,7 +92,7 @@ export default function StoreFooter() {
               New products, VIP perks, and exclusive deals.
             </p>
             <form onSubmit={e => e.preventDefault()} style={{ display: 'flex', gap: 0 }}>
-              <input placeholder="your@email.com"
+              <Input placeholder="your@email.com"
                 style={{
                   flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)',
                   borderRadius: '8px 0 0 8px', color: 'var(--text)', fontFamily: 'var(--font-mono)',

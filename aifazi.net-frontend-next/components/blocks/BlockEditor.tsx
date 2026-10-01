@@ -31,6 +31,7 @@ import { getBlockManifest, listBlockManifests, sanitizeProps } from '@/lib/block
 import type { BlockManifest, LayoutRevision, PageBlock, PropEditor } from '@/lib/blocks/types'
 import PageBlocks from '@/lib/blocks/PageBlocks'
 import { dialog } from '@/core/dialog'
+import { Checkbox, Input, Select, TextArea } from '@/core/forms'
 import {
   listAllLayouts,
   getLayout,
@@ -239,9 +240,9 @@ function PropField({
       return (
         <label>
           <span style={labelStyle}>{field.label}</span>
-          <textarea
+          <TextArea
             value={String(value ?? '')}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={onChange}
             rows={3}
             style={{ ...inputStyle, resize: 'vertical' }}
           />
@@ -251,22 +252,15 @@ function PropField({
       return (
         <label>
           <span style={labelStyle}>{field.label}</span>
-          <select value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} style={inputStyle}>
-            {field.options.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={String(value ?? '')}
+            onChange={onChange}
+            options={field.options.map((o) => ({ value: o, label: o }))}
+          />
         </label>
       )
     case 'toggle':
-      return (
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text)' }}>
-          <input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked)} />
-          {field.label}
-        </label>
-      )
+      return <Checkbox checked={value === true} onChange={onChange} label={field.label} />
     case 'color':
       return (
         <label>
@@ -281,12 +275,12 @@ function PropField({
       return (
         <label>
           <span style={labelStyle}>{field.label}</span>
-          <input
+          <Input
             type="number"
             value={Number(value ?? 0)}
             min={field.min}
             max={field.max}
-            onChange={(e) => onChange(Number(e.target.value))}
+            onChange={(v) => onChange(Number(v))}
             style={inputStyle}
           />
         </label>
@@ -295,10 +289,10 @@ function PropField({
       return (
         <label>
           <span style={labelStyle}>{field.label}</span>
-          <input
+          <Input
             type="text"
             value={String(value ?? '')}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={onChange}
             style={inputStyle}
           />
         </label>
@@ -695,11 +689,11 @@ export default function BlockEditor() {
           borderRadius: 12, background: 'var(--bg)',
         }}
       >
-        <select
+        <Select
           aria-label="Layout"
           value={meta.id ?? ''}
-          onChange={async (e) => {
-            const id = e.target.value
+          onChange={async (v) => {
+            const id = v as string
             if (!id) {
               setMeta(BLANK_META)
               applyBlocks([], false, true)
@@ -720,27 +714,23 @@ export default function BlockEditor() {
               flash('Load failed')
             }
           }}
-          style={{ ...BTN, minWidth: 180 }}
-        >
-            <option value="">— New layout —</option>
-
-          {layouts.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.title} {!l.published ? '(draft)' : ''}
-            </option>
-          ))}
-        </select>
-        <input
+          options={[
+            { value: '', label: '— New layout —' },
+            ...layouts.map((l) => ({ value: l.id, label: `${l.title} ${!l.published ? '(draft)' : ''}` })),
+          ]}
+          style={{ width: 'auto', minWidth: 180 }}
+        />
+        <Input
           aria-label="Page slug"
           value={meta.slug}
-          onChange={(e) => setMeta({ ...meta, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-').slice(0, 64) })}
+          onChange={(v) => setMeta({ ...meta, slug: v.toLowerCase().replace(/[^a-z0-9-]+/g, '-').slice(0, 64) })}
           placeholder="page-slug"
           style={{ ...BTN, minWidth: 140, cursor: 'text' }}
         />
-        <input
+        <Input
           aria-label="Page title"
           value={meta.title}
-          onChange={(e) => setMeta({ ...meta, title: e.target.value.slice(0, 120) })}
+          onChange={(v) => setMeta({ ...meta, title: v.slice(0, 120) })}
           placeholder="Page title"
           style={{ ...BTN, minWidth: 180, cursor: 'text' }}
         />
@@ -817,17 +807,17 @@ export default function BlockEditor() {
           borderRadius: 12, background: 'var(--bg)',
         }}
       >
-        <input
+        <Input
           aria-label="SEO title"
           value={meta.seoTitle}
-          onChange={(e) => setMeta({ ...meta, seoTitle: e.target.value.slice(0, 150) })}
+          onChange={(v) => setMeta({ ...meta, seoTitle: v.slice(0, 150) })}
           placeholder="SEO title (falls back to page title)"
           style={{ ...BTN, minWidth: 220, cursor: 'text' }}
         />
-        <input
+        <Input
           aria-label="SEO description"
           value={meta.seoDescription}
-          onChange={(e) => setMeta({ ...meta, seoDescription: e.target.value.slice(0, 320) })}
+          onChange={(v) => setMeta({ ...meta, seoDescription: v.slice(0, 320) })}
           placeholder="SEO description"
           style={{ ...BTN, flex: '1 1 260px', cursor: 'text' }}
         />

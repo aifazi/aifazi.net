@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useFocusTrap } from '@/core/useFocusTrap'
+import { Input } from '@/core/forms'
 
 const COMMANDS = [
   // Navigation
@@ -178,11 +179,11 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
         {/* Input */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderBottom: '1px solid var(--border)' }}>
           <span style={{ color: 'var(--green)', fontSize: 16 }}>⌘</span>
-          <input
+          <Input
             className="command-palette-input"
             ref={inputRef}
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={v => setQuery(v)}
             onKeyDown={handleKey}
             placeholder="Type a command or search..."
             style={{

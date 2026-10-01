@@ -6,6 +6,7 @@ import { EditableNumber, EditableText, AnimatableWrapper, useInlineEdit, useEdit
 import { IconDisplay, useLordiconScript } from './IconPicker'
 import { IconPickerModal } from './IconPicker'
 import api from '@/lib/api'
+import { Input } from '@/core/forms'
 
 const DEFAULT_SKILLS = [
   {
@@ -183,7 +184,7 @@ function SkillList({ catIdx, items, isAdmin, onUpdate }) {
             {SKILL_FIELDS.map(f => (
               <div key={f.key} style={{ marginBottom: 16 }}>
                 <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>{f.label}</label>
-                <input type={f.type || 'text'} value={draft[f.key] ?? ''} onChange={e => setDraft(d => ({ ...d, [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value }))} style={modalInput} />
+                <Input type={f.type || 'text'} value={draft[f.key] ?? ''} onChange={v => setDraft(d => ({ ...d, [f.key]: f.type === 'number' ? Number(v) : v }))} style={modalInput} />
               </div>
             ))}
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
@@ -304,7 +305,7 @@ function CatEditModal({ cat, onSave, onClose }) {
             <div onClick={() => setIconOpen(true)} style={{ width: 52, height: 52, fontSize: 28, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: 4 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
               <IconDisplay value={draft.icon} size={36} />
             </div>
-            <input value={draft.icon || ''} onChange={e => setDraft(d => ({ ...d, icon: e.target.value }))} placeholder="or paste emoji / lordicon URL" style={{ ...modalInput, marginBottom: 0, flex: 1 }} />
+            <Input value={draft.icon || ''} onChange={v => setDraft(d => ({ ...d, icon: v }))} placeholder="or paste emoji / lordicon URL" style={{ ...modalInput, marginBottom: 0, flex: 1 }} />
           </div>
         </div>
 
@@ -316,7 +317,7 @@ function CatEditModal({ cat, onSave, onClose }) {
         ].map(f => (
           <div key={f.key} style={{ marginBottom: 16 }}>
             <label style={labelStyle}>{f.label}</label>
-            <input value={draft[f.key] || ''} onChange={e => setDraft(d => ({ ...d, [f.key]: e.target.value }))} style={modalInput} />
+            <Input value={draft[f.key] || ''} onChange={v => setDraft(d => ({ ...d, [f.key]: v }))} style={modalInput} />
           </div>
         ))}
 

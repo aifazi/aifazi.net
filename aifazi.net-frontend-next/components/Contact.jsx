@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import { EditableText } from '../context/EditContext'
 import api from '@/lib/api'
+import { Input, TextArea } from '@/core/forms'
 
 const SUBJECTS = ['Network Design', 'Security Audit', 'Cloud Migration', 'Server Admin', 'General Inquiry']
 
@@ -115,16 +116,16 @@ export default function Contact() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="form-group">
                   <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> NAME</label>
-                  <input name="name" value={form.name}
-                    onChange={e => { setForm(f => ({...f, name: e.target.value})); if (errors.name) setErrors(p => ({...p, name: ''})) }}
+                  <Input name="name" value={form.name}
+                    onChange={v => { setForm(f => ({...f, name: v})); if (errors.name) setErrors(p => ({...p, name: ''})) }}
                     placeholder="John Doe"
                     style={errors.name ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(255,71,87,0.1)' } : {}} />
                   {errors.name && <FieldError msg={errors.name} />}
                 </div>
                 <div className="form-group">
                   <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> EMAIL</label>
-                  <input name="email" type="email" value={form.email}
-                    onChange={e => { setForm(f => ({...f, email: e.target.value})); if (errors.email) setErrors(p => ({...p, email: ''})) }}
+                  <Input name="email" type="email" value={form.email}
+                    onChange={v => { setForm(f => ({...f, email: v})); if (errors.email) setErrors(p => ({...p, email: ''})) }}
                     placeholder="john@company.com"
                     style={errors.email ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(255,71,87,0.1)' } : {}} />
                   {errors.email && <FieldError msg={errors.email} />}
@@ -153,8 +154,8 @@ export default function Contact() {
 
               <div className="form-group">
                 <label><span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{'>'}</span> MESSAGE</label>
-                <textarea name="message" value={form.message}
-                  onChange={e => { setForm(f => ({...f, message: e.target.value})); if (errors.message) setErrors(p => ({...p, message: ''})) }}
+                <TextArea name="message" value={form.message}
+                  onChange={v => { setForm(f => ({...f, message: v})); if (errors.message) setErrors(p => ({...p, message: ''})) }}
                   rows={6} placeholder="Describe your project or inquiry..."
                   style={errors.message ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(255,71,87,0.1)' } : {}} />
                 {errors.message && <FieldError msg={errors.message} />}

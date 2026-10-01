@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import api from '@/lib/api'
+import { Input } from '@/core/forms'
 import { Card, NeonButton, Badge } from '../components/community'
 
 const G = 'var(--green)', C = 'var(--cyan)', R = 'var(--red)'
@@ -41,9 +42,9 @@ export default function TrackOrderWidget() {
           TRACK ORDER
         </div>
         <form onSubmit={handleLookup} style={{ display: 'flex', gap: 0 }}>
-          <input
+          <Input
             value={orderNo}
-            onChange={e => setOrderNo(e.target.value)}
+            onChange={v => setOrderNo(v)}
             placeholder="Enter order number (e.g. ORD-...)"
             style={{
               flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)',
