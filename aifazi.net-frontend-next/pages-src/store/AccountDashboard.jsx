@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
+import { dialog } from '@/core/dialog'
 import { useForum } from '../../context/ForumContext'
 import { Card, NeonButton, Badge, EmptyState } from '../../components/community'
 import { UserAvatar } from '@/lib/avatar'
@@ -54,7 +55,7 @@ export default function AccountDashboard({ loginHref }) {
   }
 
   const handleCancel = async () => {
-    if (!window.confirm('Cancel your subscription? Perks remain active until end of billing period.')) return
+    if (!(await dialog.confirm({ title: 'Cancel Subscription', message: 'Cancel your subscription? Perks remain active until end of billing period.', variant: 'danger', confirmLabel: 'CANCEL' }))) return
     try {
       await api.post('/store/cancel')
       const r = await api.get('/store/my-subscription').catch(() => null)

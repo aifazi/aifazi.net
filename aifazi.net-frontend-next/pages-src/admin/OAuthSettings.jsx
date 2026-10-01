@@ -223,7 +223,7 @@ function OAuthSettings() {
   }
 
   const deleteClient = async (id) => {
-    if (!confirm(`Delete OAuth client "${id}"?`)) return
+    if (!(await dialog.confirm({ title: 'Delete OAuth Client', message: `Delete OAuth client "${id}"?`, variant: 'danger', confirmLabel: 'DELETE' }))) return
     try {
       await api.delete(`/admin/oauth/clients/${id}`)
       flash('ok', `Client ${id} deleted`)

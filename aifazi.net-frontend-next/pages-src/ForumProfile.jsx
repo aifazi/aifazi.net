@@ -503,6 +503,7 @@ function FiveMTab({ user }) {
 /* ─── Orders & Documents tab ─────────────────────────────────────────────── */
 function OrdersDocumentsTab({ user }) {
   const toast = useToast()
+  const dialog = useDialog()
   const [orders, setOrders] = useState([])
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [detail, setDetail] = useState(null)
@@ -572,7 +573,7 @@ function OrdersDocumentsTab({ user }) {
   }
 
   const onDelete = async (id) => {
-    if (!window.confirm('Delete this document?')) return
+    if (!(await dialog.confirm({ title: 'Delete Document', message: 'Delete this document?', variant: 'danger', confirmLabel: 'DELETE' }))) return
     try {
       await api.delete(`/documents/${id}`)
       toast.success('Document deleted')
