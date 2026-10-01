@@ -134,6 +134,7 @@ export function Select({
   disabled,
   placement = 'bottom-left',
   menuStyle = {},
+  ...props
 }) {
   const opts = normalizeOptions(options)
   const selected = opts.find(option => String(option.value) === String(value))
@@ -162,6 +163,7 @@ export function Select({
   return (
     <div ref={ref} data-core-control="select" style={{ position: 'relative', width: '100%', ...style }}>
       <button
+        {...props}
         type="button"
         disabled={disabled}
         onClick={() => setOpen(v => !v)}
@@ -253,7 +255,7 @@ export function Select({
   )
 }
 
-export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
+export function Checkbox({ checked, onChange, disabled, label, style = {}, ...props }) {
   const accent = inputAccent()
   // Historic look used green for the default (cyan-group) styles — preserve it
   // exactly there; other input styles drive the checked color from the mapping.
@@ -262,6 +264,7 @@ export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
   const cb = accent.color === t.cyan ? 'rgba(0,255,136,0.55)' : accent.color
   return (
     <button
+      {...props}
       type="button"
       data-core-control="checkbox"
       aria-pressed={checked}
@@ -303,7 +306,7 @@ export function Checkbox({ checked, onChange, disabled, label, style = {} }) {
   )
 }
 
-export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled, style = {} }) {
+export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled, style = {}, ...props }) {
   const ref = useRef(null)
   const num = Number(value ?? min)
   const pct = max === min ? 0 : Math.min(100, Math.max(0, ((num - min) / (max - min)) * 100))
@@ -335,6 +338,7 @@ export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled
 
   return (
     <div
+      {...props}
       ref={ref}
       data-core-control="slider"
       role="slider"
