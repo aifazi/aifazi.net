@@ -21,6 +21,12 @@ export async function listDiagrams(): Promise<DiagramMeta[]> {
   return Array.isArray(r.data?.diagrams) ? r.data.diagrams : []
 }
 
+/** Admin: every diagram including drafts (403 for non-admins — callers fall back). */
+export async function listAllDiagrams(): Promise<DiagramMeta[]> {
+  const r = await api.get('/infra/diagrams/admin/all')
+  return Array.isArray(r.data?.diagrams) ? r.data.diagrams : []
+}
+
 export async function getDiagram(slug: string): Promise<DiagramDoc | null> {
   const r = await api.get(`/infra/diagrams/${encodeURIComponent(slug)}`)
   return (r.data?.diagram as DiagramDoc) ?? null

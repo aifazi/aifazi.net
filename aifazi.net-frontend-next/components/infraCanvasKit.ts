@@ -66,7 +66,15 @@ export function hashId(id: string): number {
 /** Canvas primitives bound to a 2d context; palette read via getter. */
 export function createDrawKit(ctx: CanvasRenderingContext2D, palette: () => InfraPalette) {
   function roundRect(x: number, y: number, w: number, h: number, r: number) {
-    const rr = Math.min(r, w / 2, h / 2)
+    // Guard: arcTo throws IndexSizeError on NaN/negative radii, and this runs
+    // inside the rAF loop where the exception would escape the error boundary.
+    // Still reset the path so callers' fill()/stroke() hit an empty path
+    // instead of whatever was drawn last.
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(w) || !Number.isFinite(h)) {
+      ctx.beginPath()
+      return
+    }
+    const rr = Math.max(0, Math.min(r, w / 2, h / 2))
     ctx.beginPath()
     ctx.moveTo(x + rr, y)
     ctx.arcTo(x + w, y, x + w, y + h, rr)
