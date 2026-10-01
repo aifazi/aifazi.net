@@ -95,6 +95,16 @@ const readDraft = (slug: string): { doc: DiagramDoc; at: string } | null => {
   }
 }
 
+/** Best user-facing message for an API failure: axios rejections keep the
+ * FastAPI `detail` (409 conflict text from save/publish), everything else
+ * falls back to Error.message or the supplied generic wording. */
+const apiErrMsg = (e: unknown, fallback: string): string => {
+  const resp = (e as { response?: { status?: number; data?: { detail?: unknown } } })?.response
+  const detail = resp?.data?.detail
+  if (resp?.status && typeof detail === 'string' && detail) return detail
+  return e instanceof Error && e.message ? e.message : fallback
+}
+
 function slugify(s: string) {
   return (
     s.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) ||
@@ -1201,6 +1211,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     // adopt the server echo when the local doc is byte-identical, so edits
     // made while the request was in flight are never reverted (F2).
     const outgoing = JSON.stringify(docRef.current)
+    let snapFailed = false
     try {
       if (isSeed || !docId) {
         // "Save as new": derive a storable, unique slug. Builtin seed slugs
@@ -1236,15 +1247,22 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           /* noop */
         }
       } else {
-        const updated = await updateDiagram({ ...cur, updatedAt: new Date().toISOString() })
-        const clean = sanitizeDoc(updated)
+        // Send the doc as-is: updateDiagram carries doc.updatedAt (the last
+        // server stamp) as expectedUpdatedAt, so the backend 409s us instead
+        // of clobbering a concurrent edit (B8/N5).
+        const res = await updateDiagram(cur)
+        snapFailed = res.snapshotFailed === true
+        const clean = sanitizeDoc(res.diagram)
         if (!clean) throw new Error('Server returned an invalid doc')
         adoptResponse(clean, outgoing)
       }
       await refreshList()
-      setNotice({ msg: 'Saved', ok: true })
+      setNotice({
+        msg: snapFailed ? 'Saved (revision history unavailable)' : 'Saved',
+        ok: true,
+      })
     } catch (e) {
-      setNotice({ msg: e instanceof Error ? e.message : 'Save failed', ok: false })
+      setNotice({ msg: apiErrMsg(e, 'Save failed'), ok: false })
     } finally {
       inFlightRef.current = false
       setSaving(false)
@@ -1291,19 +1309,23 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     dirtyRef.current = true
     const outgoing = JSON.stringify(docRef.current)
     try {
-      const updated = await updateDiagram(cur)
-      const clean = sanitizeDoc(updated)
+      const res = await updateDiagram(cur)
+      const clean = sanitizeDoc(res.diagram)
       if (!clean) throw new Error('Server returned an invalid doc')
       adoptResponse(clean, outgoing)
       await refreshList()
-      setNotice({ msg: clean.published ? 'Published' : 'Unpublished', ok: true })
+      const verb = clean.published ? 'Published' : 'Unpublished'
+      setNotice({
+        msg: res.snapshotFailed ? `${verb} (revision history unavailable)` : verb,
+        ok: true,
+      })
     } catch (e) {
       // Roll the optimistic flag back so the button can't lie (F4/N4).
       const reverted = { ...docRef.current, published: !cur.published }
       docRef.current = reverted
       setDoc(reverted)
       if (savedRef.current === JSON.stringify(reverted)) dirtyRef.current = false
-      setNotice({ msg: e instanceof Error ? e.message : 'Publish failed', ok: false })
+      setNotice({ msg: apiErrMsg(e, 'Publish failed'), ok: false })
     } finally {
       inFlightRef.current = false
       setSaving(false)
