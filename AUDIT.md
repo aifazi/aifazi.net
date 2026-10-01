@@ -435,3 +435,250 @@ Quick wins to do first:
 Verified: ruff clean · pytest 12 passed (`test_oauth_no_query_tokens` + `test_infra_diagrams`) · vitest 21 passed · eslint clean on new HybridInfra files · zero secrets in home diff.
 
 New open items: uniform-400 login errors + user+IP lockout key; revoke legacy refresh server-side; `REVOKE` lockdown for `infra_diagrams`; negative-authz tests; SW nav `res.ok` guard.
+
+---
+
+## 12. Full Audit Round 3 (2026-10-01, range `06d4129..f561bad`)
+
+**Scope:** full monorepo — frontend (Next.js 16), backend (FastAPI), mobile (Expo), migrations, CI, infra configs, local disk state.
+**Method:** static code review + deep-dive agent reviews of batch-3 backend/frontend + live verification suites. No live pen-test.
+**Baseline:** `06d4129` (post-#367) → `f561bad` (post-#374). 10 PRs landed (#368–#374 + dependabot).
+
+### Executive Summary
+
+Since the last audit (2026-09-24), the project executed **two full audit-remediation rounds** (round-2 plan → PRs #368/#369, then Batch 3 → PRs #370–#374). Security posture remains strong; the remediation work was real and verified. **No CRITICAL or HIGH findings in this round.** The remaining issues are MEDIUM/LOW correctness and completeness gaps, plus one standing infra risk (backup target #2).
+
+**Grades:** Security **9/10** (up from 8.5) · Maintainability **B+** (up from C+) · Tests **B** (up from C+) · Ops **B** (unchanged).
+
+### Verification (all live, 2026-10-01)
+
+| Suite | Result |
+|-------|--------|
+| `npx tsc --noEmit` (frontend) | **0 errors** |
+| `npx eslint .` (frontend) | **0 errors, 121 warnings** (85 exhaustive-deps, 28 no-img-element, 8 other) |
+| `npx vitest run` (frontend) | **93 passed**, 1 skipped |
+| `python -m ruff check .` | **0 errors** |
+| `python -m pytest -q` (backend) | **167 passed** (was 127 at last audit) |
+| `npx tsc --noEmit` (mobile) | **0 errors** |
+| `npm run build` | **success** |
+| CI (PR #374) | **all 11 checks pass** |
+| Secrets in diff scan | **clean** (only plan-doc/test references) |
+
+### Status of Last Audit Findings
+
+| ID | Title | Status | Notes |
+|----|-------|--------|-------|
+| H1 | Prod secrets in local env dumps | **Partially fixed** | `.env.prod-pull/.pulled/.pull` **deleted** (verified on disk). Frontend `.env.local` still holds `VERCEL_OIDC_TOKEN` (gitignored, low risk). **Rotation status unknown** — owner action. |
+| H2 | Tokens in URL on OAuth callbacks | **Partially fixed** | `authentik_oidc.py` mobile path moved `?token=` → `#token=`. Web path cookie-only. **Still open:** `steam_auth.py:428`, `github_auth.py:383,389`, `discord_auth.py:219`, `auth.py:2067,2073` all use `#token=` fragments (history/deep-link exposure). Email verify/reset `?token=` remain (acceptable for one-time links). |
+| H3 | Role claims in localStorage | **Mitigated** | Unchanged — server gate still required. |
+| H4 | `exec_sql` outside DB console | **Fixed** | `backup.py` + `email_settings.py` now use typed probes (comments confirm). Only `db_console.py` (admin-gated) + `audit.py:194` (migration bootstrap) remain. |
+| H5 | Docker dev against prod Supabase | **Fixed** | `docker-compose.yml` now has isolation guidance + `scripts/check_compose_env.ps1` guard (blocks prod unless `COMPOSE_ALLOW_PROD=1`). |
+| H6 | Cookie domain/SameSite | **Documented** | Unchanged — acceptable tradeoff. |
+| H7 | Stale bcrypt in git history | **Documented** | Unchanged — known. |
+| H8 | `JWT_SECRET` vs `PASETO_SECRET` naming | **Fixed** | Renamed to `PASETO_SIGNING_KEY`. |
+| Q1 | God files | **Improved** | `fivem.py` 3151→1754, `auth.py` 2492→1974, `ForumProfile.jsx` 2034→869, `Login.jsx` 1971→929, `DatabaseGUI.jsx` 1734→389, `globals.css` 7874→3721. `ThemeLibrary.jsx` 4407→4058 (data extracted). `ServerRackAnimation.jsx` 2629→2389. |
+| Q2 | Test coverage | **Improved** | Backend 86→**167** (+81). Frontend 20→**93** (+73). Mobile 4→**18** (+14). Total ~278 vs ~110 at last audit. |
+| Q3 | Lint debt | **Improved** | `F821` removed from ruff ignores (clean). eslint warnings 150→**121** (85 are `exhaustive-deps` — mostly intentional in React hooks). |
+| Q4 | httpx pin skew | **Fixed** | Aligned at `0.28.1`. |
+| P1 | 342KB globals.css | **Improved** | 7874→3721 lines; theme CSS extracted to `theme-library.css` (4009 lines, loaded on-demand). |
+| P2 | Boot loaders / JS motion | **Fixed** | `prefers-reduced-motion` guards in MatrixLoader rAF + ServerRack tick. |
+| P3 | Large admin/client components | **Improved** | AdminPanels 1778 (unchanged), DatabaseGUI 1734→389, ForumProfile 2034→869. |
+| A1 | A11y backlog | **Partially done** | Dialog focus trap, CommandPalette `aria-modal`, `:focus-visible` restored, type floors raised. Remaining: ThemeLibrary 7–9px preview chrome, other hover-only cards. |
+| S1 | SEO canonicals/JSON-LD | **Partially done** | `/p/[slug]` public route with `seo_title`/`seo_description` live. Canonicals/JSON-LD still missing. |
+| O1 | Bandit HIGH triage | **Fixed** | 0 findings at HIGH severity (CI runs `--severity-level high`). |
+
+### New Findings (this round)
+
+#### MEDIUM
+
+**N1 — `?diagram=constructor` crashes the editor island** (`HybridInfraEditor.tsx:219`)
+`BUILTIN_DOCS` is a plain object literal. `BUILTIN_DOCS['constructor']` returns `Object` (truthy via prototype chain), calling it returns `{}`, which flows into `setDoc({})` → render crash. `?diagram=__proto__` is worse: `BUILTIN_DOCS['__proto__']` is `Object.prototype` (truthy), calling it throws `TypeError` outside any try/catch. Caught by `HybridInfraErrorBoundary` — feature DoS, not RCE. **Fix:** `Object.hasOwn(BUILTIN_DOCS, slug)` or use a `Map`.
+
+**N2 — Draft-restore banner never rendered** (`HybridInfraEditor.tsx:422–467`)
+`acceptDraft`/`discardDraft` are defined but no JSX renders the offer. Drafts are silently written to localStorage but never restorable. The feature is incomplete. **Fix:** wire the banner (Restore/Discard + timestamp).
+
+**N3 — `acceptDraft` destroys unsaved changes without confirmation** (`HybridInfraEditor.tsx:451–464`)
+Silently overwrites current doc + resets undo history. Compare `newDoc`/`switchDoc` which both `window.confirm()` first. Latent data-loss trap once N2 is fixed. **Fix:** confirm-before-discard.
+
+**N4 — `togglePublish` does not roll back on failure** (`HybridInfraEditor.tsx:931–944`)
+Optimistic local toggle; on API failure the PUBLISHED/DRAFT button shows wrong state until reload. **Fix:** rollback `applyDoc` on catch.
+
+**N5 — Revision snapshot TOCTOU race** (`infra_diagrams.py:353–384`, `page_layouts.py:239–261`)
+Read-then-write not atomic. Concurrent admin updates can both snapshot the same pre-update state, losing the intermediate revision. **Fix:** wrap in a DB transaction or use `SELECT ... FOR UPDATE`.
+
+**N6 — Draft autosave key is global, not per-diagram** (`HybridInfraEditor.tsx:421`)
+`DRAFT_KEY = 'hi-editor-draft'` — one key for all diagrams. Edit A, switch to B, A's draft is offered. **Fix:** namespace `hi-editor-draft:<slug>`.
+
+#### LOW
+
+**N7 — Revision snapshot failure is silent** (`infra_diagrams.py:221–235`)
+Best-effort insert; update commits even if snapshot fails. No alert beyond `log.warning`. Acceptable for now.
+
+**N8 — `_prune_revisions` race + non-deterministic ordering** (`infra_diagrams.py:212–218`)
+Concurrent updates can delete wrong rows. `created_at` ties (microsecond) make "oldest" non-deterministic.
+
+**N9 — `restore_revision` in `page_layouts.py` lacks try/except** (`page_layouts.py:332–339`)
+Inconsistent with `infra_diagrams.py` which wraps in try/except. Raw exceptions propagate to global handler.
+
+**N10 — `_validate_doc` does not strip extra fields** (`infra_diagrams.py:123–144`)
+Appends original node dict, not a sanitized copy. Extra fields beyond validated set are preserved. Not a security issue but schema-drift risk.
+
+**N11 — Share snippet escapes only `"` in title** (`HybridInfraEditor.tsx:1076`)
+Not exploitable (readOnly input, never injected as HTML) but a full escape would be more robust.
+
+**N12 — Draft persisted in plaintext localStorage** (`HybridInfraEditor.tsx:441–444`)
+Full doc including operator notes. Origin-scoped, not transmitted. Given XSS surface, LOW.
+
+**N13 — `save()` client-side slug-collision check uses stale `diagrams` state** (`HybridInfraEditor.tsx:879`)
+UX-only; server is the real enforcer (409).
+
+#### INFO
+
+- Mobile token handling is solid: access token memory-only, refresh token in SecureStore (AFTER_FIRST_UNLOCK).
+- `infraSvgExport.ts` is clean: proper `esc()` for all text/attributes, no XSS, no prototype pollution.
+- Embed route is safe: backend enforces `published` check (404 for drafts), `frame-ancentors *` scoped to embed path only.
+- CI: Python 3.12 (not 3.14), bandit at HIGH severity, pip-audit + gitleaks + CodeQL all active.
+- Dependabot: 5 ecosystems configured, no open PRs. ESLint 10 + Sentry 11 decided for next bump; Python 3.14 held.
+- No TODO/FIXME/HACK in new hybrid-infra code.
+- `docker-compose.yml` isolation guard script present and documented.
+
+### Standing Infra Risks (unchanged from VPS-INFRA-AUDIT.md)
+
+1. **Backup target #2 still same-host** (WebDAV on same VPS). R2 decision made but needs bucket + credentials. Top standing DR risk.
+2. Authentik disable/enable 501 stubs (documented, needs `AUTHENTIK_API_TOKEN`).
+3. EAS rebuild pending (handoff doc written).
+
+### Recommended Action Plan
+
+**This week (correctness):**
+1. N1: `Object.hasOwn(BUILTIN_DOCS, slug)` — one-line fix, prevents URL-triggered crash.
+2. N2+N3+N6: wire draft-restore banner, namespace key, confirm-before-discard, clear key on accept.
+3. N4: rollback `applyDoc` on publish failure.
+4. N5: wrap revision snapshot in transaction or `FOR UPDATE`.
+
+**Next 2 weeks (hardening):**
+5. N9: add try/except to `page_layouts.py` restore.
+6. N10: strip extra fields in `_validate_doc`.
+7. N7+N8: alert on snapshot failure; add `id` tiebreaker to prune ordering.
+8. Mobile OAuth: move `#token=` fragments to one-time exchange codes (long-term H2 completion).
+
+**Next 30 days (structure):**
+9. Split remaining god files: `ThemeLibrary.jsx` (4058), `AdminPanels.jsx` (1778), `ServerRackAnimation.jsx` (2389).
+10. Execute remaining a11y items from `DESIGN-UX-A11Y-AUDIT.md`.
+11. Add canonical URLs + JSON-LD for key templates.
+12. Set up R2 backup target #2 (needs credentials).
+13. E2: hybrid-infra component tests (jsdom + Testing Library).
+
+### Positive Callouts (do not regress)
+
+- Two consecutive audit-remediation rounds executed and verified — rare discipline.
+- Test count nearly tripled in 2 weeks (110 → 278).
+- God-file splits are real: `fivem.py` −1400 lines, `auth.py` −520, `DatabaseGUI.jsx` −1345, `Login.jsx` −1042.
+- `exec_sql` removed from all non-console paths.
+- Docker compose prod-Supabase guard script.
+- Mobile token architecture (memory-only access + SecureStore refresh) is best-practice.
+- SVG export sanitizer is thorough (escapes all text/attributes, no prototype pollution).
+- CI security stack (gitleaks, pip-audit, bandit, CodeQL, dependency-review) is comprehensive.
+
+---
+
+*Static audit + live verification. No production traffic tested. N1 is a URL-triggerable crash — fix first.*
+
+---
+
+## 13. Hybrid-Infra Deep Audit (2026-10-01)
+
+**Scope:** entire `/hybrid-infra` feature — editor, canvas, viewer, library, SVG export, data layer, `lib/infraApi.ts`, backend `routers/infra_diagrams.py`, revisions schema, auth dependency.
+**Method:** two independent deep-review agents (frontend / backend) + manual verification of every HIGH claim and all prior N-series findings against source. Read-only.
+**Verification:** tsc 0 · vitest 93 passed/1 skipped · ruff 0 · pytest 167 passed.
+
+### Verdict
+
+The **data boundary is sound**: every write and draft/revision read sits behind `require_admin`, published-only filters are consistent across API/RLS/sitemap, revision queries are scoped by both ids (no IDOR), SVG export escaping is thorough, and there is no SQL-injection surface. The weaknesses are **editing integrity** (frontend) and **operational robustness** (backend validation/error paths, one fail-open auth branch, one expensive list query).
+
+### Prior N-series status — ALL STILL OPEN
+
+N1 (`BUILTIN_DOCS[slug]` prototype lookup, `HybridInfraEditor.tsx:219,1017`) · N2 (draft banner never rendered, `:422–472`) · N3 (acceptDraft no confirm) · N4 (togglePublish no rollback, `:926–945`) · N5 (revision TOCTOU, `infra_diagrams.py:353→384`) · N6 (global `DRAFT_KEY`, `:421`) · N7/N8 (snapshot silent, prune nondeterministic). N9–N13 also unchanged.
+
+### New findings — Frontend
+
+| # | Sev | Finding |
+|---|-----|---------|
+| F1 | **HIGH** | **Unguarded navigation loses unsaved edits.** `HybridInfraLibrary.tsx:45` does `window.location.assign(...)` — bypasses the dirty-confirm that `switchDoc`/`newDoc` enforce — and no `beforeunload` handler exists anywhere in the feature. Reload/close/library-click = silent total edit loss. Fix: dirty-confirm path + `beforeunload` while dirty. |
+| F2 | **HIGH** | **Save/publish lost-update race.** `save()` (`Editor:890–916`) and `togglePublish` await the server then unconditionally adopt the response (`docRef.current = clean`) — edits made during the round-trip are silently reverted and absent from undo history. PUBLISHED button is never disabled in-flight → double-click fires two contradictory PUTs. Fix: adopt response only if local doc still matches outgoing snapshot; shared in-flight guard. |
+| F3 | MEDIUM | Drag/click suppression is dead code: `finalizeDrag()` resets `dragMoved=false` (`Canvas:1513`) inside `pointerup`, before the browser dispatches `click` — so `onClick`'s guard (`:1563`) never fires. Every real drag ends in a selection side-effect (group drag collapses multi-select to one node; shift-drag toggles the node out). Fix: `suppressNextClick` flag consumed by `onClick`. |
+| F4 | MEDIUM | Group drag pushes duplicate undo checkpoints: finalize loop emits `onMoveNode(done=true)` per member; the first resets `dragRef` (`Editor:365`), the rest re-push identical final state → two dead UNDOs that evict real history (50-cap `shift()`). Same for sub-threshold click jitter. Fix: one checkpoint per gesture. |
+| F5 | MEDIUM | **Editor only ever sees published diagrams.** `lib/infraApi.ts` never calls the existing `/diagrams/admin/all` (`infra_diagrams.py:256`). Consequences: slug-uniqueness check (`Editor:879`) misses drafts → "SAVE AS NEW" can 409 unexpectedly; after saving a draft, `refreshList()` drops it from the controlled `<select>` → picker renders blank, doc unreachable except via `?diagram=`. The DRAFT badge in `HybridInfraLibrary.tsx:115` can never fire. Fix: admin list for admins + always include current doc in options. |
+| F6 | MEDIUM | Window `keydown` (`Editor:560–605`) has no `editMode` gate; DONE doesn't clear selection → Delete/Ctrl+Z/Ctrl+V still mutate the doc while the read-only viewer is shown (and the draft effect is disabled, so mutations aren't drafted). Fix: early-return unless `editMode && isAdmin`; `resetTransient()` on DONE. |
+| F7 | MEDIUM | Unclamped X/Y/W/H inputs (`Editor:1922`, `Number(e.target.value) \|\| 0`) allow negative `w`/`h` → `roundRect` passes negative radius to `ctx.arcTo` → `IndexSizeError` thrown **every rAF frame outside the error boundary** (rAF reschedules before render, `Canvas:1219–1227`) → endless console errors + partially drawn canvas. Fix: clamp to `sanitizeDoc` floors (`w≥40, h≥20`) + defensive `Math.max(0, r)` in `infraCanvasKit.ts:68`. |
+| F8 | MEDIUM | `switchDoc` has no request token — rapid picker changes resolve out of order, last response wins; doc and `<select>` can disagree with the final choice. Fix: monotonically increasing `reqIdRef`. |
+| F9 | MEDIUM | Draft autosave debounces 1200 ms and its cleanup cancels pending writes whenever `doc`/`editMode` changes → last <1.2 s of edits before DONE/switch/tab-close are never persisted; `save()` never clears the draft key either. Combined with F1 this is the main remaining edit-loss path. Fix: flush on cleanup + clear key on successful save. |
+| F10 | LOW | `hitAt` returns last-in-array but render draws in layer groups → click selects visually bottom node on overlaps. |
+| F11 | LOW | Wheel-zoom during an active drag rebakes design coords under the new transform while pointer offsets are stale → node teleports. Fix: ignore wheel while `dragId`/`panId` set. |
+| F12 | LOW | `selIds` not pruned on undo/redo → "N NODES SELECTED" badge counts deleted ids (functional paths filter safely). |
+| F13–F15 | LOW | A11y: canvas `outline:'none'` beats global `:focus-visible` + `role="img"` on interactive surface; zero `htmlFor` in properties panel; `notice` span lacks `role="status"`. |
+| F16 | LOW | Duplicate hidden `<input type="file" ref={fileRef}>` (`Editor:1385,2036`) — one is dead markup. |
+| F17 | LOW | Category-id `in` check hits prototype chain (`Editor:484`) — naming a category "constructor" falsely errors (N1 sibling; safe direction). |
+| F18 | LOW | `infra:edit` listener flips edit mode without re-checking `isAdmin` (UI-only; server enforces). |
+| F19 | LOW | `sanitizeDoc` fails open on `published` and doesn't dedupe node ids → import with duplicate ids breaks selection/hit-testing. |
+| F20 | LOW | **Zero component/canvas/e2e tests.** `vitest.config.ts` is node-env over `lib/**` only — history integrity, drag/click semantics, save races, deep-links all unguarded; Playwright specs have no hybrid-infra coverage. |
+
+### New findings — Backend
+
+| # | Sev | Finding |
+|---|-----|---------|
+| B1 | **HIGH** | **List endpoints fetch full 500 KB doc bodies just to count nodes.** `infra_diagrams.py:244` and `:261` `SELECT …,doc` then `_row_to_doc(include_body=False)` discards it. Worst case ~50 MB jsonb per request on every `/hybrid-infra` library load (100/200 per page). Fix: `node_count`/`flow_count` generated columns (or store at write time) + select only metas. |
+| B2 | MEDIUM | Malformed uuid path params (`update/delete/revisions*`) hit PostgREST with non-uuid → `APIError` → generic 500 instead of 404. **Tests hide it**: the fake `_Query.eq` (`test_infra_diagrams.py:50`) never casts uuids. Fix: `uuid.UUID()` validate up front; make the fake raise like PostgREST. |
+| B3 | MEDIUM | Unhashable flow refs crash validation: `f.get("from") not in ids` (`:152`) raises `TypeError` for `{"from":["a"]}` inside `_validate_doc`, called outside every try → 500 instead of 400. |
+| B4 | MEDIUM | `NaN`/`Infinity`/`1e400` pass `_validate_doc` (no numeric checks at all, `:124–144`) and `json.dumps(allow_nan=True)` emits them → PostgREST rejects → 500 instead of 400. |
+| B5 | MEDIUM | `restore_revision` splices `categoryColors`/`customCategories` with only `isinstance(dict)` (`:470–471`) — skips `_validate_palette`/`_validate_custom_categories`, the only CSS-injection defense. Latent (revision rows come from validated saves) but it's the one unvalidated path into the public payload. |
+| B6 | MEDIUM | **`require_admin` fails OPEN on stale roles.** `dependencies.py:111–119`: when the directory read throws, cached claims are served **without the 60 s TTL check** used at `:89` — a demoted admin keeps `role:"admin"` for the whole DB-outage window, contradicting the "Fail closed" comment. All infra routes hang off this dependency. Fix: apply TTL in the `not db_ok` branch (stale → 503). |
+| B7 | MEDIUM | Body cap is `Content-Length`-only (`main.py:513`); chunked bodies unbounded until Cloudflare's 100 MB edge cap — **documented tradeoff** (`main.py:112–114` comment), but any authenticated low-priv member can buffer up to that into RAM before `require_admin` 403s. Worth a streaming guard eventually. |
+| B8 | MEDIUM | No concurrency control on full-doc PUT → last-write-wins with no warning; combined with N5 (stale snapshot) + 20-revision prune, concurrent saves can discard each other **and** evict the snapshot. Fix: `expectedUpdatedAt`/version column → 409 on mismatch. |
+| B9 | LOW | No audit trail: router never calls `utils.audit.record` (siblings do) — publish/unpublish/delete/restore, including `published` flips by restore, are unattributable. |
+| B10 | LOW | Whitespace-only titles accepted (`Field(min_length=1)` allows `" "`) → slug collapses to `diagram`, confusing 409 on second occurrence. |
+| B11 | LOW | Validation parity narrower than docstring: `layer`/`shape`/`category` enums, numerics, flow ids, workload/deps element types all unchecked — frontend `sanitizeDoc` rescues every render, but DB can hold docs the editor wouldn't produce. |
+| B12 | LOW | No index for the hot list query: `infra_diagrams` has only `UNIQUE(slug)`; list filters `published` + `ORDER BY updated_at DESC` → seq-scan + sort per request. Fix: `(published, updated_at DESC)` index. (Revisions index + FK cascade + RLS all correct.) |
+| B13 | LOW | Public diagram reads uncacheable — no `Cache-Control`/`ETag` despite stable published content. |
+| B14 | LOW | 409 classification by substring (`"unique"/"duplicate"` in message, `:331,375`) can mis-map unrelated failures; match `APIError.code == "23505"` instead. |
+| B15 | LOW | Revision retention tiny (20 rows, pruned on every snapshot) — a restore ping-pong evicts the pre-incident state the feature exists to protect; raise cap + `id` tiebreak. |
+| B16 | LOW | Prod CORS drops the appended dynamic-subdomain pattern (`main.py:380` `= []` overrides `:372`) — fail-closed, no hole, but contradicts its own comment. |
+| B17 | LOW | Test gaps on security-relevant branches: `_optional_admin` draft-preview has **zero** tests (dependencies module fully stubbed); `test_revision_404s` asserts `in (404, 200)` (asserts nothing); no tests for palette/category validators, restore validation, uuid-500s, NaN, or the SecurityMiddleware path. |
+| B18 | INFO | Data boundary cross-check **clean** — public/admin gating, route ordering, revision scoping, RLS, sitemap all verified correct. |
+| B19 | INFO | Query-building surface injection-clean: no user-supplied sort/ilike; `_slugify` restricts charset; `offset` bounded. |
+| B20 | INFO | `/diagrams/admin/all` is dead product code (frontend never calls it); `/api/infra` undocumented in README; `_slugify` can emit trailing dashes. |
+
+### Fix priority
+
+**Batch 1 (data-loss + auth, this week):**
+1. F1 — dirty-confirm on library nav + `beforeunload`.
+2. F2 — save response adoption guard + in-flight lock.
+3. B6 — TTL check in `require_admin` stale branch (one line, security).
+4. F7 — clamp geometry inputs + defensive `roundRect` (prevents uncatchable render-loop crash).
+5. F5 — wire editor/library to `/diagrams/admin/all`.
+
+**Batch 2 (correctness, next week):**
+6. F3 + F4 — click suppression flag; one undo checkpoint per gesture.
+7. F6 — gate keydown on `editMode`, `resetTransient` on DONE.
+8. F8 + F9 — request tokens; flush/clear drafts.
+9. N1+N17 — `Object.hasOwn` everywhere (`BUILTIN_DOCS`, category ids).
+10. N2+N3+N6 — actually render the draft banner, confirm-before-discard, per-slug key.
+11. B1 — `node_count`/`flow_count` columns (needs migration) + meta-only selects.
+12. B3+B4+B5 — type checks, finite-number checks, re-validate palettes on restore.
+
+**Batch 3 (hardening):**
+13. B2 (uuid validation + honest test fake), B8 (version/If-Match), B9 (audit records), B12 (index migration), B17 (auth-branch tests).
+14. N4/N5/N7/N8 — publish rollback, snapshot transaction, prune tiebreak.
+15. F20 — jsdom component tests (history/click/save-race) + one Playwright hybrid-infra spec.
+
+### What's genuinely good
+
+- Public/admin boundary correct end-to-end (API + RLS + sitemap + route ordering, no IDOR on revisions).
+- SVG export + viewer deep-link params fully escaped/validated; only `dangerouslySetInnerHTML` is static JSON-LD.
+- Canvas transform math consistent between render and hit-testing; listener/rAF cleanup correct.
+- `_validate_palette`/`_validate_custom_categories` are tight (`#rrggbb` only, key charset, built-in shadowing) — they just need to run on the restore path too.
+- Revision table: FK `ON DELETE CASCADE` (no orphans), RLS `REVOKE`d from anon/authenticated, indexed correctly.
+
+---
+
+*Deep audit, static + source-verified. No production traffic tested. Highest-value fixes: F1, F2, B6, F7.*
