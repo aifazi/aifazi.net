@@ -62,10 +62,14 @@ function readViewParam(): { z: number; cx: number; cy: number } | null {
 export default function HybridInfra({
   doc,
   viewKey,
+  onEdit,
 }: {
   doc?: DiagramDoc | null
   /** Storage/URL key for remembering the view (defaults to doc id). */
   viewKey?: string
+  /** When provided (admin context), shows an EDIT button in the stage
+   *  toolbar so editing stays reachable while the stage is fullscreen. */
+  onEdit?: () => void
 }) {
   const [activeMode, setActiveMode] = useState<InfraCategory | 'all'>(() => {
     if (typeof window === 'undefined') return 'all'
@@ -484,7 +488,11 @@ export default function HybridInfra({
           className="hi-stage"
           style={{
             position: 'relative',
-            background: `linear-gradient(180deg,${pal.bg2},${pal.bg})`,
+            // Gradient + grid across the whole stage surface: fullscreen
+            // letterboxes the canvas (height is width-derived), so the area
+            // below/around it shows this background — keep the grid going.
+            backgroundColor: pal.bg,
+            backgroundImage: `repeating-linear-gradient(0deg, color-mix(in srgb, ${pal.muted} 4.5%, transparent) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, color-mix(in srgb, ${pal.muted} 4.5%, transparent) 0 1px, transparent 1px 40px), linear-gradient(180deg,${pal.bg2},${pal.bg})`,
             border: `1px solid ${pal.border}`,
             borderRadius: 18,
             overflow: 'hidden',
@@ -516,6 +524,11 @@ export default function HybridInfra({
               <button type="button" onClick={toggleFullscreen} title="Toggle fullscreen" aria-pressed={isFullscreen} style={{ ...BTN, padding: '6px 10px' }}>
                 {isFullscreen ? 'EXIT FULL' : 'FULLSCREEN'}
               </button>
+              {onEdit && (
+                <button type="button" onClick={onEdit} title="Edit this diagram" style={{ ...BTN, padding: '6px 10px', borderColor: pal.blue }}>
+                  EDIT
+                </button>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 11, color: pal.muted }} aria-hidden>
               {Object.entries(CATEGORY_META)
@@ -790,7 +803,8 @@ export default function HybridInfra({
         }
         .hi-stage:fullscreen {
           border-radius: 0;
-          background: var(--bg, #07121f);
+          /* Background comes from the inline style (gradient + grid) — the
+             fullscreen surface must keep the grid over letterbox areas. */
           padding: 12px;
           overflow: auto;
         }

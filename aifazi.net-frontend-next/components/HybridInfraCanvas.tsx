@@ -578,35 +578,50 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         p.selectedId === id || (p.selectedIds?.has(id) ?? false)
 
       function drawBackground() {
-        const g = ctx.createLinearGradient(0, 0, 0, DESIGN_H)
+        // Paint over the *visible* design-space rect (inverse of the effective
+        // transform), so letterboxed margins, panned/zoomed-out areas and
+        // fullscreen letterboxes all get the gradient + grid — not just the
+        // fixed 1280×920 design rect.
+        const vs = effS()
+        const vx0 = (0 - effOx()) / vs
+        const vy0 = (0 - effOy()) / vs
+        const vx1 = (W - effOx()) / vs
+        const vy1 = (H - effOy()) / vs
+        const g = ctx.createLinearGradient(0, vy0, 0, vy1)
         g.addColorStop(0, P.bg2)
         g.addColorStop(1, P.bg)
         ctx.fillStyle = g
-        ctx.fillRect(0, 0, DESIGN_W, DESIGN_H)
+        ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0)
         if (sRef.current.grid !== false) {
-          ctx.save()
-          ctx.globalAlpha = 0.045
-          ctx.strokeStyle = P.muted
           const step = 40
-          for (let x = 0; x < DESIGN_W; x += step) {
-            ctx.beginPath()
-            ctx.moveTo(x, 0)
-            ctx.lineTo(x, DESIGN_H)
-            ctx.stroke()
+          // Safety cap: extreme zoom-out can make the visible rect enormous;
+          // past ~600 lines per axis the grid is sub-pixel anyway.
+          if ((vx1 - vx0) / step < 600 && (vy1 - vy0) / step < 600) {
+            ctx.save()
+            ctx.globalAlpha = 0.045
+            ctx.strokeStyle = P.muted
+            const x0 = Math.floor(vx0 / step) * step
+            const y0 = Math.floor(vy0 / step) * step
+            for (let x = x0; x <= vx1; x += step) {
+              ctx.beginPath()
+              ctx.moveTo(x, vy0)
+              ctx.lineTo(x, vy1)
+              ctx.stroke()
+            }
+            for (let y = y0; y <= vy1; y += step) {
+              ctx.beginPath()
+              ctx.moveTo(vx0, y)
+              ctx.lineTo(vx1, y)
+              ctx.stroke()
+            }
+            ctx.restore()
           }
-          for (let y = 0; y < DESIGN_H; y += step) {
-            ctx.beginPath()
-            ctx.moveTo(0, y)
-            ctx.lineTo(DESIGN_W, y)
-            ctx.stroke()
-          }
-          ctx.restore()
         }
         const glow = ctx.createRadialGradient(520, 480, 20, 520, 480, 360)
         glow.addColorStop(0, 'rgba(50,120,190,0.13)')
         glow.addColorStop(1, 'transparent')
         ctx.fillStyle = glow
-        ctx.fillRect(0, 0, DESIGN_W, DESIGN_H)
+        ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0)
       }
 
       function drawZoneLabels() {
