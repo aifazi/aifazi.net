@@ -297,6 +297,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let dragDX = 0
       let dragDY = 0
       let dragMoved = false
+      // Set when a completed drag/pan actually moved: finalizeDrag resets
+      // dragMoved before the browser dispatches `click`, so without this the
+      // click guard never fired and every drag ended in a selection
+      // side-effect (F3). Reset on the next pointerdown so a missed click
+      // can never swallow a later one.
+      let suppressClick = false
       // True when any onMoveNode fired for this drag — even sub-threshold
       // jitter opens the editor's undo checkpoint, so it must be closed.
       let dragTouched = false
@@ -1381,6 +1387,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const middle = e.button === 1
         if (!primary && !middle) return
         panMoved = false
+        suppressClick = false
         if (dragId) return
         const { mx, my } = toDesign(e)
         const found = hitAt(mx, my)
@@ -1510,6 +1517,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         const group = dragGroup
         dragId = null
         dragGroup = null
+        if (wasMoved) suppressClick = true
         dragMoved = false
         dragTouched = false
         if (!wasTouched || !sRef.current.onMoveNode) return
@@ -1560,6 +1568,12 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       function onClick(e: MouseEvent) {
         // A node drag or view pan that moved is not a click (prevents
         // accidental links/selections after repositioning the view).
+        if (suppressClick) {
+          suppressClick = false
+          dragMoved = false
+          panMoved = false
+          return
+        }
         if (dragMoved) {
           dragMoved = false
           return

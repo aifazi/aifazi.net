@@ -408,3 +408,96 @@ def test_revision_prune_cap(client):
 def test_reserved_template_slugs_rejected(client):
     for slug in ("multi-site", "dr-site", "hybrid-join"):
         assert client.post("/diagrams", json=_doc(slug=slug)).status_code == 400
+
+
+# ── Hybrid-infra audit B3/B4/B5: geometry + flow endpoint validation ───────
+
+
+def test_finite_float_geometry_accepted(client):
+    body = _doc()
+    body["nodes"][0]["x"] = 10.5
+    assert client.post("/diagrams", json=body).status_code == 200
+
+
+def test_bad_geometry_rejected(client):
+    import json as jsonlib
+
+    # Bools/strings/huge ints serialize via the normal JSON path.
+    for bad in (True, "10", 10**400):
+        body = _doc()
+        body["nodes"][0]["x"] = bad
+        assert client.post("/diagrams", json=body).status_code == 400, bad
+    # NaN/Infinity tokens: browsers stringify them to null, but raw clients
+    # can still send them (Python's json module accepts the tokens).
+    for bad in (float("nan"), float("inf"), -float("inf")):
+        body = _doc()
+        body["nodes"][0]["x"] = bad
+        r = client.post(
+            "/diagrams",
+            content=jsonlib.dumps(body),
+            headers={"content-type": "application/json"},
+        )
+        assert r.status_code == 400, bad
+
+
+def test_flow_non_string_endpoints_rejected(client):
+    # Unhashable endpoints (list/dict) used to raise TypeError → 500 (B3).
+    for bad_from in (["fw1"], {"id": "fw1"}, 1, None):
+        body = _doc()
+        body["flows"] = [{"id": "f1", "from": bad_from, "to": "fw1", "cat": "network"}]
+        assert client.post("/diagrams", json=body).status_code == 400, bad_from
+
+
+def test_flow_self_loop_rejected(client):
+    body = _doc()
+    body["flows"] = [{"id": "f1", "from": "fw1", "to": "fw1", "cat": "network"}]
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+def test_palette_validators_reject_bad_input(client):  # type: ignore[no-untyped-def]
+    """Unit checks for the validators the restore path re-runs (B5)."""
+    from fastapi import HTTPException
+
+    module = _load_module()
+    for bad in ({"network": "red"}, {"Bad Key": "#123456"}, "nope",
+                {f"k{i}": "#123456" for i in range(33)}):
+        with pytest.raises(HTTPException):
+            module._validate_palette(bad)
+    with pytest.raises(HTTPException):
+        module._validate_custom_categories({"network": {"label": "x", "color": "#123456"}})
+    with pytest.raises(HTTPException):
+        module._validate_custom_categories({"iot": {"label": "x", "color": "red"}})
+    assert module._validate_palette({"network": "#123456"}) == {"network": "#123456"}
+
+
+def test_restore_revalidates_stored_palette(monkeypatch):  # type: ignore[no-untyped-def]
+    """A forged/legacy revision with a bad palette must 400, not persist (B5)."""
+    fake = _FakeSupabase()
+    db_stub = types.ModuleType("database")
+    db_stub.supabase = fake
+    deps_stub = types.ModuleType("dependencies")
+    deps_stub.require_admin = _fake_require_admin
+    deps_stub.decode_token = lambda token: {"role": "admin"}
+    deps_stub._enrich_user = lambda payload: payload
+    monkeypatch.setitem(sys.modules, "database", db_stub)
+    monkeypatch.setitem(sys.modules, "dependencies", deps_stub)
+    module = _load_module()
+    app = FastAPI()
+    app.include_router(module.router)
+    client = TestClient(app)
+
+    good = _doc()
+    assert client.post("/diagrams", json=good).status_code == 200
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    fake.store.setdefault("infra_diagram_revisions", []).append({
+        "id": "rev-bad",
+        "diagram_id": doc_id,
+        "title": "Old title",
+        "published": False,
+        "created_at": "20260101000000",
+        "doc": {**good, "categoryColors": {"network": "red"}},
+    })
+    r = client.post(f"/diagrams/{doc_id}/revisions/rev-bad/restore")
+    assert r.status_code == 400, r.text
+    # Restore is atomic: the live row keeps its title (not the forged one).
+    assert client.get("/diagrams/admin/all").json()["diagrams"][0]["title"] == "HQ East"
