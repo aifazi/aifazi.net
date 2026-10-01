@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useDialog } from '../core/dialog.jsx'
 import api from '../lib/api'
+import { Input } from '@/core/forms'
 import { Btn, StatCard, MiniChart, FeedRow, ap, authCfg, ago, fmt, adminAction, roleColor } from './dbGuiParts'
 
 function DbHealthTab({ token, toast }) {
@@ -300,7 +301,7 @@ function NewsletterTab({ token, toast }) {
       </div>
 
       <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} onKeyDown={e => e.key==="Enter" && (setPage(1), load(1, search))}
+        <Input value={search} onChange={(v) => setSearch(v)} onKeyDown={e => e.key==="Enter" && (setPage(1), load(1, search))}
           placeholder="Search by email..." aria-label="Search newsletter subscribers" style={{ flex:1, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         <button onClick={() => { setPage(1); load(1, search); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 14px", background:"color-mix(in srgb, var(--cyan) 6%, transparent)", color:"var(--cyan,var(--cyan))", border:"1px solid var(--cyan)33", cursor:"pointer" }}>SEARCH</button>
         {search && <button onClick={() => { setSearch(""); setPage(1); load(1, ""); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
@@ -411,7 +412,7 @@ function AuditLogTab({ token, toast }) {
     <div>
       <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>AUDIT LOG</div>
       <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
-        <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Filter by action keyword (e.g. login, ban, create)..." aria-label="Filter audit log"
+        <Input value={filter} onChange={(v) => setFilter(v)} placeholder="Filter by action keyword (e.g. login, ban, create)..." aria-label="Filter audit log"
           style={{ flex:1, minWidth:220, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         {filter && <button onClick={() => { setFilter(""); setPage(1); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
         <button onClick={exportCsv}
@@ -554,11 +555,11 @@ function SessionsTab({ token, toast }) {
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:10, alignItems:"end" }}>
                 <div>
                   <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>IP ADDRESS</div>
-                  <input value={newIp} onChange={e => setNewIp(e.target.value)} placeholder="192.168.1.1" style={inp} />
+                  <Input value={newIp} onChange={(v) => setNewIp(v)} placeholder="192.168.1.1" style={inp} />
                 </div>
                 <div>
                   <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>REASON (OPTIONAL)</div>
-                  <input value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Spam, abuse..." style={inp} />
+                  <Input value={banReason} onChange={(v) => setBanReason(v)} placeholder="Spam, abuse..." style={inp} />
                 </div>
                 <button onClick={addBan} disabled={!newIp.trim() || !!busy} style={{ padding:"10px 18px", background:"color-mix(in srgb, var(--red) 8%, transparent)", color:"var(--red,var(--red))", border:"1px solid #ff475533", fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, cursor:newIp.trim()?"pointer":"not-allowed" }}>
                   {busy === "add" ? "BANNING..." : "BAN BAN IP"}

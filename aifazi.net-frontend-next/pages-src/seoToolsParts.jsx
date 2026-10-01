@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Select } from '../core/ui.jsx'
+import { Input, TextArea } from '@/core/forms'
 import { SITE_URL } from '@/lib/config'
 
 // Local copies (SeoTools.jsx owns its own; this module must not import from
@@ -127,7 +128,7 @@ function MetaAnalyzer() {
 
       {mode === 'url' ? (
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <input value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && analyze()}
+          <Input value={url} onChange={(v) => setUrl(v)} onKeyDown={e => e.key === 'Enter' && analyze()}
             placeholder="https://example.com" style={S.input} />
           <button onClick={analyze} disabled={loading} style={{ ...S.btn, opacity: loading ? 0.6 : 1 }}>
             {loading ? '⟳' : 'ANALYZE'}
@@ -135,7 +136,7 @@ function MetaAnalyzer() {
         </div>
       ) : (
         <>
-          <textarea value={html} onChange={e => setHtml(e.target.value)} rows={6}
+          <TextArea value={html} onChange={(v) => setHtml(v)} rows={6}
             placeholder="Paste your full HTML here..." style={{ ...S.input, resize: 'vertical', marginBottom: 8 }} />
           <button onClick={analyze} style={S.btn}>ANALYZE HTML</button>
         </>
@@ -219,11 +220,11 @@ function KeywordDensity() {
 
   return (
     <div>
-      <textarea value={text} onChange={e => setText(e.target.value)} rows={8}
+      <TextArea value={text} onChange={(v) => setText(v)} rows={8}
         placeholder="Paste your page content or article text here..."
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input value={target} onChange={e => setTarget(e.target.value)} placeholder="Target keyword (optional)" style={{ ...S.input, flex: 1 }} />
+        <Input value={target} onChange={(v) => setTarget(v)} placeholder="Target keyword (optional)" style={{ ...S.input, flex: 1 }} />
         <button onClick={analyze} style={S.btn}>ANALYZE</button>
       </div>
 
@@ -307,7 +308,7 @@ function ReadabilityScore() {
 
   return (
     <div>
-      <textarea value={text} onChange={e => setText(e.target.value)} rows={8}
+      <TextArea value={text} onChange={(v) => setText(v)} rows={8}
         placeholder="Paste your article or page content to analyze readability..."
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
       <button onClick={analyze} style={S.btn}>ANALYZE READABILITY</button>
@@ -394,7 +395,7 @@ function BulkUrlChecker() {
       <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
         Enter up to 20 URLs, one per line. Uses a CORS proxy — if a URL fails, check it manually.
       </p>
-      <textarea value={urls} onChange={e => setUrls(e.target.value)} rows={6}
+      <TextArea value={urls} onChange={(v) => setUrls(v)} rows={6}
         placeholder={`${SITE_URL}\n${SITE_URL}/blog\n${SITE_URL}/forum`}
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
 
@@ -466,7 +467,7 @@ function SitemapGenerator() {
 
   return (
     <div>
-      <textarea value={urls} onChange={e => setUrls(e.target.value)} rows={6}
+      <TextArea value={urls} onChange={(v) => setUrls(v)} rows={6}
         placeholder={`${SITE_URL}\n${SITE_URL}/blog\n${SITE_URL}/forum`}
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -493,7 +494,7 @@ function SitemapGenerator() {
             <div style={S.sectionLabel}>OUTPUT — SAVE AS sitemap.xml (place in your public folder)</div>
             <button onClick={copy} style={{ ...S.btn, padding: '6px 16px', fontSize: 11, background: copied ? 'var(--cyan)' : 'var(--green)' }}>{copied ? '✓ COPIED' : 'COPY'}</button>
           </div>
-          <textarea readOnly value={output} rows={14} style={{ ...S.input, color: 'var(--cyan)', fontSize: 11, resize: 'none' }} />
+          <TextArea readOnly value={output} rows={14} style={{ ...S.input, color: 'var(--cyan)', fontSize: 11, resize: 'none' }} />
         </>
       )}
     </div>
@@ -521,7 +522,7 @@ function OGPreview() {
           ].map(({ key, label, placeholder }) => (
             <div key={key} style={{ marginBottom: 14 }}>
               <div style={S.fieldLabel}>{label}</div>
-              <input value={form[key]} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={S.input} />
+              <Input value={form[key]} onChange={(v) => set(key, v)} placeholder={placeholder} style={S.input} />
             </div>
           ))}
         </div>
@@ -599,11 +600,11 @@ function TitleDescGenerator() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div>
           <div style={S.fieldLabel}>PAGE TOPIC</div>
-          <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. network security" style={S.input} />
+          <Input value={topic} onChange={(v) => setTopic(v)} placeholder="e.g. network security" style={S.input} />
         </div>
         <div>
           <div style={S.fieldLabel}>TARGET KEYWORD</div>
-          <input value={keyword} onChange={e => setKeyword(e.target.value)} placeholder="e.g. cybersecurity tips" style={S.input} />
+          <Input value={keyword} onChange={(v) => setKeyword(v)} placeholder="e.g. cybersecurity tips" style={S.input} />
         </div>
       </div>
       <button onClick={generate} style={S.btn}>GENERATE IDEAS</button>
@@ -653,11 +654,11 @@ function RobotsTxtGenerator() {
       </p>
       <div style={{ marginBottom: 14 }}>
         <div style={S.fieldLabel}>SITEMAP URL (optional)</div>
-        <input value={sitemapUrl} onChange={e => setSitemapUrl(e.target.value)} placeholder={`${SITE_URL}/sitemap.xml`} style={S.input} />
+        <Input value={sitemapUrl} onChange={(v) => setSitemapUrl(v)} placeholder={`${SITE_URL}/sitemap.xml`} style={S.input} />
       </div>
       <div style={{ marginBottom: 16 }}>
         <div style={S.fieldLabel}>BLOCKED PATHS (one per line)</div>
-        <textarea value={blocked} onChange={e => setBlocked(e.target.value)} rows={6} style={{ ...S.input, resize: 'vertical' }} />
+        <TextArea value={blocked} onChange={(v) => setBlocked(v)} rows={6} style={{ ...S.input, resize: 'vertical' }} />
       </div>
       <button onClick={generate} style={S.btn}>GENERATE ROBOTS.TXT</button>
 

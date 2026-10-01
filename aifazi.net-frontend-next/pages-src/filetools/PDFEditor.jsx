@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Checkbox, Slider, dialog } from '../../core/ui.jsx'
+import { Input } from '@/core/forms'
 
 const RS = 1.5 // render scale for backend page images
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3]
@@ -271,7 +272,7 @@ function Toolbar({ tool, setTool, color, setColor, opacity, setOpacity,
             {needsFont && (
               <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                 <span style={{ fontFamily:C.mono, fontSize: 11, color:C.muted }}>SIZE</span>
-                <input type="number" min={8} max={96} value={fontSize} onChange={e=>setFontSize(+e.target.value)}
+                <Input type="number" min={8} max={96} value={fontSize} onChange={(v)=>setFontSize(+v)}
                   style={{ width:46, fontFamily:C.mono, fontSize:11, background:C.bg3, border:`1px solid ${C.border}`,
                     color:C.text, padding:'3px 6px', borderRadius:4, outline:'none' }} />
               </div>
@@ -390,7 +391,7 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
         <div>
           <label style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>FIND</label>
           <div style={{ display:'flex', gap:6 }}>
-            <input value={find} onChange={e=>setFind(e.target.value)}
+            <Input value={find} onChange={(v)=>setFind(v)}
               placeholder="Search text…"
               onKeyDown={e=>e.key==='Enter'&&onSearch(find,matchCase)}
               style={{ flex:1, background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
@@ -402,7 +403,7 @@ function SearchPanel({ onClose, onSearch, onReplace, onReplaceAll, results, curr
         </div>
         <div>
           <label style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:2, color:C.muted, display:'block', marginBottom:5 }}>REPLACE WITH</label>
-          <input value={replace} onChange={e=>setReplace(e.target.value)}
+          <Input value={replace} onChange={(v)=>setReplace(v)}
             placeholder="Replacement text…"
             style={{ width:'100%', boxSizing:'border-box', background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
               fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
@@ -437,10 +438,10 @@ function LinkDialog({ pos, onConfirm, onClose }) {
       boxShadow:'0 8px 32px rgba(0,0,0,0.6)', padding:14 }}>
       <div style={{ fontFamily:C.mono, fontSize: 11, letterSpacing:3, color:C.cyan, marginBottom:10 }}>ADD LINK</div>
       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-        <input autoFocus value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://..."
+        <Input autoFocus value={url} onChange={(v)=>setUrl(v)} placeholder="https://..."
           style={{ background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
             fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
-        <input value={label} onChange={e=>setLabel(e.target.value)} placeholder="Label (optional)"
+        <Input value={label} onChange={(v)=>setLabel(v)} placeholder="Label (optional)"
           style={{ background:C.bg3, border:`1px solid ${C.border}`, color:C.text,
             fontFamily:C.mono, fontSize:11, padding:'7px 10px', borderRadius:5, outline:'none' }} />
         <div style={{ display:'flex', gap:6 }}>
@@ -937,7 +938,7 @@ export default function PDFEditor() {
             {/* Text input overlay */}
             {textPos && (
               <div style={{ position:'absolute', left: textPos.canvasX*zoom, top: textPos.canvasY*zoom, zIndex:10 }}>
-                <input autoFocus value={pendingText} onChange={e=>setPendingText(e.target.value)}
+                <Input autoFocus value={pendingText} onChange={(v)=>setPendingText(v)}
                   onKeyDown={e=>{ if(e.key==='Enter'){e.preventDefault();commitText()} if(e.key==='Escape'){setTextPos(null);setPendingText('')} }}
                   onBlur={commitText}
                   style={{ fontFamily:'sans-serif', fontSize: fontSize*zoom*0.95,

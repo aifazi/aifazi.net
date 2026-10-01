@@ -5,7 +5,7 @@ import { Link } from '@/lib/router-compat'
 import api, { getAuthToken, getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess } from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { UserAvatar } from '@/lib/avatar'
-import { Checkbox, Select } from '../core/ui.jsx'
+import { Checkbox, Input, Select, TextArea } from '../core/ui.jsx'
 
 const S = {
   input: {
@@ -214,24 +214,24 @@ function UserEditModal({ userId, onClose, onSaved }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={S.label}>Username</label>
-                  <input value={form.username} onChange={e => set('username', e.target.value)} style={S.input} />
+                  <Input value={form.username} onChange={v => set('username', v)} style={S.input} />
                 </div>
                 <div>
                   <label style={S.label}>Email</label>
-                  <input value={form.email} onChange={e => set('email', e.target.value)} style={S.input} />
+                  <Input value={form.email} onChange={v => set('email', v)} style={S.input} />
                 </div>
               </div>
 
               <div>
                 <label style={S.label}>Bio</label>
-                <textarea value={form.bio} onChange={e => set('bio', e.target.value)}
+                <TextArea value={form.bio} onChange={v => set('bio', v)}
                   rows={3} placeholder="User bio..." style={{ ...S.input, resize: 'vertical' }} />
               </div>
 
               <div>
                 <label style={S.label}>Avatar URL</label>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <input value={form.avatar} onChange={e => set('avatar', e.target.value)}
+                  <Input value={form.avatar} onChange={v => set('avatar', v)}
                     placeholder="https://..." style={S.input} />
                   <UserAvatar
                     avatar={form.avatar}
@@ -252,7 +252,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                   </button>
                 </div>
                 {showPwField && (
-                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                  <Input type="password" value={newPassword} onChange={v => setNewPassword(v)}
                     placeholder="New password (min 6 chars)" style={S.input} />
                 )}
               </div>
@@ -347,7 +347,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 {form.banned && (
                   <div>
                     <label style={S.label}>Ban Reason (shown to user on login)</label>
-                    <input value={form.banReason} onChange={e => set('banReason', e.target.value)}
+                    <Input value={form.banReason} onChange={v => set('banReason', v)}
                       placeholder="Reason for ban..." style={S.input} />
                   </div>
                 )}
@@ -432,11 +432,11 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label style={S.label}>Title</label>
-            <input value={form.title} onChange={e => set('title', e.target.value)} style={S.input} />
+            <Input value={form.title} onChange={v => set('title', v)} style={S.input} />
           </div>
           <div>
             <label style={S.label}>Content</label>
-            <textarea value={form.content} onChange={e => set('content', e.target.value)}
+            <TextArea value={form.content} onChange={v => set('content', v)}
               rows={10} style={{ ...S.input, resize: 'vertical', lineHeight: 1.6 }} />
           </div>
           <div>
@@ -466,7 +466,7 @@ function ThreadEditModal({ thread, cats, onClose, onSaved }) {
             </div>
             <div>
               <label style={S.label}>Tags (comma-separated)</label>
-              <input value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="tag1, tag2" style={S.input} />
+              <Input value={form.tags} onChange={v => set('tags', v)} placeholder="tag1, tag2" style={S.input} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 20 }}>
@@ -520,7 +520,7 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
         </div>
 
         <label style={S.label}>Content</label>
-        <textarea value={content} onChange={e => setContent(e.target.value)}
+        <TextArea value={content} onChange={v => setContent(v)}
           rows={8} style={{ ...S.input, resize: 'vertical', lineHeight: 1.6, marginBottom: 16 }} />
 
         <div style={{ display: 'flex', gap: 10 }}>
@@ -558,7 +558,7 @@ function BanModal({ user, onClose, onSaved }) {
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: 3, marginBottom: 16 }}>🚫 BAN USER</div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 20 }}>Ban {user.username}?</div>
         <label style={S.label}>Ban Reason (shown to user on login)</label>
-        <input value={reason} onChange={e => setReason(e.target.value)}
+        <Input value={reason} onChange={v => setReason(v)}
           placeholder="e.g. Spam, rule violation..." style={{ ...S.input, marginBottom: 20 }} />
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleBan} disabled={saving}

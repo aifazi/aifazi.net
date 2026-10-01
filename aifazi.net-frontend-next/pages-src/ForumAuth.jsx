@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
 import { authProviderLoginRoute, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
+import { Input } from '@/core/forms'
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inputStyle = {
@@ -190,7 +191,7 @@ export function ForumLogin() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <label style={labelStyle}>EMAIL</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus placeholder="your@email.com" style={inputStyle} />
+            <Input type="email" value={email} onChange={v => setEmail(v)} required autoFocus placeholder="your@email.com" style={inputStyle} />
           </div>
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -199,7 +200,7 @@ export function ForumLogin() {
                 FORGOT PASSWORD?
               </Link>
             </div>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" style={inputStyle} />
+            <Input type="password" value={password} onChange={v => setPassword(v)} required placeholder="••••••••" style={inputStyle} />
           </div>
 
           <ErrorBox msg={error} />
@@ -368,9 +369,9 @@ export function ForumRegister() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
           <label style={labelStyle}>USERNAME</label>
-          <input
+          <Input
             value={form.username}
-            onChange={e => set('username', e.target.value)}
+            onChange={v => set('username', v)}
             required autoFocus
             placeholder="CoolUsername"
             minLength={3} maxLength={30}
@@ -385,11 +386,11 @@ export function ForumRegister() {
         </div>
         <div>
           <label style={labelStyle}>EMAIL</label>
-          <input type="email" value={form.email} onChange={e => set('email', e.target.value)} required placeholder="your@email.com" style={inputStyle} />
+          <Input type="email" value={form.email} onChange={v => set('email', v)} required placeholder="your@email.com" style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>PASSWORD</label>
-          <input type="password" value={form.password} onChange={e => set('password', e.target.value)} required placeholder="Min 8 characters" minLength={8} style={inputStyle} />
+          <Input type="password" value={form.password} onChange={v => set('password', v)} required placeholder="Min 8 characters" minLength={8} style={inputStyle} />
           {form.password.length > 0 && form.password.length < 8 && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)', marginTop: 6, letterSpacing: 1 }}>
               {8 - form.password.length} more character{8 - form.password.length !== 1 ? 's' : ''} needed
@@ -398,9 +399,9 @@ export function ForumRegister() {
         </div>
         <div>
           <label style={labelStyle}>CONFIRM PASSWORD</label>
-          <input
+          <Input
             type="password" value={form.confirm}
-            onChange={e => set('confirm', e.target.value)}
+            onChange={v => set('confirm', v)}
             required placeholder="Repeat password"
             style={{
               ...inputStyle,
@@ -635,9 +636,9 @@ export function ForgotPassword() {
           <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
               <label style={labelStyle}>EMAIL OR USERNAME</label>
-              <input
+              <Input
                 value={identifier}
-                onChange={e => setIdentifier(e.target.value)}
+                onChange={v => setIdentifier(v)}
                 required autoFocus
                 placeholder="your@email.com  or  CoolUsername"
                 style={inputStyle}
@@ -671,10 +672,10 @@ export function ForgotPassword() {
           <form onSubmit={handleFind} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
               <label style={labelStyle}>EMAIL ADDRESS</label>
-              <input
+              <Input
                 type="email"
                 value={findEmail}
-                onChange={e => setFindEmail(e.target.value)}
+                onChange={v => setFindEmail(v)}
                 required autoFocus
                 placeholder="your@email.com"
                 style={inputStyle}
@@ -762,7 +763,7 @@ export function ResetPassword() {
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div>
           <label style={labelStyle}>NEW PASSWORD</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Min 8 characters" minLength={6} style={inputStyle} />
+          <Input type="password" value={password} onChange={v => setPassword(v)} required placeholder="Min 8 characters" minLength={6} style={inputStyle} />
           {password.length > 0 && (
             <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
               {[1,2,3,4].map(i => (
@@ -774,7 +775,7 @@ export function ResetPassword() {
         </div>
         <div>
           <label style={labelStyle}>CONFIRM PASSWORD</label>
-          <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} required placeholder="Repeat password" style={{ ...inputStyle, borderColor: confirm.length > 0 && confirm !== password ? 'rgba(255,71,87,0.6)' : 'var(--border)' }} />
+          <Input type="password" value={confirm} onChange={v => setConfirm(v)} required placeholder="Repeat password" style={{ ...inputStyle, borderColor: confirm.length > 0 && confirm !== password ? 'rgba(255,71,87,0.6)' : 'var(--border)' }} />
           {confirm.length > 0 && confirm !== password && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>Passwords don&apos;t match</div>
           )}

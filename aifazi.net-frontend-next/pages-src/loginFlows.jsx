@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import api, { saveTokens, clearAuthTokens, getRole, ensureAdminGate } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
+import { Input } from '@/core/forms'
 
 let _gsapCache = null
 
@@ -423,11 +424,11 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
       )}
 
       <FieldWrap label="Email or Username" htmlFor="si-id">
-        <input
-          id="si-id" type="text" ref={siIdRef}
+        <Input
+          id="si-id" ref={siIdRef}
           placeholder="your@email.com or username"
           value={identifier}
-          onChange={e => setIdentifier(e.target.value)}
+          onChange={v => setIdentifier(v)}
           required autoComplete="username"
           aria-invalid={!!error} aria-describedby={error ? 'si-form-error' : undefined}
           style={inputStyle}
@@ -446,11 +447,11 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
       } htmlFor="si-pass" hint={capsOn && (
         <span id="si-caps-warn" className="auth-field-status auth-field-status-bad" role="status">⚠ Caps Lock is on</span>
       )}>
-        <input
+        <Input
           id="si-pass" type={showPass ? 'text' : 'password'} ref={siPassRef}
           placeholder="••••••••"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={v => setPassword(v)}
           onKeyDown={capsCheck} onKeyUp={capsCheck}
           required autoComplete={showPass ? 'off' : 'current-password'}
           aria-invalid={!!error} aria-describedby={capsOn ? 'si-caps-warn' : error ? 'si-form-error' : undefined}
@@ -818,8 +819,8 @@ function SignUp({ onSwitch, shake }) {
       <ErrorBox msg={error} id="su-form-error" />
 
       <FieldWrap label="Username" htmlFor="su-user" hint={<UnStatus username={form.username} check={unCheck} suggest={unSuggest} onSuggest={() => set('username', unSuggest)} />}>
-        <input id="su-user" type="text" ref={suUserRef} placeholder="CoolUsername"
-          value={form.username} onChange={e => set('username', e.target.value)}
+        <Input id="su-user" ref={suUserRef} placeholder="CoolUsername"
+          value={form.username} onChange={v => set('username', v)}
           required minLength={3} maxLength={30} autoComplete="username"
           aria-invalid={unCheck === 'taken' || !!error} aria-describedby={unCheck === 'taken' ? 'su-user-taken' : error ? 'su-form-error' : undefined}
           style={inputStyle}
@@ -828,8 +829,8 @@ function SignUp({ onSwitch, shake }) {
       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: -14, marginBottom: 6 }}>{form.username.length}/30</div>
 
       <FieldWrap label="Email" htmlFor="su-email">
-        <input id="su-email" type="email" ref={suEmailRef} placeholder="your@email.com"
-          value={form.email} onChange={e => set('email', e.target.value)}
+        <Input id="su-email" type="email" ref={suEmailRef} placeholder="your@email.com"
+          value={form.email} onChange={v => set('email', v)}
           required autoComplete="email"
           aria-invalid={!!error} aria-describedby={error ? 'su-form-error' : undefined}
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
@@ -838,8 +839,8 @@ function SignUp({ onSwitch, shake }) {
       <FieldWrap label="Password" htmlFor="su-pass" hint={
         <PasswordStrength password={form.password} />
       }>
-        <input id="su-pass" type={showPass ? 'text' : 'password'} ref={suPassRef} placeholder="Min 8 characters"
-          value={form.password} onChange={e => set('password', e.target.value)}
+        <Input id="su-pass" type={showPass ? 'text' : 'password'} ref={suPassRef} placeholder="Min 8 characters"
+          value={form.password} onChange={v => set('password', v)}
           required minLength={8} autoComplete={showPass ? 'off' : 'new-password'}
           aria-invalid={!!error} aria-describedby={error ? 'su-form-error' : undefined}
           style={{ ...inputStyle, paddingRight: 44 }}
@@ -848,8 +849,8 @@ function SignUp({ onSwitch, shake }) {
       </FieldWrap>
 
       <FieldWrap label="Confirm Password" htmlFor="su-conf" hint={pwMatch && <span id="su-conf-mismatch" className="auth-field-status auth-field-status-bad">Passwords don&apos;t match</span>}>
-        <input id="su-conf" type={showConf ? 'text' : 'password'} ref={suConfRef} placeholder="Repeat password"
-          value={form.confirm} onChange={e => set('confirm', e.target.value)}
+        <Input id="su-conf" type={showConf ? 'text' : 'password'} ref={suConfRef} placeholder="Repeat password"
+          value={form.confirm} onChange={v => set('confirm', v)}
           required autoComplete={showConf ? 'off' : 'new-password'}
           aria-invalid={pwMatch || !!error} aria-describedby={pwMatch ? 'su-conf-mismatch' : error ? 'su-form-error' : undefined}
           style={{ ...inputStyle, paddingRight: 44 }}
@@ -961,8 +962,8 @@ function ForgotPassword({ onSwitch, shake }) {
       </p>
       <ErrorBox msg={error} id="fp-form-error" />
       <FieldWrap label="Email Address" htmlFor="fp-email">
-        <input id="fp-email" type="email" placeholder="your@email.com"
-          value={email} onChange={e => setEmail(e.target.value)}
+        <Input id="fp-email" type="email" placeholder="your@email.com"
+          value={email} onChange={v => setEmail(v)}
           required autoComplete="email"
           aria-invalid={!!error} aria-describedby={error ? 'fp-form-error' : undefined}
           style={inputStyle} onFocus={focusGreen} onBlur={blurGreen} />
@@ -1087,12 +1088,12 @@ function TwoFAStep({ challenge, onBack, shake }) {
       <ErrorBox msg={error} id="twofa-form-error" />
 
       <FieldWrap label="Authenticator Code" htmlFor="twofa-code">
-        <input
-          id="twofa-code" type="text" inputMode="numeric" pattern="[0-9 ]*"
+        <Input
+          id="twofa-code" inputMode="numeric" pattern="[0-9 ]*"
           placeholder="000 000  ·  XXXX-XXXX-XXXX" maxLength={23}
           value={code}
-          onChange={e => {
-            const val = e.target.value.replace(/[^A-Za-z0-9 \-]/g, '')
+          onChange={v => {
+            const val = v.replace(/[^A-Za-z0-9 \-]/g, '')
             setCode(val)
             if (error) setError('')
             if (verifyTimer.current) clearTimeout(verifyTimer.current)

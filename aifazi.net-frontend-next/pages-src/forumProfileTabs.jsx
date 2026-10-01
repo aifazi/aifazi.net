@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
 import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
-import { Select, useDialog } from '../core/ui.jsx'
+import { Select, TextArea, useDialog } from '../core/ui.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
@@ -211,7 +211,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
       {canReply && (
         <div style={{ padding: '14px 20px' }}>
           <label style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>ADD A REPLY</label>
-          <textarea value={reply} onChange={e => setReply(e.target.value)}
+          <TextArea value={reply} onChange={v => setReply(v)}
             placeholder="Type your message here..." rows={3}
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
               ...M, fontSize: 12, padding: '10px 14px', outline: 'none', borderRadius: 6, boxSizing: 'border-box',
@@ -593,7 +593,7 @@ function ProfileEditTab({ user, onUpdate }) {
         )}
         <div>
           <label htmlFor="pf-bio" style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', display: 'block', marginBottom: 6 }}>BIO</label>
-          <textarea id="pf-bio" rows={3} value={form.bio} onChange={e => set('bio', e.target.value)}
+          <TextArea id="pf-bio" rows={3} value={form.bio} onChange={v => set('bio', v)}
             placeholder="Tell us about yourself…"
             style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)',
               ...M, fontSize: 12, padding: '10px 13px', borderRadius: 6, outline: 'none',

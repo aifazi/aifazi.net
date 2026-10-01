@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { S } from './shared.jsx'
+import { Input } from '@/core/forms'
 import PDFEditor from './PDFEditor.jsx'
 import {
   MergePDFB, SplitPDFB, CompressPDFB, RotatePDFB, RemovePagesPDFB,
@@ -292,7 +293,7 @@ export default function FileTools() {
               <div style={{ flex:1, minWidth:200, position:'relative' }}>
                 <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)',
                   fontFamily:'var(--font-mono)', fontSize:12, color:'var(--muted)', pointerEvents:'none' }}>🔍</span>
-                <input value={search} onChange={e => setSearch(e.target.value)}
+                <Input value={search} onChange={(v) => setSearch(v)}
                   placeholder="Search tools..."
                   style={{ ...S.input, paddingLeft:36, fontFamily:'var(--font-mono)', fontSize:11 }} />
               </div>

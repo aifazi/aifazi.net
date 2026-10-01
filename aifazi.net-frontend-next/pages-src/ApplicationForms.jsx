@@ -5,6 +5,7 @@ import api from '@/lib/api'
 import { useForum } from '@/context/ForumContext'
 import { useNotify } from '../core/notify.jsx'
 import { MotionPage, usePageConfig } from '../core/pageMotion.jsx'
+import { Input, Select, TextArea } from '@/core/forms'
 import { ThreadRowSkeleton } from '../components/Skeleton.jsx'
 
 const G = '#00FF88'
@@ -26,26 +27,24 @@ function Shell({ children, narrow = false }) {
 
 
 
-function Input({ field, value, onChange, disabled }) {
+function FieldInput({ field, value, onChange, disabled }) {
   const base = {
     width:'100%', boxSizing:'border-box', background:'rgba(255,255,255,0.04)',
     border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, color:'var(--text)',
     padding:'11px 13px', fontFamily:M, fontSize:13, outline:'none',
   }
   if (field.type === 'textarea') {
-    return <textarea rows={field.rows || 5} value={value || ''} disabled={disabled}
-      onChange={e => onChange(e.target.value)} placeholder={field.placeholder || ''} style={{ ...base, resize:'vertical' }} />
+    return <TextArea rows={field.rows || 5} value={value || ''} disabled={disabled}
+      onChange={v => onChange(v)} placeholder={field.placeholder || ''} style={{ ...base, resize:'vertical' }} />
   }
   if (field.type === 'select') {
     return (
-      <select value={value || ''} disabled={disabled} onChange={e => onChange(e.target.value)} style={base}>
-        <option value="">Select...</option>
-        {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
-      </select>
+      <Select value={value || ''} disabled={disabled} onChange={v => onChange(v)}
+        options={[{ value: '', label: 'Select...' }, ...(field.options || []).map(opt => ({ value: String(opt), label: String(opt) }))]} />
     )
   }
-  return <input type={field.type === 'number' ? 'number' : 'text'} value={value || ''} disabled={disabled}
-    onChange={e => onChange(e.target.value)} placeholder={field.placeholder || ''} style={base} />
+  return <Input type={field.type === 'number' ? 'number' : 'text'} value={value || ''} disabled={disabled}
+    onChange={v => onChange(v)} placeholder={field.placeholder || ''} style={base} />
 }
 
 function Field({ field, value, onChange, error, disabled }) {
@@ -54,7 +53,7 @@ function Field({ field, value, onChange, error, disabled }) {
       <label style={{ fontFamily:M, fontSize: 11, letterSpacing:1.8, color:error ? R : 'var(--muted)', textTransform:'uppercase' }}>
         {field.label || field.id} {field.required && <span style={{ color:R }}>*</span>}
       </label>
-      <Input field={field} value={value} onChange={onChange} disabled={disabled} />
+      <FieldInput field={field} value={value} onChange={onChange} disabled={disabled} />
       {field.help && !error && <span style={{ color:'var(--muted)', fontSize:11, lineHeight:1.6 }}>{field.help}</span>}
       {field.min_length > 0 && !error && (
         <span style={{ color:(value || '').length < field.min_length ? R : G, fontSize: 11, fontFamily:M, textAlign:'right' }}>

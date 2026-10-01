@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams, Link } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useForum } from '../context/ForumContext'
-import { Select } from '../core/ui.jsx'
+import { Input, Select, TextArea } from '../core/ui.jsx'
 import { Card, NeonButton } from '../components/community'
 import { MediaUploader } from '../components/MediaPreview'
 
@@ -85,7 +85,7 @@ export default function ForumNewThread() {
             {/* Title */}
             <div>
               <label style={label}>TITLE *</label>
-              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              <Input value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))}
                 placeholder="Give your thread a clear title..."
                 maxLength={200}
                 style={{ ...field, fontSize: 18 }} />
@@ -95,7 +95,7 @@ export default function ForumNewThread() {
             {/* Content */}
             <div>
               <label style={label}>CONTENT *</label>
-              <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
+              <TextArea value={form.content} onChange={v => setForm(f => ({ ...f, content: v }))}
                 placeholder="Write your post... Be clear and descriptive."
                 rows={10}
                 // P2 — sane client caps mirroring expected backend limits
@@ -114,7 +114,7 @@ export default function ForumNewThread() {
             {/* Tags */}
             <div>
               <label style={label}>TAGS <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(comma-separated, optional)</span></label>
-              <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+              <Input value={form.tags} onChange={v => setForm(f => ({ ...f, tags: v }))}
                 placeholder="networking, cisco, vpn"
                 maxLength={100}
                 style={field} />

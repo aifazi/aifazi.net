@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from '
 import api from '@/lib/api'
 import { notify } from '../core/notify.jsx'
 import { Select } from '../core/ui.jsx'
+import { Input, TextArea } from '@/core/forms'
 import Clickable from '@/core/Clickable.jsx'
 import { SkeletonList } from '@/core/Feedback'
 import { useForum } from '../context/ForumContext'
@@ -265,7 +266,7 @@ const sendReply = async () => {
         {canReply && (
           <div>
             <label style={labelStyle}>ADD A REPLY</label>
-            <textarea value={reply} onChange={e => setReply(e.target.value)}
+            <TextArea value={reply} onChange={(v) => setReply(v)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }}
               placeholder="Type your message here... (Enter to send, Shift+Enter for new line)"
               rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7, marginBottom: 10 }}
@@ -344,18 +345,18 @@ function SubmitTicket({ onSuccess }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }} className="helpdesk-form-row">
           <div>
             <label style={labelStyle}>YOUR NAME *</label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="Tanvir Hasan" style={inputStyle}
+            <Input value={form.name} onChange={(v) => set('name', v)} placeholder="Tanvir Hasan" style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--cyan)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </div>
           <div>
             <label style={labelStyle}>EMAIL *</label>
-            <input type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="you@example.com" style={inputStyle}
+            <Input type="email" value={form.email} onChange={(v) => set('email', v)} placeholder="you@example.com" style={inputStyle}
               onFocus={e => e.target.style.borderColor = 'var(--cyan)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </div>
         </div>
         <div>
           <label style={labelStyle}>SUBJECT *</label>
-          <input value={form.subject} onChange={e => set('subject', e.target.value)} placeholder="Brief description of the issue" style={inputStyle}
+          <Input value={form.subject} onChange={(v) => set('subject', v)} placeholder="Brief description of the issue" style={inputStyle}
             onFocus={e => e.target.style.borderColor = 'var(--cyan)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -372,7 +373,7 @@ function SubmitTicket({ onSuccess }) {
         </div>
         <div>
           <label style={labelStyle}>DESCRIPTION *</label>
-          <textarea value={form.description} onChange={e => set('description', e.target.value)}
+          <TextArea value={form.description} onChange={(v) => set('description', v)}
             placeholder="Describe the issue in detail — steps to reproduce, error messages, affected systems..."
             rows={5} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7 }}
             onFocus={e => e.target.style.borderColor = 'var(--cyan)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
