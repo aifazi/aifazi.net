@@ -31,6 +31,7 @@ import {
 } from '@/data/hybrid-infra'
 import {
   listDiagrams,
+  listAllDiagrams,
   getDiagram,
   createDiagram,
   updateDiagram,
@@ -41,6 +42,7 @@ import {
   type DiagramMeta,
   type InfraRevisionMeta,
 } from '@/lib/infraApi'
+import { registerDirtyCheck } from '@/lib/infraLeaveGuard'
 import { diffDiagramDocs, type DiagramDiff } from '@/lib/infraDocOps'
 import {
   arrangeNodesDoc,
@@ -170,6 +172,15 @@ export default function HybridInfraEditor() {
   const dragRef = useRef(false)
   const focusPushed = useRef(false)
   const savedRef = useRef<string | null>(null)
+  // True once the user has actually edited since the last clean point
+  // (load/switch/save). Combined with the savedRef diff this is the
+  // leave-guard predicate: pristine docs never trigger a discard prompt.
+  const dirtyRef = useRef(false)
+  // Which diagram list endpoint the current state reflects (public vs admin).
+  const listModeRef = useRef<'public' | 'admin'>(isAdmin ? 'admin' : 'public')
+  // Hard guard against concurrent save/publish round-trips.
+  const inFlightRef = useRef(false)
+  const isAdminRef = useRef(isAdmin)
   const counterRef = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
@@ -185,6 +196,30 @@ export default function HybridInfraEditor() {
   useEffect(() => {
     docRef.current = doc
   })
+
+  useEffect(() => {
+    isAdminRef.current = isAdmin
+  }, [isAdmin])
+
+  const isUnsaved = () =>
+    dirtyRef.current && savedRef.current !== JSON.stringify(docRef.current)
+
+  const confirmDiscard = () => !isUnsaved() || window.confirm('Discard unsaved changes?')
+
+  // ── Leave guard (F1): warn on reload/tab-close with unsaved edits ──
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isUnsaved()) return
+      e.preventDefault()
+      // Legacy Chrome requires returnValue to be set to show the prompt.
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
+
+  // Register the dirty predicate for in-app navigation (library rows).
+  useEffect(() => registerDirtyCheck(isUnsaved), [])
 
   // ── Floating "Edit Site" button (page-level FAB) ──────────────
   useEffect(() => {
@@ -205,8 +240,9 @@ export default function HybridInfraEditor() {
     let alive = true
     ;(async () => {
       try {
-        const list = await listDiagrams()
+        const list = await (isAdminRef.current ? listAllDiagrams() : listDiagrams())
         if (alive) setDiagrams(list)
+        if (alive && isAdminRef.current) listModeRef.current = 'admin'
       } catch {
         /* offline — seed still renders */
       }
@@ -216,7 +252,7 @@ export default function HybridInfraEditor() {
       } catch {
         /* noop */
       }
-      if (slug && BUILTIN_DOCS[slug]) {
+      if (slug && Object.hasOwn(BUILTIN_DOCS, slug)) {
         const seed = BUILTIN_DOCS[slug]()
         if (alive) {
           docRef.current = seed
@@ -224,6 +260,7 @@ export default function HybridInfraEditor() {
           setDocId(null)
           setIsSeed(true)
           savedRef.current = null
+          dirtyRef.current = false
         }
         return
       }
@@ -241,6 +278,7 @@ export default function HybridInfraEditor() {
               setDocId(meta?.id ?? clean.id)
               setIsSeed(false)
               savedRef.current = JSON.stringify(clean)
+              dirtyRef.current = false
               return
             }
           }
@@ -255,6 +293,7 @@ export default function HybridInfraEditor() {
         setDocId(null)
         setIsSeed(true)
         savedRef.current = null
+        dirtyRef.current = false
       }
     })()
     return () => {
@@ -282,6 +321,18 @@ export default function HybridInfraEditor() {
     }
   }, [])
 
+  // When the admin role appears mid-session, upgrade the diagram list so
+  // drafts (and the slug-collision set) become visible (F5).
+  useEffect(() => {
+    if (!isAdmin || listModeRef.current === 'admin') return
+    listModeRef.current = 'admin'
+    let alive = true
+    listAllDiagrams()
+      .then((list) => { if (alive) setDiagrams(list) })
+      .catch(() => { /* keep the public list */ })
+    return () => { alive = false }
+  }, [isAdmin])
+
   const isDirty = savedRef.current !== JSON.stringify(doc)
 
   const selected = useMemo(
@@ -301,6 +352,7 @@ export default function HybridInfraEditor() {
     setCanRedo(histRef.current.future.length > 0)
   }
   const pushHistory = () => {
+    dirtyRef.current = true
     histRef.current.past.push(JSON.stringify(docRef.current))
     if (histRef.current.past.length > 50) histRef.current.past.shift()
     histRef.current.future = []
@@ -459,6 +511,9 @@ export default function HybridInfraEditor() {
     resetTransient()
     setSelectedId(draftOffer.doc.nodes[0]?.id ?? null)
     savedRef.current = null
+    // The draft copy is still in localStorage, so leaving right now is safe;
+    // any further edit marks the doc dirty again via pushHistory.
+    dirtyRef.current = false
     setDraftOffer(null)
     setNotice({ msg: 'Draft restored — save to keep it', ok: true })
   }
@@ -856,9 +911,13 @@ export default function HybridInfraEditor() {
   // ── Persistence ──────────────────────────────────────────────
   const refreshList = async () => {
     try {
-      setDiagrams(await listDiagrams())
+      setDiagrams(await (isAdminRef.current ? listAllDiagrams() : listDiagrams()))
     } catch {
-      /* offline */
+      try {
+        setDiagrams(await listDiagrams())
+      } catch {
+        /* offline */
+      }
     }
   }
 
@@ -868,8 +927,14 @@ export default function HybridInfraEditor() {
       setNotice({ msg: 'Add at least one node before saving', ok: false })
       return
     }
+    if (inFlightRef.current) return
+    inFlightRef.current = true
     setSaving(true)
     setNotice(null)
+    // Snapshot of what we are about to send: after the round-trip we only
+    // adopt the server echo when the local doc is byte-identical, so edits
+    // made while the request was in flight are never reverted (F2).
+    const outgoing = JSON.stringify(docRef.current)
     try {
       if (isSeed || !docId) {
         // "Save as new": derive a storable, unique slug. Builtin seed slugs
@@ -878,12 +943,12 @@ export default function HybridInfraEditor() {
         // the backend reserve them too.
         const taken = new Set(diagrams.map((d) => d.slug))
         const base =
-          cur.slug && !BUILTIN_DOCS[cur.slug] && !taken.has(cur.slug)
+          cur.slug && !Object.hasOwn(BUILTIN_DOCS, cur.slug) && !taken.has(cur.slug)
             ? cur.slug
             : slugify(cur.title || 'diagram')
         let slug = base
         let n = 2
-        while (taken.has(slug) || BUILTIN_DOCS[slug]) {
+        while (taken.has(slug) || Object.hasOwn(BUILTIN_DOCS, slug)) {
           slug = `${base}-${n}`
           n += 1
         }
@@ -894,11 +959,9 @@ export default function HybridInfraEditor() {
         })
         const clean = sanitizeDoc(created)
         if (!clean) throw new Error('Server returned an invalid doc')
-        docRef.current = clean
-        setDoc(clean)
         setDocId(clean.id)
         setIsSeed(false)
-        savedRef.current = JSON.stringify(clean)
+        adoptResponse(clean, outgoing)
         try {
           const url = new URL(window.location.href)
           url.searchParams.set('diagram', clean.slug)
@@ -910,17 +973,39 @@ export default function HybridInfraEditor() {
         const updated = await updateDiagram({ ...cur, updatedAt: new Date().toISOString() })
         const clean = sanitizeDoc(updated)
         if (!clean) throw new Error('Server returned an invalid doc')
-        docRef.current = clean
-        setDoc(clean)
-        savedRef.current = JSON.stringify(clean)
+        adoptResponse(clean, outgoing)
       }
       await refreshList()
       setNotice({ msg: 'Saved', ok: true })
     } catch (e) {
       setNotice({ msg: e instanceof Error ? e.message : 'Save failed', ok: false })
     } finally {
+      inFlightRef.current = false
       setSaving(false)
     }
+  }
+
+  /**
+   * Adopt a server response without clobbering in-flight edits: if the local
+   * doc changed while the request was out, keep the local content (the user's
+   * newest intent), graft the server identity onto it, and stay dirty.
+   */
+  const adoptResponse = (server: DiagramDoc, outgoing: string) => {
+    savedRef.current = JSON.stringify(server)
+    if (JSON.stringify(docRef.current) === outgoing) {
+      docRef.current = server
+      setDoc(server)
+      dirtyRef.current = false
+      return
+    }
+    const merged: DiagramDoc = {
+      ...docRef.current,
+      id: server.id,
+      slug: server.slug,
+      updatedAt: server.updatedAt,
+    }
+    docRef.current = merged
+    setDoc(merged)
   }
 
   const togglePublish = async () => {
@@ -928,24 +1013,35 @@ export default function HybridInfraEditor() {
       setNotice({ msg: 'Save the diagram first, then publish', ok: false })
       return
     }
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    setSaving(true)
     const cur = { ...docRef.current, published: !docRef.current.published }
     applyDoc(cur, false)
+    dirtyRef.current = true
+    const outgoing = JSON.stringify(docRef.current)
     try {
       const updated = await updateDiagram(cur)
       const clean = sanitizeDoc(updated)
-      if (clean) {
-        docRef.current = clean
-        setDoc(clean)
-        savedRef.current = JSON.stringify(clean)
-      }
+      if (!clean) throw new Error('Server returned an invalid doc')
+      adoptResponse(clean, outgoing)
       await refreshList()
+      setNotice({ msg: clean.published ? 'Published' : 'Unpublished', ok: true })
     } catch (e) {
+      // Roll the optimistic flag back so the button can't lie (F4/N4).
+      const reverted = { ...docRef.current, published: !cur.published }
+      docRef.current = reverted
+      setDoc(reverted)
+      if (savedRef.current === JSON.stringify(reverted)) dirtyRef.current = false
       setNotice({ msg: e instanceof Error ? e.message : 'Publish failed', ok: false })
+    } finally {
+      inFlightRef.current = false
+      setSaving(false)
     }
   }
 
   const newDoc = () => {
-    if (savedRef.current !== JSON.stringify(docRef.current) && !window.confirm('Discard unsaved changes?')) return
+    if (!confirmDiscard()) return
     const d: DiagramDoc = {
       id: `local-${Date.now().toString(36)}`,
       slug: 'untitled',
@@ -963,6 +1059,8 @@ export default function HybridInfraEditor() {
     setIsSeed(false)
     resetTransient()
     savedRef.current = null
+    // The new doc exists only in memory — leaving without saving loses it.
+    dirtyRef.current = true
   }
 
   const duplicateDoc = () => {
@@ -984,6 +1082,8 @@ export default function HybridInfraEditor() {
     setIsSeed(false)
     resetTransient()
     savedRef.current = null
+    // In-memory only until saved — leaving without saving loses the copy.
+    dirtyRef.current = true
     setNotice({ msg: 'Duplicated — save to keep it', ok: true })
   }
 
@@ -1000,6 +1100,7 @@ export default function HybridInfraEditor() {
       setIsSeed(true)
       resetTransient()
       savedRef.current = null
+      dirtyRef.current = false
       try {
         const url = new URL(window.location.href)
         url.searchParams.delete('diagram')
@@ -1013,8 +1114,8 @@ export default function HybridInfraEditor() {
   }
 
   const switchDoc = async (slug: string) => {
-    if (savedRef.current !== JSON.stringify(docRef.current) && !window.confirm('Discard unsaved changes?')) return
-    if (BUILTIN_DOCS[slug]) {
+    if (!confirmDiscard()) return
+    if (Object.hasOwn(BUILTIN_DOCS, slug)) {
       const seed = BUILTIN_DOCS[slug]()
       docRef.current = seed
       setDoc(seed)
@@ -1023,6 +1124,7 @@ export default function HybridInfraEditor() {
       resetTransient()
       setSelectedId(seed.nodes[0]?.id ?? null)
       savedRef.current = null
+      dirtyRef.current = false
       histRef.current = { past: [], future: [] }
       syncHistButtons()
       try {
@@ -1050,6 +1152,7 @@ export default function HybridInfraEditor() {
       resetTransient()
       setSelectedId(clean.nodes[0]?.id ?? null)
       savedRef.current = JSON.stringify(clean)
+      dirtyRef.current = false
       histRef.current = { past: [], future: [] }
       syncHistButtons()
     } catch (e) {
@@ -1237,6 +1340,15 @@ export default function HybridInfraEditor() {
               {m.title} {!m.published ? '(draft)' : ''}
             </option>
           ))}
+          {/* Current doc not in the list yet (fresh draft / offline): keep
+              the controlled <select> from rendering blank (F5). */}
+          {doc.slug &&
+            !BUILTIN_STUDIES.some((s) => s.slug === doc.slug) &&
+            !diagrams.some((m) => m.slug === doc.slug) && (
+              <option key={`cur-${doc.slug}`} value={doc.slug}>
+                {doc.title} {!doc.published ? '(draft)' : ''}
+              </option>
+            )}
         </select>
         <input
           aria-label="Diagram title"
@@ -1264,7 +1376,7 @@ export default function HybridInfraEditor() {
         <button
           type="button"
           onClick={() => void togglePublish()}
-          disabled={isSeed || !docId}
+          disabled={isSeed || !docId || saving}
           title={isSeed || !docId ? 'Save first, then publish' : 'Toggle public visibility'}
           style={{
             ...BTN,
@@ -1919,7 +2031,18 @@ export default function HybridInfraEditor() {
                       <input
                         type="number"
                         value={selected[k] ?? 0}
-                        onChange={(e) => updateNode(selected.id, { [k]: Number(e.target.value) || 0 } as Partial<InfraComponent>)}
+                        onChange={(e) => {
+                          // Clamp to the same bounds the drags and sanitizeDoc
+                          // enforce: negative w/h would crash the canvas render
+                          // loop (arcTo IndexSizeError) (F7).
+                          const raw = Math.round(Number(e.target.value) || 0)
+                          const v =
+                            k === 'x' ? Math.max(-200, Math.min(1480, raw))
+                            : k === 'y' ? Math.max(-100, Math.min(1020, raw))
+                            : k === 'w' ? Math.max(40, Math.min(1280, raw))
+                            : Math.max(20, Math.min(920, raw))
+                          updateNode(selected.id, { [k]: v } as Partial<InfraComponent>)
+                        }}
                         style={INPUT}
                       />
                     </div>

@@ -150,6 +150,20 @@ def test_enrich_directory_outage_uses_cache(fake_db):
     assert second["role"] == "moderator"
 
 
+def test_enrich_directory_outage_stale_cache_is_503(fake_db):
+    # A demoted admin must not keep their role past the TTL just because
+    # the user directory went down (B6: fail closed on stale claims).
+    import dependencies
+    fake_db.rows = {"users": [MOD_ROW]}
+    dependencies._enrich_user({"id": "u-mod", "role": "member"})
+    ts, enr = dependencies._user_cache["u-mod"]
+    dependencies._user_cache["u-mod"] = (ts - dependencies._USER_CACHE_TTL - 1, enr)
+    fake_db.fail = True
+    with pytest.raises(HTTPException) as exc:
+        dependencies._enrich_user({"id": "u-mod", "role": "member"})
+    assert exc.value.status_code == 503
+
+
 def test_enrich_banned_rejected(fake_db):
     import dependencies
     fake_db.rows = {"users": [dict(MOD_ROW, banned=True, ban_reason="spam")]}

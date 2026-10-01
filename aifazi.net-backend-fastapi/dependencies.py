@@ -110,8 +110,10 @@ def _enrich_user(payload: dict) -> dict:
         log.warning("user directory lookup failed for %s; falling back to cache", user_id)
     if not db_ok:
         # Fail closed: without a live directory read we cannot trust
-        # token-claimed roles. Serve stale cache if present, else 503.
-        if cached:
+        # token-claimed roles. Serve cached claims only while they are
+        # within the TTL — a demoted admin must lose access promptly —
+        # else 503.
+        if cached and (now - cached[0]) < _USER_CACHE_TTL:
             payload.update(cached[1])
             if cached[1].get("banned"):
                 raise HTTPException(status_code=403, detail="Account suspended")

@@ -9,7 +9,9 @@
  * without a full page load.
  */
 import { useEffect, useState } from 'react'
-import { listDiagrams, type DiagramMeta } from '@/lib/infraApi'
+import { getRole } from '@/lib/api'
+import { listAllDiagrams, listDiagrams, type DiagramMeta } from '@/lib/infraApi'
+import { confirmLeave } from '@/lib/infraLeaveGuard'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import { BUILTIN_STUDIES } from '@/data/cloud-infra'
 
@@ -31,13 +33,34 @@ export default function HybridInfraLibrary({ activeSlug }: { activeSlug: string 
 
   useEffect(() => {
     let alive = true
-    listDiagrams()
+    // Admins see drafts too (DRAFT badge); fall back to the public list if
+    // the admin endpoint rejects us (stale role in this tab).
+    const isAdmin = (() => {
+      try {
+        return getRole() === 'admin'
+      } catch {
+        return false
+      }
+    })()
+    const load = async (): Promise<DiagramMeta[]> => {
+      if (isAdmin) {
+        try {
+          return await listAllDiagrams()
+        } catch {
+          /* fall through to the public list */
+        }
+      }
+      return listDiagrams()
+    }
+    load()
       .then((list) => { if (alive) setDiagrams(list) })
       .catch(() => { if (alive) setFailed(true) })
     return () => { alive = false }
   }, [])
 
   const open = (slug: string) => {
+    // Unsaved editor changes must never be lost to a silent full reload (F1).
+    if (!confirmLeave()) return
     try {
       const url = new URL(window.location.href)
       if (slug === 'plan-a') url.searchParams.delete('diagram')
