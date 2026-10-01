@@ -194,9 +194,11 @@ Frontend:
     backend 167 tests (+7 revisions); eslint 0/121; build green. B5 verify-only (sitemap/footer/
     palette already done in #371).
   - **Deferred from B2**: og:image card generation (share panel ships link+iframe only).
-  - **Sub-PR 4 (C3+C4) — BLOCKED on owner**: C3 needs R2/S3 account+budget decision; C4 needs
-    `AUTHENTIK_API_TOKEN` bootstrap (501 stubs stay until then).
-  - **Sub-PR 5 (D1+D2+D3) — DONE**: D1 closed as decision — SDK 57 has no
+  - **Sub-PR 4 (C3+C4) — DECIDED 2026-10-01**: C3 approved → set up **Cloudflare R2** as backup
+    target #2 (needs bucket + S3 access key/secret, or a CF API token; then wire into the VPS
+    backup job, run dual-target backup, verify restore). C4 decided → leave the 501 stubs as-is
+    (documented; reopen only if an `AUTHENTIK_API_TOKEN` is bootstrapped).
+  - **Sub-PR 5 (D1+D2+D3) — DONE** (#373, main `59a5ee1`): D1 closed as decision — SDK 57 has no
     `ON_LOAD_STRICT` (valid: ON_LOAD/ON_ERROR_RECOVERY/WIFI_ONLY/NEVER), `ON_LOAD` would lose the
     auth-route reload guard, so `NEVER` + boot/foreground checks stays (rationale recorded in
     `app/_layout.tsx`). D2: `src/lib/savedArticles.ts` (offline saved articles w/ body enrichment),
@@ -204,5 +206,37 @@ Frontend:
     profile **Alerts** tab (push opt-out flag respected by `registerPushToken`, OS permission row
     with open-settings). D3: `apps/mobile/EAS-REBUILD.md` handoff. Mobile: lint 0/0, tsc 0,
     18 vitest tests (+14).
-  - **Sub-PR 6 (E1+E2) — OPEN**: E1 dependabot majors decision (owner); E2 hybrid-infra component
-    tests.
+  - **Sub-PR 6 (E1+E2) — E1 DECIDED**: bump **ESLint 10 + Sentry 11**, hold Python 3.14 until the
+    next planned backend rebuild. **E2 OPEN**: hybrid-infra component tests.
+
+## 6. Office handoff (2026-10-01) — remaining work, in order
+
+### A. Local `test` commit (103c032) — reviewed, gaps to finish first
+Contents (unpushed until 2026-10-01 push): canvas pointer-capture drag (touch/pen node drag via
+`updateDrag`/`updateCursor` + pointermove), Space+drag pans, locked-node click-only, cursor fix;
+editor: library filter input, Ctrl+A select-all, Esc cancels link mode, draft autosave
+(`hi-editor-draft`, 1.2 s debounce, sanitize-on-load), help-text refresh.
+**Gaps found in review:**
+1. Draft-restore banner not rendered — `acceptDraft`/`discardDraft` (HybridInfraEditor ~L450/464)
+   are defined but never referenced in JSX; wire an offer banner (Restore/Discard + timestamp).
+2. Successful `save()` (~L918) does not `localStorage.removeItem(DRAFT_KEY)` → stale draft offered
+   after a clean save; clear on save success (and ideally on diagram switch/delete).
+3. Lint error fixed in push commit: `react-hooks/set-state-in-effect` at the draft-load effect
+   (repo convention: disable comment with reason).
+
+### B. Remaining sub-PRs
+1. **Sub-PR 6 / E2 — hybrid-infra component tests**: `npm i -D jsdom @testing-library/react`;
+   vitest include `components/**/*.test.tsx` + per-file `@vitest-environment jsdom`; polyfill
+   `URL.createObjectURL`; mock `HybridInfraCanvas` (handle spies) + `@/lib/infraApi`; cover
+   PNG/SVG export wiring, SHARE snippet (embed URL, draft warning), HISTORY list/VIEW-diff/RESTORE,
+   template select seeds, JSON export/import, NEW draft-restore banner (once wired above).
+   Checks: vitest / eslint 0-errors≤150 / tsc / build → PR → merge loop (260s → checks → squash).
+2. **E1 — dependabot majors**: bump ESLint 10 + Sentry 11 (small PR, frontend lint/build +
+   backend sentry tests green), comment "held until next planned Python rebuild" on the two
+   Python 3.14 PRs (do not merge).
+3. **C3 — R2 backup target #2**: prerequisite = bucket + S3 key/secret (or CF API token; check
+   `wrangler whoami` first). Then: add target to the VPS backup job (alongside WebDAV), run a
+   dual-target backup, verify restore from R2, record in the risk register.
+4. **C4 — no action** (501 stubs stay, already documented).
+5. **Deferred/backlog**: og:image card generation for diagram share links; owner actions —
+   Authentik API token, EAS rebuild per `apps/mobile/EAS-REBUILD.md`.

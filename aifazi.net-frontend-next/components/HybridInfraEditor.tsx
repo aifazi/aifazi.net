@@ -427,6 +427,7 @@ export default function HybridInfraEditor() {
       if (!raw) return
       const parsed = JSON.parse(raw) as { doc?: unknown; at?: string }
       const clean = parsed.doc ? sanitizeDoc(parsed.doc) : null
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration of an external-system (localStorage) draft offer
       if (clean && parsed.at) setDraftOffer({ doc: clean, at: parsed.at })
     } catch {
       /* noop */
