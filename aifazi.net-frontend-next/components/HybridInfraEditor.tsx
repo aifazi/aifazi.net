@@ -404,11 +404,57 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
   const toggleEditFullscreen = () => {
     try {
       if (document.fullscreenElement === editRootRef.current) void document.exitFullscreen()
-      else void editRootRef.current?.requestFullscreen()
+      else void editRootRef.current?.requestFullscreen().catch(() => {})
     } catch {
       /* fullscreen unsupported/denied */
     }
   }
+
+  // View-mode stage fullscreen → EDIT: the stage unmounts on mode switch
+  // (the browser then exits fullscreen automatically); carry the intent
+  // over to the edit shell so the admin keeps editing fullscreen.
+  const stageFsEditRef = useRef(false)
+  const onEditFromStage = () => {
+    stageFsEditRef.current = Boolean(document.fullscreenElement)
+    setEditMode(true)
+  }
+  useEffect(() => {
+    if (!editMode || !stageFsEditRef.current) return
+    stageFsEditRef.current = false
+    ;(async () => {
+      // Removing the stage (the old fullscreen element) queues an async
+      // fullscreen exit that can land AFTER a fresh requestFullscreen and
+      // cancel it — wait for that exit (fullscreenchange with no element)
+      // before requesting, then verify and retry once if it was cancelled.
+      await new Promise<void>((resolve) => {
+        let done = false
+        let timer = 0
+        const finish = () => {
+          if (done) return
+          done = true
+          document.removeEventListener('fullscreenchange', onFs)
+          window.clearTimeout(timer)
+          resolve()
+        }
+        const onFs = () => {
+          if (!document.fullscreenElement) finish()
+        }
+        timer = window.setTimeout(finish, 500)
+        document.addEventListener('fullscreenchange', onFs)
+      })
+      const request = async () => {
+        try {
+          if (document.fullscreenElement) await document.exitFullscreen()
+          if (editRootRef.current) await editRootRef.current.requestFullscreen()
+        } catch {
+          /* fullscreen unsupported/denied — stay windowed */
+        }
+      }
+      await request()
+      await new Promise((r) => window.setTimeout(r, 250))
+      if (document.fullscreenElement !== editRootRef.current) await request()
+    })()
+  }, [editMode])
 
   // When the admin role appears mid-session, upgrade the diagram list so
   // drafts (and the slug-collision set) become visible (F5).
@@ -1604,16 +1650,31 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         {/* key= forces a remount per doc: re-validates ?node= against the
             new doc and re-applies per-diagram view memory (?z/?cx/?cy) —
             without it the island keeps the first doc's init state. */}
-        <HybridInfra key={docId ?? doc.slug} doc={doc} viewKey={docId ?? doc.slug} />
+        <HybridInfra
+          key={docId ?? doc.slug}
+          doc={doc}
+          viewKey={docId ?? doc.slug}
+          onEdit={isAdmin ? onEditFromStage : undefined}
+        />
       </div>
     )
   }
 
   return (
-    <div id="hybrid-infra-editor" ref={editRootRef}>
+    <div
+      id="hybrid-infra-editor"
+      ref={editRootRef}
+      style={{
+        // Workspace grid behind the whole edit shell: the canvas height is
+        // width-derived, so stretched panels/fullscreen leave dead zones
+        // around it — keep the grid covering the full background.
+        backgroundColor: pal.bg,
+        backgroundImage: `repeating-linear-gradient(0deg, color-mix(in srgb, ${pal.muted} 4.5%, transparent) 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, color-mix(in srgb, ${pal.muted} 4.5%, transparent) 0 1px, transparent 1px 40px)`,
+      }}
+    >
       {/* Fullscreen editing: fill the display and let the grid stretch. */}
       <style>{`
-        #hybrid-infra-editor:fullscreen { background: #071120; padding: 12px; overflow: auto; }
+        #hybrid-infra-editor:fullscreen { padding: 12px; overflow: auto; }
         #hybrid-infra-editor:fullscreen .hi-edit-layout { align-items: stretch; }
         #hybrid-infra-editor:fullscreen .hi-edit-layout > div { max-height: calc(100vh - 24px); }
       `}</style>
