@@ -64,6 +64,37 @@ const BUILTIN_DOCS: Record<string, () => DiagramDoc> = {
   ...TEMPLATE_SEEDS,
 }
 
+/* ── Draft persistence helpers (module-level: stable identity for effects) ──
+ * One localStorage key per diagram (N6) so autosaves never clobber each
+ * other, with restore offers scoped to the doc being edited. */
+const draftKeyFor = (slug: string) => `hi-editor-draft:${slug}`
+const writeDraft = (d: DiagramDoc) => {
+  try {
+    localStorage.setItem(draftKeyFor(d.slug), JSON.stringify({ doc: d, at: new Date().toISOString() }))
+  } catch {
+    /* quota / private mode */
+  }
+}
+const clearDraft = (slug: string) => {
+  try {
+    localStorage.removeItem(draftKeyFor(slug))
+  } catch {
+    /* noop */
+  }
+}
+const readDraft = (slug: string): { doc: DiagramDoc; at: string } | null => {
+  try {
+    const raw = localStorage.getItem(draftKeyFor(slug))
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { doc?: unknown; at?: string }
+    const clean = parsed.doc ? sanitizeDoc(parsed.doc) : null
+    if (!clean || !parsed.at || clean.slug !== slug) return null
+    return { doc: clean, at: parsed.at }
+  } catch {
+    return null
+  }
+}
+
 function slugify(s: string) {
   return (
     s.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) ||
@@ -180,6 +211,9 @@ export default function HybridInfraEditor() {
   const listModeRef = useRef<'public' | 'admin'>(isAdmin ? 'admin' : 'public')
   // Hard guard against concurrent save/publish round-trips.
   const inFlightRef = useRef(false)
+  // Monotonic load token: rapid picker changes must not let a stale response
+  // win (F8).
+  const loadSeqRef = useRef(0)
   const isAdminRef = useRef(isAdmin)
   const counterRef = useRef(0)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -208,14 +242,24 @@ export default function HybridInfraEditor() {
 
   // ── Leave guard (F1): warn on reload/tab-close with unsaved edits ──
   useEffect(() => {
+    const flush = () => {
+      if (dirtyRef.current && savedRef.current !== JSON.stringify(docRef.current)) {
+        writeDraft(docRef.current)
+      }
+    }
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isUnsaved()) return
+      if (!(dirtyRef.current && savedRef.current !== JSON.stringify(docRef.current))) return
+      // Persist the tail synchronously so the reload can still recover it.
+      flush()
       e.preventDefault()
       // Legacy Chrome requires returnValue to be set to show the prompt.
       e.returnValue = ''
     }
     window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', onBeforeUnload)
+      flush() // route change without beforeunload
+    }
   }, [])
 
   // Register the dirty predicate for in-app navigation (library rows).
@@ -224,6 +268,9 @@ export default function HybridInfraEditor() {
   // ── Floating "Edit Site" button (page-level FAB) ──────────────
   useEffect(() => {
     const open = () => {
+      // UI-only gate (the server enforces writes) — but don't even show the
+      // editor shell to non-admins dispatching the event (F18).
+      if (!isAdmin) return
       setEditMode(true)
       try {
         document.getElementById('hybrid-infra-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -233,7 +280,7 @@ export default function HybridInfraEditor() {
     }
     window.addEventListener('infra:edit', open)
     return () => window.removeEventListener('infra:edit', open)
-  }, [])
+  }, [isAdmin])
 
   // ── Load: diagram list + ?diagram=<slug> ─────────────────────
   useEffect(() => {
@@ -395,11 +442,22 @@ export default function HybridInfraEditor() {
       if (done) setNotice({ msg: 'Node is locked — unlock to move it', ok: false })
       return
     }
-    if (!dragRef.current) {
+    const cur = docRef.current
+    const node = cur.nodes.find((n) => n.id === id)
+    // Checkpoint only when the move actually changes the doc: sub-threshold
+    // jitter and no-op finalizations must not push dead undo entries (F4).
+    const nextX = pos.x === undefined ? undefined : Math.max(-200, Math.min(1480, Math.round(pos.x)))
+    const nextY = pos.y === undefined ? undefined : Math.max(-100, Math.min(1020, Math.round(pos.y)))
+    const nextU = pos.rackU === undefined ? undefined : Math.max(1, Math.min(42, pos.rackU))
+    const moves =
+      !!node &&
+      ((nextX !== undefined && nextX !== node.x) ||
+        (nextY !== undefined && nextY !== node.y) ||
+        (nextU !== undefined && nextU !== node.rackU))
+    if (moves && !dragRef.current) {
       pushHistory()
       dragRef.current = true
     }
-    const cur = docRef.current
     applyDoc(
       {
         ...cur,
@@ -414,7 +472,13 @@ export default function HybridInfraEditor() {
       },
       false,
     )
-    if (done) dragRef.current = false
+    if (done) {
+      // Group finalize calls us once per member in the same task; defer the
+      // reset so only the gesture's first checkpoint counts (F4).
+      queueMicrotask(() => {
+        dragRef.current = false
+      })
+    }
   }
 
   const boxesOverlap = (a: { x: number; y: number; w: number; h: number }, b: typeof a) =>
@@ -469,39 +533,35 @@ export default function HybridInfraEditor() {
     })).filter((g) => g.items.length > 0)
   }, [libQuery])
 
-  // ── Draft autosave (localStorage) ───────────────────────────
-  const DRAFT_KEY = 'hi-editor-draft'
+  // ── Draft autosave (localStorage, one key per diagram) ────────
   const [draftOffer, setDraftOffer] = useState<{ doc: DiagramDoc; at: string } | null>(null)
   useEffect(() => {
     if (!editMode || !isAdmin) return
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as { doc?: unknown; at?: string }
-      const clean = parsed.doc ? sanitizeDoc(parsed.doc) : null
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot hydration of an external-system (localStorage) draft offer
-      if (clean && parsed.at) setDraftOffer({ doc: clean, at: parsed.at })
-    } catch {
-      /* noop */
-    }
+    const found = readDraft(docRef.current.slug)
+    if (!found) return
+    // An offer identical to what's already on screen (flushed on DONE,
+    // nothing changed since) is noise — skip it.
+    if (JSON.stringify(found.doc) === JSON.stringify(docRef.current)) return
+    setDraftOffer(found)
   }, [editMode, isAdmin])
   useEffect(() => {
     if (!editMode || !isAdmin) return
     const t = window.setTimeout(() => {
-      try {
-        if (savedRef.current === JSON.stringify(doc)) return
-        localStorage.setItem(
-          DRAFT_KEY,
-          JSON.stringify({ doc, at: new Date().toISOString() }),
-        )
-      } catch {
-        /* quota / private mode */
-      }
+      if (savedRef.current !== JSON.stringify(docRef.current)) writeDraft(docRef.current)
     }, 1200)
     return () => window.clearTimeout(t)
   }, [doc, editMode, isAdmin])
+  // Flush the debounced tail when edit mode ends: the 1200 ms timer would
+  // otherwise drop the last seconds of edits before DONE (F9).
+  useEffect(() => {
+    if (editMode) return
+    if (dirtyRef.current && savedRef.current !== JSON.stringify(docRef.current)) {
+      writeDraft(docRef.current)
+    }
+  }, [editMode])
   const acceptDraft = () => {
     if (!draftOffer) return
+    if (isUnsaved() && !window.confirm('Discard current unsaved changes and restore the draft?')) return
     histRef.current = { past: [], future: [] }
     syncHistButtons()
     docRef.current = draftOffer.doc
@@ -518,11 +578,7 @@ export default function HybridInfraEditor() {
     setNotice({ msg: 'Draft restored — save to keep it', ok: true })
   }
   const discardDraft = () => {
-    try {
-      localStorage.removeItem(DRAFT_KEY)
-    } catch {
-      /* noop */
-    }
+    if (draftOffer) clearDraft(draftOffer.doc.slug)
     setDraftOffer(null)
     setNotice({ msg: 'Draft discarded', ok: true })
   }
@@ -536,7 +592,7 @@ export default function HybridInfraEditor() {
     if (!label) return
     const cur = docRef.current
     const key = catSlug(label) || `cat-${Date.now()}`
-    if (key in CATEGORY_META || key in (cur.customCategories ?? {})) {
+    if (Object.hasOwn(CATEGORY_META, key) || Object.hasOwn(cur.customCategories ?? {}, key)) {
       setNotice({ msg: 'Category id already exists', ok: false })
       return
     }
@@ -614,6 +670,9 @@ export default function HybridInfraEditor() {
   // ── Editor keyboard shortcuts (ignored while typing in inputs) ──
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Shortcuts are edit-mode-only: with a lingering selection after DONE
+      // they would mutate the read-only viewer's doc (F6).
+      if (!editMode) return
       const el = e.target as HTMLElement | null
       const tag = (el?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || el?.isContentEditable) return
@@ -657,7 +716,7 @@ export default function HybridInfraEditor() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, selIds, connectFrom])
+  }, [editMode, selectedId, selIds, connectFrom])
 
   const addNode = (item: LibraryItem) => {
     const cur = docRef.current
@@ -993,9 +1052,13 @@ export default function HybridInfraEditor() {
   const adoptResponse = (server: DiagramDoc, outgoing: string) => {
     savedRef.current = JSON.stringify(server)
     if (JSON.stringify(docRef.current) === outgoing) {
+      const prevSlug = docRef.current.slug
       docRef.current = server
       setDoc(server)
       dirtyRef.current = false
+      // Persisted — the local recovery copies are no longer needed (F9).
+      clearDraft(prevSlug)
+      clearDraft(server.slug)
       return
     }
     const merged: DiagramDoc = {
@@ -1115,6 +1178,7 @@ export default function HybridInfraEditor() {
 
   const switchDoc = async (slug: string) => {
     if (!confirmDiscard()) return
+    const seq = ++loadSeqRef.current
     if (Object.hasOwn(BUILTIN_DOCS, slug)) {
       const seed = BUILTIN_DOCS[slug]()
       docRef.current = seed
@@ -1139,6 +1203,7 @@ export default function HybridInfraEditor() {
     }
     try {
       const d = await getDiagram(slug)
+      if (seq !== loadSeqRef.current) return // a newer switch won the race
       const clean = d ? sanitizeDoc(d) : null
       if (!clean) {
         setNotice({ msg: 'Could not load diagram', ok: false })
@@ -1505,7 +1570,11 @@ export default function HybridInfraEditor() {
             if (f) void importDoc(f)
           }}
         />
-        <button type="button" onClick={() => { setEditMode(false); setConnectFrom(null) }} style={BTN}>
+        <button
+          type="button"
+          onClick={() => { setEditMode(false); setConnectFrom(null); resetTransient() }}
+          style={BTN}
+        >
           DONE
         </button>
         <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: isDirty ? pal.amber : pal.green }}>
@@ -1517,6 +1586,24 @@ export default function HybridInfraEditor() {
           </span>
         )}
       </div>
+
+      {/* Restore/discard offer for an autosaved draft of this diagram (N2). */}
+      {draftOffer && (
+        <div
+          role="status"
+          style={{
+            display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap',
+            marginBottom: 10, padding: '10px 14px',
+            background: pal.panel, border: `1px solid ${pal.amber}`, borderRadius: 10,
+          }}
+        >
+          <span style={{ fontSize: 12, color: pal.ink, flex: 1, minWidth: 220 }}>
+            Unsaved draft from {new Date(draftOffer.at).toLocaleString()} — restore it?
+          </span>
+          <button type="button" onClick={acceptDraft} style={BTN}>RESTORE DRAFT</button>
+          <button type="button" onClick={discardDraft} style={BTN}>DISCARD</button>
+        </div>
+      )}
 
       {/* ── Share & embed panel ─────────────────────────────── */}
       {shareOpen && shareUrls && (

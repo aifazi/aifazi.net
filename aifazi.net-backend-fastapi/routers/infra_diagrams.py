@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 from datetime import datetime, timezone
 
@@ -116,7 +117,9 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
     if not nodes:
         raise HTTPException(400, "Diagram has no nodes")
     try:
-        if len(json.dumps({"nodes": nodes, "flows": flows}).encode()) > MAX_DOC_BYTES:
+        # allow_nan=False: NaN/Infinity tokens parse on the way in but are
+        # rejected by PostgREST later (→ 500); fail them here as a 400 (B4).
+        if len(json.dumps({"nodes": nodes, "flows": flows}, allow_nan=False).encode()) > MAX_DOC_BYTES:
             raise HTTPException(400, "Diagram body too large")
     except (TypeError, ValueError):
         raise HTTPException(400, "Diagram body not serializable")
@@ -129,6 +132,19 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
                 raise HTTPException(400, f"Node missing/invalid: {key}")
         if not isinstance(n.get("name"), str) or not n.get("name"):
             raise HTTPException(400, "Node missing id/name/category/layer")
+        for key in ("x", "y", "w", "h", "rackU", "rackH"):
+            if key in n and n[key] is not None:
+                v = n[key]
+                # bool is an int subclass — exclude it explicitly.
+                if isinstance(v, bool) or not isinstance(v, (int, float)):
+                    raise HTTPException(400, f"Node {key} must be a finite number")
+                try:
+                    finite = math.isfinite(v)
+                except OverflowError:
+                    # Huge JSON ints (1e999…) can't convert to float.
+                    finite = False
+                if not finite:
+                    raise HTTPException(400, f"Node {key} must be a finite number")
         for key, cap in (("name", 80), ("role", 80), ("desc", 2000), ("notes", 2000)):
             if key in n and n[key] is not None and len(str(n[key])) > cap:
                 raise HTTPException(400, f"Node field too long: {key}")
@@ -149,6 +165,10 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
     for f in flows:
         if not isinstance(f, dict):
             raise HTTPException(400, "Invalid flow entry")
+        # Type-check before set membership: an unhashable endpoint (list/
+        # dict) would raise TypeError → 500 instead of 400 (B3).
+        if not isinstance(f.get("from"), str) or not isinstance(f.get("to"), str):
+            raise HTTPException(400, "Flow endpoints must be node ids")
         if f.get("from") not in ids or f.get("to") not in ids or f.get("from") == f.get("to"):
             raise HTTPException(400, "Flow references unknown node")
         if f.get("label") not in (None, ""):
@@ -457,6 +477,11 @@ def restore_revision(doc_id: str, revision_id: str, admin: dict = Depends(requir
         raise HTTPException(404, "Revision not found")
     doc = rev.get("doc") or {}
     nodes, flows = _validate_doc(doc.get("nodes") or [], doc.get("flows") or [])
+    # Re-validate palette/categories: restore is the one path that bypasses
+    # the create/update validators (B5). 400 on anything the editors would
+    # refuse (non-hex colors, built-in shadowing, oversized labels).
+    palette = _validate_palette(doc.get("categoryColors"))
+    custom = _validate_custom_categories(doc.get("customCategories"))
     try:
         updated = (
             supabase.table("infra_diagrams")
@@ -467,8 +492,8 @@ def restore_revision(doc_id: str, revision_id: str, admin: dict = Depends(requir
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
-                    **({"categoryColors": doc["categoryColors"]} if isinstance(doc.get("categoryColors"), dict) and doc["categoryColors"] else {}),
-                    **({"customCategories": doc["customCategories"]} if isinstance(doc.get("customCategories"), dict) and doc["customCategories"] else {}),
+                    **({"categoryColors": palette} if palette else {}),
+                    **({"customCategories": custom} if custom else {}),
                 },
             })
             .eq("id", doc_id[:64])
