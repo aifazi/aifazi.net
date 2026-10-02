@@ -2,6 +2,13 @@
 import { useState, useEffect } from 'react'
 import { SvgWrap } from './shared'
 
+const LOG_LINES = ['PING 10.0.0.1 — OK','BGP SESSION UP','OSPF ADJ FORMED','VLAN 100 ACTIVE',
+  'CPU: 12%  MEM: 41%','FW RULE 42 MATCH','SSH AUTH OK','BACKUP COMPLETE',
+  'CERT RENEWED OK','UPTIME: 99.99%','DEPLOY v2.4.1 OK','TLS 1.3 ENFORCED',
+  'IPSEC TUNNEL UP','NTP SYNC OK','DNS CACHE FLUSH']
+
+const ALERT_MSGS = ['⚡ BGP PEER UP','✓ CERT RENEWED','⚠ HIGH CPU SRV-3','✓ BACKUP DONE','⚡ DEPLOY OK']
+
 function DatacenterMode({ tick, visibleRef }) {
   const [lights, setLights] = useState(() => Array.from({ length: 40 }, () => Math.random() > 0.35))
   const [robotY, setRobotY] = useState(0)
@@ -13,13 +20,6 @@ function DatacenterMode({ tick, visibleRef }) {
   const [netParticles, setNetParticles] = useState([])
   const [alerts, setAlerts] = useState([])
 
-  const LOG_LINES = ['PING 10.0.0.1 — OK','BGP SESSION UP','OSPF ADJ FORMED','VLAN 100 ACTIVE',
-    'CPU: 12%  MEM: 41%','FW RULE 42 MATCH','SSH AUTH OK','BACKUP COMPLETE',
-    'CERT RENEWED OK','UPTIME: 99.99%','DEPLOY v2.4.1 OK','TLS 1.3 ENFORCED',
-    'IPSEC TUNNEL UP','NTP SYNC OK','DNS CACHE FLUSH']
-
-  const ALERT_MSGS = ['⚡ BGP PEER UP','✓ CERT RENEWED','⚠ HIGH CPU SRV-3','✓ BACKUP DONE','⚡ DEPLOY OK']
-
   const bezier = (t, p0, p1, p2, p3) =>
     (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3 * p3
 
@@ -29,7 +29,7 @@ function DatacenterMode({ tick, visibleRef }) {
       setLights(p => p.map(l => Math.random() > 0.93 ? !l : l))
     }, 380)
     return () => clearInterval(id)
-  }, [])
+  }, [visibleRef])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -38,7 +38,7 @@ function DatacenterMode({ tick, visibleRef }) {
       setRobotArm(a => !a)
     }, 2400)
     return () => clearInterval(id)
-  }, [])
+  }, [visibleRef])
 
   useEffect(() => {
     const NET_EDGES = [[0,1],[0,2],[1,3],[2,3],[3,4],[3,5],[4,6],[5,6]]
@@ -59,7 +59,7 @@ function DatacenterMode({ tick, visibleRef }) {
       })
     }, 60)
     return () => clearInterval(id)
-  }, [])
+  }, [visibleRef])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -79,7 +79,7 @@ function DatacenterMode({ tick, visibleRef }) {
       setAlerts(a => a.map(x => ({ ...x, age: x.age + 1 })).filter(x => x.age < 6))
     }, 850)
     return () => clearInterval(id)
-  }, [])
+  }, [visibleRef])
 
   const ry = [160, 232, 304][robotY]
 

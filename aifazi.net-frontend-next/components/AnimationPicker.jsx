@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useEdit } from '../context/EditContext'
 import { Select, Slider } from '@/core/forms'
 import {
@@ -162,7 +162,8 @@ export default function AnimationPicker() {
   const open      = editCtx?.animPickerOpen    || false
   const target    = editCtx?.animPickerTarget  || null   // { key, label, currentAnim }
   const onApply   = editCtx?.applyAnimation    || (() => {})
-  const onClose   = editCtx?.closeAnimPicker   || (() => {})
+  const noOpClose = useCallback(() => {}, [])
+  const onClose   = editCtx?.closeAnimPicker   || noOpClose
 
   const [category, setCategory]   = useState('All')
   const [selected, setSelected]   = useState(null)

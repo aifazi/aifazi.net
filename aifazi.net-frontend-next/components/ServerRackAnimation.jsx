@@ -1270,7 +1270,7 @@ function GlobeMode({ visibleRef }) {
       try { globe.destroy() } catch { /* already torn down */ }
       globeRef.current = null
     }
-  }, [themeKey, visitor, perfTier])
+  }, [themeKey, visitor, perfTier, visibleRef])
 
   // ── ResizeObserver — resize the live globe (no full recreate) ──
   useEffect(() => {

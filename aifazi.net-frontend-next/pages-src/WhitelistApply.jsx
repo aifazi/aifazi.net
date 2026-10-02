@@ -5,6 +5,7 @@
  * Discord ID/username auto-filled from the linked Discord account on the user's profile.
  */
 import React, { useState, useEffect } from 'react'
+import { Link } from '@/lib/router-compat'
 import api, { getAuthToken } from '@/lib/api'
 import { useForum } from '@/context/ForumContext'
 import { Checkbox } from '../core/ui.jsx'
@@ -361,7 +362,7 @@ export default function WhitelistApply() {
                 <div style={{ color:C, fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:3, marginBottom:5 }}>OTHER APPLICATIONS</div>
                 <div style={{ color:'var(--text)', fontFamily:'var(--font-mono)', fontSize:15 }}>Departments and staff forms</div>
               </div>
-              <a href="/forms" style={{ color:G, fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:1.5, textDecoration:'none' }}>VIEW ALL →</a>
+              <Link href="/forms" style={{ color:G, fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:1.5, textDecoration:'none' }}>VIEW ALL →</Link>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))', gap:10 }}>
               {forms.map(app => (

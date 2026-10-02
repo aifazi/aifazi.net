@@ -54,6 +54,7 @@ export function exitImpersonation(opts?: { expired?: boolean }): Promise<void> {
       setEffectiveAccess(v.data?.user)
     } catch {
       failNotice('Session restore failed — please sign in again', 'Impersonation ended')
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- full reload is intentional here: router.push() is unavailable in this lib module and a soft nav would keep stale impersonation globals in memory
       window.location.assign('/login?next=/admin')
       return
     }

@@ -12,6 +12,16 @@ const STAGES = [
   { id:'production',label:'PRODUCTION', icon:'⬡', desc:'aifazi.net' },
 ]
 
+const STAGE_LOGS = {
+  checkout:  ['Cloning into aifazi.net...','remote: Counting objects: 2847','Resolving deltas: 100%','HEAD is at d8fa3bc'],
+  install:   ['npm warn deprecated inflight@1.0.6','added 847 packages in 14s','Packages audited: 847','found 0 vulnerabilities'],
+  lint:      ['Running eslint on 312 files...','✓  components/Navbar.jsx','✓  lib/api.ts','✓  No warnings or errors'],
+  test:      ['PASS  components/__tests__/Hero.test.jsx','PASS  lib/__tests__/api.test.ts','Test Suites: 12 passed','Tests: 42 passed, 0 failed'],
+  build:    ['Creating an optimized production build...','Route (app)  Size  First Load','✓ Compiled successfully','Build time: 28.4s'],
+  preview:   ['Deploying to Vercel preview...','Assigned URL: aifazi-git-main.vercel.app','Edge Network: 28 regions','✓ Preview ready'],
+  production:['Promoting to production...','Assigning domain: aifazi.net','Purging CDN cache...','✓ Production live'],
+}
+
 function DeployMode({ tick, visibleRef }) {
   const [activeStage, setActiveStage]   = useState(0)
   const [stageProgress, setStageProgress] = useState(0)
@@ -19,16 +29,6 @@ function DeployMode({ tick, visibleRef }) {
   const [logLines, setLogLines]         = useState(['> git clone https://github.com/aifazi/aifazi.net'])
   const [particles, setParticles]       = useState([])
   const [runCount, setRunCount]         = useState(1)
-
-  const STAGE_LOGS = {
-    checkout:  ['Cloning into aifazi.net...','remote: Counting objects: 2847','Resolving deltas: 100%','HEAD is at d8fa3bc'],
-    install:   ['npm warn deprecated inflight@1.0.6','added 847 packages in 14s','Packages audited: 847','found 0 vulnerabilities'],
-    lint:      ['Running eslint on 312 files...','✓  components/Navbar.jsx','✓  lib/api.ts','✓  No warnings or errors'],
-    test:      ['PASS  components/__tests__/Hero.test.jsx','PASS  lib/__tests__/api.test.ts','Test Suites: 12 passed','Tests: 42 passed, 0 failed'],
-    build:    ['Creating an optimized production build...','Route (app)  Size  First Load','✓ Compiled successfully','Build time: 28.4s'],
-    preview:   ['Deploying to Vercel preview...','Assigned URL: aifazi-git-main.vercel.app','Edge Network: 28 regions','✓ Preview ready'],
-    production:['Promoting to production...','Assigning domain: aifazi.net','Purging CDN cache...','✓ Production live'],
-  }
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -54,7 +54,7 @@ function DeployMode({ tick, visibleRef }) {
       setParticles(pr => pr.map(p => ({ ...p, t: p.t + 0.06 })).filter(p => p.t < 1))
     }, 80)
     return () => clearInterval(id)
-  }, [activeStage])
+  }, [activeStage, visibleRef])
 
   return (
     <SvgWrap viewBox="0 0 900 480">
