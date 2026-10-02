@@ -195,6 +195,8 @@ export interface DiagramDiff {
   flowAdded: number
   flowRemoved: number
   titleChanged: boolean
+  /** Annotations (boxes/labels) differ between the two states. */
+  decoChanged: boolean
 }
 
 /**
@@ -229,5 +231,6 @@ export function diffDiagramDocs(prev: DiagramDoc, next: DiagramDoc): DiagramDiff
     flowAdded,
     flowRemoved,
     titleChanged: prev.title !== next.title,
+    decoChanged: JSON.stringify(prev.decorations ?? []) !== JSON.stringify(next.decorations ?? []),
   }
 }

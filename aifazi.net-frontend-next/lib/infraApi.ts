@@ -39,6 +39,7 @@ export async function createDiagram(doc: DiagramDoc): Promise<DiagramDoc> {
     published: doc.published,
     nodes: doc.nodes,
     flows: doc.flows,
+    decorations: doc.decorations,
     categoryColors: doc.categoryColors,
     customCategories: doc.customCategories,
   })
@@ -59,6 +60,7 @@ export async function updateDiagram(doc: DiagramDoc): Promise<SaveResult> {
     published: doc.published,
     nodes: doc.nodes,
     flows: doc.flows,
+    decorations: doc.decorations,
     categoryColors: doc.categoryColors,
     customCategories: doc.customCategories,
     // Optimistic concurrency: the last server stamp we adopted. The backend
@@ -88,6 +90,7 @@ export interface InfraRevisionMeta {
 export interface InfraRevision extends InfraRevisionMeta {
   nodes: DiagramDoc['nodes']
   flows: DiagramDoc['flows']
+  decorations?: DiagramDoc['decorations']
   categoryColors?: DiagramDoc['categoryColors']
   customCategories?: DiagramDoc['customCategories']
 }

@@ -38,6 +38,12 @@ MAX_NODES = 200
 MAX_FLOWS = 200
 MAX_DOC_BYTES = 500 * 1024
 MAX_REVISIONS = 20
+MAX_DECORATIONS = 100
+# Frontend theoretical max: 100 decos x (200-char text + 12 x 160-char lines)
+# ≈ 215 KB — the cap must never reject what sanitizeDoc can produce.
+MAX_DECOR_BYTES = 256 * 1024
+# Palette names for annotation colors — mirrors DECOR_TOKENS in hybrid-infra.ts.
+DECOR_TOKENS = {"ink", "sub", "muted", "cyan", "green", "purple", "amber", "red", "blue"}
 
 
 class DiagramIn(BaseModel):
@@ -48,6 +54,8 @@ class DiagramIn(BaseModel):
     published: bool = False
     nodes: list = Field(default_factory=list, max_length=MAX_NODES)
     flows: list = Field(default_factory=list, max_length=MAX_FLOWS)
+    # Editable annotations (boxes/labels) — omit/None when absent.
+    decorations: list | None = Field(default=None, max_length=MAX_DECORATIONS)
     categoryColors: dict | None = None
     customCategories: dict | None = None
     # Optimistic concurrency (B8): last-updated stamp the client believes in.
@@ -144,6 +152,149 @@ def _validate_custom_categories(custom: dict | None) -> dict | None:
             raise HTTPException(400, "Custom category color must be #rrggbb")
         clean[key] = {"label": label.strip()[:40], "color": color}
     return clean or None
+
+
+def _decor_num(v, label: str) -> float | int:
+    """Finite-number check (bool is an int subclass — excluded)."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        raise HTTPException(400, f"Annotation {label} must be a finite number")
+    try:
+        finite = math.isfinite(v)
+    except OverflowError:
+        finite = False
+    if not finite:
+        raise HTTPException(400, f"Annotation {label} must be a finite number")
+    return v
+
+
+def _decor_color(v, label: str) -> str | None:
+    """Palette token name or #rgb/#rrggbb/#rrggbbaa hex (empty → None)."""
+    if v is None or v == "":
+        return None
+    if not isinstance(v, str) or len(v) > 16:
+        raise HTTPException(400, f"Annotation {label} must be a color")
+    if v in DECOR_TOKENS:
+        return v
+    # Same vocabulary as the frontend isDecorColor: #rgb/#rgba/#rrggbb/#rrggbbaa.
+    if re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})", v):
+        return v
+    raise HTTPException(400, f"Annotation {label} must be a palette name or hex color")
+
+
+def _validate_decorations(decorations: list | None) -> list | None:
+    """Editable annotations: whitelist-rebuild each entry (fail closed) with
+    caps mirroring the frontend sanitizeDoc (100 decos, 12 lines, 8 connects)."""
+    if decorations is None:
+        return None
+    if not isinstance(decorations, list):
+        raise HTTPException(400, "decorations must be an array")
+    if len(decorations) > MAX_DECORATIONS:
+        raise HTTPException(400, "Too many annotations")
+    if not decorations:
+        return None
+    clean: list = []
+    seen: set = set()
+    for d in decorations:
+        if not isinstance(d, dict):
+            raise HTTPException(400, "Invalid annotation entry")
+        kind = d.get("kind")
+        if kind not in ("box", "label"):
+            raise HTTPException(400, "Annotation kind must be box or label")
+        did = d.get("id")
+        if not isinstance(did, str) or not did or len(did) > 64:
+            raise HTTPException(400, "Annotation missing/invalid id")
+        if did in seen:
+            raise HTTPException(400, "Duplicate annotation id")
+        seen.add(did)
+        z = d.get("z", "front")
+        if z not in ("back", "panel", "front"):
+            raise HTTPException(400, "Annotation layer must be back, panel or front")
+        out: dict = {"id": did, "kind": kind, "z": z}
+        if kind == "box":
+            for key in ("x", "y", "w", "h"):
+                if d.get(key) is None:
+                    raise HTTPException(400, f"Annotation box missing {key}")
+            for key in ("x", "y", "w", "h", "r"):
+                if d.get(key) is not None:
+                    out[key] = _decor_num(d[key], key)
+            for key in ("fill", "stroke"):
+                c = _decor_color(d.get(key), key)
+                if c is not None:
+                    out[key] = c
+            lines = d.get("lines")
+            if lines is not None:
+                if not isinstance(lines, list) or len(lines) > 12:
+                    raise HTTPException(400, "Invalid annotation lines")
+                clean_lines = []
+                for line in lines:
+                    if not isinstance(line, dict):
+                        raise HTTPException(400, "Invalid annotation line")
+                    text = line.get("text")
+                    if not isinstance(text, str) or len(text) > 160:
+                        raise HTTPException(400, "Annotation line text too long")
+                    entry: dict = {"text": text}
+                    for key in ("dx", "dy", "size"):
+                        if line.get(key) is not None:
+                            entry[key] = _decor_num(line[key], f"line {key}")
+                    lc = _decor_color(line.get("color"), "line color")
+                    if lc is not None:
+                        entry["color"] = lc
+                    lw = line.get("weight")
+                    if lw is not None:
+                        if not isinstance(lw, str) or not re.fullmatch(r"[1-9]00", lw):
+                            raise HTTPException(400, "Annotation line weight invalid")
+                        entry["weight"] = lw
+                    clean_lines.append(entry)
+                out["lines"] = clean_lines
+            connects = d.get("connects")
+            if connects is not None:
+                if not isinstance(connects, list) or len(connects) > 8:
+                    raise HTTPException(400, "Invalid annotation connects")
+                if any(not isinstance(c, str) or not c or len(c) > 64 for c in connects):
+                    raise HTTPException(400, "Annotation connect must be a node id")
+                out["connects"] = connects
+        else:
+            text = d.get("text")
+            if not isinstance(text, str) or not text or len(text) > 200:
+                raise HTTPException(400, "Annotation text missing/too long")
+            out["text"] = text
+            # Free labels need absolute coordinates; anchored ones get them
+            # from the anchor node instead (mirrors the frontend sanitizeDoc).
+            if not isinstance(d.get("anchor"), dict) and (d.get("x") is None or d.get("y") is None):
+                raise HTTPException(400, "Annotation label missing x/y")
+            for key in ("x", "y", "w", "h", "size"):
+                if d.get(key) is not None:
+                    out[key] = _decor_num(d[key], key)
+            weight = d.get("weight", "500")
+            if not isinstance(weight, str) or not re.fullmatch(r"[1-9]00", weight):
+                raise HTTPException(400, "Annotation weight invalid")
+            out["weight"] = weight
+            align = d.get("align", "left")
+            if align not in ("left", "center"):
+                raise HTTPException(400, "Annotation align invalid")
+            out["align"] = align
+            c = _decor_color(d.get("color"), "color")
+            if c is not None:
+                out["color"] = c
+            anchor = d.get("anchor")
+            if anchor is not None:
+                if not isinstance(anchor, dict):
+                    raise HTTPException(400, "Invalid annotation anchor")
+                aid = anchor.get("id")
+                if not isinstance(aid, str) or not aid or len(aid) > 64:
+                    raise HTTPException(400, "Annotation anchor must reference a node id")
+                out["anchor"] = {
+                    "id": aid,
+                    "dx": _decor_num(anchor.get("dx", 0), "anchor dx"),
+                    "dy": _decor_num(anchor.get("dy", 0), "anchor dy"),
+                }
+        clean.append(out)
+    try:
+        if len(json.dumps(clean, allow_nan=False).encode()) > MAX_DECOR_BYTES:
+            raise HTTPException(400, "Annotations too large")
+    except (TypeError, ValueError):
+        raise HTTPException(400, "Annotations not serializable")
+    return clean
 
 
 def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
@@ -260,6 +411,8 @@ def _row_to_doc(row: dict, include_body: bool = True) -> dict:
     if include_body:
         out["nodes"] = doc.get("nodes", [])
         out["flows"] = doc.get("flows", [])
+        if isinstance(doc.get("decorations"), list) and doc["decorations"]:
+            out["decorations"] = doc["decorations"]
         if isinstance(doc.get("categoryColors"), dict) and doc["categoryColors"]:
             out["categoryColors"] = doc["categoryColors"]
         if isinstance(doc.get("customCategories"), dict) and doc["customCategories"]:
@@ -401,6 +554,7 @@ def create_diagram(body: DiagramIn, request: Request, admin: dict = Depends(requ
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
+    decorations = _validate_decorations(body.decorations)
     palette = _validate_palette(body.categoryColors)
     custom = _validate_custom_categories(body.customCategories)
     now = datetime.now(timezone.utc).isoformat()
@@ -424,6 +578,7 @@ def create_diagram(body: DiagramIn, request: Request, admin: dict = Depends(requ
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
+                    **({"decorations": decorations} if decorations else {}),
                     **({"categoryColors": palette} if palette else {}),
                     **({"customCategories": custom} if custom else {}),
                 },
@@ -463,6 +618,7 @@ def update_diagram(doc_id: str, body: DiagramIn, request: Request, admin: dict =
     if slug in RESERVED_SLUGS:
         raise HTTPException(400, "Slug is reserved")
     nodes, flows = _validate_doc(body.nodes, body.flows)
+    decorations = _validate_decorations(body.decorations)
     palette = _validate_palette(body.categoryColors)
     custom = _validate_custom_categories(body.customCategories)
     prev = supabase.table("infra_diagrams").select("*").eq("id", doc_id[:64]).limit(1).execute()
@@ -486,6 +642,7 @@ def update_diagram(doc_id: str, body: DiagramIn, request: Request, admin: dict =
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
+                    **({"decorations": decorations} if decorations else {}),
                     **({"categoryColors": palette} if palette else {}),
                     **({"customCategories": custom} if custom else {}),
                 },
@@ -581,6 +738,7 @@ def get_revision(doc_id: str, revision_id: str, admin: dict = Depends(require_ad
         "published": bool(row.get("published")),
         "nodes": doc.get("nodes", []),
         "flows": doc.get("flows", []),
+        "decorations": doc.get("decorations") or None,
         "categoryColors": doc.get("categoryColors") or None,
         "customCategories": doc.get("customCategories") or None,
     }}
@@ -614,6 +772,7 @@ def restore_revision(doc_id: str, revision_id: str, request: Request,
     # refuse (non-hex colors, built-in shadowing, oversized labels).
     palette = _validate_palette(doc.get("categoryColors"))
     custom = _validate_custom_categories(doc.get("customCategories"))
+    decorations = _validate_decorations(doc.get("decorations"))
     try:
         query = (
             supabase.table("infra_diagrams")
@@ -626,6 +785,7 @@ def restore_revision(doc_id: str, revision_id: str, request: Request,
                 "doc": {
                     "nodes": nodes,
                     "flows": flows,
+                    **({"decorations": decorations} if decorations else {}),
                     **({"categoryColors": palette} if palette else {}),
                     **({"customCategories": custom} if custom else {}),
                 },

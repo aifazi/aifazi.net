@@ -21,6 +21,7 @@ import {
   dependencyChainIn,
   catLabel,
   mergedCatColors,
+  planADecorations,
   type DiagramDoc,
   type InfraCategory,
 } from '@/data/hybrid-infra'
@@ -144,6 +145,9 @@ export default function HybridInfra({
 
   const nodes = doc?.nodes ?? COMPONENTS
   const flows = doc?.flows ?? null
+  // Default page = the built-in Plan A seed (keeps its zone panels/captions);
+  // loaded docs render only their own annotations (templates never had any).
+  const decorations = doc ? doc.decorations : planADecorations()
   const catColors = mergedCatColors(doc)
 
   const selected = useMemo(
@@ -582,10 +586,11 @@ export default function HybridInfra({
             focusIds={focusIds}
             playStep={playStep}
             viewMode={viewMode}
-            onSelect={setSelectedId}
-            nodes={nodes}
-            flows={flows ?? undefined}
-            tone={tone}
+              onSelect={setSelectedId}
+              nodes={nodes}
+              flows={flows ?? undefined}
+              decorations={decorations}
+              tone={tone}
             onViewChange={setZoomPct}
             initialView={initialView}
             viewStorageKey={viewKey ?? doc?.id ?? 'plan-a'}

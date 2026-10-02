@@ -467,6 +467,96 @@ export interface CustomCategory {
   color: string
 }
 
+/** One line inside a decoration box (texts used to be hardcoded in the canvas). */
+export interface InfraDecorLine {
+  text: string
+  /** Offsets from the box's top-left corner. Defaults: dx 14, dy 16 + i*18. */
+  dx?: number
+  dy?: number
+  /** Palette token ('ink'|'sub'|'muted'|'cyan'|'green'|'purple'|'amber'|'red'|'blue') or #rgb/#rrggbb/#rrggbbaa. */
+  color?: string
+  size?: number
+  weight?: string
+}
+
+/**
+ * An editable canvas annotation — the zone panels, rack captions, node
+ * captions and collaboration bar that used to be hardcoded draws.
+ * Omitted from a doc = nothing drawn (documents without decorations render
+ * nodes/flows only).
+ */
+export interface InfraDecoration {
+  id: string
+  kind: 'box' | 'label'
+  /** Draw group: 'back' = under flows/nodes, 'panel' = under cluster chips,
+   *  'front' = above nodes. Defaults to 'front'. */
+  z?: 'back' | 'panel' | 'front'
+  // ── kind 'box' ──
+  x?: number
+  y?: number
+  w?: number
+  h?: number
+  /** Corner radius (default 12). */
+  r?: number
+  /** #rgb/#rrggbb/#rrggbbaa (alpha preserved). */
+  fill?: string
+  stroke?: string
+  lines?: InfraDecorLine[]
+  /** Node ids: dashed connectors drawn from each node's right edge to this box. */
+  connects?: string[]
+  // ── kind 'label' ──
+  text?: string
+  size?: number
+  weight?: string
+  align?: 'left' | 'center'
+  /** Palette token or hex (same vocabulary as line colors). */
+  color?: string
+  /** Anchor to a node box: position follows the node when it moves. */
+  anchor?: { id: string; dx: number; dy: number }
+}
+
+/** Palette tokens a decoration color may name instead of a hex value. */
+export const DECOR_TOKENS = [
+  'ink', 'sub', 'muted', 'cyan', 'green', 'purple', 'amber', 'red', 'blue',
+] as const
+export type DecorToken = (typeof DECOR_TOKENS)[number]
+
+export const isDecorColor = (v: unknown): v is string =>
+  typeof v === 'string' &&
+  ((DECOR_TOKENS as readonly string[]).includes(v) ||
+    /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(v))
+
+/** Fresh annotation for the editor's ADD BOX / ADD LABEL toolbar buttons. */
+export function newDecoration(kind: 'box' | 'label', x: number, y: number): InfraDecoration {
+  const id = `dec-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+  if (kind === 'box') {
+    return {
+      id,
+      kind,
+      x: Math.round(x),
+      y: Math.round(y),
+      w: 240,
+      h: 140,
+      z: 'front',
+      fill: '#0c1c308c',
+      stroke: '#78aade',
+      lines: [],
+    }
+  }
+  return {
+    id,
+    kind,
+    x: Math.round(x),
+    y: Math.round(y),
+    z: 'front',
+    text: 'New label',
+    size: 11,
+    weight: '700',
+    color: 'sub',
+    align: 'left',
+  }
+}
+
 /** A saved diagram: nodes + links (+ optional timeline override). */
 export interface DiagramDoc {
   id: string
@@ -481,6 +571,8 @@ export interface DiagramDoc {
   categoryColors?: Record<string, string>
   /** User-defined categories (label + color) beyond the built-ins. */
   customCategories?: Record<string, CustomCategory>
+  /** Editable canvas annotations (zone panels, captions, boxes). Omitted when empty. */
+  decorations?: InfraDecoration[]
 }
 
 /** Display label for any category: custom → built-in → uppercase id. */
@@ -510,6 +602,70 @@ export function mergedCatColors(
   }
 }
 
+/**
+ * Plan A's canvas annotations — the zone panels, rack captions, node
+ * captions and collaboration bar the renderer used to draw unconditionally
+ * for every diagram (they leaked onto templates that never wanted them).
+ * Draw order = array order within each z group; keep the collaboration bar
+ * after the rack captions so it tints them exactly like the old draw order.
+ */
+export function planADecorations(): InfraDecoration[] {
+  return [
+    // ── back: zone panels (under flows + nodes) ──
+    {
+      id: 'dec-zone-edge', kind: 'box', z: 'back',
+      x: 270, y: 12, w: 400, h: 190, r: 14,
+      fill: '#0c1c3047', stroke: '#5082642e',
+      lines: [{ text: 'INTERNET EDGE / SECURITY', dx: 14, dy: 14, color: 'muted', size: 9.5, weight: '700' }],
+    },
+    {
+      id: 'dec-zone-m365', kind: 'box', z: 'back',
+      x: 855, y: 12, w: 250, h: 320, r: 14,
+      fill: '#0c1c3047', stroke: '#3c6eaa38',
+      lines: [{ text: 'MICROSOFT 365 / CLOUD', dx: 13, dy: 14, color: 'muted', size: 9.5, weight: '700' }],
+    },
+    {
+      id: 'dec-zone-collab', kind: 'box', z: 'back',
+      x: 855, y: 585, w: 250, h: 170, r: 14,
+      fill: '#0c1c3047', stroke: '#5096782e',
+      lines: [{ text: 'COLLABORATION / RECOVERY', dx: 13, dy: 13, color: 'muted', size: 9.5, weight: '700' }],
+    },
+    { id: 'dec-lbl-onprem', kind: 'label', z: 'back', x: 250, y: 238, text: 'ON-PREMISES CORE', size: 9.5, weight: '700', color: 'muted' },
+    { id: 'dec-lbl-users', kind: 'label', z: 'back', x: 28, y: 505, text: 'USERS / LEGACY', size: 9.5, weight: '700', color: 'muted' },
+    // ── panel: cluster card (under the VM chips drawn inside it) ──
+    {
+      id: 'dec-cluster', kind: 'box', z: 'panel',
+      x: 740, y: 365, w: 380, h: 215, r: 12,
+      fill: '#0e1e328c', stroke: '#6e96d24d',
+      connects: ['px1', 'px2', 'px3'],
+      lines: [
+        { text: '3-NODE PROXMOX CLUSTER · VM HA', dx: 14, dy: 16, color: 'sub', size: 11.5, weight: '700' },
+        { text: 'DC-01 · DC-02 · File Server · Legacy Apps', dx: 14, dy: 34, color: 'muted', size: 10, weight: '500' },
+        { text: 'On-prem AD authoritative · Hybrid identity', dx: 14, dy: 50, color: 'cyan', size: 10, weight: '600' },
+      ],
+    },
+    // ── front: captions + bar (above nodes; bar last to tint the rack titles) ──
+    { id: 'dec-rack-title', kind: 'label', z: 'front', x: 485, y: 824, text: '42U ENTERPRISE RACK', size: 13, weight: '700', color: 'sub', align: 'center' },
+    { id: 'dec-rack-sub', kind: 'label', z: 'front', x: 485, y: 842, text: 'PHYSICAL ON-PREMISES CORE', size: 11, weight: '600', color: 'muted', align: 'center' },
+    { id: 'dec-ec-caption', kind: 'label', z: 'front', text: 'AD → Entra Connect → Entra ID', size: 9, weight: '700', color: 'cyan', align: 'center', anchor: { id: 'entraconnect', dx: 0, dy: 46 } },
+    { id: 'dec-ep-caption', kind: 'label', z: 'front', text: 'Intune + Defender', size: 8.5, weight: '600', color: 'sub', align: 'center', anchor: { id: 'endpoints', dx: 0, dy: 88 } },
+    { id: 'dec-smb-caption', kind: 'label', z: 'front', text: 'CAD · Images · Scanned Docs', size: 8.5, weight: '600', color: 'sub', align: 'center', anchor: { id: 'smbaccess', dx: 0, dy: 82 } },
+    { id: 'dec-legacy-title', kind: 'label', z: 'front', text: 'LEGACY / DECOMMISSIONED', size: 10, weight: '700', color: 'muted', anchor: { id: 'legacy', dx: 12, dy: 18 } },
+    { id: 'dec-legacy-a', kind: 'label', z: 'front', text: 'EOL servers · NetApp · Quantum DXi', size: 9, weight: '500', color: 'muted', anchor: { id: 'legacy', dx: 12, dy: 40 } },
+    { id: 'dec-legacy-b', kind: 'label', z: 'front', text: 'Legacy firewalls · not active production', size: 9, weight: '500', color: 'muted', anchor: { id: 'legacy', dx: 12, dy: 58 } },
+    { id: 'dec-legacy-c', kind: 'label', z: 'front', text: 'Scheduled for replacement', size: 9, weight: '600', color: 'muted', anchor: { id: 'legacy', dx: 12, dy: 88 } },
+    {
+      id: 'dec-collab', kind: 'box', z: 'front',
+      x: 250, y: 820, w: 620, h: 52, r: 10,
+      fill: '#0c1c308c', stroke: '#43d19e4d',
+      lines: [
+        { text: 'ACTIVE COLLABORATION → SharePoint / OneDrive', dx: 16, dy: 18, color: 'green', size: 10.5, weight: '700' },
+        { text: 'BULK / LARGE / LEGACY DATA → Synology / On-Prem SMB', dx: 16, dy: 40, color: 'cyan', size: 10.5, weight: '700' },
+      ],
+    },
+  ]
+}
+
 /** The built-in Plan A document (read-only seed). */
 export function planADoc(): DiagramDoc {
   return {
@@ -520,6 +676,7 @@ export function planADoc(): DiagramDoc {
     published: true,
     nodes: COMPONENTS.map((c) => ({ ...c, deps: [...c.deps], workloads: [...c.workloads] })),
     flows: FLOWS.map((f) => ({ ...f })),
+    decorations: planADecorations(),
   }
 }
 
@@ -606,6 +763,99 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     })
     if (flows.length >= 200) break
   }
+  // Canvas annotations: capped + finite + whitelisted colors; omitted when empty.
+  const dnum = (v: unknown, lo: number, hi: number): number | undefined =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : undefined
+  const dcolor = (v: unknown): string | undefined => (isDecorColor(v) ? v : undefined)
+  const dweight = (v: unknown): string | undefined =>
+    (typeof v === 'string' && /^[1-9]00$/.test(v) ? v : undefined)
+  let decorations: InfraDecoration[] | undefined
+  if (Array.isArray(d.decorations)) {
+    decorations = []
+    for (const rawDeco of d.decorations) {
+      if (decorations.length >= 100) break
+      if (!rawDeco || typeof rawDeco !== 'object') continue
+      const c = rawDeco as Record<string, unknown>
+      if (typeof c.id !== 'string' || !c.id) continue
+      const kind = c.kind === 'box' ? 'box' as const : c.kind === 'label' ? 'label' as const : null
+      if (!kind) continue
+      const out: InfraDecoration = { id: c.id.slice(0, 64), kind }
+      if (c.z === 'back' || c.z === 'panel' || c.z === 'front') out.z = c.z
+      if (kind === 'box') {
+        const x = dnum(c.x, -50000, 50000)
+        const y = dnum(c.y, -50000, 50000)
+        const w = dnum(c.w, 20, 5000)
+        const h = dnum(c.h, 10, 5000)
+        if (x === undefined || y === undefined || w === undefined || h === undefined) continue
+        out.x = x
+        out.y = y
+        out.w = w
+        out.h = h
+        const r = dnum(c.r, 0, 60)
+        if (r !== undefined) out.r = r
+        const fill = dcolor(c.fill)
+        if (fill) out.fill = fill
+        const stroke = dcolor(c.stroke)
+        if (stroke) out.stroke = stroke
+        if (Array.isArray(c.lines)) {
+          const lines: InfraDecorLine[] = []
+          for (const lr of c.lines) {
+            if (lines.length >= 12) break
+            if (!lr || typeof lr !== 'object') continue
+            const l = lr as Record<string, unknown>
+            if (typeof l.text !== 'string' || !l.text) continue
+            const line: InfraDecorLine = { text: l.text.slice(0, 160) }
+            const dx = dnum(l.dx, -5000, 5000)
+            const dy = dnum(l.dy, -5000, 5000)
+            if (dx !== undefined) line.dx = dx
+            if (dy !== undefined) line.dy = dy
+            const lc = dcolor(l.color)
+            if (lc) line.color = lc
+            const ls = dnum(l.size, 6, 72)
+            if (ls !== undefined) line.size = ls
+            const lw = dweight(l.weight)
+            if (lw) line.weight = lw
+            lines.push(line)
+          }
+          if (lines.length) out.lines = lines
+        }
+        if (Array.isArray(c.connects)) {
+          const cs = c.connects
+            .filter((x): x is string => typeof x === 'string' && !!x)
+            .slice(0, 8)
+            .map((s) => s.slice(0, 64))
+          if (cs.length) out.connects = cs
+        }
+      } else {
+        if (typeof c.text !== 'string' || !c.text) continue
+        out.text = c.text.slice(0, 200)
+        if (c.anchor && typeof c.anchor === 'object') {
+          const a = c.anchor as Record<string, unknown>
+          const adx = dnum(a.dx, -5000, 5000)
+          const ady = dnum(a.dy, -5000, 5000)
+          if (typeof a.id === 'string' && a.id && adx !== undefined && ady !== undefined) {
+            out.anchor = { id: a.id.slice(0, 64), dx: adx, dy: ady }
+          }
+        }
+        if (!out.anchor) {
+          const x = dnum(c.x, -50000, 50000)
+          const y = dnum(c.y, -50000, 50000)
+          if (x === undefined || y === undefined) continue
+          out.x = x
+          out.y = y
+        }
+        const size = dnum(c.size, 6, 72)
+        if (size !== undefined) out.size = size
+        const lw = dweight(c.weight)
+        if (lw) out.weight = lw
+        if (c.align === 'center') out.align = 'center'
+        const color = dcolor(c.color)
+        if (color) out.color = color
+      }
+      decorations.push(out)
+    }
+    if (!decorations.length) decorations = undefined
+  }
   const slugBase = typeof d.slug === 'string' && d.slug ? d.slug : 'diagram'
   // Category palette overrides: { id: '#rrggbb' } with tight key/value caps.
   let categoryColors: Record<string, string> | undefined
@@ -632,5 +882,6 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     flows,
     ...(categoryColors ? { categoryColors } : {}),
     ...(customCategories ? { customCategories } : {}),
+    ...(decorations ? { decorations } : {}),
   }
 }

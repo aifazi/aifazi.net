@@ -806,3 +806,132 @@ def test_unique_sqlstate_conflicts_not_substrings(monkeypatch):  # type: ignore[
         message="duplicate reference in foreign key constraint",
     )
     assert client.put(f"/diagrams/{doc_id}", json=_doc()).status_code == 500
+
+
+# ── PR B: editable decorations (boxes/labels) ────────────────────────────────
+
+
+def _decorations():
+    return [
+        {
+            "id": "zone-hq", "kind": "box", "z": "back",
+            "x": 100, "y": 60, "w": 420, "h": 240, "r": 12,
+            "fill": "#0c1c308c", "stroke": "#78aade",
+            "lines": [
+                {"text": "HQ - East DC", "dx": 14, "dy": 18, "size": 12,
+                 "weight": "700", "color": "cyan"}
+            ],
+            "connects": ["fw1"],
+        },
+        {
+            "id": "note-a", "kind": "label", "z": "front",
+            "text": "DR site standby", "size": 11, "weight": "700",
+            "align": "center", "color": "amber",
+            "anchor": {"id": "fw1", "dx": 12, "dy": 40},
+        },
+        {
+            "id": "free-b", "kind": "label", "text": "Free label",
+            "x": 20, "y": 30,
+        },
+    ]
+
+
+def test_decorations_roundtrip(client):
+    body = _doc(slug="decor-ok")
+    body["published"] = True
+    body["decorations"] = _decorations()
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 200, r.text
+    decos = r.json()["diagram"]["decorations"]
+    assert [d["id"] for d in decos] == ["zone-hq", "note-a", "free-b"]
+    assert decos[0]["z"] == "back"
+    assert decos[0]["lines"][0]["color"] == "cyan"
+    assert decos[1]["anchor"] == {"id": "fw1", "dx": 12, "dy": 40}
+    assert "text" not in decos[0]
+
+    # Public GET serves them back too (published + no auth → anonymous read).
+    got = client.get("/diagrams/decor-ok").json()["diagram"]
+    assert [d["id"] for d in got["decorations"]] == ["zone-hq", "note-a", "free-b"]
+
+    # Update that omits decorations drops them (whitelist rebuild, not merge).
+    doc_id = r.json()["diagram"]["id"]
+    stripped = _doc(slug="decor-ok")
+    stripped["published"] = True
+    assert client.put(f"/diagrams/{doc_id}", json=stripped).status_code == 200
+    assert "decorations" not in client.get("/diagrams/decor-ok").json()["diagram"]
+
+
+def test_decorations_revision_restore_roundtrip(client):
+    body = _doc(slug="decor-rev")
+    body["decorations"] = _decorations()
+    assert client.post("/diagrams", json=body).status_code == 200
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    # Second save without decorations: the snapshot must keep the originals.
+    assert client.put(f"/diagrams/{doc_id}", json=_doc(slug="decor-rev")).status_code == 200
+    revs = client.get(f"/diagrams/{doc_id}/revisions").json()["revisions"]
+    assert len(revs) == 1
+    rev = client.get(f"/diagrams/{doc_id}/revisions/{revs[0]['id']}").json()["revision"]
+    assert [d["id"] for d in rev["decorations"]] == ["zone-hq", "note-a", "free-b"]
+    r = client.post(f"/diagrams/{doc_id}/revisions/{revs[0]['id']}/restore")
+    assert r.status_code == 200, r.text
+    restored = r.json()["diagram"]
+    assert [d["id"] for d in restored["decorations"]] == ["zone-hq", "note-a", "free-b"]
+
+
+def test_bad_decorations_rejected(client):
+    # Unknown kind / z.
+    for key, value in (("kind", "circle"), ("z", "middle")):
+        body = _doc()
+        deco = dict(_decorations()[0])
+        deco[key] = value
+        body["decorations"] = [deco]
+        assert client.post("/diagrams", json=body).status_code == 400, (key, value)
+    # Box missing geometry.
+    body = _doc()
+    deco = dict(_decorations()[0])
+    del deco["x"]
+    body["decorations"] = [deco]
+    assert client.post("/diagrams", json=body).status_code == 400
+    # Label with neither anchor nor coordinates.
+    body = _doc()
+    body["decorations"] = [{"id": "l1", "kind": "label", "text": "hi"}]
+    assert client.post("/diagrams", json=body).status_code == 400
+    # Not an object / duplicate ids.
+    body = _doc()
+    body["decorations"] = ["nope"]
+    assert client.post("/diagrams", json=body).status_code == 400
+    body = _doc()
+    body["decorations"] = [_decorations()[2], dict(_decorations()[2])]
+    assert client.post("/diagrams", json=body).status_code == 400
+    # Colors: palette tokens OK, anything else rejected.
+    for bad_color in ("#zz0000", "chartreuse", "#12345"):
+        body = _doc()
+        deco = dict(_decorations()[2])
+        deco["color"] = bad_color
+        body["decorations"] = [deco]
+        assert client.post("/diagrams", json=body).status_code == 400, bad_color
+
+
+def test_decoration_non_finite_geometry_rejected(client):
+    import json as jsonlib
+
+    for bad in (float("nan"), float("inf")):
+        body = _doc()
+        deco = dict(_decorations()[0])
+        deco["x"] = bad
+        body["decorations"] = [deco]
+        r = client.post(
+            "/diagrams",
+            content=jsonlib.dumps(body),
+            headers={"content-type": "application/json"},
+        )
+        assert r.status_code == 400, bad
+
+
+def test_too_many_decorations_rejected(client):
+    body = _doc()
+    body["decorations"] = [
+        {**_decorations()[2], "id": f"lab-{i}"} for i in range(101)
+    ]
+    # Pydantic list cap → 422; endpoint guard → 400. Either fail-closed is fine.
+    assert client.post("/diagrams", json=body).status_code in (400, 422)

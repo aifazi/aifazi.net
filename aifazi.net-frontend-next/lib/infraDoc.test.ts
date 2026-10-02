@@ -2,7 +2,15 @@
  * Per-block style fields (accent/pulse) survive sanitizeDoc validation.
  */
 import { describe, expect, it } from 'vitest'
-import { sanitizeDoc, catLabel, mergedCatColors } from '@/data/hybrid-infra'
+import {
+  sanitizeDoc,
+  catLabel,
+  mergedCatColors,
+  planADecorations,
+  planADoc,
+  newDecoration,
+  isDecorColor,
+} from '@/data/hybrid-infra'
 
 const base = {
   id: 'doc1',
@@ -172,5 +180,85 @@ describe('sanitizeDoc custom categories', () => {
         categoryColors: { iot: '#654321', network: '#ff0000' },
       }),
     ).toEqual({ iot: '#654321', network: '#ff0000' })
+  })
+})
+
+describe('sanitizeDoc decorations', () => {
+  const nodes = [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }]
+  const box = {
+    id: 'd1', kind: 'box', z: 'back',
+    x: 10, y: 20, w: 200, h: 100, r: 8,
+    fill: '#0c1c308c', stroke: '#78aade',
+    lines: [{ text: 'ZONE', dx: 14, dy: 18, size: 10, weight: '700', color: 'cyan' }],
+    connects: ['n1'],
+  }
+  const anchored = {
+    id: 'd2', kind: 'label', z: 'front',
+    text: 'Caption', size: 11, weight: '700', align: 'center', color: 'amber',
+    anchor: { id: 'n1', dx: 4, dy: 46 },
+  }
+  const free = { id: 'd3', kind: 'label', text: 'Free', x: 5, y: 6 }
+
+  it('keeps valid boxes, anchored and free labels', () => {
+    const clean = sanitizeDoc({ ...base, nodes, decorations: [box, anchored, free] })
+    expect(clean?.decorations).toHaveLength(3)
+    expect(clean?.decorations?.[0]).toMatchObject({ kind: 'box', z: 'back', connects: ['n1'] })
+    expect(clean?.decorations?.[0].lines).toEqual(box.lines)
+    expect(clean?.decorations?.[1].anchor).toEqual({ id: 'n1', dx: 4, dy: 46 })
+    expect(clean?.decorations?.[1]).not.toHaveProperty('x')
+    expect(clean?.decorations?.[2]).toMatchObject({ x: 5, y: 6 })
+  })
+
+  it('drops malformed entries and invalid sub-fields', () => {
+    const clean = sanitizeDoc({
+      ...base,
+      nodes,
+      decorations: [
+        { ...box, id: 'bad-kind', kind: 'circle' },
+        { ...box, id: 'no-geom', x: undefined },
+        { id: 'no-pos', kind: 'label', text: 'x' },
+        { ...free, id: 'bad-color', color: 'chartreuse' },
+        { ...box, id: 'bad-z', z: 'middle' },
+      ],
+    })
+    const ids = (clean?.decorations ?? []).map((d) => d.id)
+    expect(ids).not.toContain('bad-kind')
+    expect(ids).not.toContain('no-geom')
+    expect(ids).not.toContain('no-pos')
+    const badColor = clean?.decorations?.find((d) => d.id === 'bad-color')
+    expect(badColor?.color).toBeUndefined()
+    expect(clean?.decorations?.find((d) => d.id === 'bad-z')?.z).toBeUndefined()
+  })
+
+  it('caps at 100 entries and omits the key when nothing survives', () => {
+    const many = Array.from({ length: 105 }, (_, i) => ({ ...free, id: `lab-${i}` }))
+    expect(sanitizeDoc({ ...base, nodes, decorations: many })?.decorations).toHaveLength(100)
+    const none = sanitizeDoc({ ...base, nodes, decorations: [{ id: 'x', kind: 'circle' }] })
+    expect('decorations' in (none ?? {})).toBe(false)
+    const absent = sanitizeDoc({ ...base, nodes })
+    expect('decorations' in (absent ?? {})).toBe(false)
+  })
+})
+
+describe('planADecorations seed', () => {
+  it('exposes 16 layer-ordered annotations on planADoc', () => {
+    const decos = planADecorations()
+    expect(decos).toHaveLength(16)
+    expect(new Set(decos.map((d) => d.id)).size).toBe(16)
+    for (const d of decos) expect(['back', 'panel', 'front']).toContain(d.z ?? 'front')
+    expect(decos.find((d) => d.id === 'dec-cluster')?.connects).toEqual(['px1', 'px2', 'px3'])
+    // The collaboration bar must draw last so it tints the rack titles.
+    expect(decos.at(-1)?.id).toBe('dec-collab')
+    expect(planADoc().decorations).toHaveLength(16)
+  })
+
+  it('newDecoration seeds usable box/label annotations', () => {
+    const b = newDecoration('box', 100, 50)
+    expect(b).toMatchObject({ kind: 'box', x: 100, y: 50, w: 240, h: 140, z: 'front', fill: '#0c1c308c' })
+    const l = newDecoration('label', 10, 20)
+    expect(l).toMatchObject({ kind: 'label', x: 10, y: 20, text: 'New label', z: 'front' })
+    expect(b.id).not.toBe(l.id)
+    expect(isDecorColor(b.fill)).toBe(true)
+    expect(isDecorColor(l.color)).toBe(true)
   })
 })
