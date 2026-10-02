@@ -230,6 +230,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
   const listModeRef = useRef<'public' | 'admin'>(isAdmin ? 'admin' : 'public')
   // Hard guard against concurrent save/publish round-trips.
   const inFlightRef = useRef(false)
+  // Latest-save handle for the Ctrl/⌘+S shortcut: the keydown effect closes
+  // over refs so it can't hold a stale save() (isSeed/docId change per save).
+  const saveRef = useRef<() => Promise<void>>(() => Promise.resolve())
   // Monotonic load token: rapid picker changes must not let a stale response
   // win (F8).
   const loadSeqRef = useRef(0)
@@ -813,6 +816,13 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         setHelpOpen(false)
         return
       }
+      // Save works from anywhere in edit mode — including while typing in a
+      // field — so it sits before the input/textarea typing guard below.
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        void saveRef.current()
+        return
+      }
       const el = e.target as HTMLElement | null
       const tag = (el?.tagName || '').toLowerCase()
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || el?.isContentEditable) return
@@ -1325,6 +1335,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
       setSaving(false)
     }
   }
+  saveRef.current = save
 
   /**
    * Adopt a server response without clobbering in-flight edits: if the local
@@ -1688,7 +1699,49 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         #hybrid-infra-editor:fullscreen { padding: 12px; overflow: auto; }
         #hybrid-infra-editor:fullscreen .hi-edit-layout { align-items: stretch; }
         #hybrid-infra-editor:fullscreen .hi-edit-layout > div { max-height: calc(100vh - 24px); }
+        #hybrid-infra-editor:fullscreen .hi-edit-savebar {
+          position: sticky; top: 0; z-index: 6;
+          box-shadow: 0 14px 34px rgba(0,0,0,.45);
+        }
       `}</style>
+      {/* Sticky save cluster: the diagram bar below wraps across many rows in
+          fullscreen, so SAVE/status/exit stay pinned to the top edge. */}
+      {editFs && (
+        <div
+          className="hi-edit-savebar"
+          style={{
+            display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
+            marginBottom: 12, ...PANEL,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => void save()}
+            disabled={saving}
+            title="Save diagram (Ctrl/⌘+S)"
+            style={BTN}
+          >
+            {saving ? 'SAVING…' : isSeed || !docId ? 'SAVE AS NEW' : 'SAVE'}
+          </button>
+          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: isDirty ? pal.amber : pal.green }}>
+            {isSeed ? 'built-in seed (edits save as a copy)' : isDirty ? '● unsaved changes' : 'saved'}
+          </span>
+          {notice && (
+            <span role="status" style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: notice.ok ? pal.green : pal.red }}>
+              {notice.msg}
+            </span>
+          )}
+          <span style={{ flex: 1 }} />
+          <button
+            type="button"
+            onClick={toggleEditFullscreen}
+            title="Exit fullscreen (Esc)"
+            style={BTN}
+          >
+            EXIT FULL
+          </button>
+        </div>
+      )}
       {/* Diagram bar */}
       <div
         style={{
@@ -1736,7 +1789,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           }}
           style={{ width: 220 }}
         />
-        <button type="button" onClick={() => void save()} disabled={saving} style={BTN}>
+        <button type="button" onClick={() => void save()} disabled={saving} title="Save diagram (Ctrl/⌘+S)" style={BTN}>
           {saving ? 'SAVING…' : isSeed || !docId ? 'SAVE AS NEW' : 'SAVE'}
         </button>
         <button
@@ -1891,7 +1944,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           {isSeed ? 'built-in seed (edits save as a copy)' : isDirty ? '● unsaved changes' : 'saved'}
         </span>
         {notice && (
-          <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: notice.ok ? pal.green : pal.red }}>
+          <span role="status" style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: notice.ok ? pal.green : pal.red }}>
             {notice.msg}
           </span>
         )}

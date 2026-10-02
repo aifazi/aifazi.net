@@ -11,8 +11,10 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 import { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react'
+import { createPortal } from 'react-dom'
 import { t, VARIANTS, zIndex } from './tokens'
 import { reveal } from './animations'
+import { useFullscreenTarget } from './fullscreen'
 
 const DialogContext = createContext(null)
 
@@ -89,6 +91,11 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
     }
   }, [])
 
+  // While an element is fullscreen it sits in the top layer above every
+  // z-index — the dialog must render INSIDE it or it paints underneath.
+  const overlayTarget = useFullscreenTarget()
+  if (!overlayTarget) return null
+
   const handlePromptSubmit = () => {
     const val = inputVal.trim()
     resolve(val.length > 0 ? val : null)
@@ -131,7 +138,7 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
     transition: 'opacity 0.3s ease',
   }
 
-  return (
+  return createPortal(
     <>
       <style>{`@keyframes dlg-crt-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }`}</style>
       <div onClick={() => resolve(isPrompt ? null : false)} role="presentation" style={backdropStyle} />
@@ -212,7 +219,8 @@ function DialogModal({ entry, onResolve, dialogStyle = 'cyber' }) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    overlayTarget,
   )
 }
 
