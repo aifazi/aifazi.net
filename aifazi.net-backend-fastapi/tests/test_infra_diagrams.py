@@ -709,3 +709,100 @@ def test_draft_preview_denied_when_token_check_fails(monkeypatch):  # type: igno
     assert client.get(
         "/diagrams/hq-east", headers={"Authorization": "Bearer t"}
     ).status_code == 404
+
+
+# ── Round-3 leftovers (B10/B13/B14) ─────────────────────────────────────────
+
+
+def test_blank_title_rejected(client):
+    """B10: whitespace-only titles never reach slug derivation (422)."""
+    body = _doc(slug="")
+    body["title"] = "   "
+    assert client.post("/diagrams", json=body).status_code == 422
+
+    body["title"] = "Real Title"
+    assert client.post("/diagrams", json=body).status_code == 200
+
+
+def test_public_reads_send_cache_headers(client):
+    """B13: published reads carry ETag + a short public Cache-Control, honor
+    If-None-Match with a 304, and drafts stay no-store."""
+    r = client.get("/diagrams")
+    assert r.status_code == 200
+    assert r.headers["cache-control"].startswith("public,")
+    etag = r.headers["etag"]
+    assert etag.startswith('"')
+
+    r304 = client.get("/diagrams", headers={"If-None-Match": etag})
+    assert r304.status_code == 304
+    assert r304.content == b""
+
+    r200 = client.get("/diagrams", headers={"If-None-Match": '"stale"'})
+    assert r200.status_code == 200
+
+    assert client.post("/diagrams", json=_doc()).status_code == 200
+    draft = client.get("/diagrams/hq-east", headers={"Authorization": "Bearer t"})
+    assert draft.status_code == 200
+    assert draft.headers["cache-control"] == "no-store"
+
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    published = _doc()
+    published["published"] = True
+    assert client.put(f"/diagrams/{doc_id}", json=published).status_code == 200
+    pub = client.get("/diagrams/hq-east")
+    assert pub.status_code == 200
+    assert pub.headers["cache-control"].startswith("public,")
+    pub_etag = pub.headers["etag"]
+    assert client.get(
+        "/diagrams/hq-east", headers={"If-None-Match": pub_etag}
+    ).status_code == 304
+
+    # Content changed -> different ETag -> full 200 again.
+    changed = _doc()
+    changed["published"] = True
+    changed["title"] = "HQ East v2"
+    assert client.put(f"/diagrams/{doc_id}", json=changed).status_code == 200
+    moved = client.get("/diagrams/hq-east", headers={"If-None-Match": pub_etag})
+    assert moved.status_code == 200
+    assert moved.headers["etag"] != pub_etag
+
+
+def test_unique_sqlstate_conflicts_not_substrings(monkeypatch):  # type: ignore[no-untyped-def]
+    """B14: 409 comes from APIError.code == '23505' only — a failure whose
+    message merely mentions duplication stays a 500."""
+    from postgrest.exceptions import APIError
+
+    client, _fake, _module = _build_app(monkeypatch, _fake_require_admin, return_fake=True)
+    assert client.post("/diagrams", json=_doc()).status_code == 200
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+
+    orig_execute = _Query.execute
+    state = {"mode": None, "code": None, "message": ""}
+
+    def flaky(self):  # type: ignore[no-untyped-def]
+        if state["mode"] and self._table == "infra_diagrams" and self._op == state["mode"]:
+            raise APIError({"code": state["code"], "message": state["message"]})
+        return orig_execute(self)
+
+    monkeypatch.setattr(_Query, "execute", flaky)
+
+    state.update(
+        mode="insert",
+        code="23505",
+        message="duplicate key value violates unique constraint",
+    )
+    assert client.post("/diagrams", json=_doc(slug="other")).status_code == 409
+
+    state.update(
+        mode="update",
+        code="23505",
+        message="duplicate key value violates unique constraint",
+    )
+    assert client.put(f"/diagrams/{doc_id}", json=_doc()).status_code == 409
+
+    state.update(
+        mode="update",
+        code="23503",
+        message="duplicate reference in foreign key constraint",
+    )
+    assert client.put(f"/diagrams/{doc_id}", json=_doc()).status_code == 500

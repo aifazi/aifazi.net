@@ -27,6 +27,7 @@ if dsn.startswith("https://"):
     sentry_sdk.init(dsn=dsn, traces_sample_rate=0.1,
                     environment=os.getenv("ENV", "production"))
 
+from utils.body_limit import MAX_JSON_BODY_BYTES, MAX_UPLOAD_BODY_BYTES, BodySizeLimitMiddleware, BodyTooLarge
 from utils.rate_limit import _ip_is_banned, _refresh_ip_bans, _require_redis_config, check_rate_limit
 from utils.request_ip import client_ip
 from utils.request_metrics import record_error
@@ -107,14 +108,6 @@ _CORS_ALLOW_HEADERS = "Authorization, Content-Type, X-Internal-Token, X-CSRF-Tok
 # Origin header), they are redirected to the homepage.
 # Real API calls always set an Origin header or do not prefer text/html.
 API_HOSTNAME = os.getenv("API_HOSTNAME", "api.aifazi.net")
-
-# ── Request body size caps (pre-parse DoS guard) ──────────────────────────────
-# Enforced on the declared Content-Length before FastAPI buffers the body.
-# Multipart gets a higher cap because the file tools accept up to 50MB uploads;
-# chunked bodies without Content-Length are bounded by Cloudflare's 100MB edge
-# limit plus the per-IP rate limiter below.
-MAX_JSON_BODY_BYTES = 5 * 1024 * 1024
-MAX_UPLOAD_BODY_BYTES = 55 * 1024 * 1024
 
 # ── Internal API secret ────────────────────────────────────────────────────────
 # All non-public requests must include this header (injected by Next.js middleware).
@@ -506,7 +499,8 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         # ── 1b. Request body size cap ──────────────────────────────────────────
         # Reject oversized declared bodies with 413 BEFORE any route handler
         # reads them; otherwise FastAPI buffers the whole body into RAM first
-        # and auth checks run only after that.
+        # and auth checks run only after that. Bodies without a declared length
+        # (chunked) are counted by BodySizeLimitMiddleware (utils/body_limit.py).
         if method in ("POST", "PUT", "PATCH"):
             _ctype = request.headers.get("content-type", "")
             _limit = MAX_UPLOAD_BODY_BYTES if _ctype.startswith("multipart/") else MAX_JSON_BODY_BYTES
@@ -729,6 +723,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         response.headers["Content-Security-Policy"] = csp
         return response
 
+app.add_middleware(BodySizeLimitMiddleware)
 app.add_middleware(SecurityMiddleware)
 
 from routers import (
@@ -866,6 +861,11 @@ async def health():
     status = "OK" if db_ok else "degraded"
     code = 200 if db_ok else 503
     return JSONResponse(status_code=code, content={"status": status, "database": "connected" if db_ok else "unreachable"})
+
+@app.exception_handler(BodyTooLarge)
+async def body_too_large_handler(request: Request, exc: BodyTooLarge):
+    record_error(str(request.url.path), 413)
+    return JSONResponse(status_code=413, content={"error": "Request body too large"})
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

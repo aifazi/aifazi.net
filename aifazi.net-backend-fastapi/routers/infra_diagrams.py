@@ -7,6 +7,7 @@ rejected here so nothing can squat it.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import math
@@ -14,8 +15,10 @@ import re
 import uuid as uuid_mod
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse
+from postgrest.exceptions import APIError
+from pydantic import BaseModel, Field, field_validator
 
 from database import supabase
 from dependencies import _enrich_user, decode_token, require_admin
@@ -51,6 +54,15 @@ class DiagramIn(BaseModel):
     # On mismatch the PUT 409s instead of clobbering a concurrent save.
     expectedUpdatedAt: str | None = Field(default=None, max_length=64)
 
+    @field_validator("title")
+    @classmethod
+    def _title_not_blank(cls, v: str) -> str:
+        # B10: min_length=1 alone accepts " " — the slug then collapses to
+        # "diagram" and the second create 409s with a confusing message.
+        if not v.strip():
+            raise ValueError("title must not be blank")
+        return v
+
 
 BUILTIN_CATEGORIES = {
     "network",
@@ -67,6 +79,27 @@ BUILTIN_CATEGORIES = {
 def _slugify(raw: str) -> str:
     slug = re.sub(r"[^a-z0-9-]+", "-", raw.lower()).strip("-")[:64]
     return slug or "diagram"
+
+
+PUBLIC_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=300"
+
+
+def _etag_for(payload: dict) -> str:
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str).encode()
+    return '"' + hashlib.sha256(raw).hexdigest()[:32] + '"'
+
+
+def _cached_response(payload: dict, request: Request, cacheable: bool) -> Response:
+    """B13: published reads are stable → ETag + short public cache; drafts no-store.
+    If-None-Match matching yields a bodyless 304."""
+    etag = _etag_for(payload)
+    headers = {
+        "ETag": etag,
+        "Cache-Control": PUBLIC_CACHE_CONTROL if cacheable else "no-store",
+    }
+    if etag in (request.headers.get("if-none-match") or ""):
+        return Response(status_code=304, headers=headers)
+    return JSONResponse(payload, headers=headers)
 
 
 def _validate_palette(colors: dict | None) -> dict | None:
@@ -299,7 +332,7 @@ def _snapshot_revision(row: dict) -> bool:
 
 
 @router.get("/diagrams")
-def list_diagrams(offset: int = Query(0, ge=0, le=10000)):
+def list_diagrams(request: Request, offset: int = Query(0, ge=0, le=10000)):
     """Public: published diagram metas (newest first, 100 per page)."""
     try:
         res = (
@@ -314,7 +347,8 @@ def list_diagrams(offset: int = Query(0, ge=0, le=10000)):
     except Exception as exc:
         log.error("infra list failed: %s", exc)
         raise HTTPException(500, "Could not list diagrams")
-    return {"diagrams": [_row_to_doc(r, include_body=False) for r in (res.data or [])], "offset": offset}
+    payload = {"diagrams": [_row_to_doc(r, include_body=False) for r in (res.data or [])], "offset": offset}
+    return _cached_response(payload, request, cacheable=True)
 
 
 @router.get("/diagrams/admin/all")
@@ -354,7 +388,11 @@ def get_diagram(slug: str, request: Request):
     row = rows[0]
     if not row.get("published") and _optional_admin(request) is None:
         raise HTTPException(404, "Diagram not found")
-    return {"diagram": _row_to_doc(row, include_body=True)}
+    return _cached_response(
+        {"diagram": _row_to_doc(row, include_body=True)},
+        request,
+        cacheable=bool(row.get("published")),
+    )
 
 
 @router.post("/diagrams")
@@ -394,11 +432,14 @@ def create_diagram(body: DiagramIn, request: Request, admin: dict = Depends(requ
         )
     except HTTPException:
         raise
-    except Exception as exc:
-        # TOCTOU: a concurrent create can win the unique index race.
-        msg = str(exc).lower()
-        if "unique" in msg or "duplicate" in msg or "23505" in msg:
+    except APIError as exc:
+        # TOCTOU: a concurrent create can win the unique index race. B14:
+        # classify by the Postgres SQLSTATE, not message substrings.
+        if exc.code == "23505":
             raise HTTPException(409, "Slug already exists")
+        log.error("infra create failed: %s", exc)
+        raise HTTPException(500, "Could not create diagram")
+    except Exception as exc:
         log.error("infra create failed: %s", exc)
         raise HTTPException(500, "Could not create diagram")
     rows = res.data or []
@@ -454,10 +495,13 @@ def update_diagram(doc_id: str, body: DiagramIn, request: Request, admin: dict =
         if old.get("updated_at"):
             query = query.eq("updated_at", old["updated_at"])
         res = query.execute()
-    except Exception as exc:
-        msg = str(exc).lower()
-        if "unique" in msg or "duplicate" in msg or "23505" in msg:
+    except APIError as exc:
+        # B14: SQLSTATE match — a concurrent rename can win the unique race.
+        if exc.code == "23505":
             raise HTTPException(409, "Slug already exists")
+        log.error("infra update failed: %s", exc)
+        raise HTTPException(500, "Could not update diagram")
+    except Exception as exc:
         log.error("infra update failed: %s", exc)
         raise HTTPException(500, "Could not update diagram")
     rows = res.data or []
