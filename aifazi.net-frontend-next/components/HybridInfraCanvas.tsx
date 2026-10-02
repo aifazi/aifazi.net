@@ -28,6 +28,7 @@ import {
   CATEGORY_META,
   type InfraCategory,
   type InfraComponent,
+  type InfraDecoration,
   type InfraFlow,
 } from '@/data/hybrid-infra'
 import { infraPalette, type InfraTone } from '@/lib/infraTheme'
@@ -117,6 +118,15 @@ interface Props {
   /** Edit mode: resize-handle drag on the selected node (checkpoint contract
    *  like onMoveNode — done=true fires once on pointer-up). */
   onResizeNode?: (id: string, box: { x: number; y: number; w: number; h: number }, done: boolean) => void
+  /** Editable canvas annotations (zone panels, captions, boxes). */
+  decorations?: InfraDecoration[]
+  /** Edit mode: decoration drag/nudge (checkpoint contract like onMoveNode).
+   *  x/y = free-form storage coords; dx/dy = anchored-label offsets. */
+  onMoveDecoration?: (
+    id: string,
+    pos: { x?: number; y?: number; dx?: number; dy?: number },
+    done: boolean,
+  ) => void
 }
 
 interface Box {
@@ -298,6 +308,9 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       let hoverId: string | null = null
       const boxes = new Map<string, Box>()
       const hits = new Map<string, Box>()
+      // Decoration hit boxes in DESIGN coords (populated by layoutScene; the
+      // node `hits` map above is screen-space, so hitAt converts for decos).
+      const decorHits = new Map<string, Box>()
       const flowPts = new Map<string, { x: number; y: number }[]>()
       // Edit-mode interaction state (kept out of React state for 60fps drag).
       let dragId: string | null = null
@@ -363,6 +376,81 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         sRef.current.catColors?.[cat] ??
         (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
         '#35a7ff'
+
+      // ── decorations (editable zone panels / captions / boxes) ──────
+      const decoList = () => sRef.current.decorations ?? []
+      const decoById = (id: string) => decoList().find((d) => d.id === id)
+      // Hex kept as-is; a palette token ('muted'…) resolves against the live
+      // theme so seeded captions follow light/dark exactly like the old draws.
+      const decorColor = (v: string | undefined, fallback: string) => {
+        if (!v) return fallback
+        if (v.startsWith('#')) return v
+        return (P as unknown as Record<string, string>)[v] ?? fallback
+      }
+      const decorFont = (size: number, weight: string) =>
+        `${weight} ${size}px "Segoe UI", Inter, Arial, sans-serif`
+      function decorLabelMaxW(d: InfraDecoration): number | undefined {
+        if (!d.anchor) return undefined
+        const ab = boxes.get(d.anchor.id)
+        if (!ab) return undefined
+        const w = d.align === 'center' ? ab.w - 16 : ab.w - d.anchor.dx - 8
+        return w > 8 ? w : undefined
+      }
+      function decorLabelRect(d: InfraDecoration): Box | null {
+        const size = d.size ?? 10
+        const h = size * 1.4
+        let ax = d.x ?? 0
+        let ay = d.y ?? 0
+        if (d.anchor) {
+          const ab = boxes.get(d.anchor.id)
+          if (!ab) return null
+          ax = d.align === 'center' ? ab.x + ab.w / 2 + d.anchor.dx : ab.x + d.anchor.dx
+          ay = ab.y + d.anchor.dy
+        }
+        ctx.save()
+        ctx.font = decorFont(size, d.weight ?? '500')
+        const mw = decorLabelMaxW(d)
+        const w = Math.max(6, Math.min(ctx.measureText(d.text ?? '').width, mw ?? Infinity))
+        ctx.restore()
+        return {
+          x: d.align === 'center' ? ax - w / 2 : ax,
+          y: ay - h / 2,
+          w,
+          h,
+        }
+      }
+      function decorRect(d: InfraDecoration): Box | null {
+        if (d.kind === 'box') {
+          if (d.x === undefined || d.y === undefined || d.w === undefined || d.h === undefined) {
+            return null
+          }
+          return { x: d.x, y: d.y, w: d.w, h: d.h }
+        }
+        return decorLabelRect(d)
+      }
+      /** Storage-position patch for moving a decoration's rect to (rx, ry). */
+      function decoPatchFromRect(
+        d: InfraDecoration,
+        rx: number,
+        ry: number,
+        rw: number,
+      ): { x?: number; y?: number; dx?: number; dy?: number } {
+        if (d.kind === 'box') return { x: Math.round(rx), y: Math.round(ry) }
+        const cy = Math.round(ry + (d.size ?? 10) * 1.4 / 2)
+        if (d.anchor) {
+          const ab = boxes.get(d.anchor.id)
+          if (!ab) return {}
+          if (d.align === 'center') {
+            return {
+              dx: Math.round(rx + rw / 2 - ab.x - ab.w / 2),
+              dy: cy - Math.round(ab.y),
+            }
+          }
+          return { dx: Math.round(rx - ab.x), dy: cy - Math.round(ab.y) }
+        }
+        if (d.align === 'center') return { x: Math.round(rx + rw / 2), y: cy }
+        return { x: Math.round(rx), y: cy }
+      }
 
       // ctx-bound drawing primitives (see components/infraCanvasKit.ts).
       const { roundRect, fillRound, text, led, ventGrid, ports, driveBays } =
@@ -459,6 +547,13 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           const bb = boxes.get(b.id)
           if (!ba || !bb) continue
           flowPts.set(f.id, pathBetween(ba, bb))
+        }
+        // Decoration rects (design coords) — after node boxes so anchored
+        // labels resolve; labels to missing anchors are dropped (not drawn).
+        decorHits.clear()
+        for (const d of decoList()) {
+          const r = decorRect(d)
+          if (r) decorHits.set(d.id, r)
         }
         notifyView()
       }
@@ -624,17 +719,79 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.fillRect(vx0, vy0, vx1 - vx0, vy1 - vy0)
       }
 
-      function drawZoneLabels() {
-        ctx.save()
-        fillRound(270, 12, 400, 190, 14, 'rgba(12,28,48,0.28)', 'rgba(80,130,100,0.18)')
-        text('INTERNET EDGE / SECURITY', 284, 26, { size: 9.5, color: P.muted, weight: '700' })
-        fillRound(855, 12, 250, 320, 14, 'rgba(12,28,48,0.28)', 'rgba(60,110,170,0.22)')
-        text('MICROSOFT 365 / CLOUD', 868, 26, { size: 9.5, color: P.muted, weight: '700' })
-        fillRound(855, 585, 250, 170, 14, 'rgba(12,28,48,0.28)', 'rgba(80,150,120,0.18)')
-        text('COLLABORATION / RECOVERY', 868, 598, { size: 9.5, color: P.muted, weight: '700' })
-        text('ON-PREMISES CORE', 250, 238, { size: 9.5, color: P.muted, weight: '700' })
-        text('USERS / LEGACY', 28, 505, { size: 9.5, color: P.muted, weight: '700' })
-        ctx.restore()
+      // Draws one z-group of doc annotations ('back' = under flows/nodes,
+      // 'panel' = under the cluster's VM chips, 'front' = above nodes).
+      // Geometry comes from decorHits (layoutScene) so hit/drag/draw agree.
+      function drawDecorations(z: 'back' | 'panel' | 'front', t: number) {
+        const p = sRef.current
+        for (const d of decoList()) {
+          if ((d.z ?? 'front') !== z) continue
+          const r = decorHits.get(d.id)
+          if (!r) continue
+          const selected = isSelected(p, d.id)
+          if (d.kind === 'box') {
+            fillRound(
+              r.x, r.y, r.w, r.h, d.r ?? 12,
+              decorColor(d.fill, 'rgba(12,28,48,0.55)'),
+              decorColor(d.stroke, 'rgba(120,170,210,0.45)'),
+              1,
+            )
+            const lines = d.lines ?? []
+            for (let i = 0; i < lines.length; i++) {
+              const l = lines[i]
+              text(l.text, r.x + (l.dx ?? 14), r.y + (l.dy ?? 16 + i * 18), {
+                size: l.size ?? 10,
+                color: decorColor(l.color, P.sub),
+                weight: l.weight ?? '500',
+              })
+            }
+            if (d.connects?.length) {
+              ctx.save()
+              ctx.globalAlpha = 0.28
+              ctx.strokeStyle = P.purple
+              ctx.lineWidth = 1.3
+              ctx.setLineDash([5, 5])
+              ctx.lineDashOffset = frozen ? 0 : -t * 12
+              for (const nid of d.connects) {
+                const nb = boxes.get(nid)
+                if (!nb) continue
+                const a = center(nb)
+                ctx.beginPath()
+                ctx.moveTo(a.x + 60, a.y)
+                ctx.lineTo(r.x + 10, r.y + r.h / 2)
+                ctx.stroke()
+              }
+              ctx.setLineDash([])
+              ctx.lineDashOffset = 0
+              ctx.restore()
+            }
+            if (selected) {
+              ctx.save()
+              roundRect(r.x, r.y, r.w, r.h, d.r ?? 12)
+              ctx.strokeStyle = P.ink
+              ctx.lineWidth = 2
+              ctx.stroke()
+              ctx.restore()
+            }
+          } else {
+            const cx = d.align === 'center' ? r.x + r.w / 2 : r.x
+            text(d.text ?? '', cx, r.y + r.h / 2, {
+              size: d.size ?? 10,
+              color: decorColor(d.color, P.ink),
+              align: d.align ?? 'left',
+              weight: d.weight ?? '500',
+              maxW: decorLabelMaxW(d),
+            })
+            if (selected) {
+              ctx.save()
+              roundRect(r.x - 3, r.y - 2, r.w + 6, r.h + 4, 3)
+              ctx.strokeStyle = P.ink
+              ctx.lineWidth = 1.5
+              ctx.stroke()
+              ctx.restore()
+            }
+          }
+        }
       }
 
       function playBoost(cat: InfraCategory) {
@@ -939,12 +1096,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
         ctx.restore()
 
-        text('42U ENTERPRISE RACK', r.x + r.w / 2, r.y + r.h + 34, {
-          size: 13, color: P.sub, align: 'center', weight: '700',
-        })
-        text('PHYSICAL ON-PREMISES CORE', r.x + r.w / 2, r.y + r.h + 52, {
-          size: 11, color: P.muted, align: 'center', weight: '600',
-        })
+        // Rack captions are editable decorations now ('dec-rack-title'/'dec-rack-sub').
       }
 
       function drawRackDevice(c: InfraComponent, t: number) {
@@ -1156,34 +1308,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
 
       function drawClusterPanel(t: number) {
         const p = sRef.current
+        // Cluster card + its dashed connectors: editable 'panel' decorations,
+        // drawn before the VM chips so chips stay on top (as before).
+        drawDecorations('panel', t)
         ctx.save()
-        const panel = { x: 740, y: 365, w: 380, h: 215 }
-        fillRound(panel.x, panel.y, panel.w, panel.h, 12, 'rgba(14,30,50,0.55)', 'rgba(110,150,210,0.3)')
-        text('3-NODE PROXMOX CLUSTER · VM HA', panel.x + 14, panel.y + 16, {
-          size: 11.5, color: P.sub, weight: '700',
-        })
-        text('DC-01 · DC-02 · File Server · Legacy Apps', panel.x + 14, panel.y + 34, {
-          size: 10, color: P.muted, weight: '500',
-        })
-        text('On-prem AD authoritative · Hybrid identity', panel.x + 14, panel.y + 50, {
-          size: 10, color: P.cyan, weight: '600',
-        })
-
-        ctx.globalAlpha = 0.28
-        ctx.strokeStyle = P.purple
-        ctx.lineWidth = 1.3
-        ctx.setLineDash([5, 5])
-        ctx.lineDashOffset = frozen ? 0 : -t * 12
-        for (const id of ['px1', 'px2', 'px3']) {
-          const pb = boxes.get(id)
-          if (!pb) continue
-          const a = center(pb)
-          ctx.beginPath()
-          ctx.moveTo(a.x + 60, a.y)
-          ctx.lineTo(panel.x + 10, panel.y + panel.h / 2)
-          ctx.stroke()
-        }
-        ctx.setLineDash([])
 
         for (const c of nodeList()) if (c.layer === 'vm') drawVmChip(c, t)
 
@@ -1195,9 +1323,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           roundRect(ec.x - 3, ec.y - 3, ec.w + 6, ec.h + 6, 8)
           ctx.stroke()
           ctx.globalAlpha = 1
-          text('AD → Entra Connect → Entra ID', ec.x + ec.w / 2, ec.y + ec.h + 12, {
-            size: 9, color: P.cyan, align: 'center', weight: '700',
-          })
+          // Caption text: editable 'dec-ec-caption' decoration (front group).
         }
 
         ctx.globalAlpha = 0.55
@@ -1234,11 +1360,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           grad.addColorStop(0, P.raised)
           grad.addColorStop(1, P.panel)
           fillRound(lb.x, lb.y, lb.w, lb.h, 11, grad, selected ? P.ink : 'rgba(150,120,90,0.45)', selected ? 2 : 1)
-          ctx.globalAlpha = 0.82
-          text('LEGACY / DECOMMISSIONED', lb.x + 12, lb.y + 18, { size: 10, color: P.muted, weight: '700' })
-          text('EOL servers · NetApp · Quantum DXi', lb.x + 12, lb.y + 40, { size: 9, color: P.muted, weight: '500', maxW: lb.w - 20 })
-          text('Legacy firewalls · not active production', lb.x + 12, lb.y + 58, { size: 9, color: P.muted, weight: '500', maxW: lb.w - 20 })
-          text('Scheduled for replacement', lb.x + 12, lb.y + 88, { size: 9, color: P.muted, weight: '600' })
+          // Overlay copy: editable 'dec-legacy-*' decorations (front group).
           ctx.restore()
         }
 
@@ -1267,30 +1389,19 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             fillRound(b.x + 72, b.y + 48, 14, 26, 3, 'rgba(70,140,200,0.3)', 'rgba(130,190,235,0.5)')
             fillRound(b.x + 105, b.y + 48, 42, 24, 3, 'rgba(70,140,200,0.22)', 'rgba(130,190,235,0.45)')
             fillRound(b.x + 109, b.y + 51, 34, 15, 2, 'rgba(30,80,140,0.7)', null)
-            text('Intune + Defender', b.x + b.w / 2, b.y + 88, {
-              size: 8.5, color: P.sub, align: 'center', weight: '600',
-            })
+            // Caption: editable 'dec-ep-caption' decoration (front group).
           } else {
             for (let i = 0; i < 3; i++) {
               fillRound(b.x + 28 + i * 44, b.y + 48, 32, 18, 3, 'rgba(40,120,90,0.3)', 'rgba(90,190,150,0.5)')
               led(b.x + 28 + i * 44 + 16, b.y + 57, P.green, 0.5, 1.4)
             }
-            text('CAD · Images · Scanned Docs', b.x + b.w / 2, b.y + 82, {
-              size: 8.5, color: P.sub, align: 'center', weight: '600', maxW: b.w - 10,
-            })
+            // Caption: editable 'dec-smb-caption' decoration (front group).
           }
           ctx.restore()
         }
 
-        ctx.save()
-        fillRound(250, 820, 620, 52, 10, 'rgba(12,28,48,0.55)', 'rgba(67,209,158,0.3)')
-        text('ACTIVE COLLABORATION → SharePoint / OneDrive', 266, 838, {
-          size: 10.5, color: P.green, weight: '700',
-        })
-        text('BULK / LARGE / LEGACY DATA → Synology / On-Prem SMB', 266, 860, {
-          size: 10.5, color: P.cyan, weight: '700',
-        })
-        ctx.restore()
+        // Front annotations (rack captions, node captions, collaboration bar).
+        drawDecorations('front', t)
       }
 
       function drawManagementOverlay() {
@@ -1390,7 +1501,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         ctx.translate(effOx(), effOy())
         ctx.scale(effS(), effS())
         drawBackground()
-        drawZoneLabels()
+        drawDecorations('back', t)
         drawFlows(t)
         drawPendingLink(t)
         drawMarquee()
@@ -1444,7 +1555,30 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         }
       }
 
+      // Annotations in one z-group: labels before boxes (an underlined
+      // caption stays clickable where it overlaps its own/another box).
+      function decoHit(mx: number, my: number, z: 'back' | 'panel' | 'front'): string | null {
+        const p = designFromClient(mx, my)
+        const dl = decoList()
+        for (const kindWanted of ['label', 'box'] as const) {
+          for (let i = dl.length - 1; i >= 0; i--) {
+            const d = dl[i]
+            if ((d.z ?? 'front') !== z || d.kind !== kindWanted) continue
+            const b = decorHits.get(d.id)
+            if (b && p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h) {
+              return d.id
+            }
+          }
+        }
+        return null
+      }
+
       function hitAt(mx: number, my: number): string | null {
+        // Front annotations sit above nodes (captions inside cards must beat
+        // the card); back/panel annotations yield to nodes so clicking a
+        // device inside a zone panel still selects the device.
+        const front = decoHit(mx, my, 'front')
+        if (front) return front
         const nl = nodeList()
         for (let i = nl.length - 1; i >= 0; i--) {
           const h = hits.get(nl[i].id)
@@ -1452,7 +1586,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             return nl[i].id
           }
         }
-        return null
+        return decoHit(mx, my, 'panel') ?? decoHit(mx, my, 'back')
       }
 
       function designFromClient(mx: number, my: number) {
@@ -1541,6 +1675,19 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               dragTouched = true
               sRef.current.onMoveNode(dragId, { x: nx, y: ny }, false)
             }
+          }
+        } else {
+          // Decoration drag: grid snap only (no smart guides — the anchors
+          // and text metrics would make them jump).
+          const deco = decoById(dragId)
+          const rect = decorHits.get(dragId)
+          if (deco && rect && sRef.current.onMoveDecoration) {
+            const rx = snap(d.x - dragDX)
+            const ry = snap(d.y - dragDY)
+            if (Math.abs(rx - rect.x) > 2 || Math.abs(ry - rect.y) > 2) dragMoved = true
+            dragTouched = true
+            guides = []
+            sRef.current.onMoveDecoration(dragId, decoPatchFromRect(deco, rx, ry, rect.w), false)
           }
         }
       }
@@ -1801,8 +1948,11 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
             dragDX = d.x - box.x
             dragDY = d.y - box.y
           } else {
-            dragDX = 0
-            dragDY = 0
+            // Decoration: grab offset from its rect (design coords) so the
+            // object doesn't jump to the cursor on press.
+            const rect = decorHits.get(found)
+            dragDX = rect ? d.x - rect.x : 0
+            dragDY = rect ? d.y - rect.y : 0
           }
           try {
             canvas.setPointerCapture(e.pointerId)
@@ -1909,7 +2059,20 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
         if (wasMoved) suppressClick = true
         dragMoved = false
         dragTouched = false
-        if (!wasTouched || !sRef.current.onMoveNode) return
+        if (!wasTouched) return
+        // Decoration: the live drags already applied the final position —
+        // this only closes the editor's checkpoint (done=true no-op when
+        // nothing moved, mirroring the node path).
+        const doneDeco = decoById(doneId)
+        if (doneDeco) {
+          if (!wasMoved || !sRef.current.onMoveDecoration) return
+          const dr = decorHits.get(doneId)
+          if (dr) {
+            sRef.current.onMoveDecoration(doneId, decoPatchFromRect(doneDeco, dr.x, dr.y, dr.w), true)
+          }
+          return
+        }
+        if (!sRef.current.onMoveNode) return
         if (group) {
           if (wasMoved) {
             for (const g of group) {
@@ -1984,7 +2147,7 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
           p.onToggleSelect(found)
           return
         }
-        if (p.editable && p.connectFrom && found && found !== p.connectFrom && p.onAddLink) {
+        if (p.editable && p.connectFrom && found && found !== p.connectFrom && byId(found) && p.onAddLink) {
           p.onAddLink(p.connectFrom, found)
           return
         }
@@ -2142,7 +2305,20 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
               for (const id of ids) {
                 const n = byId(id)
                 const b = boxes.get(id)
-                if (!n || n.layer === 'rack') continue
+                if (!n) {
+                  // Annotation nudge (labels follow their anchor offsets).
+                  const deco = decoById(id)
+                  const rect = decorHits.get(id)
+                  if (deco && rect && sRef.current.onMoveDecoration) {
+                    sRef.current.onMoveDecoration(
+                      id,
+                      decoPatchFromRect(deco, Math.round(rect.x) + dx, Math.round(rect.y) + dy, rect.w),
+                      true,
+                    )
+                  }
+                  continue
+                }
+                if (n.layer === 'rack') continue
                 if (b) {
                   sRef.current.onMoveNode(id, { x: Math.round(b.x) + dx, y: Math.round(b.y) + dy }, true)
                 } else if (typeof n.x === 'number' && typeof n.y === 'number') {

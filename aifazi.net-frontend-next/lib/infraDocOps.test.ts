@@ -184,6 +184,17 @@ describe('diffDiagramDocs', () => {
     expect(d.flowAdded).toBe(1)
     expect(d.flowRemoved).toBe(1)
     expect(d.titleChanged).toBe(false)
+    expect(d.decoChanged).toBe(false)
+  })
+
+  it('flags annotation changes between the two states', () => {
+    const a = doc([node('a')])
+    const b = doc([node('a')])
+    b.decorations = [
+      { id: 'd1', kind: 'box', x: 10, y: 20, w: 100, h: 50, z: 'front' },
+    ]
+    expect(diffDiagramDocs(a, b).decoChanged).toBe(true)
+    expect(diffDiagramDocs(b, structuredClone(b)).decoChanged).toBe(false)
   })
 
   it('flags a title change and is empty for identical docs', () => {

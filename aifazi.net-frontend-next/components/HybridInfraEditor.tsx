@@ -23,10 +23,15 @@ import {
   CATEGORY_META,
   catLabel,
   mergedCatColors,
+  newDecoration,
+  DECOR_TOKENS,
+  isDecorColor,
   type DiagramDoc,
   type BuiltinCategory,
   type InfraCategory,
   type InfraComponent,
+  type InfraDecorLine,
+  type InfraDecoration,
   type InfraFlow,
 } from '@/data/hybrid-infra'
 import {
@@ -483,8 +488,15 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     [doc.nodes, selectedId],
   )
 
+  const selectedDeco = useMemo(
+    () => doc.decorations?.find((d) => d.id === selectedId) ?? null,
+    [doc.decorations, selectedId],
+  )
+
   const focusIds = useMemo(() => {
     if (!selectedId) return null
+    // Annotation selected: no dependency dimming (it isn't a graph node).
+    if (!doc.nodes.some((n) => n.id === selectedId)) return null
     const { up, down } = dependencyChainIn(doc.nodes, selectedId)
     return new Set([selectedId, ...up, ...down])
   }, [doc.nodes, selectedId])
@@ -515,7 +527,13 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     if (d) {
       docRef.current = d
       setDoc(d)
-      if (selectedId && !d.nodes.some((n) => n.id === selectedId)) setSelectedId(null)
+      if (
+        selectedId &&
+        !d.nodes.some((n) => n.id === selectedId) &&
+        !d.decorations?.some((x) => x.id === selectedId)
+      ) {
+        setSelectedId(null)
+      }
     }
     syncHistButtons()
   }
@@ -618,6 +636,382 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
       })
     }
   }
+
+  // ── Decoration ops (canvas annotations: boxes / labels) ──────
+  const handleMoveDecoration = (
+    id: string,
+    pos: { x?: number; y?: number; dx?: number; dy?: number },
+    done: boolean,
+  ) => {
+    const cur = docRef.current
+    const deco = cur.decorations?.find((d) => d.id === id)
+    if (!deco) return
+    const nextX = pos.x === undefined ? undefined : Math.max(-200, Math.min(1480, Math.round(pos.x)))
+    const nextY = pos.y === undefined ? undefined : Math.max(-100, Math.min(1020, Math.round(pos.y)))
+    const nextDx = pos.dx === undefined ? undefined : Math.max(-5000, Math.min(5000, Math.round(pos.dx)))
+    const nextDy = pos.dy === undefined ? undefined : Math.max(-5000, Math.min(5000, Math.round(pos.dy)))
+    const moved =
+      (nextX !== undefined && nextX !== deco.x) ||
+      (nextY !== undefined && nextY !== deco.y) ||
+      (nextDx !== undefined && !!deco.anchor && nextDx !== deco.anchor.dx) ||
+      (nextDy !== undefined && !!deco.anchor && nextDy !== deco.anchor.dy)
+    if (moved && !dragRef.current) {
+      pushHistory()
+      dragRef.current = true
+    }
+    if (moved) {
+      const patch: Partial<InfraDecoration> = {}
+      if (nextX !== undefined) patch.x = nextX
+      if (nextY !== undefined) patch.y = nextY
+      if (deco.anchor && (nextDx !== undefined || nextDy !== undefined)) {
+        patch.anchor = {
+          ...deco.anchor,
+          ...(nextDx !== undefined ? { dx: nextDx } : {}),
+          ...(nextDy !== undefined ? { dy: nextDy } : {}),
+        }
+      }
+      applyDoc(
+        { ...cur, decorations: cur.decorations?.map((d) => (d.id === id ? { ...d, ...patch } : d)) },
+        false,
+      )
+    }
+    if (done) {
+      // Same gesture-close contract as handleMoveNode (F4): reset even on a
+      // no-op finalize so the next drag can open its own checkpoint.
+      queueMicrotask(() => {
+        dragRef.current = false
+      })
+    }
+  }
+
+  const updateDecoration = (id: string, patch: Partial<InfraDecoration>) => {
+    // Live edit without history — the panel's onFocusCapture pushes one
+    // undo checkpoint per focus session (same as updateNode).
+    const cur = docRef.current
+    if (!cur.decorations) return
+    const next = {
+      ...cur,
+      decorations: cur.decorations.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+    }
+    docRef.current = next
+    setDoc(next)
+  }
+
+  const deleteDecoration = (id: string) => {
+    const cur = docRef.current
+    if (!cur.decorations?.some((d) => d.id === id)) return
+    applyDoc({ ...cur, decorations: cur.decorations.filter((d) => d.id !== id) })
+    if (selectedId === id) setSelectedId(null)
+    setNotice({ msg: 'Annotation deleted', ok: true })
+  }
+
+  const addDecoration = (kind: 'box' | 'label') => {
+    const v = canvasHandle.current?.getView()
+    const cx = v?.cx ?? 640
+    const cy = v?.cy ?? 460
+    const deco = newDecoration(kind, kind === 'box' ? cx - 120 : cx, kind === 'box' ? cy - 70 : cy)
+    applyDoc({ ...docRef.current, decorations: [...(docRef.current.decorations ?? []), deco] })
+    setSelectedId(deco.id)
+    setSelIds(new Set())
+    setNotice({ msg: kind === 'box' ? 'Added box — drag to place, edit below' : 'Added label — edit text below', ok: true })
+  }
+
+  /** Hex(+alpha) helpers for the box fill/stroke pickers (alpha 0-100%). */
+  const splitHexA = (v: string | undefined, fb: string): { hex: string; a: number } => {
+    const s = v && /^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(v) ? v : fb
+    return {
+      hex: s.slice(0, 7).toLowerCase(),
+      a: s.length === 9 ? Math.round((parseInt(s.slice(7, 9), 16) / 255) * 100) : 100,
+    }
+  }
+  const joinHexA = (hex: string, aPct: number): string => {
+    const a = Math.max(0, Math.min(100, Math.round(aPct)))
+    return a >= 100 ? hex : `${hex}${Math.round((a / 100) * 255).toString(16).padStart(2, '0')}`
+  }
+
+  // ── Annotation properties panel (shown instead of node properties) ──
+  const decoPropsPanel: React.ReactNode = (() => {
+    const d = selectedDeco
+    if (!d) return null
+    const anc = d.anchor
+    const tokenSel = (v: string | undefined, fb: string) =>
+      (DECOR_TOKENS as readonly string[]).includes(v ?? '') ? (v as string) : fb
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+          ANNOTATION · {d.kind === 'box' ? 'BOX' : 'LABEL'}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div>
+            <label style={LABEL}>Layer</label>
+            <Select
+              value={d.z ?? 'front'}
+              onChange={(v) => updateDecoration(d.id, { z: v as InfraDecoration['z'] })}
+              options={[
+                { value: 'back', label: 'back — under diagram' },
+                { value: 'panel', label: 'panel — under chips' },
+                { value: 'front', label: 'front — above nodes' },
+              ]}
+            />
+          </div>
+          {d.kind === 'label' && (
+            <div>
+              <label style={LABEL}>Align</label>
+              <Select
+                value={d.align ?? 'left'}
+                onChange={(v) => updateDecoration(d.id, { align: v as 'left' | 'center' })}
+                options={[{ value: 'left', label: 'left' }, { value: 'center', label: 'center' }]}
+              />
+            </div>
+          )}
+        </div>
+
+        {d.kind === 'label' ? (
+          <>
+            <div>
+              <label style={LABEL}>Text</label>
+              <Input
+                value={d.text ?? ''}
+                onChange={(v) => updateDecoration(d.id, { text: v.slice(0, 200) })}
+                style={INPUT}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div>
+                <label style={LABEL}>Size</label>
+                <Input
+                  type="number"
+                  value={d.size ?? 10}
+                  min={6}
+                  max={72}
+                  onChange={(v) => updateDecoration(d.id, { size: Math.max(6, Math.min(72, Math.round(Number(v) || 10))) })}
+                  style={INPUT}
+                />
+              </div>
+              <div>
+                <label style={LABEL}>Weight</label>
+                <Select
+                  value={d.weight ?? '500'}
+                  onChange={(v) => updateDecoration(d.id, { weight: v })}
+                  options={['400', '500', '600', '700', '800'].map((w) => ({ value: w, label: w }))}
+                />
+              </div>
+              <div>
+                <label style={LABEL}>Color</label>
+                <Select
+                  value={tokenSel(d.color, 'custom')}
+                  onChange={(v) => updateDecoration(d.id, { color: v === 'custom' ? d.color : v })}
+                  options={[
+                    ...DECOR_TOKENS.map((t) => ({ value: t, label: t })),
+                    { value: 'custom', label: 'custom…' },
+                  ]}
+                />
+              </div>
+            </div>
+            {tokenSel(d.color, 'custom') === 'custom' && (
+              <div>
+                <label style={LABEL}>Custom color</label>
+                <input
+                  type="color"
+                  aria-label="Annotation color"
+                  value={d.color && /^#[0-9a-fA-F]{6}/.test(d.color) ? d.color.slice(0, 7) : '#eef6ff'}
+                  onChange={(e) => updateDecoration(d.id, { color: e.target.value })}
+                  style={{ width: 44, height: 28, padding: 0, border: `1px solid ${pal.border}`, borderRadius: 6, background: 'transparent', cursor: 'pointer' }}
+                />
+              </div>
+            )}
+            {anc && (
+              <div>
+                <label style={LABEL}>Anchored to {anc.id} — follows the node when dragged</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 4 }}>
+                  <Input
+                    type="number"
+                    value={anc.dx}
+                    aria-label="Anchor dx"
+                    onChange={(v) => updateDecoration(d.id, { anchor: { ...anc, dx: Math.max(-5000, Math.min(5000, Math.round(Number(v) || 0))) } })}
+                    style={INPUT}
+                  />
+                  <Input
+                    type="number"
+                    value={anc.dy}
+                    aria-label="Anchor dy"
+                    onChange={(v) => updateDecoration(d.id, { anchor: { ...anc, dy: Math.max(-5000, Math.min(5000, Math.round(Number(v) || 0))) } })}
+                    style={INPUT}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
+              {(['x', 'y', 'w', 'h'] as const).map((k) => (
+                <div key={k}>
+                  <label style={LABEL}>{k.toUpperCase()}</label>
+                  <Input
+                    type="number"
+                    value={d[k] ?? 0}
+                    aria-label={`Box ${k}`}
+                    onChange={(v) =>
+                      updateDecoration(d.id, {
+                        [k]: k === 'w' ? Math.max(20, Math.min(5000, Math.round(Number(v) || 20)))
+                          : k === 'h' ? Math.max(10, Math.min(5000, Math.round(Number(v) || 10)))
+                          : Math.max(-200, Math.min(1480, Math.round(Number(v) || 0))),
+                      } as Partial<InfraDecoration>)
+                    }
+                    style={{ ...INPUT, padding: '5px 6px' }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div>
+                <label style={LABEL}>Fill (+ alpha %)</label>
+                <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    aria-label="Box fill color"
+                    value={splitHexA(d.fill, '#0c1c30').hex}
+                    onChange={(e) => updateDecoration(d.id, { fill: joinHexA(e.target.value, splitHexA(d.fill, '#0c1c30').a) })}
+                    style={{ width: 36, height: 28, padding: 0, border: `1px solid ${pal.border}`, borderRadius: 6, background: 'transparent', cursor: 'pointer' }}
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    aria-label="Box fill alpha"
+                    value={splitHexA(d.fill, '#0c1c30').a}
+                    onChange={(v) => updateDecoration(d.id, { fill: joinHexA(splitHexA(d.fill, '#0c1c30').hex, Number(v) || 0) })}
+                    style={{ ...INPUT, width: 58, padding: '5px 6px' }}
+                  />
+                </span>
+              </div>
+              <div>
+                <label style={LABEL}>Stroke (+ alpha %)</label>
+                <span style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    aria-label="Box stroke color"
+                    value={splitHexA(d.stroke, '#78aade').hex}
+                    onChange={(e) => updateDecoration(d.id, { stroke: joinHexA(e.target.value, splitHexA(d.stroke, '#78aade').a) })}
+                    style={{ width: 36, height: 28, padding: 0, border: `1px solid ${pal.border}`, borderRadius: 6, background: 'transparent', cursor: 'pointer' }}
+                  />
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    aria-label="Box stroke alpha"
+                    value={splitHexA(d.stroke, '#78aade').a}
+                    onChange={(v) => updateDecoration(d.id, { stroke: joinHexA(splitHexA(d.stroke, '#78aade').hex, Number(v) || 0) })}
+                    style={{ ...INPUT, width: 58, padding: '5px 6px' }}
+                  />
+                </span>
+              </div>
+            </div>
+            <div>
+              <label style={LABEL}>Lines (text · dx · dy · size · color)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {(d.lines ?? []).map((l, i) => (
+                  <div key={i} style={{ border: `1px solid ${pal.border}`, borderRadius: 7, padding: 6, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <span style={{ display: 'flex', gap: 5 }}>
+                      <Input
+                        value={l.text}
+                        aria-label={`Line ${i + 1} text`}
+                        onChange={(v) =>
+                          updateDecoration(d.id, {
+                            lines: (d.lines ?? []).map((x, j) => (j === i ? { ...x, text: v.slice(0, 160) } : x)),
+                          })
+                        }
+                        style={{ ...INPUT, flex: 1, minWidth: 0, padding: '5px 7px' }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Remove line ${i + 1}`}
+                        onClick={() => updateDecoration(d.id, { lines: (d.lines ?? []).filter((_, j) => j !== i) })}
+                        style={{ ...BTN, padding: '4px 7px', borderColor: `${pal.red}55`, color: pal.red }}
+                      >
+                        ✕
+                      </button>
+                    </span>
+                    <span style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+                      <Input
+                        type="number"
+                        aria-label={`Line ${i + 1} dx`}
+                        value={l.dx ?? 14}
+                        onChange={(v) => updateDecoration(d.id, { lines: (d.lines ?? []).map((x, j) => (j === i ? { ...x, dx: Math.round(Number(v) || 0) } : x)) })}
+                        style={{ ...INPUT, width: 52, padding: '5px 6px' }}
+                      />
+                      <Input
+                        type="number"
+                        aria-label={`Line ${i + 1} dy`}
+                        value={l.dy ?? 16 + i * 18}
+                        onChange={(v) => updateDecoration(d.id, { lines: (d.lines ?? []).map((x, j) => (j === i ? { ...x, dy: Math.round(Number(v) || 0) } : x)) })}
+                        style={{ ...INPUT, width: 52, padding: '5px 6px' }}
+                      />
+                      <Input
+                        type="number"
+                        aria-label={`Line ${i + 1} size`}
+                        value={l.size ?? 10}
+                        onChange={(v) => updateDecoration(d.id, { lines: (d.lines ?? []).map((x, j) => (j === i ? { ...x, size: Math.max(6, Math.min(72, Math.round(Number(v) || 10))) } : x)) })}
+                        style={{ ...INPUT, width: 52, padding: '5px 6px' }}
+                      />
+                      <Select
+                        value={tokenSel(l.color, 'custom')}
+                        aria-label={`Line ${i + 1} color`}
+                        onChange={(v) =>
+                          updateDecoration(d.id, {
+                            lines: (d.lines ?? []).map((x, j) => (j === i ? { ...x, color: v === 'custom' ? x.color ?? 'sub' : v } : x)),
+                          })
+                        }
+                        options={[
+                          ...DECOR_TOKENS.map((t) => ({ value: t, label: t })),
+                          { value: 'custom', label: 'hex…' },
+                        ]}
+                        style={{ width: 96 }}
+                      />
+                    </span>
+                  </div>
+                ))}
+                {(d.lines ?? []).length < 12 && (
+                  <button
+                    type="button"
+                    onClick={() => updateDecoration(d.id, { lines: [...(d.lines ?? []), { text: 'New line' } as InfraDecorLine] })}
+                    style={BTN}
+                  >
+                    + ADD LINE
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <label style={LABEL}>Connect from nodes (comma ids)</label>
+              <Input
+                value={(d.connects ?? []).join(', ')}
+                onChange={(v) =>
+                  updateDecoration(d.id, {
+                    connects: v.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 8),
+                  })
+                }
+                placeholder="px1, px2, px3"
+                style={INPUT}
+              />
+            </div>
+          </>
+        )}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            onClick={async () => {
+              if (await dialog.confirm({ title: 'Delete Annotation', message: 'Delete this annotation?', variant: 'danger', confirmLabel: 'DELETE' })) deleteDecoration(d.id)
+            }}
+            style={{ ...BTN, borderColor: `${pal.red}55`, color: pal.red }}
+          >
+            DELETE
+          </button>
+        </div>
+      </div>
+    )
+  })()
 
   // ── Auto-arrange: grid columns per layer, rows stacked (Odoo-style) ──
   const arrangeNodes = () => {
@@ -880,6 +1274,16 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         } finally {
           delConfirmRef.current = false
         }
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && selectedDeco) {
+        // Annotation only (no nodes in the selection): delete the box/label.
+        e.preventDefault()
+        if (delConfirmRef.current) return
+        delConfirmRef.current = true
+        try {
+          if (await dialog.confirm({ title: 'Delete Annotation', message: 'Delete the selected annotation?', variant: 'danger', confirmLabel: 'DELETE' })) deleteDecoration(selectedDeco.id)
+        } finally {
+          delConfirmRef.current = false
+        }
       }
     }
     window.addEventListener('keydown', onKey)
@@ -1137,7 +1541,15 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     // drag moves the whole group (canvas group-drag needs membership).
     if (id) {
       const node = docRef.current.nodes.find((n) => n.id === id)
-      if (node?.gid) {
+      if (!node) {
+        // Annotation (or stale id): single-select only — decorations never
+        // join the multi-select set (COPY/align/GROUP stay node-only).
+        const isDeco = !!docRef.current.decorations?.some((d) => d.id === id)
+        setSelectedId(isDeco ? id : null)
+        setSelIds(new Set())
+        return
+      }
+      if (node.gid) {
         const members = docRef.current.nodes.filter((n) => n.gid === node.gid)
         if (members.length > 1) {
           setSelectedId(id)
@@ -1151,6 +1563,14 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
   }
 
   const handleToggleSelect = (id: string) => {
+    // Annotations are single-select: shift-clicking one adopts it alone.
+    if (!docRef.current.nodes.some((n) => n.id === id)) {
+      if (docRef.current.decorations?.some((d) => d.id === id)) {
+        setSelectedId(id)
+        setSelIds(new Set())
+      }
+      return
+    }
     // Compute the next set from current state (no impure setState inside an
     // updater — React may invoke updaters more than once).
     const next = new Set(selIds)
@@ -1577,6 +1997,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         published: rev.published,
         nodes: rev.nodes,
         flows: rev.flows,
+        decorations: rev.decorations ?? undefined,
         categoryColors: rev.categoryColors ?? undefined,
         customCategories: rev.customCategories ?? undefined,
       }
@@ -1865,6 +2286,22 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         </button>
         <button type="button" onClick={() => spreadNodes('y')} title="Distribute free nodes evenly (vertical)" style={BTN}>
           SPREAD ↕
+        </button>
+        <button
+          type="button"
+          onClick={() => addDecoration('box')}
+          title="Add an editable annotation box at the view center"
+          style={BTN}
+        >
+          ADD BOX
+        </button>
+        <button
+          type="button"
+          onClick={() => addDecoration('label')}
+          title="Add an editable text label at the view center"
+          style={BTN}
+        >
+          ADD LABEL
         </button>
         <button
           type="button"
@@ -2303,6 +2740,8 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
             editable
             connectFrom={connectFrom}
             onMoveNode={handleMoveNode}
+            onMoveDecoration={handleMoveDecoration}
+            decorations={doc.decorations}
             onAddLink={handleAddLink}
             tone={tone}
             snap={snapSize}
@@ -2331,13 +2770,16 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           }}
         >
           {!selected ? (
+            decoPropsPanel ?? (
             <div style={{ fontSize: 12, color: pal.muted, fontFamily: 'var(--font-mono)', lineHeight: 1.6 }}>
               Select a node to edit its properties.
               <br />Drag nodes to move · drag empty space selects (marquee) · Space+drag or middle-drag pans · scroll zooms.
               <br />CONNECT draws animated links · Shift+click multi-selects.
               <br />Shortcuts: Ctrl+Z/Y undo/redo · Ctrl+C/V/D copy/paste/dup · Ctrl+A select all · arrows nudge (Alt=10px) · Del deletes · Esc cancels link.
               <br />Ctrl+K or / quick-adds at the view center · ? opens the full shortcut sheet.
+              <br />ADD BOX / ADD LABEL create editable annotations (select one to edit).
             </div>
+            )
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
