@@ -8,6 +8,7 @@
 import { Link } from '@/lib/router-compat'
 import { UserAvatar } from '@/lib/avatar'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 export const CLR = {
   green: 'var(--green)',
@@ -37,14 +38,14 @@ export function formatDate(d) {
 // ── Glass card ────────────────────────────────────────────────────────────────
 export function Card({ children, hover = false, accent, style = {}, onClick, className = '' }) {
   return (
-    <div
+    <Clickable as="div"
       className={`community-card${hover ? ' community-card-hover' : ''}${accent ? ' community-card-accent' : ''} ${className}`}
       data-accent={accent || ''}
       onClick={onClick}
       style={style}
-     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    >
       {children}
-    </div>
+    </Clickable>
   )
 }
 

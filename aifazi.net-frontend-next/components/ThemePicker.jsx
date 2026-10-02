@@ -6,6 +6,7 @@ import { clearSiteSettingsCache } from '@/lib/siteSettings'
 import { HEADER_PRESETS, FOOTER_PRESETS, HeaderPreviewSVG, FooterPreviewSVG } from '../pages-src/admin/SiteSettings'
 import { THEME_PACKAGES } from '../core/framework-styles.js'
 import { notify } from '../core/notify.jsx'
+import Clickable from '@/core/Clickable'
 import { Input, Slider, TextArea } from '../core/forms'
 import { THEMES, PACKAGE_LOOKUP } from './themePickerData'
 import {
@@ -277,7 +278,7 @@ export default function ThemePicker({ open, onClose }) {
         position: 'fixed', inset: 0, zIndex: 998,
         background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
         opacity: open ? 1 : 0, transition: 'opacity 0.3s ease',
-      }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
+      }} aria-hidden="true" />
 
       {/* Drawer
            CSS variables are set as INLINE styles so they win over any [data-theme="..."]
@@ -856,10 +857,10 @@ function Section({ label, desc, children }) {
 function Toggle({ label, checked, onChange, accent = 'var(--green)' }) {
   return (
     <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-      <div onClick={() => onChange(!checked)}
+      <Clickable as="div" onClick={() => onChange(!checked)} label={label}
         style={{ width: 36, height: 20, borderRadius: 10, background: checked ? accent : 'var(--bg3)', border: `1px solid ${checked ? accent : 'var(--border)'}`, position: 'relative', flexShrink: 0, cursor: 'pointer', transition: 'all .2s' }}>
         <div style={{ position: 'absolute', top: 2, left: checked ? 18 : 2, width: 14, height: 14, borderRadius: '50%', background: checked ? '#000' : 'var(--muted)', transition: 'left .2s' }} />
-      </div>
+      </Clickable>
       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: checked ? accent : 'var(--muted)', transition: 'color .2s' }}>{label}</span>
     </label>
   )

@@ -7,6 +7,7 @@ import api, { getRole, getUsername, setEffectiveAccess, getAuthToken, setImperso
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Input, Select, TextArea } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
 import { canViewKey, canView as canViewAny, resolveNavKey, firstPermittedKey } from './access'
@@ -49,11 +50,11 @@ function StatsGrid({ dashStats, isMobile, setView }) {
       return (
     <div ref={ref} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
       {cards.map(card => (
-        <div key={card.label} className="stat-card admin-card" onClick={card.action} style={{
+        <Clickable key={card.label} className="stat-card admin-card" onClick={card.action} style={{
           background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14,
           padding: isMobile ? '14px' : '18px 20px', cursor: card.action ? 'pointer' : 'default',
           position: 'relative', overflow: 'hidden',
-        }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${card.color}, transparent)`, borderRadius: '14px 14px 0 0' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>{card.label}</div>
@@ -63,7 +64,7 @@ function StatsGrid({ dashStats, isMobile, setView }) {
           </div>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 28 : 36, fontWeight: 800, color: card.color, lineHeight: 1, marginBottom: 6 }}>{card.value}</div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{card.sub}</div>
-        </div>
+        </Clickable>
       ))}
     </div>
   )

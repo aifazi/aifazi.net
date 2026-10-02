@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Checkbox, Input, Select } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { S, useIsMobile, PageHeader } from './shared'
 import { SITE_URL } from '@/lib/config'
 
@@ -287,18 +288,18 @@ function MailSettings() {
               const info = providerInfo[p]
               const active = outTab === p
               return (
-                <div key={p} onClick={() => { setOutTab(p); setSmtpBlocked(false) }} style={{
+                <Clickable key={p} onClick={() => { setOutTab(p); setSmtpBlocked(false) }} style={{
                   flex: 1, minWidth: 160, padding: '16px', cursor: 'pointer',
                   background: active ? `${info.color}11` : 'var(--bg3)',
                   border: `1px solid ${active ? info.color : 'var(--border)'}`,
                   transition: 'all 0.15s', position: 'relative',
-                }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                }}>
                   {active && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: info.color }} />}
                   <div style={{ fontSize: 20, marginBottom: 8 }}>{info.icon}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: active ? info.color : 'var(--text)', marginBottom: 4, letterSpacing: 1 }}>{info.name}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#475569', lineHeight: 1.6 }}>{info.desc}</div>
                   {info.link && <a href={info.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: info.color, textDecoration: 'none', display: 'block', marginTop: 6 }}>Get free key ?</a>}
-                </div>
+                </Clickable>
               )
             })}
           </div>
@@ -540,15 +541,15 @@ function MailSettings() {
 
           {/* Enable toggle */}
           <label style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', marginBottom: 20, padding: '14px', background: 'var(--bg)', border: '1px solid var(--border)' }}>
-            <div style={{
+            <Clickable label="Enable incoming mail" style={{
               width: 36, height: 20, borderRadius: 10, position: 'relative', cursor: 'pointer',
               background: cfg.incomingEnabled ? 'var(--cyan)' : '#1e2d45', transition: 'background 0.2s',
-            }} onClick={() => set('incomingEnabled', !cfg.incomingEnabled)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            }} onClick={() => set('incomingEnabled', !cfg.incomingEnabled)}>
               <div style={{
                 position: 'absolute', top: 3, left: cfg.incomingEnabled ? 18 : 3,
                 width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s',
               }} />
-            </div>
+            </Clickable>
             <div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', letterSpacing: 1 }}>ENABLE INCOMING MAIL</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>Fetch emails via IMAP/POP3</div>

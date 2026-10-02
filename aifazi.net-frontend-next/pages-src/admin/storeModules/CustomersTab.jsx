@@ -5,6 +5,7 @@ import { UserAvatar, builtinAvatarEmoji, avatarUrl } from '@/lib/avatar'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
 const G = '#00FF88', C = '#00D4FF', R = '#ff4757', Y = '#facc15'
@@ -92,7 +93,7 @@ export default function CustomersTab() {
       ) : (
         customers.map(c => (
           <div key={c.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 8, overflow: 'hidden' }}>
-            <div onClick={() => openId === c.id ? setOpenId(null) : openDetail(c)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: 'pointer', flexWrap: 'wrap' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <Clickable onClick={() => openId === c.id ? setOpenId(null) : openDetail(c)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, cursor: 'pointer', flexWrap: 'wrap' }}>
               {builtinAvatarEmoji(c.avatar) || avatarUrl(c.avatar) ? <UserAvatar avatar={c.avatar} name={c.username} size={36} imgStyle={{ border: '1px solid var(--border)' }} />
                 : <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontFamily: MONO }}>{(c.username || '?').slice(0, 2).toUpperCase()}</div>}
               <div style={{ flex: 1, minWidth: 140 }}>
@@ -106,7 +107,7 @@ export default function CustomersTab() {
               <Stat label="ORDERS" value={c.orders_count} color="var(--text)" />
               <Stat label="SPENT" value={money(c.spent_cents)} color={G} />
               <span style={{ fontFamily: MONO, fontSize: 16, color: 'var(--muted)' }}>{openId === c.id ? '▾' : '▸'}</span>
-            </div>
+            </Clickable>
 
             {openId === c.id && detail && (
               <div style={{ padding: '0 14px 14px', borderTop: '1px solid var(--border)' }}>

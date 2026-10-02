@@ -7,6 +7,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { S, fmtBytes } from './shared.jsx'
 import { Checkbox, Select, Slider } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { Input, TextArea } from '@/core/forms'
 
 const API = '/api/file-tools'
@@ -22,7 +23,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
   }
   return (
     <div>
-      <div
+      <Clickable as="div"
         onClick={() => ref.current.click()}
         onDragOver={e => { e.preventDefault(); setOver(true) }}
         onDragLeave={() => setOver(false)}
@@ -33,7 +34,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
           transition: 'all .2s', background: over ? 'color-mix(in srgb, var(--green) 5%, transparent)' : 'var(--bg3)',
           borderRadius: 2,
         }}
-       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      >
         <input ref={ref} type="file" accept={accept} multiple={multiple}
           style={{ display: 'none' }} onChange={e => handle(e.target.files)} />
         <div style={{ fontSize: 32, marginBottom: 10 }}>📂</div>
@@ -43,7 +44,7 @@ function DropZone({ onFiles, accept = '*', multiple = false, files = [] }) {
         </div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
           marginTop: 6, letterSpacing: 1 }}>Accepts: {accept}</div>
-      </div>
+      </Clickable>
       {files.length > 0 && (
         <div style={{ marginTop: 10 }}>
           {files.map((f, i) => (

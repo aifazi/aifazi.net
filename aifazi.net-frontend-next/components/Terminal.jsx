@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@/lib/router-compat'
 import { getAuthToken } from '@/lib/api'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 const BANNER = [
   '╔══════════════════════════════════════════════════╗',
@@ -324,8 +325,8 @@ export default function Terminal({ onClose }) {
         }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {['#ff5f57','#ffbd2e','#28c840'].map((c,i) => (
-              <div key={i} onClick={i === 2 ? onClose : undefined}
-                style={{ width: 12, height: 12, borderRadius: '50%', background: c, cursor: i === 2 ? 'pointer' : 'default' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
+              <Clickable as="div" key={i} onClick={i === 2 ? onClose : undefined}
+                style={{ width: 12, height: 12, borderRadius: '50%', background: c, cursor: i === 2 ? 'pointer' : 'default' }} />
             ))}
           </div>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2 }}>
@@ -335,14 +336,14 @@ export default function Terminal({ onClose }) {
         </div>
 
         {/* Output */}
-        <div
+        <Clickable as="div"
           onClick={() => inputRef.current?.focus()}
           style={{
             flex: 1, overflowY: 'auto', padding: '16px 20px',
             fontFamily: 'var(--font-mono)', fontSize: 13, lineHeight: 1.7,
             color: 'var(--green)', cursor: 'text',
           }}
-         role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        >
           {lines.map((line, i) => (
             <div key={i} style={{
               whiteSpace: 'pre',
@@ -373,7 +374,7 @@ export default function Terminal({ onClose }) {
             </div>
           </div>
           <div ref={bottomRef} />
-        </div>
+        </Clickable>
       </div>
 
       <style>{`@keyframes fadeIn { from{opacity:0} to{opacity:1} }`}</style>

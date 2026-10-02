@@ -11,7 +11,11 @@ export function keyboardActivate(onClick) {
   return (e) => {
     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
       e.preventDefault()
-      onClick?.(e)
+      if (e.currentTarget && typeof e.currentTarget.click === 'function') {
+        e.currentTarget.click()
+      } else {
+        onClick?.(e)
+      }
     }
   }
 }

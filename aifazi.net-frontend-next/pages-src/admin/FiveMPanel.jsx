@@ -7,6 +7,7 @@ import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, DateTimePicker, Input, Select, TextArea } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { PageHeader } from './shared'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Btn as KitBtn, Badge as KitBadge, RelTime as KitRelTime, MONO } from './ui'
@@ -510,9 +511,9 @@ function WhitelistPanel() {
       :apps.map(app=>{
         const activeBan = activeBanForApp(app, activeBans)
         return (
-        <div key={app.id} style={{background:BG2,border:`1px solid ${selected?.id===app.id?G+'40':BD}`,
+        <Clickable key={app.id} style={{background:BG2,border:`1px solid ${selected?.id===app.id?G+'40':BD}`,
           borderRadius:10,padding:'14px 16px',cursor:'pointer',transition:'border-color 0.14s'}}
-          onClick={e=>{ if(e.target.closest('textarea,input,button,select,[data-core-control]')) return; setSelected(selected?.id===app.id?null:app) }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+          onClick={e=>{ if(e.target.closest('textarea,input,button,select,[data-core-control]')) return; setSelected(selected?.id===app.id?null:app) }}>
           <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontWeight:600,color:TEXT}}>{app.character_name}</div>
@@ -643,7 +644,7 @@ function WhitelistPanel() {
               </div>
             </div>
           )}
-          </div>
+          </Clickable>
         )
       })}
       <Pagination page={page} total={total} pageSize={50}
@@ -1127,12 +1128,12 @@ function BansPanel() {
               ) : (
                 <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:280,overflowY:'auto'}}>
                   {whitelistPlayers.map(app=>(
-                    <div key={app.id}
+                    <Clickable key={app.id}
                       onClick={()=>pickPlayer(app)}
                       style={{background:selectedPlayer?.id===app.id?'#ff475720':BG3,
                         border:`1px solid ${selectedPlayer?.id===app.id?'#ff475760':BD}`,
                         borderRadius:8,padding:'10px 14px',cursor:'pointer',display:'flex',
-                        alignItems:'center',gap:12,transition:'all 0.12s'}} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                        alignItems:'center',gap:12,transition:'all 0.12s'}}>
                       <div style={{width:34,height:34,borderRadius:8,background:'#ff475730',
                         display:'flex',alignItems:'center',justifyContent:'center',
                         fontSize:14,fontWeight:700,color:'#ff4757',fontFamily:MONO}}>
@@ -1147,7 +1148,7 @@ function BansPanel() {
                       </div>
                       {app.priority_level > 0 && <Badge color='#facc15'>{app.priority_tier || 'Priority'} · {app.priority_level}</Badge>}
                       {selectedPlayer?.id===app.id&&<span style={{color:'#ff4757'}}>✓</span>}
-                    </div>
+                    </Clickable>
                   ))}
                 </div>
               )}

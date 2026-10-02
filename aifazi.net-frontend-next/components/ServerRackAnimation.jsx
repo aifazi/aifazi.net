@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useInlineEdit } from '../context/EditContext'
 import { prefersReducedMotion } from '../core/useFocusTrap'
+import Clickable from '@/core/Clickable'
 import createGlobe from 'cobe'
 
 import DatacenterMode from './server-rack/DatacenterMode'
@@ -1667,28 +1668,19 @@ function GlobeMode({ visibleRef }) {
       )}
 
       {/* Mini radar inset — node azimuths + sweep. Focusable: Enter centers the hub. */}
-      <div
+      <Clickable as="div"
         className="globe-radar"
-        role="button"
-        tabIndex={0}
         aria-label={monitor && monitor.total > 0
           ? `Node radar: ${monitor.up} of ${monitor.total} services up. Each dot is a network node, green dots are hubs. Press Enter to focus the hub.`
           : 'Node radar: each dot is a network node, green dots are hubs. Press Enter to focus the hub.'}
         title="Node radar — each dot is a network node (green = hub); the sweep marks live tracking. Enter focuses the hub."
         onClick={() => { const hub = GLOBE_CITIES.find(c => c.hub); if (hub) focusOnCity(hub) }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            const hub = GLOBE_CITIES.find(c => c.hub)
-            if (hub) focusOnCity(hub)
-          }
-        }}
       >
         <canvas ref={radarRef} width={64} height={64} aria-hidden />
         <div className="globe-radar-label" aria-hidden>
           {monitor && monitor.total > 0 ? `${monitor.up}/${monitor.total} UP` : 'RADAR'}
         </div>
-      </div>
+      </Clickable>
 
       {/* Satellites ring — decorative orbiting edge nodes */}
       <div className="globe-sat-ring" aria-hidden>
@@ -1728,7 +1720,7 @@ function GlobeMode({ visibleRef }) {
       {anchorsOk && (
         <div className="globe-label-layer" aria-hidden={false}>
           {GLOBE_CITIES.map(c => (
-            <div
+            <Clickable
               key={c.id}
               className={`globe-city-label${c.hub ? ' is-hub' : ''}${focusCity === c.id ? ' is-focus' : ''}`}
               style={{
@@ -1737,12 +1729,10 @@ function GlobeMode({ visibleRef }) {
                 filter: `blur(calc((1 - var(--cobe-visible-${c.id}, 0)) * 4px))`,
               }}
               onClick={() => focusOnCity(c)}
-              role="button"
-              tabIndex={-1}
             >
               {c.name}
               {c.hub && <span className="globe-city-hub-dot" />}
-            </div>
+            </Clickable>
           ))}
 
           {/* Hub-route arc labels */}

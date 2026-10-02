@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import Clickable from '@/core/Clickable'
 
 const MESSAGES = [
   'scanning firewall...',
@@ -234,9 +235,9 @@ export default function RoamingRobot() {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div ref={wrapperRef} className="roaming-robot" style={{ position: 'fixed', left: INITIAL_POS.x, top: INITIAL_POS.y, width: 48, height: 64, zIndex: 9990, pointerEvents: 'none', userSelect: 'none', willChange: 'left, top' }}>
         {msg && <Bubble msg={msg} dir={dir} color={accent} />}
-        <div style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" onClick={() => setVisible(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        <Clickable as="div" style={{ cursor: 'pointer', pointerEvents: 'auto' }} title="Click to hide" label="Click to hide" onClick={() => setVisible(false)}>
           <RobotSVG state={state} dir={dir} color={accent} />
-        </div>
+        </Clickable>
       </div>
     </>
   )

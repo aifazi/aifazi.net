@@ -17,6 +17,7 @@
  */
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react'
 import { t, VARIANTS, zIndex } from './tokens'
+import Clickable from './Clickable'
 
 const MenuContext = createContext(null)
 
@@ -209,9 +210,9 @@ export function Dropdown({ trigger, items = [], placement = 'bottom-left', heade
 
   return (
     <>
-      <div ref={triggerRef} onClick={openDropdown} style={{ display: 'inline-block' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      <Clickable ref={triggerRef} onClick={openDropdown} style={{ display: 'inline-block' }}>
         {trigger}
-      </div>
+      </Clickable>
       {open && (
         <div ref={panelRef}>
           <MenuPanel

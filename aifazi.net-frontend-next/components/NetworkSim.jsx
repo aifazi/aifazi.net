@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import api, { getAuthToken } from '@/lib/api'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 const BANNER = [
   '╔══════════════════════════════════════════════════════╗',
@@ -702,14 +703,14 @@ export default function NetworkSim({ embedded }) {
         </span>
       </div>
 
-      <div
+      <Clickable as="div"
         className="terminal-panel-body"
         onClick={() => inputRef.current?.focus()}
         style={{
           padding: '16px 20px', fontSize: 12, lineHeight: 1.6,
           maxHeight: 400, overflowY: 'auto', cursor: 'text',
         }}
-       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      >
         {lines.map((line, i) => (
           <div key={i} style={{
             whiteSpace: 'pre',
@@ -743,7 +744,7 @@ export default function NetworkSim({ embedded }) {
           <span className="terminal-cursor" style={{ display: 'inline-block', width: 7, height: 13, background: 'var(--green)', marginLeft: 2, animation: 'nblink 1s step-end infinite' }} />
         </div>
         <div ref={bottomRef} />
-      </div>
+      </Clickable>
 
       <style>{`@keyframes nblink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
     </div>

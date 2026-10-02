@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { Input, Slider, TextArea } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { S, useIsMobile } from './shared'
 import { useTheme } from '@/app/providers'
 import { clearSiteSettingsCache, getSiteSettings } from '@/lib/siteSettings'
@@ -412,9 +413,9 @@ const STATUS_ACCENT  = { MAINTENANCE:'#f59e0b', UPDATING:'#00d4ff', 'COMING SOON
 
 function Toggle({ on, onChange, color = '#00ff88' }) {
   return (
-    <div onClick={onChange} style={{ width: 40, height: 22, borderRadius: 11, background: on ? color : 'var(--bg3)', border: `1px solid ${on ? color : 'var(--border)'}`, position: 'relative', transition: 'all 0.2s', cursor: 'pointer', flexShrink: 0 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    <Clickable onClick={onChange} style={{ width: 40, height: 22, borderRadius: 11, background: on ? color : 'var(--bg3)', border: `1px solid ${on ? color : 'var(--border)'}`, position: 'relative', transition: 'all 0.2s', cursor: 'pointer', flexShrink: 0 }}>
       <div style={{ position: 'absolute', top: 3, left: on ? 20 : 3, width: 14, height: 14, borderRadius: '50%', background: on ? '#fff' : 'var(--muted)', transition: 'left 0.2s' }} />
-    </div>
+    </Clickable>
   )
 }
 

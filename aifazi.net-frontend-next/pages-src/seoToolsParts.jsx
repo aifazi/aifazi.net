@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import api from '@/lib/api'
 import { Select } from '../core/ui.jsx'
+import Clickable from '../core/Clickable.jsx'
 import { Input, TextArea } from '@/core/forms'
 import { SITE_URL } from '@/lib/config'
 
@@ -613,19 +614,19 @@ function TitleDescGenerator() {
         <div style={{ marginTop: 24 }}>
           <div style={S.sectionLabel}>TITLE TAG IDEAS (aim for 50–60 chars)</div>
           {results.titles.map((t, i) => (
-            <div key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => navigator.clipboard.writeText(t)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <Clickable key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', cursor: 'pointer' }}
+              onClick={() => navigator.clipboard.writeText(t)}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)' }}>{t}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: charColor(t.length, 30, 60), flexShrink: 0 }}>{t.length}c</span>
-            </div>
+            </Clickable>
           ))}
           <div style={{ ...S.sectionLabel, marginTop: 24 }}>META DESCRIPTION IDEAS (aim for 150–160 chars)</div>
           {results.descs.map((d, i) => (
-            <div key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px', marginBottom: 8, cursor: 'pointer' }}
-              onClick={() => navigator.clipboard.writeText(d)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            <Clickable key={i} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px', marginBottom: 8, cursor: 'pointer' }}
+              onClick={() => navigator.clipboard.writeText(d)}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text)', marginBottom: 6 }}>{d}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: charColor(d.length, 120, 160) }}>{d.length} chars · click to copy</div>
-            </div>
+            </Clickable>
           ))}
         </div>
       )}

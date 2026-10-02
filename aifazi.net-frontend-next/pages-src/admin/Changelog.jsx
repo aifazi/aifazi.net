@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react'
+import Clickable from '../../core/Clickable.jsx'
 
 /* ─── Design tokens (match AdminHeader/Sidebar hardcoded palette) ─── */
 const C = {
@@ -869,12 +870,12 @@ function AreaTag({ label }) {
 function ChangeItem({ change }) {
   const [open, setOpen] = useState(false)
   return (
-    <div style={{
+    <Clickable as="div" style={{
       padding: '10px 14px', borderRadius: 6, cursor: 'pointer',
       background: open ? 'rgba(255,255,255,0.03)' : 'transparent',
       border: `1px solid ${open ? C.border2 : 'transparent'}`,
       transition: 'all 0.15s',
-    }} onClick={() => setOpen(o => !o)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    }} onClick={() => setOpen(o => !o)}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
         <Badge type={change.type} />
         <AreaTag label={change.area} />
@@ -887,7 +888,7 @@ function ChangeItem({ change }) {
           fontFamily: C.fontUi, fontSize: 12, color: C.muted, lineHeight: 1.7,
         }}>{change.detail}</div>
       )}
-    </div>
+    </Clickable>
   )
 }
 

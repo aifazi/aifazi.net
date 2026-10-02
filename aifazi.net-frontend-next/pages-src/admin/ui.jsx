@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useTheme } from '@/app/providers'
 import { BUTTON_STYLES, CARD_STYLES, BADGE_STYLES } from '../../core/framework-styles.js'
+import Clickable from '../../core/Clickable.jsx'
 
 /**
  * admin/ui.jsx — shared admin design kit.
@@ -120,7 +121,7 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
     terminal: { borderRadius: 0 },
   }[cardStyle] || {}
   return (
-    <div onClick={onClick} style={{
+    <Clickable onClick={onClick} style={{
       background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 12px)',
       boxShadow: 'var(--comp-card-shadow, none)',
       padding: '16px 18px', cursor: onClick ? 'pointer' : 'default',
@@ -129,12 +130,12 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
       ...(style || {}),
     }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = color; if (onClick) e.currentTarget.style.transform = 'translateY(-2px)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none' }}>
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
       <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>{sub}</div>}
-    </div>
+    </Clickable>
   )
 }
 
@@ -281,7 +282,7 @@ export function Modal({ open, onClose, title, width = 560, noBackdropClose, chil
     <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-label={titleId ? undefined : name}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div onClick={noBackdropClose ? undefined : onClose} aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
+        style={{ position: 'absolute', inset: 0, background: 'rgba(3,8,14,0.72)', backdropFilter: 'blur(3px)' }} />
       <div ref={panelRef} tabIndex={-1} style={{
         position: 'relative', width: '100%', maxWidth: width, maxHeight: '88vh', overflowY: 'auto',
         background: 'var(--comp-card-bg, var(--bg2))', border: 'var(--comp-card-border, 1px solid var(--border))', borderRadius: 'var(--comp-card-radius, 14px)',

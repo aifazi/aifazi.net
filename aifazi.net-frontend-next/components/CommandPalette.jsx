@@ -4,6 +4,7 @@ import { useNavigate } from '@/lib/router-compat'
 import api from '@/lib/api'
 import { useFocusTrap } from '@/core/useFocusTrap'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 const COMMANDS = [
   // Navigation
@@ -206,7 +207,7 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
                 const idx = globalIdx++
                 const isSelected = selected === idx
                 return (
-                  <div
+                  <Clickable as="div"
                     key={cmd.id}
                     onClick={() => execute(cmd)}
                     onMouseEnter={() => setSelected(idx)}
@@ -217,13 +218,13 @@ export default function CommandPalette({ onToggleTheme, onOpenTerminal }) {
                       borderLeft: isSelected ? '2px solid var(--green)' : '2px solid transparent',
                       transition: 'all 0.1s',
                     }}
-                   role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                  >
                     <span style={{ fontSize: 14, width: 20, textAlign: 'center', flexShrink: 0 }}>{cmd.icon}</span>
                     <span style={{ fontSize: 14, color: isSelected ? 'var(--text)' : 'var(--text2)' }}>{cmd.label}</span>
                     {isSelected && (
                       <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: 1 }}>ENTER ↵</span>
                     )}
-                  </div>
+                  </Clickable>
                 )
               })}
             </div>
