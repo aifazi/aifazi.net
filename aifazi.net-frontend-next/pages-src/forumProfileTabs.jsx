@@ -5,6 +5,7 @@ import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
 import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
 import { Select, TextArea, useDialog } from '../core/ui.jsx'
+import Clickable from '@/core/Clickable.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
@@ -25,9 +26,9 @@ function TicketCard({ t, onClick }) {
   const pc = PRIORITY_CFG[t.priority] || PRIORITY_CFG.medium
   const tid = t.ticket_id || t.ticketId || (t.id || '').slice(-6).toUpperCase()
   return (
-    <div className="forum-ticket-card" onClick={onClick} style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden',
+    <Clickable as="div" className="forum-ticket-card" onClick={onClick} style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden',
       marginBottom: 8, cursor: 'pointer', transition: 'border-color 0.15s',
-      borderLeft: `3px solid ${sc.color}` }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      borderLeft: `3px solid ${sc.color}` }}>
       <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: pc.color,
           boxShadow: `0 0 5px ${pc.color}`, flexShrink: 0 }} />
@@ -39,7 +40,7 @@ function TicketCard({ t, onClick }) {
           <span style={{ ...M, fontSize: 11, color: 'var(--cyan)', marginLeft: 4 }}>VIEW →</span>
         </div>
       </div>
-    </div>
+    </Clickable>
   )
 }
 

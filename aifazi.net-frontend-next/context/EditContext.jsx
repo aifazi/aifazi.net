@@ -7,6 +7,7 @@ import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { safeHref } from '@/lib/safeHref'
 import { isGsapAnimationValue, useGsapAnimation } from '@/lib/animate'
 import { Input, TextArea } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 const SANITIZE_CONFIG = {
   ALLOWED_TAGS: ['b','i','u','em','strong','a','p','br','ul','ol','li','h1','h2','h3','h4','h5','h6','span','div','img','blockquote','code','pre','sup','sub','table','tr','td','th','hr'],
@@ -427,7 +428,8 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
 
   if (!editing) {
     return (
-      <Tag
+      <Clickable
+        as={Tag}
         style={{
           ...style, cursor: 'text', position: 'relative',
           outline: '1px dashed transparent',
@@ -453,7 +455,7 @@ export function EditableText({ contentKey, defaultValue, as: Tag = 'span', style
           padding: '1px 5px', pointerEvents: 'none',
           opacity: 0, transition: 'opacity 0.2s',
         }} className="edit-badge">✎</span>
-      </Tag>
+      </Clickable>
     )
   }
 
@@ -516,7 +518,7 @@ export function EditableNumber({ contentKey, defaultValue, suffix = '', style })
 
   if (editing) return <Input autoFocus value={draft} onChange={v => setDraft(v)} onBlur={commit} onKeyDown={e => e.key === 'Enter' && commit()} style={{ ...style, width: '80px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.5)', outline: 'none', padding: '2px 6px', color: 'inherit', fontFamily: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', borderRadius: 2, textAlign: 'center' }} />
 
-  return <span style={{ ...style, cursor: 'text', borderBottom: '1px dashed rgba(0,255,136,0.35)' }} onClick={() => setEditing(true)} title="Click to edit">{value}{suffix}</span>
+  return <Clickable as="span" style={{ ...style, cursor: 'text', borderBottom: '1px dashed rgba(0,255,136,0.35)' }} onClick={() => setEditing(true)} title="Click to edit">{value}{suffix}</Clickable>
 }
 
 
@@ -547,8 +549,10 @@ function EmojiPicker({ value, onChange }) {
   return (
     <div style={{ position: 'relative' }} ref={ref}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <div
+        <Clickable
+          as="div"
           onClick={() => setOpen(v => !v)}
+          label="Pick emoji"
           style={{
             width: 52, height: 52, fontSize: 28,
             background: 'var(--bg3)', border: '1px solid rgba(0,212,255,0.3)',
@@ -557,7 +561,7 @@ function EmojiPicker({ value, onChange }) {
             transition: 'border-color 0.2s',
           }}
           title="Click to pick emoji"
-         role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>{value || '❓'}</div>
+        >{value || '❓'}</Clickable>
         <input
           value={value || ''}
           onChange={e => onChange(e.target.value)}
@@ -615,8 +619,10 @@ function IconField({ value, onChange }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <div
+      <Clickable
+        as="div"
         onClick={() => setOpen(true)}
+        label="Pick icon"
         style={{
           width: 52, height: 52, fontSize: 28,
           background: 'var(--bg3)', border: '1px solid rgba(0,212,255,0.3)',
@@ -625,9 +631,9 @@ function IconField({ value, onChange }) {
           transition: 'border-color 0.2s',
         }}
         title="Click to pick icon"
-       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      >
         <IconDisplay value={value} size={36} />
-      </div>
+      </Clickable>
       {open && (
         <IconPickerModal
           currentValue={value}
@@ -704,7 +710,7 @@ export function EditableList({ contentKey, defaultValue, renderItem, fields, add
 
       {editIdx !== null && (
         <>
-          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
+          <div onClick={() => setEditIdx(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 99995 }} aria-hidden="true" />
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'var(--bg2)', border: '1px solid var(--green)', boxShadow: '0 0 60px rgba(0,255,136,0.15)', padding: '32px', width: '100%', maxWidth: 520, zIndex: 99996, maxHeight: '80vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 20 }}>{editIdx === -1 ? '+ ADD ITEM' : '✎ EDIT ITEM'}</div>
             {fields.map(field => (
@@ -838,7 +844,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
       {/* ── Review Changes (diff preview) ─────────────────────────────────── */}
       {showDiff && (
         <>
-          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}  role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }} />
+          <div onClick={() => setShowDiff(false)} style={{ position: 'fixed', inset: 0, zIndex: 999995, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} aria-hidden="true" />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 999996,
             width: '100%', maxWidth: 640, maxHeight: '80vh', overflowY: 'auto',
@@ -1093,7 +1099,7 @@ function ContentSearchPalette({ open, query, onQuery, onClose }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 999999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)',
         width: '100%', maxWidth: 560, background: 'var(--bg2)', border: '1px solid var(--border)',
@@ -1366,8 +1372,10 @@ export function EditableIcon({ contentKey, defaultValue = '❓', size = 36, styl
 
   return (
     <>
-      <div
+      <Clickable
+        as="div"
         onClick={() => setOpen(true)}
+        label="Change icon"
         title="Click to change icon"
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -1379,7 +1387,7 @@ export function EditableIcon({ contentKey, defaultValue = '❓', size = 36, styl
         }}
         onMouseEnter={e => e.currentTarget.style.outline = '2px solid var(--cyan)'}
         onMouseLeave={e => { if (!open) e.currentTarget.style.outline = '1px dashed rgba(0,212,255,0.3)' }}
-       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      >
         <IconDisplay value={value} size={size} />
         <span style={{
           position: 'absolute', bottom: -6, right: -6,
@@ -1388,7 +1396,7 @@ export function EditableIcon({ contentKey, defaultValue = '❓', size = 36, styl
           padding: '1px 4px', borderRadius: 2, letterSpacing: 1,
           pointerEvents: 'none',
         }}>ICON</span>
-      </div>
+      </Clickable>
 
       {open && (
         <IconPickerModal
@@ -1448,7 +1456,8 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
 
   return (
     <>
-      <span
+      <Clickable
+        as="span"
         onClick={openModal}
         title="Click to edit image"
         data-contentkey={contentKey}
@@ -1468,13 +1477,13 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
           padding: '1px 5px', borderRadius: 2, letterSpacing: 1,
           pointerEvents: 'none',
         }}>IMAGE</span>
-      </span>
+      </Clickable>
 
       {open && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
-        }} onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        }} onClick={() => setOpen(false)}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
             <img src={safeImageSrc(draftUrl)} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
@@ -1528,7 +1537,8 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
 
   return (
     <>
-      <span
+      <Clickable
+        as="span"
         onClick={openModal}
         title="Click to edit link"
         data-contentkey={contentKey}
@@ -1550,13 +1560,13 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
           padding: '1px 5px', borderRadius: 2, letterSpacing: 1,
           pointerEvents: 'none',
         }}>LINK</span>
-      </span>
+      </Clickable>
 
       {open && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
-        }} onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        }} onClick={() => setOpen(false)}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
             <div style={{ marginBottom: 10 }}>

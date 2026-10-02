@@ -5,6 +5,7 @@ import api, { ensureAdminGate } from '@/lib/api'
 import { builtinAvatarEmoji, avatarUrl, UserAvatar, BUILTIN_AVATARS } from '@/lib/avatar'
 import { useForum } from '../context/ForumContext'
 import { Input, Select, useDialog } from '../core/ui.jsx'
+import Clickable from '@/core/Clickable.jsx'
 import { useToast } from '../components/Toast'
 import { useNow } from '../hooks/useNow'
 import FiveMStatus from '@/components/FiveMStatus'
@@ -600,13 +601,13 @@ function OrdersDocumentsTab({ user }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {orders.map(o => (
               <div key={o.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => openDetail(o)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                <Clickable as="div" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => openDetail(o)}>
                   <span style={{ ...M, fontSize: 11, color: CLRS.cyan, fontWeight: 700 }}>{o.order_number}</span>
                   <span style={{ fontSize: 11, color: 'var(--muted)' }}>{o.created_at ? new Date(o.created_at).toLocaleDateString() : ''}</span>
                   <span style={{ flex: 1 }} />
                   <span style={{ ...M, fontSize: 12, fontWeight: 800 }}>${(o.total_cents / 100).toFixed(2)}</span>
                   <span style={{ ...M, fontSize: 11, letterSpacing: 1.5, padding: '3px 10px', borderRadius: 12, border: `1px solid ${statusColor(o.status)}55`, color: statusColor(o.status), fontWeight: 800 }}>{(o.status || '').toUpperCase()}</span>
-                </div>
+                </Clickable>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
                   {(o.items || []).map((it, i) => (
                     <span key={i} style={{ fontSize: 11, color: 'var(--muted)', background: 'rgba(255,255,255,0.03)', padding: '3px 8px', borderRadius: 5 }}>{it.product_name} × {it.quantity}</span>
@@ -635,7 +636,7 @@ function OrdersDocumentsTab({ user }) {
       </SectionCard>
 
       {detail && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setDetail(null)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={() => setDetail(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div style={{ ...M, fontSize: 12, letterSpacing: 2, color: CLRS.green, fontWeight: 800 }}>{detail.order_number}</div>
@@ -868,10 +869,10 @@ export default function ForumProfile() {
                 { label: 'TICKETS', value: tickets.length, color: CLRS.cyan   },
                 { label: 'OPEN',    value: tickets.filter(t => t.status === 'open').length, color: CLRS.orange },
               ].map(s => (
-                <div key={s.label} onClick={() => openTicket(null)} className="forum-stat-tile" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 16px', textAlign: 'center' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                <Clickable as="div" key={s.label} onClick={() => openTicket(null)} className="forum-stat-tile" style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 16px', textAlign: 'center' }}>
                   <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</div>
                   <div style={{ ...M, fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
-                </div>
+                </Clickable>
               ))}
               {canAccessAdminPortal(user) && <AdminPortalLink compact />}
             </div>

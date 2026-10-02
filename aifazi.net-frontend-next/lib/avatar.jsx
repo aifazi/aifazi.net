@@ -1,5 +1,7 @@
 'use client'
 
+import Clickable from '@/core/Clickable'
+
 // Shared web avatar helpers + renderer.
 // Mirrors mobile (apps/mobile/src/components/Avatar.tsx): a value like
 // `avatar:hackerfox` or a short bare key is a BUILTIN avatar → render the
@@ -72,8 +74,9 @@ export function avatarUrl(avatar) {
 export function UserAvatar({ avatar, name = '', size = 40, style, imgStyle, imgClassName, fallback, onClick }) {
   const emoji = builtinAvatarEmoji(avatar)
   if (emoji) {
+    const Tag = onClick ? Clickable : 'div'
     return (
-      <div
+      <Tag
         onClick={onClick}
         style={{
           width: size, height: size, borderRadius: '50%', flexShrink: 0,
@@ -81,16 +84,16 @@ export function UserAvatar({ avatar, name = '', size = 40, style, imgStyle, imgC
           fontSize: Math.round(size * 0.5), lineHeight: 1,
           background: 'rgba(128,128,128,0.12)', border: '1px solid var(--border)',
           ...style,
-        }}
-        {...(onClick ? { role: 'button', tabIndex: 0, onKeyDown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click() } } } : {})}>
+        }}>
         <span aria-hidden="true">{emoji}</span>
-      </div>
+      </Tag>
     )
   }
   const src = avatarUrl(avatar) || fallback
   if (!src) return null
+  const ImgTag = onClick ? Clickable : 'img'
   return (
-    <img
+    <ImgTag
       src={src}
       alt={name || 'avatar'}
       loading="lazy"

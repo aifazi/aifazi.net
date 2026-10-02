@@ -6,6 +6,7 @@ import { Checkbox, Input } from '../../core/ui.jsx'
 import { useDialog } from '../../components/Dialog'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { Btn as KitBtn, Badge as KitBadge } from './ui'
+import Clickable from '../../core/Clickable.jsx'
 
 // H25 — Sanitize every email HTML body before rendering via dangerouslySetInnerHTML.
 // The backend mail renderer interpolates user-controlled fields (ticket subject,
@@ -65,7 +66,7 @@ function DetailDrawer({ entry, onClose }) {
     <div style={{
       position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end',
       background:'rgba(0,0,0,0.6)',
-    }} onClick={onClose} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
         width:'100%', maxWidth:740, margin:'0 auto', maxHeight:'80vh', overflow:'auto',
         background:C.bg2, border:`1px solid ${C.border}`, borderRadius:'12px 12px 0 0',
@@ -339,14 +340,14 @@ export default function MailQueue() {
           const isExpanded = expandId === em.id
           return (
             <React.Fragment key={em.id}>
-              <div style={{
+              <Clickable style={{
                 display:'grid', gridTemplateColumns:'36px 1fr 1fr 100px 90px 130px 140px',
                 padding:'11px 14px', alignItems:'center',
                 background: isSel ? 'rgba(34,211,238,0.04)' : i%2===0 ? 'transparent' : 'rgba(255,255,255,0.01)',
                 borderBottom:`1px solid ${C.border}`,
                 borderLeft:`2px solid ${isSel ? C.cyan : 'transparent'}`,
                 transition:'all 0.1s', cursor:'pointer',
-              }} onClick={() => setExpandId(isExpanded ? null : em.id)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+              }} onClick={() => setExpandId(isExpanded ? null : em.id)}>
                 <Checkbox checked={isSel} onChange={() => toggleSelect(em.id)}
                   style={{ width:24, height:24, padding:0, justifyContent:'center' }}
                   onClick={e => e.stopPropagation()} />
@@ -372,7 +373,7 @@ export default function MailQueue() {
                   )}
                   <Btn label="⊞ DETAIL" color={C.cyan} small onClick={() => setDrawer(em)} />
                 </div>
-              </div>
+              </Clickable>
               {isExpanded && (
                 <div style={{ padding:'14px 14px 14px 50px', background:'rgba(0,0,0,0.1)', borderBottom:`1px solid ${C.border}` }}>
                   <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:6 }}>

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useCallback } from 'react'
+import Clickable from '../../core/Clickable.jsx'
 
 // ── CDN library loaders ───────────────────────────────────────────────────────
 function loadScript(src) {
@@ -45,18 +46,18 @@ function DropZone({ onFiles, accept='*', multiple=false, label='Drop files here 
   const ref = useRef()
   const handle = fs => { const arr = [...fs]; if (!multiple) onFiles([arr[0]]); else onFiles(arr) }
   return (
-    <div
+    <Clickable
       onClick={() => ref.current.click()}
       onDragOver={e => { e.preventDefault(); setOver(true) }}
       onDragLeave={() => setOver(false)}
       onDrop={e => { e.preventDefault(); setOver(false); handle(e.dataTransfer.files) }}
       style={{ border:`2px dashed ${over ? 'var(--green)' : 'var(--border)'}`, padding:'40px 24px', textAlign:'center', cursor:'pointer', transition:'all .2s', background: over ? 'color-mix(in srgb, var(--green) 4%, transparent)' : 'var(--bg3)' }}
-     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+     >
       <input ref={ref} type="file" accept={accept} multiple={multiple} style={{ display:'none' }} onChange={e => handle(e.target.files)} />
       <div style={{ fontSize:32, marginBottom:10 }}>📂</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color: over ? 'var(--green)' : 'var(--muted)', letterSpacing:2 }}>{label.toUpperCase()}</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', marginTop:6, letterSpacing:1 }}>Accepts: {accept}</div>
-    </div>
+    </Clickable>
   )
 }
 

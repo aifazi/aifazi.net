@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import api, { mediaUrl } from '@/lib/api'
 import { NeonButton } from './community'
 import { notify } from '../core/notify.jsx'
+import Clickable from '@/core/Clickable'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function extOf(name = '') {
@@ -121,7 +122,7 @@ function ImagePreview({ file }) {
   if (!src) return null
   return (
     <>
-      <div className="media-image-frame" onClick={() => setOpen(true)} role="button" title="Click to view full size">
+      <Clickable as="div" className="media-image-frame" onClick={() => setOpen(true)} title="Click to view full size">
         {failed ? (
           <a href={src} target="_blank" rel="noopener noreferrer" className="media-file-card" style={{ border: 'none' }}>
             <div className="media-file-icon">🖼</div>
@@ -135,9 +136,9 @@ function ImagePreview({ file }) {
             onError={() => setFailed(true)}
             className="media-image" />
         )}
-      </div>
+      </Clickable>
       {open && (
-        <div className="media-lightbox" onClick={() => setOpen(false)} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        <div className="media-lightbox" onClick={() => setOpen(false)}>
           <div className="media-lightbox-inner" onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <button className="media-lightbox-close" aria-label="Close preview" onClick={() => setOpen(false)}>✕</button>
             <img src={mediaUrl(src)} alt={name} style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10, display: 'block', margin: '0 auto' }} />

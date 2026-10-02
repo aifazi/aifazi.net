@@ -5,6 +5,7 @@ import { sanitizeHtml } from '@/lib/sanitizeHtml'
 import { useToast } from '../../components/Toast'
 import { useDialog, dialog } from '../../components/Dialog'
 import { DateTimePicker, Input, Select, TextArea } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { S, useIsMobile, SLASH_COMMANDS } from './shared'
 import VideoPlayer from './VideoPlayer'
 
@@ -391,11 +392,11 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 120 : 160}px, 1fr))`, gap: isMobile ? 8 : 12 }}>
             {files.filter(file => !filter || file.mimetype.startsWith(filter)).map(file => (
-              <div key={file.id} style={{ border: '1px solid var(--border)', overflow: 'hidden', cursor: onSelect ? 'pointer' : 'default', transition: 'border-color 0.2s' }}
+              <Clickable as="div" key={file.id} style={{ border: '1px solid var(--border)', overflow: 'hidden', cursor: onSelect ? 'pointer' : 'default', transition: 'border-color 0.2s' }}
                 onClick={() => onSelect && onSelect(file)}
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
-               role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+              >
                 <MediaThumb file={file} height={isMobile ? 90 : 120} cdnConfig={cdnConfig} />
                 <div style={{ padding: '6px 8px', background: 'var(--bg2)' }}>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.original_name}</div>
@@ -404,7 +405,7 @@ function MediaLibrary({ onSelect, onClose, filter, inline = false }) {
                     <button onClick={e => { e.stopPropagation(); handleDelete(file.id) }} aria-label={`Delete ${file.original_name}`} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 12, padding: 0 }}>🗑</button>
                   </div>
                 </div>
-              </div>
+              </Clickable>
             ))}
           </div>
         )}

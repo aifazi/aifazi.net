@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import api from '@/lib/api'
 import { SITE_URL } from '@/lib/config'
 import { Input, TextArea } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 /* ── design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -507,13 +508,13 @@ export default function MailTemplates() {
             const isCustomised = !!templates[p.id]
             const isActive     = selected === p.id
             return (
-              <div key={p.id} onClick={() => setSelected(p.id)} style={{
+              <Clickable key={p.id} onClick={() => setSelected(p.id)} style={{
                 display:'flex', alignItems:'center', gap:10, padding:'12px 14px',
                 cursor:'pointer', borderBottom:`1px solid ${C.border}`,
                 background: isActive ? 'rgba(34,211,238,0.07)' : 'transparent',
                 borderLeft:`3px solid ${isActive ? C.cyan : 'transparent'}`,
                 transition:'all 0.12s',
-              }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+              }}>
                 <span style={{ fontSize:16, flexShrink:0 }}>{p.icon}</span>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontFamily:C.mono, fontSize: 11, color: isActive ? C.cyan : C.text,
@@ -525,7 +526,7 @@ export default function MailTemplates() {
                     background:'rgba(74,222,128,0.1)', border:'1px solid rgba(74,222,128,0.3)',
                     color:C.green, borderRadius:3, flexShrink:0 }}>CUSTOM</span>
                 )}
-              </div>
+              </Clickable>
             )
           })}
         </div>

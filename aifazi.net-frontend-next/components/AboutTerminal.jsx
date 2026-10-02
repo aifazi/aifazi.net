@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 
 const COMMANDS = {
   help: {
@@ -206,14 +207,14 @@ export default function AboutTerminal() {
         {['#ff5f56','#ffbd2e','#27c93f'].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />)}
         <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, margin: '0 auto' }}>tanvir@about:~$</div>
       </div>
-      <div
+      <Clickable as="div"
         className="terminal-panel-body"
         onClick={() => inputRef.current?.focus()}
         style={{
           padding: 24, fontSize: 13, lineHeight: 1.8,
           maxHeight: 320, overflowY: 'auto', cursor: 'text',
         }}
-       role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+      >
         {lines.map((line, i) => (
           <div key={i} style={{
             whiteSpace: 'pre',
@@ -243,7 +244,7 @@ export default function AboutTerminal() {
           <span className="terminal-cursor" style={{ display: 'inline-block', width: 7, height: 13, background: 'var(--green)', marginLeft: 2, animation: 'ablink 1s step-end infinite' }} />
         </div>
         <div ref={bottomRef} />
-      </div>
+      </Clickable>
       <style>{`@keyframes ablink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
     </div>
   )

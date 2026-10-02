@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Checkbox, Slider, dialog } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { Input } from '@/core/forms'
 
 const RS = 1.5 // render scale for backend page images
@@ -92,7 +93,7 @@ function UploadPhase({ onFile, loading, error }) {
       </div>
 
       {/* Drop zone */}
-      <div
+      <Clickable as="div"
         onDragOver={e=>{e.preventDefault();setOver(true)}}
         onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setOver(false)}}
         onDrop={e=>{e.preventDefault();setOver(false);handle(e.dataTransfer.files[0])}}
@@ -105,7 +106,7 @@ function UploadPhase({ onFile, loading, error }) {
           transition:'all .22s cubic-bezier(.34,1.56,.64,1)',
           boxShadow:over?`0 0 40px color-mix(in srgb, var(--green) 14%, transparent), inset 0 0 40px color-mix(in srgb, var(--green) 3%, transparent)`:undefined,
           transform:over?'scale(1.01)':'scale(1)',
-        }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        }}>
         <input ref={inp} type="file" accept=".pdf" style={{display:'none'}}
           onChange={e=>handle(e.target.files[0])} />
         <div style={{ fontSize:52, marginBottom:16, filter:over?'drop-shadow(0 0 12px var(--green))':undefined,
@@ -123,7 +124,7 @@ function UploadPhase({ onFile, loading, error }) {
               animation:'pdfLoadBar 1.4s ease-in-out infinite', borderRadius:2 }} />
           </div>
         )}
-      </div>
+      </Clickable>
 
       {error && (
         <div style={{ fontFamily:C.mono, fontSize:11, color:C.red, padding:'10px 18px',
@@ -342,11 +343,11 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
     <div style={{ width:130, flexShrink:0, background:C.bg2, borderRight:`1px solid ${C.border}`,
       overflowY:'auto', display:'flex', flexDirection:'column', gap:4, padding:8 }}>
       {Array.from({length:session.page_count}).map((_,i)=>(
-        <div key={i}
+        <Clickable as="div" key={i}
           onClick={()=>setCurrentPage(i)}
           style={{ cursor:'pointer', border:`2px solid ${i===currentPage?C.accent:C.border}`,
             borderRadius:6, overflow:'hidden', background:C.bg3, position:'relative',
-            transition:'border-color .15s', flexShrink:0 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            transition:'border-color .15s', flexShrink:0 }}>
           <img src={`/api/pdf-editor/thumb/${session.session_id}/${i}`}
             alt={`Page ${i+1}`}
             style={{ width:'100%', display:'block' }} />
@@ -367,7 +368,7 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
               )}
             </div>
           )}
-        </div>
+        </Clickable>
       ))}
     </div>
   )

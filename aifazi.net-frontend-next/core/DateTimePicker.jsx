@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import Clickable from './Clickable'
 
 const pad = n => String(n).padStart(2, '0')
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -120,10 +121,8 @@ export default function DateTimePicker({
   return (
     <div ref={ref} style={{ position: 'relative', ...style }}>
       {/* ── Trigger ── */}
-      <div
-        role="button" tabIndex={0}
+      <Clickable
         onClick={() => !disabled && setOpen(o => !o)}
-        onKeyDown={e => !disabled && e.key === 'Enter' && setOpen(o => !o)}
         aria-disabled={disabled}
         style={{
           width: '100%', background: 'var(--bg)', borderRadius: 6, cursor: disabled ? 'not-allowed' : 'pointer',
@@ -141,7 +140,7 @@ export default function DateTimePicker({
           {formatDisplay(value) || placeholder}
         </span>
         <span style={{ color: 'var(--cyan)', fontSize: 14, flexShrink: 0 }}>📅</span>
-      </div>
+      </Clickable>
 
       {/* ── Dropdown ── */}
       {open && (

@@ -7,6 +7,7 @@ import { useTheme } from '@/app/providers'
 
 import { useNotify } from '../../core/notify.jsx'
 import { useDialog } from '../../core/dialog.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { Input, TextArea, Select, Checkbox, Slider } from '@/core/forms'
 import { clearSiteSettingsCache } from '@/lib/siteSettings'
 import { S, useIsMobile, PageHeader } from './shared'
@@ -143,7 +144,7 @@ function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onApply }) {
 
 function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
   return (
-    <div
+    <Clickable as="div"
       onClick={() => onSelect(item.id)}
       className="tl-style-card"
       data-active={isActive ? 'true' : undefined}
@@ -159,14 +160,6 @@ function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
           : '0 2px 8px rgba(0,0,0,0.2)',
         position: 'relative',
         transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
-      }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onSelect(item.id)
-        }
       }}
     >
       {isActive && (
@@ -200,7 +193,7 @@ function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
         </div>
         <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, lineHeight: 1.5 }}>{item.desc}</div>
       </div>
-    </div>
+    </Clickable>
   )
 }
 function FwCategorySection({ cat, draft, onSelect, isUnsaved }) {
@@ -2271,7 +2264,7 @@ function ThemeLibrary() {
               const ct = resolveComponentTokens(getComponentTokens(t.id), t)
               const ctClip = ct.button.clip && ct.button.clip !== 'none' ? ct.button.clip : undefined
               return (
-                <div key={t.id} className="tl-card"
+                <Clickable as="div" key={t.id} className="tl-card"
                   onClick={() => { setPendingTheme(t.id); setPreviewTheme(t.id) }}
                   onMouseEnter={() => { setPreviewTheme(t.id); setFocusedIdx(idx) }}
                   onMouseLeave={() => setPreviewTheme(null)}
@@ -2281,7 +2274,7 @@ function ThemeLibrary() {
                     transition: 'border-color 0.2s, transform 0.15s, box-shadow 0.2s',
                     boxShadow: isActive ? `0 0 22px ${t.primary}44` : isFocused ? `0 0 16px ${t.primary}33` : '0 2px 12px rgba(0,0,0,0.3)',
                   }}
-                 role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                 >
                   {/* Mini UI mockup — card boxes + button/input/badge samples use the theme's component tokens */}
                   <div style={{ padding: 12, background: t.bg, borderBottom: `1px solid ${t.border}`, position: 'relative', height: 158, overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 36, background: t.bg2, borderRight: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 4px', alignItems: 'center' }}>
@@ -2382,7 +2375,7 @@ function ThemeLibrary() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Clickable>
               )
             })}
           </div>
@@ -2447,7 +2440,7 @@ function ThemeLibrary() {
               const isSelected = selectedAnim === anim.id
               const catColor   = ANIM_CATEGORIES.find(c => c.id === anim.cat)?.color || 'var(--green)'
               return (
-                <div key={anim.id} className="tl-anim-card"
+                <Clickable as="div" key={anim.id} className="tl-anim-card"
                   onClick={() => setSelectedAnim(prev => prev === anim.id ? null : anim.id)}
                   style={{
                     background: isSelected ? `${currentDef.primary}10` : 'var(--bg2)',
@@ -2456,7 +2449,7 @@ function ThemeLibrary() {
                     display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', textAlign: 'center',
                     boxShadow: isSelected ? `0 0 14px ${currentDef.primary}33` : 'none',
                   }}
-                 role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                 >
                   {/* -- Live demo -- */}
                   <div style={{ width: 64, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0, overflow: 'hidden' }}>
 
@@ -2567,7 +2560,7 @@ function ThemeLibrary() {
                     <button onClick={(e) => { e.stopPropagation(); copyAnimClass(anim.id) }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '4px 8px', background: copiedAnim === anim.id ? currentDef.primary : 'transparent', border: `1px solid ${copiedAnim === anim.id ? currentDef.primary : 'var(--border)'}`, color: copiedAnim === anim.id ? '#000' : 'var(--muted)', cursor: 'pointer', borderRadius: 3, transition: 'all 0.2s' }}>{copiedAnim === anim.id ? '✅ COPIED' : '⭐ COPY CLASS'}</button>
                   </div>
                   {isSelected && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, letterSpacing: 1 }}>SELECTED ?</div>}
-                </div>
+                </Clickable>
               )
             })}
           </div>
@@ -2800,7 +2793,7 @@ function ThemeLibrary() {
                   const isNew      = NEW_THEME_IDS.has(t.id)
                   const ts = tagStyle(t.tag)
                   return (
-                    <div key={t.id} className="tl-card"
+                    <Clickable as="div" key={t.id} className="tl-card"
                       onClick={() => handleApply(t.id)}
                       onMouseEnter={() => setPreviewTheme(t.id)}
                       onMouseLeave={() => setPreviewTheme(null)}
@@ -2810,7 +2803,7 @@ function ThemeLibrary() {
                         transition: 'border-color 0.2s, transform 0.15s, box-shadow 0.2s',
                         boxShadow: isActive ? `0 0 22px ${t.primary}44` : '0 2px 12px rgba(0,0,0,0.3)',
                       }}
-                     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+                     >
                       <div style={{ padding: '10px 14px 8px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid ${t.border}` }}>
                         <div style={{ display: 'flex', gap: 4 }}>
                           {[t.bg, t.primary, t.secondary, t.orange].map((c, i) => (
@@ -2829,7 +2822,7 @@ function ThemeLibrary() {
                           : <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: t.muted }}>🖱 Click to apply</span>
                         }
                       </div>
-                    </div>
+                    </Clickable>
                   )
                 })}
               </div>
@@ -3746,12 +3739,9 @@ function ThemeLibrary() {
                 </div>
 
                 {/* Drag-and-drop zone */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Drop a preset JSON file here, or click to browse"
+                <Clickable as="div"
+                  label="Drop a preset JSON file here, or click to browse"
                   onClick={() => presetFileInputRef.current?.click()}
-                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); presetFileInputRef.current?.click() } }}
                   onDragOver={e => { e.preventDefault(); e.stopPropagation(); setPresetDragOver(true) }}
                   onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setPresetDragOver(false) }}
                   onDrop={e => {
@@ -3791,7 +3781,7 @@ function ThemeLibrary() {
                       e.target.value = ''
                     }}
                   />
-                </div>
+                </Clickable>
 
                 <TextArea value={importText} onChange={(v) => setImportText(v)} spellCheck={false}
                   rows={6}

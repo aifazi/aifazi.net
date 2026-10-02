@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { S } from './shared.jsx'
 import { Input } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 import PDFEditor from './PDFEditor.jsx'
 import {
   MergePDFB, SplitPDFB, CompressPDFB, RotatePDFB, RemovePagesPDFB,
@@ -86,7 +87,7 @@ const CATS = [
 function ToolCard({ tool, onClick }) {
   const [hover, setHover] = useState(false)
   return (
-    <div
+    <Clickable as="div"
       onClick={() => onClick(tool)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -100,7 +101,7 @@ function ToolCard({ tool, onClick }) {
         position:'relative', overflow:'hidden',
         display:'flex', flexDirection:'column',
       }}
-     role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+    >
       <div style={{ position:'absolute', top:0, left:0, right:0, height:2,
         background: `linear-gradient(90deg,${tool.color},${tool.color}00)`,
         opacity: hover ? 1 : 0.3, transition:'opacity .18s' }} />
@@ -133,7 +134,7 @@ function ToolCard({ tool, onClick }) {
         <div style={{ width:6, height:6, borderRadius:'50%',
           background: tool.color, opacity: hover ? 0.8 : 0.3, transition:'opacity .18s' }} />
       </div>
-    </div>
+    </Clickable>
   )
 }
 

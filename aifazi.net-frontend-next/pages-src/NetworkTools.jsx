@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { notify } from '../core/notify.jsx'
+import Clickable from '../core/Clickable.jsx'
 import { Input } from '@/core/forms'
 import NetworkSim from '@/components/NetworkSim'
 
@@ -29,26 +30,29 @@ const Row = ({ label, value, mono = true, color }) => (
   </div>
 )
 
-const InfoCard = ({ icon, label, value, color, onClick }) => (
-  <div
-    onClick={onClick}
-    title={onClick ? 'Click to copy' : undefined}
-    style={{
-      background: 'var(--bg3)', border: '1px solid var(--border)',
-      padding: '14px 16px', cursor: onClick ? 'pointer' : 'default',
-      transition: 'border-color 0.15s',
-    }}
-    onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = 'var(--green)')}
-    onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = 'var(--border)')}
-   role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
-      {icon} {label}
-    </div>
-    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: color || 'var(--text)', wordBreak: 'break-all', letterSpacing: 1 }}>
-      {value || '—'}
-    </div>
-  </div>
-)
+const InfoCard = ({ icon, label, value, color, onClick }) => {
+  const Card = onClick ? Clickable : 'div'
+  return (
+    <Card
+      onClick={onClick}
+      title={onClick ? 'Click to copy' : undefined}
+      style={{
+        background: 'var(--bg3)', border: '1px solid var(--border)',
+        padding: '14px 16px', cursor: onClick ? 'pointer' : 'default',
+        transition: 'border-color 0.15s',
+      }}
+      onMouseEnter={e => onClick && (e.currentTarget.style.borderColor = 'var(--green)')}
+      onMouseLeave={e => onClick && (e.currentTarget.style.borderColor = 'var(--border)')}
+    >
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>
+        {icon} {label}
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: color || 'var(--text)', wordBreak: 'break-all', letterSpacing: 1 }}>
+        {value || '—'}
+      </div>
+    </Card>
+  )
+}
 
 const Field = ({ label, value, onChange, placeholder, color }) => (
   <div style={{ marginBottom: 12 }}>
@@ -495,10 +499,9 @@ function WildcardCalc() {
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '12px 16px' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 6 }}>{label}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color, letterSpacing: 1, cursor: 'pointer' }}
+              <Clickable style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color, letterSpacing: 1, cursor: 'pointer' }}
                 onClick={() => navigator.clipboard.writeText(value).then(() => notify.success('Copied!'))}
-                title="Click to copy"
-               role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>{value}</div>
+                title="Click to copy">{value}</Clickable>
             </div>
           ))}
         </div>

@@ -5,6 +5,7 @@ import { Link } from '@/lib/router-compat'
 import NextImage from 'next/image'
 import api, { mediaUrl } from '@/lib/api'
 import { Slider, dialog } from '../core/ui.jsx'
+import Clickable from '@/core/Clickable.jsx'
 import { useForum } from '../context/ForumContext'
 import { Card, NeonButton, Badge, Avatar, RoleBadge, EmptyState } from '../components/community'
 import { MediaAttachment } from '../components/MediaPreview'
@@ -122,11 +123,11 @@ function VideoPlayer({ src, title = '' }) {
 
       {/* Big play button overlay */}
       {!isPlaying && (
-        <div onClick={togglePlay} style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        <Clickable as="div" onClick={togglePlay} label="Play video" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'rgba(0,0,0,0.35)' }}>
           <div className="blog-video-btn" style={{ width: 72, height: 72, borderRadius: '50%', background: 'color-mix(in srgb, var(--green) 90%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 40px color-mix(in srgb, var(--green) 40%, transparent)' }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="#000" style={{ marginLeft: 4 }}><path d="M8 5v14l11-7z"/></svg>
           </div>
-        </div>
+        </Clickable>
       )}
 
       {/* Controls bar */}
@@ -139,12 +140,12 @@ function VideoPlayer({ src, title = '' }) {
         pointerEvents: showControls ? 'all' : 'none',
       }}>
         {/* Progress bar */}
-        <div onClick={handleSeek} style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, cursor: 'pointer', marginBottom: 10 }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+        <Clickable as="div" onClick={handleSeek} label="Seek video" style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.15)', borderRadius: 2, cursor: 'pointer', marginBottom: 10 }}>
           <div style={{ position: 'absolute', height: '100%', width: `${buffered}%`, background: 'rgba(255,255,255,0.25)', borderRadius: 2 }} />
           <div style={{ position: 'absolute', height: '100%', width: `${progress}%`, background: 'var(--green)', borderRadius: 2, transition: 'width 0.1s linear' }}>
             <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
           </div>
-        </div>
+        </Clickable>
 
         {/* Buttons row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

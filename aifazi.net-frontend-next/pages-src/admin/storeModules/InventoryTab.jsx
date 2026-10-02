@@ -4,6 +4,7 @@ import api from '@/lib/api'
 import { useToast } from '../../../components/Toast'
 import { useDialog } from '../../../components/Dialog'
 import { Input, Select } from '@/core/forms'
+import Clickable from '@/core/Clickable'
 import ScanCam from './ScanCam'
 
 const MONO = "var(--font-mono,'JetBrains Mono',monospace)"
@@ -207,14 +208,14 @@ export default function InventoryTab() {
             <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No stock rows — scan a barcode or add stock first.</div>
           ) : (
             stock.map(r => (
-              <div key={r.id} onClick={() => pickRow(r)} style={{ cursor: 'pointer', background: 'var(--bg2)', border: `1px solid ${r.quantity <= 5 ? `${R}50` : 'var(--border)'}`, borderRadius: 10, padding: '10px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+              <Clickable key={r.id} onClick={() => pickRow(r)} style={{ cursor: 'pointer', background: 'var(--bg2)', border: `1px solid ${r.quantity <= 5 ? `${R}50` : 'var(--border)'}`, borderRadius: 10, padding: '10px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
                   <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--text)' }}>{r.product_name}</div>
                   <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{r.sku || '—'}{r.barcode ? ` · ${r.barcode}` : ''}</div>
                 </div>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{r.location_name}</span>
                 <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 700, color: r.quantity <= 5 ? R : r.quantity === 0 ? 'var(--muted)' : G, minWidth: 40, textAlign: 'right' }}>{r.quantity}</span>
-              </div>
+              </Clickable>
             ))
           )}
         </div>

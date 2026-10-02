@@ -3,6 +3,7 @@ import React from 'react'
 import {
   FRAMEWORK_CATEGORIES, DEFAULT_FRAMEWORK,
 } from '../../core/framework-styles.js'
+import Clickable from '../../core/Clickable.jsx'
 import {
   HeaderPreviewSVG, FooterPreviewSVG,
 } from './SiteSettings'
@@ -119,7 +120,7 @@ export function ThemePackageCard({ pkg, isActive, isCustomized, isSaving, onAppl
 
 export function FwStyleCard({ item, isActive, onSelect, accentColor, category }) {
   return (
-    <div
+    <Clickable as="div"
       onClick={() => onSelect(item.id)}
       className="tl-style-card"
       data-active={isActive ? 'true' : undefined}
@@ -135,14 +136,6 @@ export function FwStyleCard({ item, isActive, onSelect, accentColor, category })
           : '0 2px 8px rgba(0,0,0,0.2)',
         position: 'relative',
         transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
-      }}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onSelect(item.id)
-        }
       }}
     >
       {isActive && (
@@ -180,7 +173,7 @@ export function FwStyleCard({ item, isActive, onSelect, accentColor, category })
         </div>
         <div style={{ fontFamily: _FM, fontSize: 11, color: _MT, lineHeight: 1.5 }}>{item.desc}</div>
       </div>
-    </div>
+    </Clickable>
   )
 }
 

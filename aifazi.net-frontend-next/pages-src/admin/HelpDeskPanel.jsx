@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { useNow } from '../../hooks/useNow'
 import { Checkbox, Input, Select, TextArea } from '../../core/ui.jsx'
+import Clickable from '../../core/Clickable.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader } from './shared'
 
@@ -695,10 +696,10 @@ export default function HelpDeskPanel({ initialTicketId }) {
             )}
           </div>
         ) : tickets.map(t => (
-          <div key={tid(t)} style={{ ...S.card, cursor: 'pointer' }}
+          <Clickable as="div" key={tid(t)} style={{ ...S.card, cursor: 'pointer' }}
             onClick={() => openTicket(tid(t))}
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--cyan) 25%, transparent)'; e.currentTarget.style.background = 'var(--bg)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg2)' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -723,8 +724,8 @@ export default function HelpDeskPanel({ initialTicketId }) {
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', alignItems: 'flex-start' }}
-                onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
+              <Clickable as="div" style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', alignItems: 'flex-start' }}
+                onClick={e => e.stopPropagation()}>
                 {t.status === 'open' && (
                   <button onClick={() => quickStatus(t, 'in-progress')}
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',
@@ -741,9 +742,9 @@ export default function HelpDeskPanel({ initialTicketId }) {
                   style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',
                     background: 'transparent', border: '1px solid rgba(255,71,87,0.3)',
                     color: 'var(--red)', cursor: 'pointer', borderRadius: 4 }}>DEL</button>
-              </div>
+              </Clickable>
             </div>
-          </div>
+          </Clickable>
         ))}
 
         {pages > 1 && (
