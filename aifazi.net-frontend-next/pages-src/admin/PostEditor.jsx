@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import api from '@/lib/api'
 import { sanitizeHtml } from '@/lib/sanitizeHtml'
@@ -120,7 +121,7 @@ function MediaThumb({ file, height = 120, cdnConfig = null }) {
   }
 
   return (
-    <img src={src} alt={file.original_name} onError={handleError}
+    <Image unoptimized width={1200} height={800} src={src} alt={file.original_name} onError={handleError}
       style={{ width: '100%', height, objectFit: 'cover', display: 'block' }} />
   )
 }
@@ -590,7 +591,7 @@ function PostEditor({ post, onSave, onCancel }) {
               Browse
             </button>
           </div>
-          {form.cover_image && <img src={form.cover_image} alt="cover" style={{ width: '100%', height: 160, objectFit: 'cover', marginTop: 10, border: '1px solid var(--border)' }} />}
+          {form.cover_image && <Image unoptimized width={1200} height={160} src={form.cover_image} alt="cover" style={{ width: '100%', height: 160, objectFit: 'cover', marginTop: 10, border: '1px solid var(--border)' }} />}
         </div>
 
         {/* Video URL */}
@@ -644,7 +645,7 @@ function PostEditor({ post, onSave, onCancel }) {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>𝕏 / TWITTER</div>
                 <div style={{ border: '1px solid #2f3336', borderRadius: 12, overflow: 'hidden', maxWidth: 500, background: '#000' }}>
                   {form.cover_image && (
-                    <img src={form.cover_image} alt="X card cover preview" loading="lazy" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+                    <Image unoptimized width={1200} height={160} src={form.cover_image} alt="X card cover preview" loading="lazy" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
                   )}
                   <div style={{ padding: '10px 14px 12px' }}>
                     <div style={{ fontSize: 11, color: '#71767b', marginBottom: 2, fontFamily: 'sans-serif' }}>{ogDomain}</div>
@@ -658,7 +659,7 @@ function PostEditor({ post, onSave, onCancel }) {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>LINKEDIN</div>
                 <div style={{ border: '1px solid #d0d7de', borderRadius: 2, overflow: 'hidden', maxWidth: 500, background: '#fff' }}>
                   {form.cover_image && (
-                    <img src={form.cover_image} alt="LinkedIn card cover preview" loading="lazy" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                    <Image unoptimized width={1200} height={140} src={form.cover_image} alt="LinkedIn card cover preview" loading="lazy" style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
                   )}
                   <div style={{ padding: '8px 12px 10px', background: '#f3f6f8' }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#000000e6', fontFamily: 'sans-serif', lineHeight: 1.4 }}>{ogTitle.length > 70 ? ogTitle.slice(0, 67) + '...' : ogTitle}</div>

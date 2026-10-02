@@ -1,5 +1,6 @@
 'use client'
 // forumProfileParts.jsx — shared profile widgets (extracted).
+import Image from 'next/image'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
@@ -167,7 +168,7 @@ function Avatar({ user, size = 80 }) {
   )
   const avatar = avatarUrl(user?.avatar)
   if (avatar) return (
-    <img src={avatar} alt={user.username} loading="lazy"
+    <Image unoptimized width={size} height={size} src={avatar} alt={user.username} loading="lazy"
       style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover',
         border: '2px solid var(--border)', flexShrink: 0 }} />
   )

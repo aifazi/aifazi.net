@@ -4,6 +4,7 @@
  * Requires site login (ForumContext). If Discord not linked, prompts to connect.
  * Discord ID/username auto-filled from the linked Discord account on the user's profile.
  */
+import Image from 'next/image'
 import React, { useState, useEffect } from 'react'
 import { Link } from '@/lib/router-compat'
 import api, { getAuthToken } from '@/lib/api'
@@ -382,7 +383,7 @@ export default function WhitelistApply() {
           borderRadius: 10, padding: '12px 16px',
         }}>
           {user.discord_avatar && resolvedDiscordId ? (
-            <img
+            <Image unoptimized width={36} height={36}
               src={'https://cdn.discordapp.com/avatars/' + resolvedDiscordId + '/' + user.discord_avatar + '.png?size=40'}
               alt={resolvedDiscordUsername}
               style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid ' + DISCORD_PURPLE + '60' }}

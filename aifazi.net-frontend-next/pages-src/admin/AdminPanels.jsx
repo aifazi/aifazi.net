@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import React, { useState, useEffect, useCallback, Fragment } from 'react'
 import api, { getRole, getUsername } from '@/lib/api'
 import { getSupabase } from '@/lib/supabase'
@@ -464,7 +465,7 @@ function AdminProfilePanel() {
                   Scan this QR code with your authenticator app, then enter the 6-digit code below to confirm.
                 </p>
                 <div style={{ background: '#fff', padding: 12, borderRadius: 6, display: 'inline-block', alignSelf: 'flex-start' }}>
-                  <img src={twoFA.qr} alt="2FA QR Code" style={{ display: 'block', width: 160, height: 160 }} />
+                  <Image unoptimized width={160} height={160} src={twoFA.qr} alt="2FA QR Code" style={{ display: 'block', width: 160, height: 160 }} />
                 </div>
                 {twoFA.secret && (
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.7 }}>

@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import api, { canEdit as checkCanEdit, getRole, hasPermission } from '@/lib/api'
 import { IconPickerModal, IconDisplay } from '../components/IconPicker'
@@ -1429,7 +1430,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
   const fileRef = useRef()
 
   if (!isAdmin) {
-    return <img src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={style} />
+    return <Image unoptimized width={800} height={600} src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={style} />
   }
 
   const openModal = () => { setDraftUrl(value || defaultValue); setDraftAlt(altValue || defaultAlt); setOpen(true) }
@@ -1469,7 +1470,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         onMouseEnter={e => e.currentTarget.style.outline = '2px solid var(--cyan)'}
         onMouseLeave={e => e.currentTarget.style.outline = '1px dashed rgba(0,212,255,0.35)'}
       >
-        <img src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={imgStyle} />
+        <Image unoptimized width={800} height={600} src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={imgStyle} />
         <span style={{
           position: 'absolute', bottom: -8, right: -8,
           background: 'var(--cyan)', color: '#000',
@@ -1486,7 +1487,7 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
         }} onClick={() => setOpen(false)}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--cyan)', marginBottom: 12 }}>EDIT IMAGE · {contentKey}</div>
-            <img src={safeImageSrc(draftUrl)} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
+            <Image unoptimized width={800} height={600} src={safeImageSrc(draftUrl)} alt={draftAlt} style={{ width: '100%', maxHeight: 180, objectFit: 'contain', marginBottom: 12, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }} onError={e => { e.currentTarget.style.opacity = 0.25 }} onLoad={e => { e.currentTarget.style.opacity = 1 }} />
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>IMAGE URL</label>
               <div style={{ display: 'flex', gap: 6 }}>

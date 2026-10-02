@@ -222,7 +222,7 @@ export default function ProductDetail() {
               <Link key={p.id} to={`/store/product/${p.slug || p.id}`} style={{ textDecoration: 'none' }}>
                 <Card hover style={{ padding: 16, height: '100%' }}>
                   {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
+                    <NextImage unoptimized width={1200} height={120} src={p.image_url} alt={p.name} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} />
                   ) : (
                     <div style={{ width: '100%', height: 120, borderRadius: 8, marginBottom: 10, background: 'linear-gradient(160deg, var(--cyan)12, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>🛒</div>
                   )}

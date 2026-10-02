@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
@@ -234,7 +235,7 @@ function FiveMTab({ user }) {
         {discordLinked ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             {discordAvatarUrl ? (
-              <img
+              <Image unoptimized width={44} height={44}
                 src={discordAvatarUrl}
                 alt={discordUsername || 'Discord'}
                 style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${DISCORD_PURPLE}60` }}
@@ -290,7 +291,7 @@ function FiveMTab({ user }) {
         {steamLinked ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             {steamAvatar ? (
-              <img
+              <Image unoptimized width={44} height={44}
                 src={steamAvatar}
                 alt={steamUsername || 'Steam'}
                 style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${STEAM_LIGHT}60`, objectFit: 'cover' }}

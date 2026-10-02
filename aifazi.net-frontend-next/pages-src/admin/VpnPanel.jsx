@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import api from '@/lib/api'
 import { useToast } from '../../components/Toast'
@@ -703,7 +704,7 @@ function VpnPanelInner() {
             {managing ? <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 8 }}>Working…</div> : null}
             {reissuedQr ? (
               <div style={{ marginTop: 12, background: '#fff', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-                <img src={reissuedQr} alt="New WireGuard QR" style={{ width: 200, height: 200 }} />
+                <Image unoptimized width={200} height={200} src={reissuedQr} alt="New WireGuard QR" style={{ width: 200, height: 200 }} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#333', marginTop: 8 }}>
                   New keys active — scan on the device now, old config is dead
                 </div>

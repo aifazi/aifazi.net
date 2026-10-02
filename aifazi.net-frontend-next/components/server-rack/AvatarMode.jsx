@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import { useInlineEdit } from '../../context/EditContext'
 import { Input } from '../../core/forms'
@@ -248,7 +249,7 @@ function AvatarMode({ visibleRef }) {
             willChange: 'transform',
           }}>
             {!imgErr && avatarUrl && avatarUrl.trim() !== '' ? (
-              <img
+              <Image unoptimized width={400} height={400}
                 src={avatarUrl.trim()}
                 alt="Avatar"
                 onError={() => setImgErr(true)}

@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import api, { mediaUrl } from '@/lib/api'
 import { NeonButton } from './community'
@@ -132,7 +133,7 @@ function ImagePreview({ file }) {
             </div>
           </a>
         ) : (
-          <img src={mediaUrl(src)} alt={name} loading="lazy"
+          <Image unoptimized width={800} height={600} src={mediaUrl(src)} alt={name} loading="lazy"
             onError={() => setFailed(true)}
             className="media-image" />
         )}
@@ -141,7 +142,7 @@ function ImagePreview({ file }) {
         <div className="media-lightbox" onClick={() => setOpen(false)}>
           <div className="media-lightbox-inner" onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
             <button className="media-lightbox-close" aria-label="Close preview" onClick={() => setOpen(false)}>✕</button>
-            <img src={mediaUrl(src)} alt={name} style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10, display: 'block', margin: '0 auto' }} />
+            <Image unoptimized width={1200} height={800} src={mediaUrl(src)} alt={name} style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10, display: 'block', margin: '0 auto' }} />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 12 }}>{name}</div>
           </div>
         </div>

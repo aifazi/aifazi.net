@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { Link } from '@/lib/router-compat'
 import { NeonButton } from '../../components/community'
 
@@ -40,7 +41,7 @@ export default function CartDrawer({ open, onClose, cart, user, loginHref, isLoa
             <>
               {cart.items.map(item => (
                 <div key={item.id} className="ec-cart-item">
-                  <img className="ec-cart-item-img" src={item.product?.image_url || ''} alt={item.product?.name || 'Product'} onError={e => e.currentTarget.style.display = 'none'} />
+                  <Image unoptimized width={64} height={64} className="ec-cart-item-img" src={item.product?.image_url || ''} alt={item.product?.name || 'Product'} onError={e => e.currentTarget.style.display = 'none'} />
                   <div className="ec-cart-item-info">
                     <div className="ec-cart-item-name">{item.product?.name || 'Product'}</div>
                     <div className="ec-cart-item-price">${item.product?.price?.toFixed(2) || '0.00'} each</div>
