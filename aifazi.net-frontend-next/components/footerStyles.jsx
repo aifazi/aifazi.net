@@ -434,20 +434,20 @@ function FooterDarkCompact({ siteConfig, sectionLinks, platformLinks, socialLink
 }
 
 function FooterCommand({ sectionLinks, platformLinks, socialLinks, hasAdminAccess, handleHashLink, year }) {
-  const P = { bg: '#070b12', text: '#dbeafe', accent: '#38bdf8', sub: '#a78bfa', muted: '#64748b', border: 'rgba(56,189,248,0.18)' }
-  const topBorder = '1px solid rgba(56,189,248,0.3)'
+  const P = { bg: 'var(--bg2)', text: 'var(--text)', accent: 'var(--cyan)', sub: 'var(--purple)', muted: 'var(--muted)', border: 'var(--border)' }
+  const topBorder = '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)'
   const link = { fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.4, transition: 'color 0.2s' }
   const head  = { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: P.sub, marginBottom: 12, display: 'block' }
-  const services = [['API', P.accent], ['DB', '#00ff88'], ['CDN', '#f6821f'], ['MAIL', '#a78bfa']]
+  const services = [['API', P.accent], ['DB', 'var(--green)'], ['CDN', 'var(--orange)'], ['MAIL', 'var(--purple)']]
   return (
     <footer data-footer-style="command" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
       <div style={{ padding: 'clamp(32px,5vw,56px) clamp(16px,5vw,60px) 40px' }}>
-        <Clickable as="div" onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#0b1220', border: '1px solid rgba(56,189,248,0.24)', borderRadius: 10, padding: '10px 14px', marginBottom: 36, maxWidth: 560, cursor: 'pointer', transition: 'border-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.45)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.24)'}>
+        <Clickable as="div" onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 24%, transparent)', borderRadius: 10, padding: '10px 14px', marginBottom: 36, maxWidth: 560, cursor: 'pointer', transition: 'border-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--cyan) 45%, transparent)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--cyan) 24%, transparent)'}>
           <span style={{ color: P.accent, fontFamily: 'var(--font-mono)', fontSize: 13 }}>⌘</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>Search docs, jump to tools, contact...</span>
           <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
             {['CTRL', 'K'].map(k => (
-              <kbd key={k} style={{ background: '#0e1724', border: '1px solid rgba(56,189,248,0.22)', borderRadius: 4, padding: '2px 6px', fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>{k}</kbd>
+              <kbd key={k} style={{ background: 'color-mix(in srgb, var(--text) 8%, var(--bg3))', border: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', borderRadius: 4, padding: '2px 6px', fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted }}>{k}</kbd>
             ))}
           </span>
         </Clickable>
@@ -501,17 +501,17 @@ function FooterCommand({ sectionLinks, platformLinks, socialLinks, hasAdminAcces
 }
 
 function FooterDashboard({ sectionLinks, platformLinks, hasAdminAccess, handleHashLink, year }) {
-  const P = { bg: '#07111a', text: '#c8d8e8', accent: '#38bdf8', sub: '#00ff88', muted: '#6b8296', border: 'rgba(56,189,248,0.14)' }
-  const topBorder = '1px solid rgba(56,189,248,0.24)'
+  const P = { bg: 'var(--bg2)', text: 'var(--text)', accent: 'var(--cyan)', sub: 'var(--green)', muted: 'var(--muted)', border: 'var(--border)' }
+  const topBorder = '1px solid color-mix(in srgb, var(--cyan) 24%, transparent)'
   const link = { fontFamily: 'var(--font-mono)', fontSize: 11, color: P.muted, textDecoration: 'none', letterSpacing: 1, lineHeight: 2.4, transition: 'color 0.2s' }
   const head  = { fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: P.accent, marginBottom: 12, display: 'block' }
-  const metrics = [['API', '99.9%', '#38bdf8'], ['DATABASE', 'OK', '#00ff88'], ['SUPPORT', '24h', '#f6821f'], ['TOOLS', '12', '#a78bfa']]
+  const metrics = [['API', '99.9%', 'var(--cyan)'], ['DATABASE', 'OK', 'var(--green)'], ['SUPPORT', '24h', 'var(--orange)'], ['TOOLS', '12', 'var(--purple)']]
   return (
     <footer data-footer-style="dashboard" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
       <div style={{ padding: 'clamp(28px,4vw,44px) clamp(16px,5vw,60px) 36px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 36 }}>
           {metrics.map(([label, value, c]) => (
-            <div key={label} style={{ background: '#0d1722', border: `1px solid ${c}33`, borderRadius: 8, padding: '12px 14px' }}>
+            <div key={label} style={{ background: 'var(--bg3)', border: `1px solid ${c}33`, borderRadius: 8, padding: '12px 14px' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: P.muted, marginBottom: 6 }}>{label}</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: c, letterSpacing: 1 }}>{value}</div>
             </div>
@@ -627,7 +627,7 @@ function FooterBrutal({ sectionLinks, platformLinks, handleHashLink, year }) {
 }
 
 function FooterDock({ sectionLinks, platformLinks, socialLinks, handleHashLink, year }) {
-  const P = { bg: '#061018', text: '#c8d8e8', accent: 'var(--cyan)', muted: '#6b8296', border: 'color-mix(in srgb, var(--cyan) 18%, transparent)' }
+  const P = { bg: 'var(--bg2)', text: 'var(--text)', accent: 'var(--cyan)', muted: 'var(--muted)', border: 'color-mix(in srgb, var(--cyan) 18%, transparent)' }
   const topBorder = '1px solid color-mix(in srgb, var(--cyan) 26%, transparent)'
   const dockItems = [
     ...sectionLinks.slice(0, 4).map(l => ({ label: l.label, href: `/#${l.hash}`, hash: l.hash, icon: '▸' })),
@@ -637,16 +637,16 @@ function FooterDock({ sectionLinks, platformLinks, socialLinks, handleHashLink, 
   return (
     <footer data-footer-style="dock" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
       <div style={{ padding: '28px clamp(16px,5vw,60px) 22px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: '#0b1118', border: '1px solid rgba(0,212,255,0.28)', borderRadius: 999, padding: '8px 14px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 28%, transparent)', borderRadius: 999, padding: '8px 14px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {dockItems.map((item, i) => {
             // P1-7 — 44px touch target, 34px visual: the anchor carries 5px
             // padding (offset by -5px margin, so layout is identical) while the
             // inner span draws the original 34px circle. aria-label added below.
             const dot = { padding: 5, margin: -5, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: i === 0 ? P.accent : P.muted, fontSize: 13, textDecoration: 'none', transition: 'color 0.2s, transform 0.2s' }
-            const dotInner = { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,212,255,0.22)', transition: 'border-color 0.2s' }
+            const dotInner = { width: 34, height: 34, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in srgb, var(--text) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 22%, transparent)', transition: 'border-color 0.2s' }
             const ring = (el, color) => { try { el.firstChild.style.borderColor = color } catch {} }
             const onEnter = e => { e.currentTarget.style.color = P.accent; e.currentTarget.style.transform = 'translateY(-3px)'; ring(e.currentTarget, 'var(--cyan)') }
-            const onLeave = e => { e.currentTarget.style.color = i === 0 ? P.accent : P.muted; e.currentTarget.style.transform = 'none'; ring(e.currentTarget, 'rgba(0,212,255,0.22)') }
+            const onLeave = e => { e.currentTarget.style.color = i === 0 ? P.accent : P.muted; e.currentTarget.style.transform = 'none'; ring(e.currentTarget, 'color-mix(in srgb, var(--cyan) 22%, transparent)') }
             return item.hash ? (
               <a key={i} href={item.href} onClick={e => handleHashLink(e, item.hash)} title={item.label} aria-label={item.label} style={dot} onMouseEnter={onEnter} onMouseLeave={onLeave}><span style={dotInner}>{item.icon}</span></a>
             ) : item.external ? (
@@ -663,8 +663,8 @@ function FooterDock({ sectionLinks, platformLinks, socialLinks, handleHashLink, 
 }
 
 function FooterTerminal({ sectionLinks, platformLinks, hasAdminAccess, year }) {
-  const P = { bg: '#050805', text: '#33ff33', accent: '#33ff33', sub: '#ffcc00', muted: '#228822', border: 'rgba(51,255,51,0.24)' }
-  const topBorder = '1px solid rgba(51,255,51,0.35)'
+  const P = { bg: 'var(--bg2)', text: 'var(--green)', accent: 'var(--green)', sub: 'var(--orange)', muted: 'var(--muted)', border: 'color-mix(in srgb, var(--green) 24%, transparent)' }
+  const topBorder = '1px solid color-mix(in srgb, var(--green) 35%, transparent)'
   const lines = [
     '[  OK  ] api.connected → 200',
     '[  OK  ] db.connected  → mongodb://prod',
@@ -696,7 +696,7 @@ function FooterTerminal({ sectionLinks, platformLinks, hasAdminAccess, year }) {
           <div style={{ fontSize: 11, color: P.sub, marginTop: 8 }}>admin — <Link to="/admin" style={{ color: P.sub }}>open dashboard</Link></div>
         )}
       </div>
-      <div style={{ padding: '10px clamp(16px,5vw,60px)', borderTop: '1px solid rgba(51,255,51,0.16)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+      <div style={{ padding: '10px clamp(16px,5vw,60px)', borderTop: '1px solid color-mix(in srgb, var(--green) 16%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
         <span style={{ fontFamily: 'monospace', fontSize: 11, color: P.muted, letterSpacing: 1 }}>[EOF] aifazi.net — © {year}</span>
         <span style={{ fontFamily: 'monospace', fontSize: 11, color: P.sub, letterSpacing: 1 }}>UPTIME 99.99%</span>
       </div>

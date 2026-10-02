@@ -153,7 +153,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
 
   const btnStyle = (active = false) => ({
     background: active ? 'rgba(0,255,136,0.2)' : 'transparent',
-    border: 'none', color: active ? 'var(--green)' : '#c8d8e8',
+    border: 'none', color: active ? 'var(--green)' : 'var(--text)',
     fontFamily: 'monospace', fontSize: 13, fontWeight: 700,
     padding: '5px 9px', cursor: 'pointer',
     borderRadius: 3, lineHeight: 1,
@@ -166,8 +166,8 @@ function FloatingToolbar({ position, onCommand, onClose }) {
       top: position.top,
       left: position.left,
       zIndex: 999999,
-      background: '#111a24',
-      border: '1px solid rgba(0,212,255,0.3)',
+      background: 'var(--bg2)',
+      border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
       boxShadow: '0 8px 32px rgba(0,0,0,0.7), 0 0 20px rgba(0,212,255,0.1)',
       display: 'flex', alignItems: 'center', gap: 2,
       padding: '4px 6px',
@@ -180,7 +180,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
       {/* Style dropdown */}
       <div style={{ position: 'relative' }}>
         <button
-          style={{ ...btnStyle(), padding: '5px 10px', fontSize: 11, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6, borderRight: '1px solid rgba(255,255,255,0.08)', paddingRight: 10, marginRight: 4 }}
+          style={{ ...btnStyle(), padding: '5px 10px', fontSize: 11, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 6, borderRight: '1px solid var(--border)', paddingRight: 10, marginRight: 4 }}
           onMouseDown={e => { e.preventDefault(); setShowStyleMenu(v => !v); setShowColorMenu(false); setShowLinkInput(false) }}
         >
           <span>{currentStyle}</span>
@@ -189,7 +189,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
         {showStyleMenu && (
           <div style={{
             position: 'absolute', top: '100%', left: 0, marginTop: 4,
-            background: '#0b1118', border: '1px solid rgba(0,212,255,0.25)',
+            background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
             minWidth: 160, zIndex: 1000000, borderRadius: 3,
             maxHeight: 280, overflowY: 'auto',
@@ -200,7 +200,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
                 style={{
                   padding: '9px 16px', cursor: 'pointer',
                   fontFamily: "'Share Tech Mono', monospace", fontSize: 12,
-                  color: currentStyle === s.label ? 'var(--green)' : '#c8d8e8',
+                  color: currentStyle === s.label ? 'var(--green)' : 'var(--text)',
                   background: currentStyle === s.label ? 'rgba(0,255,136,0.08)' : 'transparent',
                   transition: 'background 0.15s',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -217,7 +217,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
       </div>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />
+      <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 2px' }} />
 
       {/* Bold */}
       <button style={btnStyle(isActive('bold'))} onMouseDown={e => { e.preventDefault(); exec('bold') }} title="Bold (Ctrl+B)">B</button>
@@ -229,7 +229,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
       <button style={{ ...btnStyle(isActive('strikeThrough')), textDecoration: 'line-through', fontSize: 12 }} onMouseDown={e => { e.preventDefault(); exec('strikeThrough') }} title="Strikethrough">S</button>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />
+      <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 2px' }} />
 
       {/* Text color */}
       <div style={{ position: 'relative' }}>
@@ -244,7 +244,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
         {showColorMenu && (
           <div style={{
             position: 'absolute', top: '100%', left: 0, marginTop: 4,
-            background: '#0b1118', border: '1px solid rgba(0,212,255,0.25)',
+            background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
             padding: '8px', zIndex: 1000000, borderRadius: 3,
             display: 'flex', flexDirection: 'column', gap: 4, minWidth: 120,
@@ -256,13 +256,13 @@ function FloatingToolbar({ position, onCommand, onClose }) {
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '6px 10px', cursor: 'pointer', borderRadius: 3,
                   fontFamily: 'monospace', fontSize: 11,
-                  color: c.value === 'inherit' ? '#c8d8e8' : c.value,
+                  color: c.value === 'inherit' ? 'var(--text)' : c.value,
                   transition: 'background 0.15s',
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--text) 6%, transparent)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: c.value === 'inherit' ? '#c8d8e8' : c.value, border: '1px solid rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: c.value === 'inherit' ? 'var(--text)' : c.value, border: '1px solid var(--border)', flexShrink: 0 }} />
                 {c.label}
               </div>
             ))}
@@ -280,7 +280,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
         {showLinkInput && (
           <div style={{
             position: 'absolute', top: '100%', left: 0, marginTop: 4,
-            background: '#0b1118', border: '1px solid rgba(0,212,255,0.25)',
+            background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
             boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
             padding: '8px', zIndex: 1000000, borderRadius: 3,
             display: 'flex', gap: 6, minWidth: 240,
@@ -292,8 +292,8 @@ function FloatingToolbar({ position, onCommand, onClose }) {
               onKeyDown={e => e.key === 'Enter' && insertLink()}
               placeholder="https://..."
               style={{
-                flex: 1, background: 'var(--bg3)', border: '1px solid rgba(0,212,255,0.3)',
-                color: '#c8d8e8', fontFamily: 'monospace', fontSize: 12,
+                flex: 1, background: 'var(--bg3)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
+                color: 'var(--text)', fontFamily: 'monospace', fontSize: 12,
                 padding: '6px 10px', outline: 'none', borderRadius: 3,
               }}
             />
@@ -306,7 +306,7 @@ function FloatingToolbar({ position, onCommand, onClose }) {
       </div>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', margin: '0 2px' }} />
+      <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 2px' }} />
 
       {/* Clear formatting */}
       <button title="Clear Formatting" style={{ ...btnStyle(), fontSize: 11, opacity: 0.6 }}
@@ -572,7 +572,7 @@ function EmojiPicker({ value, onChange }) {
       {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, marginTop: 6, zIndex: 99999,
-          background: '#0b1118', border: '1px solid rgba(0,212,255,0.3)',
+          background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
           boxShadow: '0 16px 48px rgba(0,0,0,0.8)',
           width: 320, borderRadius: 4,
         }}>
@@ -582,8 +582,8 @@ function EmojiPicker({ value, onChange }) {
               <button key={cat} onClick={() => setActiveTab(cat)} style={{
                 padding: '3px 8px', fontSize: 11, letterSpacing: 1,
                 background: activeTab === cat ? 'rgba(0,255,136,0.15)' : 'transparent',
-                border: `1px solid ${activeTab === cat ? 'rgba(0,255,136,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                color: activeTab === cat ? '#00ff88' : '#4a6070',
+                border: `1px solid ${activeTab === cat ? 'rgba(0,255,136,0.4)' : 'var(--border)'}`,
+                color: activeTab === cat ? 'var(--green)' : 'var(--muted)',
                 cursor: 'pointer', fontFamily: 'monospace', borderRadius: 2,
               }}>{cat.split(' ')[0]}</button>
             ))}
@@ -603,9 +603,9 @@ function EmojiPicker({ value, onChange }) {
             ))}
           </div>
           {/* Lordicon tip */}
-          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(0,212,255,0.1)', fontSize: 11, color: '#4a6070', lineHeight: 1.6, fontFamily: 'monospace' }}>
-            💡 <span style={{ color: '#00d4ff' }}>Want animated icons?</span> Get free ones at{' '}
-            <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: '#00ff88' }}>lordicon.com</a>
+          <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(0,212,255,0.1)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.6, fontFamily: 'monospace' }}>
+            💡 <span style={{ color: 'var(--cyan)' }}>Want animated icons?</span> Get free ones at{' '}
+            <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: 'var(--green)' }}>lordicon.com</a>
             {' '}→ copy the URL → paste it in the icon field above
           </div>
         </div>
@@ -751,15 +751,15 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
 
   const handleExit = () => { if (pendingCount > 0) setConfirmDiscard(true); else onDiscard() }
 
-  const discardConfirmBtn = { flex: 1, padding: '7px 0', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.5)', color: '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
-  const keepEditingBtn   = { flex: 1, padding: '7px 0', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#4a6070', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
+  const discardConfirmBtn = { flex: 1, padding: '7px 0', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.5)', color: 'var(--red)', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
+  const keepEditingBtn   = { flex: 1, padding: '7px 0', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 1, cursor: 'pointer', borderRadius: 4 }
 
   return (
     <div style={{ position: 'fixed', bottom: 24, left: 24, zIndex: 999990, minWidth: 280,
       transform: visible ? 'translateY(0)' : 'translateY(120%)', opacity: visible ? 1 : 0,
       transition: 'transform 0.35s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease',
     }}>
-      <div style={{ background: '#0a0f1a', border: '1px solid rgba(0,255,136,0.4)', borderRadius: 8, overflow: 'hidden',
+      <div style={{ background: 'var(--bg2)', border: '1px solid rgba(0,255,136,0.4)', borderRadius: 8, overflow: 'hidden',
         boxShadow: '0 0 0 1px rgba(0,255,136,0.06), 0 8px 32px rgba(0,0,0,0.7), 0 0 24px rgba(0,255,136,0.06)',
         fontFamily: "'Share Tech Mono', monospace",
       }}>
@@ -768,15 +768,15 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           {/* Status */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#00ff88', flexShrink: 0, boxShadow: '0 0 6px #00ff88', animation: 'emBlink 1.8s infinite' }} />
-            <span style={{ fontSize: 11, letterSpacing: 3, color: '#00ff88' }}>PREVIEW EDIT MODE</span>
+            <span style={{ fontSize: 11, letterSpacing: 3, color: 'var(--green)' }}>PREVIEW EDIT MODE</span>
             <span style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: 1,
-              color: pendingCount > 0 ? '#00d4ff' : '#2a3a48',
+              color: pendingCount > 0 ? 'var(--cyan)' : '#2a3a48',
               background: pendingCount > 0 ? 'rgba(0,212,255,0.1)' : 'transparent',
               border: pendingCount > 0 ? '1px solid rgba(0,212,255,0.3)' : '1px solid transparent',
               padding: '1px 7px', borderRadius: 10, transition: 'all 0.3s',
             }}>{pendingCount} change{pendingCount !== 1 ? 's' : ''}</span>
           </div>
-          {saveError && <div style={{ fontSize: 11, color: '#ff4757', letterSpacing: 1, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)', padding: '5px 8px', borderRadius: 4 }}>⚠ {saveError}</div>}
+          {saveError && <div style={{ fontSize: 11, color: 'var(--red)', letterSpacing: 1, background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)', padding: '5px 8px', borderRadius: 4 }}>⚠ {saveError}</div>}
           <button
             type="button"
             onClick={() => setShowDiff(true)}
@@ -785,7 +785,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
               padding: '8px 0',
               background: 'rgba(255,183,77,0.08)',
               border: `1px solid ${pendingCount > 0 ? 'rgba(255,183,77,0.35)' : 'rgba(255,183,77,0.12)'}`,
-              color: pendingCount > 0 ? '#ffb74d' : '#2a3a48',
+              color: pendingCount > 0 ? 'var(--orange)' : '#2a3a48',
               fontFamily: "'Share Tech Mono', monospace",
               fontSize: 11,
               letterSpacing: 2,
@@ -804,7 +804,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
               padding: '8px 0',
               background: 'rgba(0,212,255,0.08)',
               border: '1px solid rgba(0,212,255,0.28)',
-              color: '#00d4ff',
+              color: 'var(--cyan)',
               fontFamily: "'Share Tech Mono', monospace",
               fontSize: 11,
               letterSpacing: 2,
@@ -817,7 +817,7 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           >GSAP ANIMATION LIBRARY</button>
           {confirmDiscard ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 11, color: '#ff4757', letterSpacing: 1 }}>Discard {pendingCount} change{pendingCount !== 1 ? 's' : ''}?</div>
+              <div style={{ fontSize: 11, color: 'var(--red)', letterSpacing: 1 }}>Discard {pendingCount} change{pendingCount !== 1 ? 's' : ''}?</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={onDiscard} style={discardConfirmBtn}>YES, DISCARD</button>
                 <button onClick={() => setConfirmDiscard(false)} style={keepEditingBtn}>KEEP EDITING</button>
@@ -826,12 +826,12 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           ) : (
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={onSave} disabled={saving || pendingCount === 0}
-                style={{ flex: 1, padding: '9px 0', background: pendingCount > 0 && !saving ? 'rgba(0,255,136,0.15)' : 'rgba(0,255,136,0.04)', border: `1px solid ${pendingCount > 0 && !saving ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.12)'}`, color: pendingCount > 0 && !saving ? '#00ff88' : '#2a3a48', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: pendingCount > 0 && !saving ? 'pointer' : 'not-allowed', borderRadius: 5, transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '9px 0', background: pendingCount > 0 && !saving ? 'rgba(0,255,136,0.15)' : 'rgba(0,255,136,0.04)', border: `1px solid ${pendingCount > 0 && !saving ? 'rgba(0,255,136,0.5)' : 'rgba(0,255,136,0.12)'}`, color: pendingCount > 0 && !saving ? 'var(--green)' : '#2a3a48', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: pendingCount > 0 && !saving ? 'pointer' : 'not-allowed', borderRadius: 5, transition: 'all 0.2s' }}
                 onMouseEnter={e => { if (pendingCount > 0 && !saving) e.currentTarget.style.background = 'rgba(0,255,136,0.25)' }}
                 onMouseLeave={e => { if (pendingCount > 0 && !saving) e.currentTarget.style.background = 'rgba(0,255,136,0.15)' }}
               >{saving ? '⟳ SAVING...' : '💾 SAVE'}</button>
               <button onClick={handleExit} disabled={saving}
-                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', color: saving ? '#2a3a48' : '#ff4757', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: saving ? 'not-allowed' : 'pointer', borderRadius: 5, transition: 'all 0.2s' }}
+                style={{ flex: 1, padding: '9px 0', background: 'transparent', border: '1px solid rgba(255,71,87,0.35)', color: saving ? '#2a3a48' : 'var(--red)', fontFamily: "'Share Tech Mono', monospace", fontSize: 11, letterSpacing: 2, cursor: saving ? 'not-allowed' : 'pointer', borderRadius: 5, transition: 'all 0.2s' }}
                 onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'rgba(255,71,87,0.1)' }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
               >✕ EXIT</button>
@@ -848,13 +848,13 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 999996,
             width: '100%', maxWidth: 640, maxHeight: '80vh', overflowY: 'auto',
-            background: '#0b1118', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 8,
+            background: 'var(--bg2)', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 8,
             boxShadow: '0 0 60px rgba(255,183,77,0.1), 0 24px 64px rgba(0,0,0,0.9)',
             padding: '24px 28px', fontFamily: "'Share Tech Mono', monospace",
           }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-              <div style={{ fontSize: 11, letterSpacing: 3, color: '#ffb74d' }}>REVIEW CHANGES — {pendingCount} pending</div>
-              <button onClick={() => setShowDiff(false)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: '#4a6070', cursor: 'pointer', fontSize: 14 }}>✕</button>
+              <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--orange)' }}>REVIEW CHANGES — {pendingCount} pending</div>
+              <button onClick={() => setShowDiff(false)} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {Object.entries(pending).sort(([a], [b]) => a.localeCompare(b)).map(([key, newVal]) => {
@@ -867,15 +867,15 @@ function EditModeBar({ pendingCount, onSave, onDiscard, saving, saveError, onOpe
                 }
                 const typeTag = (v) => v === undefined ? 'NONE' : Array.isArray(v) ? 'ARRAY' : (v === null ? 'NULL' : typeof v).toUpperCase()
                 return (
-                  <div key={key} style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '10px 12px', background: 'rgba(255,255,255,0.02)' }}>
+                  <div key={key} style={{ border: '1px solid var(--border)', borderRadius: 6, padding: '10px 12px', background: 'color-mix(in srgb, var(--text) 3%, transparent)' }}>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, color: '#c8d8e8', wordBreak: 'break-all' }}>{key}</span>
-                      <span style={{ fontSize: 11, color: '#ffb74d', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 3, padding: '1px 5px' }}>{typeTag(oldVal)} → {typeTag(newVal)}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text)', wordBreak: 'break-all' }}>{key}</span>
+                      <span style={{ fontSize: 11, color: 'var(--orange)', border: '1px solid rgba(255,183,77,0.4)', borderRadius: 3, padding: '1px 5px' }}>{typeTag(oldVal)} → {typeTag(newVal)}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: '#4a6070', letterSpacing: 2, marginBottom: 2 }}>BEFORE</div>
-                    <div style={{ fontSize: 11, color: '#7a8ea0', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
-                    <div style={{ fontSize: 11, color: '#ffb74d', letterSpacing: 2, marginBottom: 2 }}>AFTER</div>
-                    <div style={{ fontSize: 11, color: '#00ff88', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 2 }}>BEFORE</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)', maxHeight: 120, overflowY: 'auto', marginBottom: 6 }}>{show(oldVal)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--orange)', letterSpacing: 2, marginBottom: 2 }}>AFTER</div>
+                    <div style={{ fontSize: 11, color: 'var(--green)', maxHeight: 120, overflowY: 'auto' }}>{show(newVal)}</div>
                   </div>
                 )
               })}
@@ -901,7 +901,7 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
       <div style={{
         position: 'fixed', top: '50%', left: '50%', zIndex: 999991,
         transform: 'translate(-50%, -50%)',
-        background: '#0b1118',
+        background: 'var(--bg2)',
         border: '1px solid rgba(0,255,136,0.45)',
         boxShadow: '0 0 60px rgba(0,255,136,0.12), 0 24px 64px rgba(0,0,0,0.9)',
         padding: '36px 40px',
@@ -912,10 +912,10 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
         <div style={{ fontSize: 11, letterSpacing: 3, color: 'var(--green)', marginBottom: 6 }}>
           {'// UNSAVED CHANGES'}
         </div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#c8d8e8', marginBottom: 10, letterSpacing: 1 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 10, letterSpacing: 1 }}>
           Save your edits?
         </div>
-        <div style={{ fontSize: 12, color: '#4a6070', marginBottom: 28, lineHeight: 1.7 }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 28, lineHeight: 1.7 }}>
           You have <span style={{ color: 'var(--cyan)' }}>{pendingCount} pending change{pendingCount !== 1 ? 's' : ''}</span>.{' '}
           Save to publish them, or discard to revert everything.
         </div>
@@ -948,7 +948,7 @@ function SaveDiscardDialog({ pendingCount, onSave, onDiscard, saving }) {
               flex: 1, padding: '13px 0',
               background: 'transparent',
               border: '1px solid rgba(255,71,87,0.4)',
-              color: '#ff4757',
+              color: 'var(--red)',
               fontFamily: "'Share Tech Mono', monospace",
               fontSize: 11, letterSpacing: 2,
               cursor: saving ? 'not-allowed' : 'pointer',
@@ -1568,7 +1568,7 @@ export function EditableLink({ contentKey, hrefKey, defaultValue = 'Learn more',
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', fontFamily: 'var(--font-mono)', padding: 16,
         }} onClick={() => setOpen(false)}>
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 18, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={e => e.stopPropagation()} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); e.currentTarget.click() } }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: '#ffb74d', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--orange)', marginBottom: 12 }}>EDIT LINK · {contentKey}</div>
             <div style={{ marginBottom: 10 }}>
               <label style={{ fontSize: 11, color: 'var(--muted)', display: 'block', marginBottom: 4 }}>LABEL</label>
               <Input value={draftLabel} onChange={v => setDraftLabel(v)} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 11, padding: '8px 10px', borderRadius: 6 }} />
