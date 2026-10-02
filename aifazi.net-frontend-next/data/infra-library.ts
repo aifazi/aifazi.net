@@ -17,6 +17,8 @@ export interface LibraryItem {
   defaultH: number
   /** Rack templates carry a U height instead of a free box. */
   rackH?: number
+  /** Optional per-item glyph; falls back to the category icon. */
+  icon?: string
 }
 
 export interface LibraryGroup {
@@ -24,6 +26,46 @@ export interface LibraryGroup {
   title: string
   items: LibraryItem[]
 }
+
+// ── Icon set (BMP glyphs — no emoji fonts required) ─────────────────────────
+
+/** Sidebar "ALL categories" glyph. */
+export const LIBRARY_ALL_ICON = '⊞'
+
+/** Sidebar glyph per library group (falls back to the category icon). */
+export const GROUP_ICONS: Record<string, string | undefined> = {
+  network: '⇄',
+  compute: '▣',
+  storage: '▤',
+  identity: '◎',
+  security: '◈',
+  continuity: '⟲',
+  endpoints: '⌨',
+  cloud: '☁',
+  ops: '⚙',
+}
+
+/** Card glyph per node category (the 8 builtins). */
+export const CATEGORY_ICONS: Record<string, string | undefined> = {
+  network: '⇄',
+  compute: '▣',
+  storage: '▤',
+  identity: '◎',
+  security: '◈',
+  backup: '⟲',
+  endpoint: '⌨',
+  power: '⚡',
+}
+
+const ICON_FALLBACK = '▢'
+
+/** Icon for a library card: item override → category glyph → fallback. */
+export const itemIcon = (item: LibraryItem): string =>
+  item.icon ?? CATEGORY_ICONS[item.category] ?? ICON_FALLBACK
+
+/** Icon for a sidebar category button: group map → title match → fallback. */
+export const groupIcon = (group: LibraryGroup): string =>
+  GROUP_ICONS[group.id] ?? CATEGORY_ICONS[group.id] ?? ICON_FALLBACK
 
 const chip = (
   key: string, name: string, category: InfraCategory, role: string,

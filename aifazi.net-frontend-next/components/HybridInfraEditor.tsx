@@ -13,7 +13,8 @@ import { getRole } from '@/lib/api'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
 import HybridInfra from './HybridInfra'
 import { HybridInfraCanvas, type HybridInfraCanvasHandle } from './HybridInfraCanvas'
-import { INFRA_LIBRARY, type LibraryItem } from '@/data/infra-library'
+import InfraLibraryPalette from './InfraLibraryPalette'
+import { INFRA_LIBRARY, itemIcon, type LibraryItem } from '@/data/infra-library'
 import { cloudInfraDoc, BUILTIN_STUDIES } from '@/data/cloud-infra'
 import { TEMPLATE_SEEDS } from '@/data/infra-templates'
 import {
@@ -1044,23 +1045,6 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     doc.customCategories?.[cat]?.color ??
     (CATEGORY_META as Record<string, { label: string; color: string } | undefined>)[cat]?.color ??
     '#35a7ff'
-
-  // ── Palette filter (library search) ─────────────────────────
-  const [libQuery, setLibQuery] = useState('')
-  const libFiltered = useMemo(() => {
-    const q = libQuery.trim().toLowerCase()
-    if (!q) return INFRA_LIBRARY
-    return INFRA_LIBRARY.map((g) => ({
-      ...g,
-      items: g.items.filter(
-        (it) =>
-          it.name.toLowerCase().includes(q) ||
-          it.role.toLowerCase().includes(q) ||
-          it.desc.toLowerCase().includes(q) ||
-          it.category.toLowerCase().includes(q),
-      ),
-    })).filter((g) => g.items.length > 0)
-  }, [libQuery])
 
   // ── Draft autosave (localStorage, one key per diagram) ────────
   const [draftOffer, setDraftOffer] = useState<{ doc: DiagramDoc; at: string } | null>(null)
@@ -2543,51 +2527,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
       <div className="hi-edit-layout" style={{ display: 'grid', gridTemplateColumns: '230px minmax(0,1fr) 320px', gap: 12, alignItems: 'start' }}>
         {/* Palette */}
         <div style={{ ...PANEL, maxHeight: 720, overflowY: 'auto' }}>
-          <div style={{ fontSize: 11, letterSpacing: 2, color: pal.muted, marginBottom: 10, fontFamily: 'var(--font-mono)' }}>
-            IT LIBRARY — DRAG OR CLICK TO PLACE
-          </div>
-          <Input
-            value={libQuery}
-            onChange={setLibQuery}
-            placeholder="Filter library…"
-            aria-label="Filter library items"
-            style={{ ...INPUT, marginBottom: 10 }}
-          />
-          {libFiltered.length === 0 && (
-            <div style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
-              No library items match “{libQuery}”.
-            </div>
-          )}
-          {libFiltered.map((g) => (
-            <div key={g.id} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.5, color: pal.muted, marginBottom: 6, fontFamily: 'var(--font-mono)' }}>
-                {g.title.toUpperCase()}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {g.items.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('application/x-infra-library', item.key)
-                      e.dataTransfer.setData('text/plain', item.key)
-                      e.dataTransfer.effectAllowed = 'copy'
-                    }}
-                    onClick={() => addNode(item)}
-                    title={`${item.desc} — drag onto the canvas, or click to auto-place`}
-                    style={{
-                      ...BTN, textAlign: 'left', fontWeight: 500,
-                      borderLeft: `3px solid ${catColorHex(item.category)}`,
-                      cursor: 'grab',
-                    }}
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+          <InfraLibraryPalette catColor={catColorHex} onPick={addNode} />
 
           {/* Category palette: live per-category color overrides */}
           <div style={{ borderTop: `1px solid ${pal.border}`, marginTop: 12, paddingTop: 10 }}>
@@ -3174,6 +3114,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                     background: i === quickIdx ? 'rgba(54,215,232,.10)' : BTN.background,
                   }}
                 >
+                  <span aria-hidden style={{ marginRight: 7, color: catColorHex(it.category) }}>{itemIcon(it)}</span>
                   {it.name}
                   <span style={{ color: pal.muted, marginLeft: 8, fontSize: 10 }}>{it.category}</span>
                 </button>

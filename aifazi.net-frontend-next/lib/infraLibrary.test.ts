@@ -3,7 +3,15 @@
  * and stamping rules (data-only PR C).
  */
 import { describe, expect, it } from 'vitest'
-import { INFRA_LIBRARY, stampFromLibrary, type LibraryItem } from '@/data/infra-library'
+import {
+  INFRA_LIBRARY,
+  LIBRARY_ALL_ICON,
+  itemIcon,
+  groupIcon,
+  stampFromLibrary,
+  CATEGORY_ICONS,
+  type LibraryItem,
+} from '@/data/infra-library'
 import { CATEGORY_META } from '@/data/hybrid-infra'
 
 const BUILTIN = Object.keys(CATEGORY_META)
@@ -72,6 +80,26 @@ describe('INFRA_LIBRARY item fields', () => {
       expect(i.defaultH).toBeGreaterThanOrEqual(30)
       expect(i.defaultH).toBeLessThanOrEqual(300)
     }
+  })
+})
+
+describe('library icons', () => {
+  it('covers every builtin category and every group', () => {
+    for (const cat of Object.keys(CATEGORY_META)) {
+      expect(CATEGORY_ICONS[cat], cat).toBeTruthy()
+    }
+    expect(LIBRARY_ALL_ICON).toBeTruthy()
+    for (const g of INFRA_LIBRARY) expect(groupIcon(g), g.id).toBeTruthy()
+  })
+
+  it('resolves a short glyph for every item (item override wins)', () => {
+    for (const i of allItems) {
+      const icon = itemIcon(i)
+      expect(icon.length).toBeGreaterThanOrEqual(1)
+      expect(icon.length).toBeLessThanOrEqual(4)
+    }
+    const custom = { ...allItems[0], icon: 'X' }
+    expect(itemIcon(custom)).toBe('X')
   })
 })
 
