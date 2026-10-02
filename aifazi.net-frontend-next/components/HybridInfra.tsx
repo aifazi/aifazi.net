@@ -273,19 +273,12 @@ export default function HybridInfra({
       ? EDGE_COPY[edgeVendor].note
       : null
 
-  return (
-    <div>
-      <button
-        type="button"
-        className="hi-tools-toggle"
-        aria-expanded={toolsOpen}
-        onClick={() => setToolsOpen((v) => !v)}
-        style={{ ...BTN, marginBottom: 10 }}
-      >
-        {toolsOpen ? 'HIDE TOOLS' : 'SHOW TOOLS'}
-      </button>
-      <div className={toolsOpen ? undefined : 'hi-tools-hidden'}>
-      {/* ── Toolbar ─────────────────────────────────────────── */}
+  // The two toolbars are lifted into consts so the exact same controls render
+  // either above the layout (windowed) or INSIDE the stage (fullscreen) — the
+  // browser's top layer paints the fullscreen element over everything else, so
+  // anything outside it (EXPORT/COPY/notice, mode filters) is invisible there.
+  // Only one copy is mounted at a time.
+  const modeBar = (
       <div
         role="toolbar"
         aria-label="Architecture filters"
@@ -314,8 +307,9 @@ export default function HybridInfra({
           </button>
         ))}
       </div>
+  )
 
-      {/* ── Actions toolbar ─────────────────────────────────────── */}
+  const actionBar = (
       <div
         role="toolbar"
         aria-label="Diagram actions"
@@ -471,7 +465,27 @@ export default function HybridInfra({
           ))}
         </div>
       </div>
-      </div>
+  )
+
+  return (
+    <div>
+      {!isFullscreen && (
+        <>
+          <button
+            type="button"
+            className="hi-tools-toggle"
+            aria-expanded={toolsOpen}
+            onClick={() => setToolsOpen((v) => !v)}
+            style={{ ...BTN, marginBottom: 10 }}
+          >
+            {toolsOpen ? 'HIDE TOOLS' : 'SHOW TOOLS'}
+          </button>
+          <div className={toolsOpen ? undefined : 'hi-tools-hidden'}>
+            {modeBar}
+            {actionBar}
+          </div>
+        </>
+      )}
 
       {/* ── Stage + side ────────────────────────────────────── */}
       <div
@@ -548,6 +562,18 @@ export default function HybridInfra({
               ))}
             </div>
           </div>
+          {isFullscreen && (
+            <div
+              style={{
+                padding: '10px 16px 4px',
+                borderBottom: `1px solid ${pal.border}`,
+                background: pal.panel,
+              }}
+            >
+              {modeBar}
+              {actionBar}
+            </div>
+          )}
           <HybridInfraCanvas
             ref={canvasHandle}
             activeMode={activeMode}

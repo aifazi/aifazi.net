@@ -13,20 +13,25 @@
 import { useState, useEffect, useCallback, useRef, createContext, useContext, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { t, VARIANTS, zIndex } from './tokens'
+import { useFullscreenTarget } from './fullscreen'
 
 /**
- * Renders its children through a portal onto <body>. A `position: fixed`
- * container whose ancestors include a transform/filter/animation, an overflow
- * scroll wrapper, or a stacking context gets misplaced/clipped (toasts ended up
- * below the visible UI in the admin portal). Anchoring to document.body keeps
- * toasts pinned to the real viewport on every route.
+ * Renders its children through a portal. A `position: fixed` container whose
+ * ancestors include a transform/filter/animation, an overflow scroll wrapper,
+ * or a stacking context gets misplaced/clipped (toasts ended up below the
+ * visible UI in the admin portal). Anchoring to document.body keeps toasts
+ * pinned to the real viewport on every route — unless an element is
+ * fullscreen: the top layer then paints that element above <body> no matter
+ * the z-index, so toasts must move INSIDE the fullscreen element or they stay
+ * invisible until fullscreen exits (useFullscreenTarget tracks this).
  */
 function FixedHost({ children, style }) {
   const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
-  if (!mounted) return null
+  const target = useFullscreenTarget()
+  if (!mounted || !target) return null
   return createPortal(
     <div role="status" aria-live="polite" aria-label="Notifications" style={style}>{children}</div>,
-    document.body,
+    target,
   )
 }
 
