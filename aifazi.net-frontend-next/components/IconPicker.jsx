@@ -111,7 +111,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
       {/* Modal — 3-part flex: header (pinned) | content (scrolls) | footer (pinned) */}
       <div style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-        background: '#0b1118', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
+        background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)',
         boxShadow: '0 0 60px color-mix(in srgb, var(--cyan) 12%, transparent), 0 24px 64px rgba(0,0,0,0.9)',
         width: 440, maxHeight: '80vh',
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
@@ -127,7 +127,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                 flex: 1, padding: '8px 4px', fontSize: 11, letterSpacing: 1,
                 background: tab === t.key ? 'color-mix(in srgb, var(--cyan) 10%, transparent)' : 'transparent',
                 border: 'none', borderBottom: `2px solid ${tab === t.key ? 'var(--cyan)' : 'transparent'}`,
-                color: tab === t.key ? 'var(--cyan)' : '#4a6070',
+                color: tab === t.key ? 'var(--cyan)' : 'var(--muted)',
                 cursor: 'pointer', transition: 'all 0.2s',
               }}>{t.label}</button>
             ))}
@@ -179,11 +179,11 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                   }}>
                     {/* pointerEvents:none prevents lord-icon shadow DOM from stealing clicks */}
                     <lord-icon src={icon.url} trigger="hover" colors="primary:#00d4ff,secondary:#00ff88" style={{ width: 32, height: 32, pointerEvents: 'none' }} />
-                    <span style={{ fontSize: 11, color: '#4a6070', letterSpacing: 1 }}>{icon.label.toUpperCase()}</span>
+                    <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: 1 }}>{icon.label.toUpperCase()}</span>
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: 10, fontSize: 11, color: '#2a3a48', lineHeight: 1.8 }}>
+              <div style={{ marginTop: 10, fontSize: 11, color: 'var(--muted)', lineHeight: 1.8 }}>
                 💡 More at <a href="https://lordicon.com" target="_blank" rel="noopener" style={{ color: 'var(--green)' }}>lordicon.com</a> — paste .json URL in Custom URL tab
               </div>
             </div>
@@ -203,7 +203,7 @@ export function IconPickerModal({ currentValue, onSave, onClose }) {
                   fontSize: 12, padding: '10px 14px', outline: 'none', boxSizing: 'border-box',
                 }}
               />
-              <div style={{ fontSize: 11, color: '#2a3a48', marginTop: 8 }}>Supports: PNG, SVG, WebP, GIF, Lordicon .json</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>Supports: PNG, SVG, WebP, GIF, Lordicon .json</div>
             </div>
           )}
         </div>

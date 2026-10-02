@@ -80,7 +80,7 @@
 | Clickable divs keyboard (Store/HelpDesk/DB/ForumAdmin) | Partial |
 | Tiny type | Partial (ThemeLibrary + key chrome) |
 | Remaining click-divs / icon-only buttons | Open |
-| `VARIANTS` / dark dialogs on light themes | Open |
+| `VARIANTS` / dark dialogs on light themes | Fixed |
 
 ## 7. Theming system — product risk
 

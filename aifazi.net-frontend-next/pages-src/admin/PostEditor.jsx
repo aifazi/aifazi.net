@@ -156,7 +156,7 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
     <div style={{
       position: 'fixed', top: pos.top, left: pos.left, zIndex: 999999,
       width: Math.min(280, window.innerWidth - 16), maxHeight: 360, overflowY: 'auto',
-      background: '#0f1820', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
+      background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)',
       boxShadow: '0 16px 48px rgba(0,0,0,0.9)', borderRadius: 6,
       fontFamily: "'Share Tech Mono', monospace",
     }}>
@@ -179,21 +179,21 @@ function SlashMenu({ pos, query, onSelect, onClose }) {
               >
                 <div style={{
                   width: 28, height: 28, borderRadius: 4, flexShrink: 0,
-                  background: isActive ? 'color-mix(in srgb, var(--cyan) 20%, transparent)' : 'rgba(255,255,255,0.07)',
-                  border: `1px solid ${isActive ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'rgba(255,255,255,0.1)'}`,
+                  background: isActive ? 'color-mix(in srgb, var(--cyan) 20%, transparent)' : 'color-mix(in srgb, var(--text) 7%, transparent)',
+                  border: `1px solid ${isActive ? 'color-mix(in srgb, var(--cyan) 40%, transparent)' : 'var(--border)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, color: isActive ? 'var(--cyan)' : '#6a88a0', fontWeight: 700,
+                  fontSize: 11, color: isActive ? 'var(--cyan)' : 'var(--muted)', fontWeight: 700,
                 }}>{item.icon}</div>
                 <div>
-                  <div style={{ fontSize: 13, color: isActive ? '#fff' : '#c8d8e8' }}>{item.label}</div>
-                  <div style={{ fontSize: 11, color: '#4a6070', marginTop: 1 }}>{item.desc}</div>
+                  <div style={{ fontSize: 13, color: isActive ? 'var(--cyan)' : 'var(--text)' }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>{item.desc}</div>
                 </div>
               </div>
             )
           })}
         </div>
       ))}
-      <div style={{ padding: '6px 14px', fontSize: 11, color: '#2a3a48', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: 12 }}>
+      <div style={{ padding: '6px 14px', fontSize: 11, color: 'var(--muted)', borderTop: '1px solid var(--border)', display: 'flex', gap: 12 }}>
         <span>↑↓ nav</span><span>⏎ select</span><span>esc close</span>
       </div>
     </div>

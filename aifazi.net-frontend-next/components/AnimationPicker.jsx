@@ -252,7 +252,7 @@ export default function AnimationPicker() {
         }}
         aria-hidden="true" />
 
-      {/* Drawer — inline CSS vars override any data-theme cascade */}
+      {/* Drawer */}
       <div style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 99995,
         width: 360, borderLeft: '1px solid color-mix(in srgb, var(--cyan) 15%, transparent)',
@@ -260,17 +260,7 @@ export default function AnimationPicker() {
         display: 'flex', flexDirection: 'column',
         transform: open ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.36s cubic-bezier(0.16,1,0.3,1)',
-        '--green':  '#00ff88',
-        '--cyan':   '#00d4ff',
-        '--orange': '#ff6b35',
-        '--red':    '#ff4757',
-        '--bg':     '#060a0f',
-        '--bg2':    '#0b1118',
-        '--bg3':    '#111a24',
-        '--text':   '#c8d8e8',
-        '--muted':  '#6b8296',
-        '--border': 'color-mix(in srgb, var(--cyan) 15%, transparent)',
-        background: '#0b1118',
+        background: 'var(--bg2)',
       }}>
 
         {/* ── Header ── */}
