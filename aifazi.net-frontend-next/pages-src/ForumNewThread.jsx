@@ -71,7 +71,7 @@ export default function ForumNewThread() {
               ) : cats.filter(c => !c.locked).length === 0 ? (
                 <div style={{ padding: '14px 16px', background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.3)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35', lineHeight: 1.7 }}>
                   ⚠️ No categories exist yet.{' '}
-                  <a href="/admin" style={{ color: 'var(--green)', textDecoration: 'none' }}>Go to Admin Panel → Forum Admin</a>
+                  <Link href="/admin" style={{ color: 'var(--green)', textDecoration: 'none' }}>Go to Admin Panel → Forum Admin</Link>
                   {' '}to create forum categories first.
                 </div>
               ) : (

@@ -28,7 +28,7 @@ function TerminalLoader({ onComplete }) {
     })
     const t = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1000)
     return () => clearTimeout(t)
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transform: exiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity .6s,transform .6s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', width:'100%' }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(48px,8vw,80px)', fontWeight:700, letterSpacing:-2, marginBottom:48, textAlign:'center', animation:'fadeDown .6s ease both', position:'relative', zIndex:1 }}>
@@ -67,7 +67,7 @@ function MinimalLoader({ onComplete }) {
   useEffect(() => {
     const t = setTimeout(() => { setExiting(true); setTimeout(onComplete, 200) }, 900)
     return () => clearTimeout(t)
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transform: exiting ? 'translateY(-10px)' : 'none', transition: 'opacity .5s,transform .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:32 }}>
       <div style={{ position:'relative', width:64, height:64 }}>
@@ -90,7 +90,7 @@ function GlitchLoader({ onComplete }) {
     [100, 200, 350, 550, 750].forEach((t, i) => setTimeout(() => setPhase(i + 1), t))
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 200) }, 1000)
     return () => clearTimeout(done)
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
       <div style={{ position:'relative', fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:700, letterSpacing:-2, userSelect:'none' }}>
@@ -133,7 +133,7 @@ function MatrixLoader({ onComplete }) {
     draw()
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1200)
     return () => { cancelAnimationFrame(raf); clearTimeout(done) }
-  }, [])
+  }, [onComplete, reduced])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition:'opacity .6s', position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0 }} />
@@ -152,7 +152,7 @@ function SplashLoader({ onComplete }) {
     [80, 250, 420, 620, 820].forEach((t,i) => setTimeout(() => setStep(i+1), t))
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1200)
     return () => clearTimeout(done)
-  }, [])
+  }, [onComplete])
   const items = ['NETWORK ENGINEER','IT SPECIALIST','WEB DEVELOPER','SYSTEM ARCHITECT']
   return (
     <div style={{ opacity: exiting ? 0 : 1, transform: exiting ? 'scale(0.95)' : 'scale(1)', transition:'opacity .7s,transform .7s', display:'flex', flexDirection:'column', alignItems:'center', width:'100%' }}>
@@ -176,7 +176,7 @@ function PulseLoader({ onComplete }) {
   useEffect(() => {
     const t = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1100)
     return () => clearTimeout(t)
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:40 }}>
       <div style={{ position:'relative', width:120, height:120, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -202,7 +202,7 @@ function HoloLoader({ onComplete }) {
     const iv = setInterval(() => setDeg(d => d + 45), 160)
     const t = setTimeout(() => { setExiting(true); clearInterval(iv); setTimeout(onComplete, 300) }, 1100)
     return () => { clearInterval(iv); clearTimeout(t) }
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:34 }}>
       <div style={{ position:'relative', width:130, height:130, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -241,7 +241,7 @@ function CRTLoader({ onComplete }) {
     const timeouts = boot.map((line, i) => setTimeout(() => setLines(p => [...p, line]), i * 150))
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1150)
     return () => { timeouts.forEach(clearTimeout); clearTimeout(done) }
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', fontFamily:'var(--font-mono)', width:'100%', maxWidth:440, padding:'0 8px' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'rgba(0,255,0,0.04)', border:'1px solid rgba(0,255,0,0.2)', borderRadius:4, marginBottom:10 }}>
@@ -270,7 +270,7 @@ function CyberLoader({ onComplete }) {
     order.forEach((idx, i) => setTimeout(() => setLit(p => [...p, idx]), i * (800 / TOTAL)))
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1100)
     return () => clearTimeout(done)
-  }, [])
+  }, [onComplete, TOTAL])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', gap:32 }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
@@ -298,7 +298,7 @@ function BarsLoader({ onComplete }) {
     const iv = setInterval(() => setProgress(p => { if (p >= 100) { clearInterval(iv); return 100 } return p + 5 }), 40)
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1200)
     return () => { clearInterval(iv); clearTimeout(done) }
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', gap:32, width:'100%', maxWidth:400, padding:'0 24px' }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
@@ -327,7 +327,7 @@ function WaveLoader({ onComplete }) {
   useEffect(() => {
     const t = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1100)
     return () => clearTimeout(t)
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', gap:40 }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
@@ -348,7 +348,7 @@ function NeonLoader({ onComplete }) {
   useEffect(() => {
     const t = setTimeout(() => { setExiting(true); setTimeout(onComplete, 300) }, 1200)
     return () => clearTimeout(t)
-  }, [])
+  }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'var(--text)', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green),0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>TANVIR</div>
@@ -364,7 +364,7 @@ function NeonLoader({ onComplete }) {
 // ── Style: Orbit (animejs) ────────────────────────────────────────────────────
 // Three dots orbit a center point at different radii and speeds using animejs.
 function OrbitLoader({ onComplete }) {
-  const dotRefs = [useRef(null), useRef(null), useRef(null)]
+  const dotRefs = useRef([])
   const [exiting, setExiting] = useState(false)
 
   useEffect(() => {
@@ -378,7 +378,7 @@ function OrbitLoader({ onComplete }) {
     import('gsap').then(m => {
       const gsap = m.gsap
       ORBITS.forEach((orb, i) => {
-        const el = dotRefs[i].current
+        const el = dotRefs.current[i]
         if (!el) return
         const proxy = { angle: 0 }
         const anim = gsap.to(proxy, {
@@ -401,7 +401,7 @@ function OrbitLoader({ onComplete }) {
       animations.forEach(a => a?.pause?.())
       clearTimeout(done)
     }
-  }, [])
+  }, [dotRefs, onComplete])
 
   const ORBITS = [
     { radius: 36, color: 'var(--green)',  size: 8 },
@@ -420,7 +420,7 @@ function OrbitLoader({ onComplete }) {
         <div style={{ width:14, height:14, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 24px var(--green), 0 0 48px color-mix(in srgb, var(--green) 30%, transparent)', zIndex:2 }} />
         {/* Orbiting dots */}
         {ORBITS.map((orb, i) => (
-          <div key={i} ref={dotRefs[i]} style={{
+          <div key={i} ref={el => { dotRefs.current[i] = el }} style={{
             position:'absolute', width: orb.size, height: orb.size,
             borderRadius:'50%', background: orb.color,
             boxShadow:`0 0 ${orb.size * 2}px ${orb.color}`,
@@ -468,7 +468,7 @@ function TypewriterLoader({ onComplete }) {
 
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 400) }, 1500)
     return () => clearTimeout(done)
-  }, [])
+  }, [onComplete])
 
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .4s', display:'flex', flexDirection:'column', alignItems:'center', gap:20 }} ref={containerRef}>
@@ -510,7 +510,7 @@ function DNALoader({ onComplete }) {
 
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 400) }, 1500)
     return () => clearTimeout(done)
-  }, [])
+  }, [onComplete])
 
   const COLORS_L = ['var(--green)', 'var(--cyan)']
   const COLORS_R = ['var(--cyan)',  'var(--green)']
@@ -582,7 +582,7 @@ function CountdownLoader({ onComplete }) {
 
     const done = setTimeout(() => { setExiting(true); setTimeout(onComplete, 400) }, 1550)
     return () => clearTimeout(done)
-  }, [])
+  }, [onComplete])
 
   return (
     <div style={{ opacity: exiting ? 0 : 1, transform: exiting ? 'scale(1.1)' : 'scale(1)', transition: 'opacity .4s,transform .4s', display:'flex', flexDirection:'column', alignItems:'center', gap:32 }}>

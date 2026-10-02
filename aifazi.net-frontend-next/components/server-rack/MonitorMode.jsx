@@ -78,7 +78,7 @@ function MonitorMode({ tick, visibleRef }) {
       }))
     }, 600)
     return () => clearInterval(id)
-  }, [])
+  }, [visibleRef])
 
   const sel = metrics[selected]
   const srv = SERVERS_MON[selected]

@@ -8,6 +8,7 @@ import { THEME_PACKAGES } from '../core/framework-styles.js'
 import { notify } from '../core/notify.jsx'
 import Clickable from '@/core/Clickable'
 import { Input, Slider, TextArea } from '../core/forms'
+import { Link } from '@/lib/router-compat'
 import { THEMES, PACKAGE_LOOKUP } from './themePickerData'
 import {
   flags, isLightTheme, radius, synthBg, auroraBg, noirBg, pastelBg, getExtraBg, getCardStyle,
@@ -315,14 +316,14 @@ export default function ThemePicker({ open, onClose }) {
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {/* ── ADMIN ONLY: link to Admin Portal global settings ── */}
             {isAdmin && (
-              <a href="/admin" onClick={onClose} title="Manage global theme & site settings in Admin Portal"
+              <Link href="/admin" onClick={onClose} title="Manage global theme & site settings in Admin Portal"
                 style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', padding: '4px 8px', borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, transition: 'all .15s', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.color = '#f59e0b' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
               >
                 ⚙ GLOBAL
                 <span style={{ fontSize: 11, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '1px 4px', borderRadius: 3, letterSpacing: 1 }}>ADMIN ↗</span>
-              </a>
+              </Link>
             )}
             <button className="tp-close" onClick={onClose}
               style={{ background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)',

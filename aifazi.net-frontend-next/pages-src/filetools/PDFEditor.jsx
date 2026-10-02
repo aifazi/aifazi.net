@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Checkbox, Slider, dialog } from '../../core/ui.jsx'
 import Clickable from '../../core/Clickable.jsx'
 import { Input } from '@/core/forms'
@@ -517,7 +517,7 @@ export default function PDFEditor() {
   const imgRef     = useRef()
   const imgInputRef = useRef()  // for image tool
   const zoom = ZOOM_STEPS[zoomIdx]
-  const page = session?.pages?.[currentPage] || {width:612, height:792}
+  const page = useMemo(() => session?.pages?.[currentPage] || {width:612, height:792}, [session, currentPage])
 
   // ── Derived ──
   const canvasW = Math.round(page.width  * RS)
@@ -833,7 +833,7 @@ export default function PDFEditor() {
       setSearchResults(data); setSearchCurrent(0)
       if (data.matches?.[0]) setCurrentPage(data.matches[0].page)
     } catch(e) { setStatus('Search failed: ' + e.message) }
-  }, [session])
+  }, [session, setCurrentPage])
 
   const doReplaceAll = useCallback(async (query, replacement, matchCase) => {
     if (!session || !query.trim()) return

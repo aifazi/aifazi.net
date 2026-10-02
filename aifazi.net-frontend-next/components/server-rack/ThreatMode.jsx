@@ -15,13 +15,13 @@ const THREAT_SOURCES = [
 // Target: aifazi.net server location (Riyadh / Vercel Edge)
 const TARGET = { x: 556, y: 192 }
 
+const ATTACK_TYPES = ['SQL_INJECT','XSS_ATTEMPT','BRUTE_FORCE','PORT_SCAN','DDOS_FLOOD','BOT_TRAFFIC']
+
 function ThreatMode({ tick, visibleRef }) {
   const [attacks, setAttacks]     = useState([])
   const [blocked, setBlocked]     = useState(0)
   const [threatLog, setThreatLog] = useState([])
   const [ripples, setRipples]     = useState([])
-
-  const ATTACK_TYPES = ['SQL_INJECT','XSS_ATTEMPT','BRUTE_FORCE','PORT_SCAN','DDOS_FLOOD','BOT_TRAFFIC']
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -53,7 +53,7 @@ function ThreatMode({ tick, visibleRef }) {
       setRipples(prev => prev.map(r => ({ ...r, t: r.t + 0.05 })).filter(r => r.t < 1))
     }, 100)
     return () => clearInterval(id)
-  }, [])
+  }, [visibleRef])
 
   // Simple equirectangular world map outline as paths
   const continents = [

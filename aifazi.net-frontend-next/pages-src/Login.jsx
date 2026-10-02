@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Link } from '@/lib/router-compat'
 import api, { saveTokens, clearAuthTokens, getRole, ensureAdminGate } from '@/lib/api'
 import { authProviderLoginRoute, safeNextPath, FORGOT_PASSWORD_PATH } from '@/lib/authRoutes'
 import {
@@ -992,7 +993,7 @@ export default function Login() {
 
               {/* Footer */}
               <div className="auth-foot">
-                <a href="/">← BACK TO HOME</a>
+                <Link href="/">← BACK TO HOME</Link>
               </div>
 
             </div>

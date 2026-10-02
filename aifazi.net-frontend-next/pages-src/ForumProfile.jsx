@@ -461,7 +461,7 @@ function FiveMTab({ user }) {
         ) : formSubmissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '18px 0' }}>
             <div style={{ ...M, fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>No community applications submitted yet.</div>
-            <a href="/forms" style={{ ...M, fontSize: 11, color: CLRS.cyan, letterSpacing: 2, textDecoration: 'none' }}>BROWSE FORMS {'->'}</a>
+            <Link href="/forms" style={{ ...M, fontSize: 11, color: CLRS.cyan, letterSpacing: 2, textDecoration: 'none' }}>BROWSE FORMS {'->'}</Link>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
