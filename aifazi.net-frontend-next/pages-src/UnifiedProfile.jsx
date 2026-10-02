@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { useForum } from '../context/ForumContext'
 import ForumProfile from './ForumProfile'
@@ -200,7 +201,7 @@ function VpnSection({ user }) {
 
             {qrCode ? (
               <div style={{ background: '#fff', borderRadius: 12, padding: 16, textAlign: 'center', marginBottom: 16 }}>
-                <img src={qrCode} alt="WireGuard QR" style={{ width: 220, height: 220, imageRendering: 'pixelated' }} />
+                <Image unoptimized width={220} height={220} src={qrCode} alt="WireGuard QR" style={{ width: 220, height: 220, imageRendering: 'pixelated' }} />
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#333', marginTop: 8 }}>Scan in WireGuard app</div>
               </div>
             ) : (

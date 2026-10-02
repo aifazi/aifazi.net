@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Checkbox, Slider, dialog } from '../../core/ui.jsx'
 import Clickable from '../../core/Clickable.jsx'
@@ -348,7 +349,7 @@ function PageSidebar({ session, currentPage, setCurrentPage, onDelete, onRotate 
           style={{ cursor:'pointer', border:`2px solid ${i===currentPage?C.accent:C.border}`,
             borderRadius:6, overflow:'hidden', background:C.bg3, position:'relative',
             transition:'border-color .15s', flexShrink:0 }}>
-          <img src={`/api/pdf-editor/thumb/${session.session_id}/${i}`}
+          <Image unoptimized width={612} height={792} src={`/api/pdf-editor/thumb/${session.session_id}/${i}`}
             alt={`Page ${i+1}`}
             style={{ width:'100%', display:'block' }} />
           <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'rgba(0,0,0,0.7)',
@@ -925,7 +926,7 @@ export default function PDFEditor() {
             boxShadow:'0 8px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)',
             borderRadius:2 }}>
             {/* PDF page image */}
-            <img ref={imgRef}
+            <Image unoptimized width={612} height={792} ref={imgRef}
               src={`/api/pdf-editor/page/${session.session_id}/${currentPage}?scale=${RS}`}
               alt={`Page ${currentPage+1}`}
               style={{ position:'absolute', top:0, left:0, width:'100%', height:'100%',

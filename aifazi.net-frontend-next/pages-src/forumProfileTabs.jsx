@@ -1,5 +1,6 @@
 'use client'
 // forumProfileTabs.jsx — profile tabs & tickets (extracted).
+import Image from 'next/image'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link, useNavigate } from '@/lib/router-compat'
 import api, { ensureAdminGate } from '@/lib/api'
@@ -797,7 +798,7 @@ function TwoFactorPanel({ user }) {
                 <>
                   <div style={{ ...M, fontSize: 11, color:'var(--muted)', lineHeight:1.7 }}>Scan the QR code, then enter the current code from your app.</div>
                   <div style={{ background:'#fff', padding:12, borderRadius:8, alignSelf:'flex-start' }}>
-                    <img src={state.qr} alt="2FA QR code" style={{ width:160, height:160, display:'block' }} />
+                    <Image unoptimized width={160} height={160} src={state.qr} alt="2FA QR code" style={{ width:160, height:160, display:'block' }} />
                   </div>
                   {state.secret && <div style={{ ...M, fontSize: 11, color:'var(--muted)', wordBreak:'break-all' }}>Manual key: <span style={{ color:CLRS.cyan, letterSpacing:1, userSelect:'all' }}>{state.secret}</span></div>}
                   <Inp label="AUTHENTICATOR CODE" id="twofa-confirm" inputMode="numeric" maxLength={7} value={state.code}
@@ -962,7 +963,7 @@ function SecurityTab({ user }) {
             <div key={provider.key} style={{ background: 'var(--bg3)', border: `1px solid ${provider.linked ? provider.color + '55' : 'var(--border)'}`, borderRadius: 8, padding: 14 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
                 {provider.avatar ? (
-                  <img src={provider.avatar} alt={provider.label} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${provider.color}66` }} />
+                  <Image unoptimized width={42} height={42} src={provider.avatar} alt={provider.label} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: `1px solid ${provider.color}66` }} />
                 ) : (
                   <div style={{ width: 42, height: 42, borderRadius: '50%', background: provider.color + '22', border: `1px solid ${provider.color}66`, display: 'flex', alignItems: 'center', justifyContent: 'center', ...M, color: provider.color, fontWeight: 800 }}>
                     {provider.label[0]}

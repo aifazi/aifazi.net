@@ -1,4 +1,5 @@
 'use client'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Input } from '@/core/forms'
@@ -81,7 +82,7 @@ export function IconDisplay({ value, size = 36 }) {
     )
   }
   if (isImageUrl(value) && safeSrc) {
-    return <img src={safeSrc} alt="" style={{ width: size, height: size, objectFit: 'contain' }} />
+    return <Image unoptimized width={size} height={size} src={safeSrc} alt="" style={{ width: size, height: size, objectFit: 'contain' }} />
   }
   return <span style={{ fontSize: size * 0.85, lineHeight: 1 }}>{value || '❓'}</span>
 }
