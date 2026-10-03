@@ -2,14 +2,14 @@
   "expo": {
     "name": "aifazi",
     "slug": "fazi",
-    "version": "1.0.39",
+    "version": "1.0.70",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "aifazi",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "net.aifazi.mobile",
-      "buildNumber": "1.0.39",
+      "buildNumber": "1.0.70",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "aifazi uses the camera so you can take photos to upload.",
@@ -60,7 +60,7 @@
       },
       "predictiveBackGestureEnabled": true,
       "package": "net.aifazi.mobile",
-      "versionCode": 1000039
+      "versionCode": 1000070
     },
     "web": {
       "bundler": "metro",
