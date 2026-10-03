@@ -60,6 +60,7 @@ import {
   duplicateNodesDoc,
   pasteNodesDoc,
   remapCategoryDoc,
+  draftRestoreDocId,
   type NextId,
 } from '@/lib/infraDocOps'
 
@@ -1079,7 +1080,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     syncHistButtons()
     docRef.current = draftOffer.doc
     setDoc(draftOffer.doc)
-    setDocId(null)
+    // A5-7: a draft of a saved diagram still carries the server row uuid —
+    // re-attach it, or save() would fork the diagram into a brand-new row.
+    setDocId(draftRestoreDocId(draftOffer.doc.id))
     setIsSeed(false)
     resetTransient()
     setSelectedId(draftOffer.doc.nodes[0]?.id ?? null)
