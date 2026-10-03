@@ -330,11 +330,33 @@ export function Checkbox({ checked, onChange, disabled, label, style = {}, ...pr
 /**
  * @param {{ [key: string]: any, value?: any, onChange?: (value: number) => void, min?: number, max?: number, step?: number, disabled?: boolean, style?: any, onKeyDown?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void }} props
  */
-export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled, style = {}, ...props }) {
+export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled, style = {}, onKeyDown, ...props }) {
   const ref = useRef(null)
   const num = Number(value ?? min)
   const pct = max === min ? 0 : Math.min(100, Math.max(0, ((num - min) / (max - min)) * 100))
   const accent = inputAccent()
+
+  const clampStep = v => {
+    const stepped = Math.round(v / step) * step
+    return Math.min(max, Math.max(min, Number(stepped.toPrecision(12))))
+  }
+
+  // Keyboard support: the native <input type="range"> this replaced handled
+  // arrows/Home/End/PageUp/Down itself; the div proxy must too (Round-4 audit).
+  const handleKeyDown = e => {
+    onKeyDown?.(e)
+    if (disabled || e.defaultPrevented) return
+    let next = null
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') next = clampStep(num - step)
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') next = clampStep(num + step)
+    else if (e.key === 'PageDown') next = clampStep(num - step * 10)
+    else if (e.key === 'PageUp') next = clampStep(num + step * 10)
+    else if (e.key === 'Home') next = min
+    else if (e.key === 'End') next = max
+    if (next === null) return
+    e.preventDefault()
+    onChange?.(next)
+  }
   // Historic thumb: cyan border + green glow — preserved exactly for the
   // default (cyan-group) styles; other input styles tint from the mapping.
   const thumbBorder = accent.color === t.cyan ? 'rgba(0,212,255,0.55)' : accent.color
@@ -370,6 +392,9 @@ export function Slider({ value, onChange, min = 0, max = 100, step = 1, disabled
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={num}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? undefined : 0}
+      onKeyDown={handleKeyDown}
       onPointerDown={start}
       style={{
         position: 'relative',
