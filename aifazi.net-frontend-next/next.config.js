@@ -1,5 +1,6 @@
 const path = require('path')
-const { withSentryConfig } = require('@sentry/nextjs')
+// E1: withSentryConfig moved to the /config subpath in @sentry/nextjs v11.
+const { withSentryConfig } = require('@sentry/nextjs/config')
 
 // Deployment hosts are driven by NEXT_PUBLIC_* env (see lib/config.ts) so a
 // fresh clone on its own domain gets matching image hostnames + CDN exclusion
