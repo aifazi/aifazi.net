@@ -42,6 +42,15 @@ MAX_DECORATIONS = 100
 # Frontend theoretical max: 100 decos x (200-char text + 12 x 160-char lines)
 # ≈ 215 KB — the cap must never reject what sanitizeDoc can produce.
 MAX_DECOR_BYTES = 256 * 1024
+# N10: node/flow keys the stored doc may carry. _validate_doc rebuilds each
+# entry from this whitelist (mirroring _validate_decorations) so unknown keys
+# are dropped on write instead of drifting into the DB.
+_NODE_FIELDS = (
+    "id", "name", "category", "layer", "role", "desc", "notes",
+    "x", "y", "w", "h", "rackU", "rackH",
+    "accent", "pulse", "gid", "workloads", "deps", "shape",
+)
+_FLOW_FIELDS = ("id", "from", "to", "cat", "label", "dashed", "color")
 # Palette names for annotation colors — mirrors DECOR_TOKENS in hybrid-infra.ts.
 DECOR_TOKENS = {"ink", "sub", "muted", "cyan", "green", "purple", "amber", "red", "blue"}
 
@@ -363,7 +372,9 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
         for d in deps:
             if not isinstance(d, str) or not d:
                 raise HTTPException(400, "Node deps must be non-empty strings")
-        clean_nodes.append(n)
+        # N10: rebuild from the whitelist — validated fields only, unknown keys
+        # dropped (null values omitted to match the frontend doc shape).
+        clean_nodes.append({k: n[k] for k in _NODE_FIELDS if k in n and n[k] is not None})
     ids = {n["id"] for n in clean_nodes}
     if len(ids) != len(clean_nodes):
         raise HTTPException(400, "Duplicate node id")
@@ -385,7 +396,8 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
                 raise HTTPException(400, "Flow color must be #rrggbb")
         if "dashed" in f and f["dashed"] not in (None, True, False):
             raise HTTPException(400, "Flow dashed must be boolean")
-        clean_flows.append(f)
+        # N10: rebuild from the whitelist — unknown flow keys dropped on write.
+        clean_flows.append({k: f[k] for k in _FLOW_FIELDS if k in f and f[k] is not None})
     return clean_nodes, clean_flows
 
 

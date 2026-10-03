@@ -828,5 +828,27 @@ Minor (no IDs): N8 tiebreak fixed in `infra_diagrams` only — `page_layouts.py:
 
 Security **8.5/10** (no new HIGH; A5-1/A5-2 closed) · Maintainability **B** · Testing **B** (backend 221, frontend 134, mobile 18; S1/R2 now guarded) · Operations **C+** (mobile pipeline still unverified — P0 stands).
 
-**Fixed this round (in worktree, uncommitted):** A5-1 + A5-2 with 10 new tests (`routers/seo_proxy.py`, `routers/fonts.py`, `tests/test_ssrf_routers.py`).
-**Next:** P0 mobile-release verification; P2 list (§15.3); P3. (Round-5 additions A5-3/A5-9 and P1 O3 all closed this round via #400/#403/#404.)
+### 15.7 P2 backlog batch — closed in #406
+
+All §15.3 P2 items + O4 closed in one PR (`batch-p2-o4`, squash auto-merge):
+
+| ID | Fix |
+|----|-----|
+| N9 | `page_layouts.restore_revision` try/except → logged, typed 500 (infra parity); 1 test |
+| N10 | `_validate_doc` rebuilds node/flow dicts from the field whitelist — unknown keys dropped on write; 1 test |
+| N11 | `escapeHtmlAttr`: full entity set (`& < > " '`) for snippet titles |
+| N12 | Draft payloads base64-encoded in localStorage (`lib/infraDraft.ts`, 6 tests); legacy plaintext still readable, rewritten on next autosave |
+| N13 | Stale client-side slug-collision check removed — server 409 stays the enforcer |
+| F10 | `hitAt` walks reverse paint order (rack first, chips last) so clicks land on the topmost node |
+| F11 | `onWheel` ignores zoom while a drag/pan/marquee is in flight |
+| F12 | `undo`/`redo` prune `selIds` entries whose ids no longer exist |
+| F14 | Form labels now carry `htmlFor`/`aria-label` (19 labels) — closes the last P2 a11y gap |
+| F16 | Single hidden file input; dead second `ref` removed |
+| F19 | `published` fails closed (explicit `true` only); duplicate node ids rejected in `sanitizeDoc`; 2 tests |
+| B16 | CORS construction moved to `utils/cors_origins.py` — prod keeps the frontend-root subdomain pattern the old `else` branch wiped; localhost stays dev-only; 8 tests |
+| O4 | PyJWT lock 2.14→2.15; pydantic pinned 2.13.5 (requirements + lock); CI tooling pinned via `requirements-dev.txt`; `requirements.lock` "pip-compile reproducible" claim corrected |
+
+Gates on the batch: frontend tsc 0 · eslint 0 err / 58 warn (baseline) · vitest 151 passed · next build clean; backend ruff clean · mypy clean (73 files) · pytest 244 passed (10 new backend tests, 8 new frontend).
+
+**Fixed this round:** A5-1 + A5-2 (merged #394/#395) · A5-3/A5-4 (#400/#401) · A5-7/A5-8 + U1 (#402) · A5-9 (#403) · P1 O3 (#404) · P2 backlog N9–N13/F10–F12/F14/F16/F19/B16 + O4 (#406).
+**Next:** P0 mobile-release verification; E1 dependency majors (eslint 10 / Sentry 11 — separate PR); P3. (Round-5 additions A5-3/A5-9 and P1 O3 closed via #400/#403/#404; §15.3 P2 list + O4 closed in #406.)

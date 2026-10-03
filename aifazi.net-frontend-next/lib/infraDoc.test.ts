@@ -262,3 +262,28 @@ describe('planADecorations seed', () => {
     expect(isDecorColor(l.color)).toBe(true)
   })
 })
+
+describe('sanitizeDoc F19 fail-closed published + duplicate node ids', () => {
+  it('published is true only for an explicit true (fail closed)', () => {
+    // The old `d.published !== false` treated undefined/''/garbage as published.
+    expect(sanitizeDoc({ ...base, published: true, nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }] })?.published).toBe(true)
+    expect(sanitizeDoc({ ...base, published: false, nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }] })?.published).toBe(false)
+    const omitted = { ...base, nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }] } as { published?: boolean }
+    delete omitted.published
+    expect(sanitizeDoc(omitted)?.published).toBe(false)
+    expect(sanitizeDoc({ ...base, published: 'yes' as unknown as boolean, nodes: [{ id: 'n1', name: 'N', category: 'network', layer: 'edge' }] })?.published).toBe(false)
+  })
+
+  it('drops duplicate node ids (first occurrence wins)', () => {
+    const clean = sanitizeDoc({
+      ...base,
+      nodes: [
+        { id: 'n1', name: 'First', category: 'network', layer: 'edge' },
+        { id: 'n1', name: 'Second', category: 'cloud', layer: 'cloud' },
+        { id: 'n2', name: 'Other', category: 'network', layer: 'edge' },
+      ],
+    })
+    expect(clean?.nodes).toHaveLength(2)
+    expect(clean?.nodes.map((n) => n.name)).toEqual(['First', 'Other'])
+  })
+})

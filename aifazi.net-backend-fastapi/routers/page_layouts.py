@@ -329,14 +329,20 @@ def restore_revision(layout_id: str, revision_id: str, _: dict = Depends(require
     cur = (cur_res.data or [None])[0]
     if not cur:
         raise HTTPException(404, "Layout not found")
-    res = supabase.table("page_layouts").update({
-        "title": (rev.get("title") or "Untitled page").strip() or "Untitled page",
-        "published": bool(rev.get("published")),
-        "seo_title": rev.get("seo_title") or "",
-        "seo_description": rev.get("seo_description") or "",
-        "blocks": blocks,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }).eq("id", layout_id[:64]).execute()
+    try:
+        res = supabase.table("page_layouts").update({
+            "title": (rev.get("title") or "Untitled page").strip() or "Untitled page",
+            "published": bool(rev.get("published")),
+            "seo_title": rev.get("seo_title") or "",
+            "seo_description": rev.get("seo_description") or "",
+            "blocks": blocks,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("id", layout_id[:64]).execute()
+    except Exception as exc:
+        # N9: parity with infra_diagrams restore — log + typed 500 instead of
+        # leaking the raw PostgREST exception to the global handler.
+        log.error("layout restore failed for %s: %s", layout_id[:64], exc)
+        raise HTTPException(500, "Could not restore layout")
     row = (res.data or [None])[0]
     if not row:
         raise HTTPException(500, "Restore failed")

@@ -43,11 +43,11 @@ Current counts: frontend **132 passed** (+1 skip) · backend **213** · mobile *
 - [x] **Close CI gaps** (audit O3): `dependency-review-config.yml` IS auto-loaded (round-5 correction — "inert" was wrong) but 2 of its keys were invalid/ignored — removed (#400); mobile `npm test` + `lint:hooks` now in CI, Playwright e2e runs as its own job (read-only GETs against production), mobile vitest include now covers `*.test.tsx` (this PR).
 - [x] **Fix theme hydration flake** (U1): `app/providers.tsx:394` first-theme-sync can drop `data-theme` (e2e flake + real flash to default) — resolved by A5-8: first sync adopts the FOUC-stamped value instead of clobbering it, and never writes stale state to storage (decision in `core/themeSync.ts` + tests).
 - [ ] **Dependency majors** (audit E1): ESLint 9 is EOL → 10; Sentry 10 → 11; clears much of the remaining npm advisory chain. Decide vitest 3 → 5 separately.
-- [ ] **Pin hygiene** (O4): `PyJWT` requirements 2.15 vs lock 2.14; pin `pydantic`; fix `requirements.lock` reproducibility claim.
+- [x] **Pin hygiene** (O4): `PyJWT` requirements 2.15 vs lock 2.14; pin `pydantic`; fix `requirements.lock` reproducibility claim — closed in #406: PyJWT lock aligned 2.15, pydantic pinned 2.13.5, CI tooling pinned via `requirements-dev.txt` (ruff/mypy/bandit/pip-audit no longer float), lock's "pip-compile reproducible" claim corrected.
 
 ### P2 — backlog fixes (details in AUDIT.md §14)
 
-- [ ] Open Round-3 series: **N9** (page_layouts restore lacks try/except), N10, N11, N12, N13, F10, F11, F12, F14, F16, F19, **B16** (prod CORS wipes dynamic subdomains).
+- [x] Open Round-3 series: **N9** (page_layouts restore lacks try/except), N10, N11, N12, N13, F10, F11, F12, F14, F16, F19, **B16** (prod CORS wipes dynamic subdomains) — all 12 closed in #406 (N12: drafts now base64-encoded in `lib/infraDraft.ts`; F14: labels carry `htmlFor`/`aria-label`; B16: CORS construction in `utils/cors_origins.py`, prod keeps subdomain pattern).
 - [x] Round-5 additions: **A5-7** (draft restore forks saved diagrams — re-attach to original `docId` via `draftRestoreDocId`), **A5-8** (first-theme-sync writes stale theme to localStorage/cookie — first sync adopts the DOM stamp, skips the storage write; resolves U1), **A5-9** (untyped `workloads`/`deps` entries now 400 at the write gate instead of being dropped on round-trip — B11 evidence closed). (A5-4 S1/R2 tests — done.)
 - [ ] Core-ui leftovers (U2): native textarea/input in 4 files; `Select`/`Checkbox` drop caller `onClick`; keyboard-activate bubbles MouseEvent (video seek bar jumps to 0); lightbox upscale/distort.
 - [ ] Decorations parity (U3): backend coord clamps; `sanitizeDoc` id dedupe (duplicate id renders locally but 400s on save).
