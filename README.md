@@ -80,6 +80,7 @@ docker compose up
 
 | Doc | Contents |
 |-----|----------|
+| [STATUS.md](STATUS.md) | Current focus + open backlog (start here) |
 | [AUDIT.md](AUDIT.md) | Security / UX audit findings |
 | [DESIGN-AUDIT.md](DESIGN-AUDIT.md) | Visual design review |
 | [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) | Infrastructure hardening |
