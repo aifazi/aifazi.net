@@ -829,4 +829,4 @@ Minor (no IDs): N8 tiebreak fixed in `infra_diagrams` only — `page_layouts.py:
 Security **8.5/10** (no new HIGH; A5-1/A5-2 closed) · Maintainability **B** · Testing **B** (backend 221, frontend 134, mobile 18; S1/R2 now guarded) · Operations **C+** (mobile pipeline still unverified — P0 stands).
 
 **Fixed this round (in worktree, uncommitted):** A5-1 + A5-2 with 10 new tests (`routers/seo_proxy.py`, `routers/fonts.py`, `tests/test_ssrf_routers.py`).
-**Next:** P0 mobile-release verification; A5-3 (via #400, auto-merge pending); A5-9; P2 list (§15.3); P1 O3 (add `npm test` + Playwright to mobile CI); P3.
+**Next:** P0 mobile-release verification; A5-3 (via #400, auto-merge pending); A5-9; P2 list (§15.3); P3. (O3 done in this PR: mobile `npm test` + `lint:hooks` + Playwright e2e wired into `ci.yml`; mobile vitest include now covers `*.test.tsx`.)

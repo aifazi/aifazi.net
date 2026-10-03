@@ -40,7 +40,7 @@ Current counts: frontend **132 passed** (+1 skip) · backend **213** · mobile *
 
 ### P1 — this sprint
 
-- [ ] **Close CI gaps** (audit O3): `dependency-review-config.yml` IS auto-loaded (round-5 correction — "inert" was wrong) but 2 of its keys are invalid/ignored, remove them; add mobile `npm test` to CI, add Playwright smoke to CI.
+- [x] **Close CI gaps** (audit O3): `dependency-review-config.yml` IS auto-loaded (round-5 correction — "inert" was wrong) but 2 of its keys were invalid/ignored — removed (#400); mobile `npm test` + `lint:hooks` now in CI, Playwright e2e runs as its own job (read-only GETs against production), mobile vitest include now covers `*.test.tsx` (this PR).
 - [x] **Fix theme hydration flake** (U1): `app/providers.tsx:394` first-theme-sync can drop `data-theme` (e2e flake + real flash to default) — resolved by A5-8: first sync adopts the FOUC-stamped value instead of clobbering it, and never writes stale state to storage (decision in `core/themeSync.ts` + tests).
 - [ ] **Dependency majors** (audit E1): ESLint 9 is EOL → 10; Sentry 10 → 11; clears much of the remaining npm advisory chain. Decide vitest 3 → 5 separately.
 - [ ] **Pin hygiene** (O4): `PyJWT` requirements 2.15 vs lock 2.14; pin `pydantic`; fix `requirements.lock` reproducibility claim.
