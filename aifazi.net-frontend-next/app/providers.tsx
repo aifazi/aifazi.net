@@ -28,6 +28,7 @@ import { loadFontForTheme as loadThemeFont } from '@/core/fonts'
 import { applyThemeCustom, resolveThemeCustom } from '@/core/themeCustom'
 import { applyComponentTokens } from '@/core/componentTokens'
 import { VALID_THEMES, LIGHT_THEMES, THEME_PAIRS } from '@/core/themeCatalog'
+import { firstThemeSyncAction } from '@/core/themeSync'
 import { applyThemeDesign, resolveFrameworkPatterns } from '@/core/themeDesign'
 import { applyThemeFramework } from '@/core/framework-styles'
 import { isAdmin as checkIsAdmin, getAuthToken, getImpersonationUsername } from '@/lib/api'
@@ -396,18 +397,31 @@ export function Providers({ children, isStoreDomain = false, isFiveMDomain = fal
     // the server's global default to the user's cross-subdomain cookie choice
     // (e.g. slate on store.aifazi.net). If we blindly skip the first sync the DOM
     // stays stale (pacman flash until next theme change). Compare and fix.
+    let firstSync = false
     if (firstThemeSync.current) {
       firstThemeSync.current = false
       const domTheme = document.documentElement.getAttribute('data-theme')
-      const expected = theme === 'cyber-dark' ? null : theme
-      if (domTheme === expected) return
+      const sync = firstThemeSyncAction(domTheme, theme)
+      if (sync.action === 'match') return
+      firstSync = true
+      if (sync.action === 'adopt-dom') {
+        // A5-8: the DOM stamp reflects a fresher resolution than state (the
+        // user's stored choice) — the mount init effect already queues that
+        // value, so bail without clobbering the stamped DOM or the stored
+        // choice; its re-run persists storage with the corrected value.
+        return
+      }
     }
     if (theme === 'cyber-dark') document.documentElement.removeAttribute('data-theme')
     else document.documentElement.setAttribute('data-theme', theme)
     document.documentElement.setAttribute('data-theme-mode', LIGHT_THEMES.includes(theme) ? 'light' : 'dark')
     document.documentElement.style.colorScheme = LIGHT_THEMES.includes(theme) ? 'light' : 'dark'
-    localStorage.setItem('site-theme', theme)
-    setCrossDomainCookie('site-theme', theme)
+    // A5-8: on the very first pass state may still be the stale SSR value, so
+    // never persist it — the re-run after the correction writes storage once.
+    if (!firstSync) {
+      localStorage.setItem('site-theme', theme)
+      setCrossDomainCookie('site-theme', theme)
+    }
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme, mode: LIGHT_THEMES.includes(theme) ? 'light' : 'dark' } }))
   }, [theme])
 

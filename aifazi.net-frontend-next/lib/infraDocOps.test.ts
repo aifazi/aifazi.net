@@ -7,6 +7,7 @@ import {
   arrangeNodesDoc,
   deleteNodesDoc,
   diffDiagramDocs,
+  draftRestoreDocId,
   duplicateNodesDoc,
   pasteNodesDoc,
   remapCategoryDoc,
@@ -210,5 +211,30 @@ describe('diffDiagramDocs', () => {
     const b = doc([node('a')])
     b.title = 'Renamed'
     expect(diffDiagramDocs(a, b).titleChanged).toBe(true)
+  })
+})
+
+describe('draftRestoreDocId (A5-7)', () => {
+  it('keeps a server row uuid so the draft re-attaches to the saved row', () => {
+    const id = '8f1c2a90-4b7d-4e3a-9c5f-0d2e6b8a1f34'
+    expect(draftRestoreDocId(id)).toBe(id)
+  })
+
+  it('accepts uppercase uuids (Postgres echoes either case)', () => {
+    const id = '8F1C2A90-4B7D-4E3A-9C5F-0D2E6B8A1F34'
+    expect(draftRestoreDocId(id)).toBe(id)
+  })
+
+  it('rejects client-generated doc-* ids (never-saved docs stay unattached)', () => {
+    expect(draftRestoreDocId('doc-1730000000000')).toBeNull()
+  })
+
+  it('rejects malformed or non-string ids', () => {
+    expect(draftRestoreDocId('8f1c2a90-4b7d-4e3a-9c5f')).toBeNull()
+    expect(draftRestoreDocId('x'.repeat(36))).toBeNull()
+    expect(draftRestoreDocId('')).toBeNull()
+    expect(draftRestoreDocId(null)).toBeNull()
+    expect(draftRestoreDocId(undefined)).toBeNull()
+    expect(draftRestoreDocId(42)).toBeNull()
   })
 })

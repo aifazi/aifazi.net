@@ -234,3 +234,15 @@ export function diffDiagramDocs(prev: DiagramDoc, next: DiagramDoc): DiagramDiff
     decoChanged: JSON.stringify(prev.decorations ?? []) !== JSON.stringify(next.decorations ?? []),
   }
 }
+
+/**
+ * A5-7: resolve the editor doc id when accepting a saved diagram's draft.
+ * The backend stamps the row uuid as `id` on every diagram response
+ * (`_row_to_doc`), while a never-saved doc only carries the client-generated
+ * `doc-*` id — that one must stay unattached so save() creates the row
+ * instead of PUTting a non-uuid (clean 404) or forking the original.
+ */
+const SERVER_DOC_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export function draftRestoreDocId(id: unknown): string | null {
+  return typeof id === 'string' && SERVER_DOC_ID.test(id) ? id : null
+}
