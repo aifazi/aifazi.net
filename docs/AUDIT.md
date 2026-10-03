@@ -374,6 +374,7 @@ Quick wins to do first:
 | `globals.css` | 7874 | 3910 | `theme-library.css` (~179KB) |
 | `fivem.py` | 3151 | ~2723 | `fivem_emails`, `fivem_ids`, `fivem_bans` |
 | `auth.py` | 2492 | ~2421 | `auth_tokens.py` |
+| `auth.py` | 2145 | 29 | `auth_shared.py` (489) + `config_check.py`; routes to auth_sessions/auth_register/auth_profile/auth_staff; ~1300 lines shadowed dead code removed (#408, route surface verified identical) |
 
 ### Phase 2 (2026-09-24) — structure & a11y
 
