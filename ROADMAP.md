@@ -152,9 +152,12 @@
       (`/root/stalwart-backup-0808/`) + wipe + Coolify redeploy → clean
       bootstrap with temp admin. Re-setup (wizard + LE cert + DKIM + test
       mailbox) required — DKIM DNS will need re-publishing for fresh keys.
-- [ ] Backend bug spotted in log sweep: `expired-stock sweep failed: FOR
+- [x] Backend bug spotted in log sweep: `expired-stock sweep failed: FOR
       UPDATE is not allowed with GROUP BY clause` — fix the store
-      inventory sweep query (drop `FOR UPDATE` or restructure).
+      inventory sweep query (drop `FOR UPDATE` or restructure). Done
+      2026-10-03 (round 5): sweep now calls the
+      `release_expired_stock_reservations` Postgres RPC
+      (`store_ecommerce.py:1294`); no `FOR UPDATE` in app code.
 
 - [x] Deployed via Coolify one-click service (`stalwart-*`, pinned
       `v0.16.13`, named volumes, healthy). Raw-docker experiment removed.
@@ -402,7 +405,9 @@ Proposed design (to refine before build):
       (report only exists as a CI artifact). Fix file-by-file with a
       local interpreter, then drop the flags. Making them blocking now
       would freeze `main` on pre-existing debt — verified none of the
-      errors are from this batch's code.
+      errors are from this batch's code. Done 2026-10-03 (round 5):
+      both steps now blocking and passing — mypy 0 errors (73 files),
+      bandit `continue-on-error: false` with HIGH=0 (triaged 2026-09-24).
 - [x] Repo: `.gitignore` covers keys/certs/signing artifacts + example
       re-allow ordering fixed; RLS lockdown migration written
       (`20260904000000_lockdown_chat_write_rls.sql`).

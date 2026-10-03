@@ -1,7 +1,7 @@
 # aifazi.net — Project Status
 
 > **What we're doing right now, and what's left to do.** Updated 2026-10-03.
-> Audit history: [AUDIT.md](AUDIT.md) (latest §14, Round 4) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
+> Audit history: [AUDIT.md](AUDIT.md) (latest §15, Round 5) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
 
 ## Where we are (what we're doing)
 
@@ -10,7 +10,7 @@
 | **Hybrid-infra diagram editor** | Feature complete + hardened | Audit batches #375–#377, fullscreen #378/#388, doc-driven decorations #389, library 26→62 items + sidebar redesign #390/#391 |
 | **Core UI migration** | ~90% done | Native inputs/dialogs/buttons → `core/forms`, core dialog+notify, `Clickable` (#379–#384); leftovers remain (P2 below) |
 | **Audit-driven hardening** | Round 4 closed same-day | 2026-10-03: 3 UI regressions + 2 security MEDIUMs fixed in #394/#395; 36 of 52 prior findings verified fixed |
-| **Repo hygiene** | Done | Branches/stashes/caches/artifacts cleaned; Playwright artifact untracked (#393); only `main` remains |
+| **Repo hygiene** | Mostly done | Branches/stashes/caches/artifacts cleaned; Playwright artifact untracked (#393). Leftover (Round 5, AUDIT §15): 3 local branches (`bevel-sandwich`, `unique-blade`, `chore/batch3-local-sync`) + 3 worktrees, all at `main`'s commit, no unmerged work, stash empty; remote has `main` only |
 | **Mobile release pipeline** | Fix applied, **unverified** | Actions create-PR setting enabled 2026-10-03 (was broken 6 weeks); no OTA shipped since 2026-08-29 |
 | **Docs consolidation** | In progress | This file + AUDIT.md §14; ROADMAP.md still stale (see P3) |
 
@@ -30,7 +30,7 @@ Verification gate — every PR:
 | Mobile | `npm run typecheck` · `npm run lint` · `npm test` |
 | e2e (feature PRs) | start server → `npx playwright test` |
 
-Current counts: frontend **132 passed** (+1 skip) · backend **203** · mobile **18** · npm audit **7 (0 critical)**.
+Current counts: frontend **132 passed** (+1 skip) · backend **213** · mobile **18** · npm audit **7 (0 critical)**.
 
 ## What remains
 
@@ -40,7 +40,7 @@ Current counts: frontend **132 passed** (+1 skip) · backend **203** · mobile *
 
 ### P1 — this sprint
 
-- [ ] **Close CI gaps** (audit O3): wire `dependency-review-config.yml` into `ci.yml` (currently inert), add mobile `npm test` + `npm run lint:hooks` to CI, add Playwright smoke to CI.
+- [ ] **Close CI gaps** (audit O3): `dependency-review-config.yml` IS auto-loaded (round-5 correction — "inert" was wrong) but 2 of its keys are invalid/ignored, remove them; add mobile `npm test` to CI, add Playwright smoke to CI.
 - [ ] **Fix theme hydration flake** (U1): `app/providers.tsx:394` first-theme-sync can drop `data-theme` (e2e flake + real flash to default) — initialise theme state from storage before first sync.
 - [ ] **Dependency majors** (audit E1): ESLint 9 is EOL → 10; Sentry 10 → 11; clears much of the remaining npm advisory chain. Decide vitest 3 → 5 separately.
 - [ ] **Pin hygiene** (O4): `PyJWT` requirements 2.15 vs lock 2.14; pin `pydantic`; fix `requirements.lock` reproducibility claim.
@@ -48,10 +48,11 @@ Current counts: frontend **132 passed** (+1 skip) · backend **203** · mobile *
 ### P2 — backlog fixes (details in AUDIT.md §14)
 
 - [ ] Open Round-3 series: **N9** (page_layouts restore lacks try/except), N10, N11, N12, N13, F10, F11, F12, F14, F16, F19, **B16** (prod CORS wipes dynamic subdomains).
+- [ ] Round-5 additions: **A5-7** (draft restore forks saved diagrams — re-attach to original `docId` instead of `setDocId(null)`), **A5-8** (first-theme-sync writes stale theme to localStorage/cookie — fold into U1), A5-9 (untyped `workloads`/`deps` pass backend validation, drop on round-trip — B11 evidence), A5-4 (S1/R2 fixes untested).
 - [ ] Core-ui leftovers (U2): native textarea/input in 4 files; `Select`/`Checkbox` drop caller `onClick`; keyboard-activate bubbles MouseEvent (video seek bar jumps to 0); lightbox upscale/distort.
 - [ ] Decorations parity (U3): backend coord clamps; `sanitizeDoc` id dedupe (duplicate id renders locally but 400s on save).
 - [ ] Docs/env (U4): missing backend keys in `.env.example` (`AUTHENTIK_*`, `UPSTASH_*`, `DISCORD_*`, `ADMIN_PASSWORD_HASH`, `LLDAP_*`…); README `docker compose up` needs `.env.local` setup; SECURITY.md line refs; stale `PLAN-REDESIGN-REVAMP.md` claims.
-- [ ] LOW items: dependabot `docker/frontend` entry; fonts.py redirect revalidation; `infra_diagrams` migration REVOKE parity; audit.py actor attribution; Safari fullscreen prefix + menu portal; DateTimePicker time-only edits; Escape for forum admin modals.
+- [ ] LOW items: dependabot `docker/frontend` entry; `infra_diagrams` migration REVOKE parity; audit.py actor attribution; Safari fullscreen prefix + menu portal; DateTimePicker time-only edits; Escape for forum admin modals. (fonts.py redirect revalidation — done, round 5 A5-2.)
 
 ### P3 — structure / product
 

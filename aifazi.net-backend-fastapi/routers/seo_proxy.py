@@ -4,6 +4,9 @@ H20: DNS rebinding actually mitigated by pinning the validated IP into the
      httpx request via a custom transport (the previous getaddrinfo probe was
      non-binding — httpx re-resolved separately, classic TOCTOU). Also drop
      link-local / multicast / unspecified / cloud-metadata 169.254.0.0/16.
+Round-5 A5-1: resolved IPs are validated with the shared
+utils.ssrf.is_blocked_ip guard so IPv4-mapped IPv6 (e.g. ::ffff:169.254.169.254)
+can no longer slip past this file's checks.
 """
 import ipaddress
 import re
@@ -13,7 +16,7 @@ from urllib.parse import urljoin, urlparse
 import httpx
 from fastapi import APIRouter, HTTPException, Query
 
-from utils.ssrf import BLOCKED_NETWORKS, is_blocked_ip
+from utils.ssrf import is_blocked_ip
 
 router = APIRouter()
 
@@ -79,15 +82,9 @@ def _validate_resolved_host(hostname: str) -> str:
             ip_obj = ipaddress.ip_address(ip_str)
         except ValueError:
             continue
-        if (
-            ip_obj.is_private
-            or ip_obj.is_loopback
-            or ip_obj.is_link_local
-            or ip_obj.is_reserved
-            or ip_obj.is_multicast
-            or ip_obj.is_unspecified
-            or any(ip_obj in net for net in BLOCKED_NETWORKS)
-        ):
+        # Shared guard (round-5 A5-1): also catches IPv4-mapped IPv6 such as
+        # ::ffff:169.254.169.254, which the property checks below miss.
+        if is_blocked_ip(ip_obj):
             raise HTTPException(403, f"Domain resolves to blocked IP: {ip_str}")
         if safe_ip is None:
             safe_ip = str(ip_str)  # first safe address wins
