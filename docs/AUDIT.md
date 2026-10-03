@@ -235,7 +235,7 @@ Against **72 routers** and a large SPA this is ~5–8% behavioral coverage.
 
 ### 5.2 Accessibility — partially documented
 
-You already have `aifazi.net-frontend-next/DESIGN-UX-A11Y-AUDIT.md` with solid HIGH items (clickable divs without roles, dialog focus trap, tiny 7–10px type, focus outline killed on command inputs). Treat that document as the a11y backlog; this audit concurs.
+You already have `aifazi.net-frontend-next/DESIGN-UX-A11Y-AUDIT.md` (frontend dir, `DESIGN-UX-A11Y-AUDIT.md`) with solid HIGH items (clickable divs without roles, dialog focus trap, tiny 7–10px type, focus outline killed on command inputs). Treat that document as the a11y backlog; this audit concurs.
 
 Quick wins to do first:
 1. Focus trap + restore in `core/dialog.jsx`; unique ids for `aria-labelledby`.
