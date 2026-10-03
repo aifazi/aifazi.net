@@ -682,3 +682,84 @@ N1 (`BUILTIN_DOCS[slug]` prototype lookup, `HybridInfraEditor.tsx:219,1017`) · 
 ---
 
 *Deep audit, static + source-verified. No production traffic tested. Highest-value fixes: F1, F2, B6, F7.*
+
+---
+
+## 14. Full Audit Round 4 (2026-10-03, range `f561bad..19f3652`)
+
+**Scope:** full monorepo — 41 commits / PRs #375–#393 since Round 3 (hybrid-infra audit batches #375–#377, core-ui migration #379–#384, lint debt #386, next/image #387, fullscreen #388, decorations #389, library #390/#391, repo cleanup #392/#393).
+**Method:** 4 parallel deep-dive agents (prior-findings verification, new-code diff review, security sweep, deps/ops/docs) + full local verification suites + manual source verification of every HIGH claim. No live pen-test.
+
+### Verification (all live, 2026-10-03; post-fix values in brackets)
+
+| Suite | Result |
+|-------|--------|
+| Frontend tsc / eslint / vitest / build / lint:hooks | 0 errors · 0 errors / 58 warnings · 125 passed +1 skip [**132** +1] · ok · ok |
+| Backend ruff / mypy / pytest | 0 · 0 · 200 passed [**203**] |
+| Mobile tsc / eslint / vitest | 0 · 0 · 18 passed |
+| Playwright e2e (29 tests, local) | 24 passed, 3 skipped, 2 failed — both pre-existing: smoke `/api/health` (local `.env.local` has no `API_URL`; prod health 200) + themes flake (below) |
+| npm audit frontend | 10 → [**7**] (critical `next` RCE + `dompurify` fixed in #394; remainder = vitest/eslint-toolchain majors) |
+| npm audit mobile | 31 (0 critical) — all build-chain (expo/metro/node-forge) |
+| Secrets-in-repo scan | clean (only `.env*example` placeholders) |
+
+### Status of Round-3 / Deep-Audit findings (source-verified per ID)
+
+**36 FIXED · 5 PARTIAL · 11 OPEN.**
+Fixed: N1–N8, F1–F9, F15/F17/F18, B1–B10, B12–B14, B17 (incl. all data-loss HIGHs F1/F2, auth-TTL B6, count columns B1).
+**OPEN:** N9 (`page_layouts.py:332` restore no try/except), N10, N11, N12, N13, F10, F11, F12, F14, F16, F19, B16 (prod CORS wipes dynamic subdomain pattern).
+**PARTIAL:** N5 (page_layouts TOCTOU still open), B11, B15 (revision cap still 20), F13, F20 (component tests exist but narrower than planned).
+**Action items open:** god files unchanged (ThemeLibrary 4038, AdminPanels 1773, ServerRack 2379, auth.py 1974); canonicals/JSON-LD partial (`/p/[slug]` has canonical only); **E1 unexecuted** (eslint still ^9 = EOL, Sentry 10 vs 11); **C3 R2 backup** untouched; og:image still deferred.
+
+### New Findings (this round)
+
+#### HIGH — core-ui/img regressions (all FIXED in PR #394)
+
+| # | Finding |
+|---|---------|
+| R1 | **Clickable avatars rendered blank** — `lib/avatar.jsx:94` used `Clickable` (a div) as the image element, swallowing `src`/`alt`; broke `ForumAdmin.jsx:474` + `Navbar.jsx:723,838` since PR #383. Now a real `next/image`, keyboard-activatable when `onClick`. |
+| R2 | **Page-builder images lost sizing for visitors** — `context/EditContext.jsx:1433` non-admin branch ignored `imgStyle` (only caller `BlockRenderer.jsx:91` sizes via it) → 800px, no border/maxWidth since PR #387. Both style channels merged. |
+| R3 | **Slider keyboard operability lost** at 16 call sites — `core/forms.jsx` div proxy had no `tabIndex`/key handling (native range replaced in PR #380). Arrows/Home/End/PageUp/Down + `aria-disabled` restored. |
+
+#### Security MEDIUM (both FIXED in PR #395)
+
+- **S1 — view-only staff could write financial data** — `store_marketing_admin.py:19-20`: all 8 coupon/deal routes gated on `action="view"`; `POST/PATCH/DELETE` now require `manage` (CRM REFUND pattern), reads keep `view`.
+- **S2 — SSRF blocklist bypass via IPv4-mapped IPv6** — `utils/ssrf.py:32`: `is_blocked_ip("::ffff:169.254.169.254")` → `False` (verified by execution); now unwraps `ipv4_mapped`. Affects `monitor.py`, `oauth_admin.py`.
+
+#### Ops / supply chain
+
+- **O1 (HIGH, ops) — mobile release pipeline broken 6 weeks:** `mobile-release-build.yml:103` 403 "GitHub Actions is not permitted to create pull requests" → `app.json` frozen at 1.0.39 while releases reached v1.0.67, `mobile-ota-update.yml` skipped since 2026-08-29. **Repo setting applied 2026-10-03** (`can_approve_pull_request_reviews: true` via API — the "Allow GitHub Actions to create and approve pull requests" knob); next release exercises it end-to-end. Tradeoff: workflows can now both create and approve PRs — no workflow here calls approve.
+- **O2 (MEDIUM)** npm critical: `next` 16.2.0–16.3.5 RCE in `next/og` (GHSA-vcvr-r3jv-pc5j) + `dompurify` GHSA-p98j-92pf-mc4p — **fixed in #394** (16.3.8 / 3.4.16). Remaining 7 advisories need breaking majors (vitest 5, eslint-config-next chain) — decision pending with E1.
+- **O3 (MEDIUM)** CI gaps: `dependency-review-config.yml` never referenced by `ci.yml` (rules inert); mobile vitest (18 tests), Playwright e2e, `lint:hooks` never run in CI.
+- **O4 (MEDIUM)** `PyJWT` pin skew `requirements.txt` 2.15 vs `requirements.lock` 2.14; `pydantic` unpinned; `requirements.lock` claims pip-compile reproducibility it doesn't deliver; pip-audit/ruff/mypy float unpinned in CI (LOW).
+- **O5 (LOW)** dependabot missing `docker/frontend` ecosystem; Dockerfiles pinned by tag not digest; `notify-failure` job is a no-op echo.
+
+#### Correctness / UX (MEDIUM)
+
+- **U1** Themes e2e flake = real hydration race: `app/providers.tsx:394-414` first-theme-sync can drop `data-theme` stamped by the FOUC script → transient flash to default; different theme fails per run.
+- **U2** Core-ui migration leftovers: native textarea/input in `blogPostParts.jsx:430`, `EditContext.jsx:289,566`, `Changelog.jsx:1040`, `DeliveryAgentPortal.jsx:88`; `Select`/`Checkbox` silently drop caller `onClick` (`forms.jsx:188,293` — spread order); keyboard-activate bubbles a real MouseEvent (video seek bar jumps to 0, `blogPostParts.jsx:143`); lightbox upscale/distort (`MediaPreview.jsx:145`).
+- **U3** Decorations parity: backend accepts any finite coord (`infra_diagrams.py:157`) vs frontend clamps; duplicate annotation ids render locally but 400 on save (`data/hybrid-infra.ts` doesn't dedupe).
+- **U4** Docs/env: backend keys missing from every `.env.example` (`AUTHENTIK_*`, `UPSTASH_*`, `DISCORD_*`, `ADMIN_PASSWORD_HASH`, `LLDAP_*`, `COOKIE_DOMAIN`, `MAIL_FROM`…); README `docker compose up` onboarding omits `.env.local` (root example says `.env`); ROADMAP header 3 weeks stale, 33 unchecked incl. one done (:397 CI-debt); `PLAN-REDESIGN-REVAMP.md:45` "no lint/CI/tests" stale; SECURITY.md line refs drift.
+- **U5** Dead weight: 22/34 `scripts/*` unreferenced codemods; backend `check_migrations.py`/`check_policies.py` unwired; 4 unused mobile deps.
+
+#### LOW
+
+fonts.py redirect target not revalidated per hop · `infra_diagrams` migration lacks `REVOKE` parity with `page_layouts` · `audit.py:180` accepts caller-supplied actor/ip · ETag substring match (misses `*`, weak compare) · Safari <16.4 fullscreen prefix ignored (`core/fullscreen.jsx:23`) + menus not portaled (`core/menu.jsx:38`) · DateTimePicker drops time-only edits (`core/DateTimePicker.jsx:81`) · forum modals no Escape · `saveRef` written during render (`HybridInfraEditor.tsx:1742`) · Slider ignores accentColor on track · palette `aria-pressed` during search · mobile vitest include misses `*.test.tsx`.
+
+### Standing Risks (unchanged)
+
+Backup target #2 still same-host (R2 decision, needs bucket) · Authentik 501 stubs · EAS rebuild pending (compounded by O1) · H2 `#token=` OAuth fragments · H1 rotation status unknown.
+
+### Grades
+
+Security **8.5/10** (S1/S2 found & fixed same day; O1 setting tradeoff) · Maintainability **B** (3 core-ui regressions fixed; god files unchanged) · Tests **B** (343 unit + e2e exists but not in CI) · Ops **C+** (mobile pipeline down 6 weeks, now setting-unblocked pending next release).
+
+### Fix status
+
+- **PR #394** (merged `78642dd`): R1 + R2 + R3 + npm audit fix + 7 regression tests.
+- **PR #395** (merged `38ab7e9`): S1 + S2 + 3 tests.
+- **Repo setting**: `can_approve_pull_request_reviews: true` applied 2026-10-03 (verify on next mobile release).
+- **Remaining backlog:** O1 verify next release · U1 theme-init fix · O3 wire mobile-vitest/e2e/lint:hooks + dependency-review config into `ci.yml` · O4 lockfile/pin hygiene · E1 (eslint 10 / sentry 11) · open N9–N13 / F10–F19 / B16 series · god files · C3.
+
+---
+
+*Round-4 audit, static + source-verified. Every HIGH claim manually confirmed. Highest-value remaining: O1 verification, U1, O3.*
