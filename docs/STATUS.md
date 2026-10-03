@@ -48,7 +48,7 @@ Current counts: frontend **132 passed** (+1 skip) · backend **213** · mobile *
 ### P2 — backlog fixes (details in AUDIT.md §14)
 
 - [ ] Open Round-3 series: **N9** (page_layouts restore lacks try/except), N10, N11, N12, N13, F10, F11, F12, F14, F16, F19, **B16** (prod CORS wipes dynamic subdomains).
-- [ ] Round-5 additions: **A5-7** (draft restore forks saved diagrams — re-attach to original `docId` instead of `setDocId(null)`), **A5-8** (first-theme-sync writes stale theme to localStorage/cookie — fold into U1), A5-9 (untyped `workloads`/`deps` pass backend validation, drop on round-trip — B11 evidence), A5-4 (S1/R2 fixes untested).
+- [ ] Round-5 additions: **A5-7** (draft restore forks saved diagrams — re-attach to original `docId` instead of `setDocId(null)`), **A5-8** (first-theme-sync writes stale theme to localStorage/cookie — fold into U1), A5-9 (untyped `workloads`/`deps` pass backend validation, drop on round-trip — B11 evidence). (A5-4 S1/R2 tests — done.)
 - [ ] Core-ui leftovers (U2): native textarea/input in 4 files; `Select`/`Checkbox` drop caller `onClick`; keyboard-activate bubbles MouseEvent (video seek bar jumps to 0); lightbox upscale/distort.
 - [ ] Decorations parity (U3): backend coord clamps; `sanitizeDoc` id dedupe (duplicate id renders locally but 400s on save).
 - [ ] Docs/env (U4): missing backend keys in `.env.example` (`AUTHENTIK_*`, `UPSTASH_*`, `DISCORD_*`, `ADMIN_PASSWORD_HASH`, `LLDAP_*`…); README `docker compose up` needs `.env.local` setup; SECURITY.md line refs; stale `PLAN-REDESIGN-REVAMP.md` claims.
