@@ -711,11 +711,16 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
   const knownCat = (c: unknown): c is InfraCategory =>
     (typeof c === 'string' && (cats.includes(c as BuiltinCategory) || customKeys.has(c))) as boolean
   const nodes: InfraComponent[] = []
+  const seenNodeIds = new Set<string>()
   for (const n of d.nodes as unknown[]) {
     if (nodes.length >= 200) break
     if (!n || typeof n !== 'object') continue
     const c = n as Record<string, unknown>
     if (typeof c.id !== 'string' || !c.id || typeof c.name !== 'string') continue
+    // F19: duplicate node ids break selection/hit-testing locally and 400 on
+    // save — keep the first occurrence, drop the rest.
+    if (seenNodeIds.has(c.id.slice(0, 64))) continue
+    seenNodeIds.add(c.id.slice(0, 64))
     const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
     nodes.push({
       id: c.id.slice(0, 64),
@@ -877,7 +882,9 @@ export function sanitizeDoc(raw: unknown): DiagramDoc | null {
     slug: slugBase.toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) || 'diagram',
     title: typeof d.title === 'string' && d.title ? d.title.slice(0, 120) : 'Untitled diagram',
     updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : new Date().toISOString(),
-    published: d.published !== false,
+    // F19: fail closed — only an explicit `true` publishes (matches the
+    // backend default of unpublished; imports set published=false anyway).
+    published: d.published === true,
     nodes,
     flows,
     ...(categoryColors ? { categoryColors } : {}),

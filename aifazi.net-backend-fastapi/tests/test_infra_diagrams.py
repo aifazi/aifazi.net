@@ -595,6 +595,35 @@ def test_bad_node_workload_rejected_on_update(client):
     assert r.status_code == 400, r.text
 
 
+# -- N10: unknown doc fields are stripped on write -----------------------------
+
+
+def test_unknown_node_and_flow_fields_stripped(client):
+    """N10: extra keys beyond the whitelisted node/flow shape are dropped on
+    write (schema-drift guard); whitelisted fields round-trip untouched."""
+    body = _doc()
+    body["nodes"].append({
+        "id": "lb1", "name": "LB-01", "category": "network",
+        "layer": "edge", "role": "Edge", "desc": "d",
+        "workloads": [], "deps": [],
+        "x": 10, "y": 60, "w": 100, "h": 50, "shape": "chip",
+    })
+    body["nodes"][0]["rogueKey"] = "x"
+    body["nodes"][0]["customMeta"] = {"a": 1}
+    body["nodes"][0]["x"] = None  # nulls are omitted, matching the frontend doc shape
+    body["flows"] = [{"from": "fw1", "to": "lb1", "label": "traffic", "rogue": True}]
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 200, r.text
+    stored = r.json()["diagram"]
+    assert "rogueKey" not in stored["nodes"][0]
+    assert "customMeta" not in stored["nodes"][0]
+    assert "x" not in stored["nodes"][0]
+    assert "rogue" not in stored["flows"][0]
+    assert stored["nodes"][0]["name"] == "FW-01"
+    assert stored["nodes"][1]["shape"] == "chip"
+    assert stored["flows"][0]["label"] == "traffic"
+
+
 # -- Hybrid-infra audit batch 3: B1/B2/B8/B9/N5/N7 + optional-admin ----------
 
 
