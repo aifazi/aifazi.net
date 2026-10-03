@@ -30,6 +30,11 @@ BLOCKED_NETWORKS = [
 
 
 def is_blocked_ip(ip_obj: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    # IPv4-mapped IPv6 (::ffff:a.b.c.d) must be tested as its embedded v4
+    # address, otherwise it slips past every v4 network in the blocklist
+    # (Round-4 audit S2: "::ffff:169.254.169.254" used to pass as public).
+    if isinstance(ip_obj, ipaddress.IPv6Address) and ip_obj.ipv4_mapped is not None:
+        ip_obj = ip_obj.ipv4_mapped
     return any(ip_obj in net for net in BLOCKED_NETWORKS)
 
 

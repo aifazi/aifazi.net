@@ -16,8 +16,13 @@ from permissions import require_any_permission
 log = logging.getLogger("store.marketing")
 router = APIRouter()
 
-COUPONS = require_any_permission("store", "store.coupons", action="view")
-DEALS = require_any_permission("store", "store.deals", action="view")
+# Destructive financial writes (issuing / disabling discount codes) must never
+# sit behind a read-only "view" grant â€” same rule as store_crm_admin REFUND.
+# Reads stay on VIEW so view-only staff can still browse (Round-4 audit S1).
+COUPONS_VIEW = require_any_permission("store", "store.coupons", action="view")
+COUPONS_MANAGE = require_any_permission("store", "store.coupons", action="manage")
+DEALS_VIEW = require_any_permission("store", "store.deals", action="view")
+DEALS_MANAGE = require_any_permission("store", "store.deals", action="manage")
 
 
 def _now() -> str:
@@ -46,7 +51,7 @@ def _coupon_payload(c: dict) -> dict:
 
 
 @router.get("/coupons")
-async def list_coupons(_: dict = Depends(COUPONS)):
+async def list_coupons(_: dict = Depends(COUPONS_VIEW)):
     res = (supabase.table("store_coupons").select("*").order("created_at", desc=True).execute())
     return [_coupon_payload(c) for c in (res.data or [])]
 
@@ -68,7 +73,7 @@ class CouponBody(BaseModel):
 
 
 @router.post("/coupons")
-async def create_coupon(body: CouponBody, _: dict = Depends(COUPONS)):
+async def create_coupon(body: CouponBody, _: dict = Depends(COUPONS_MANAGE)):
     code = body.code.strip().upper()
     if not code:
         raise HTTPException(400, "Code is required")
@@ -98,7 +103,7 @@ class CouponPatchBody(BaseModel):
 
 
 @router.patch("/coupons/{coupon_id}")
-async def update_coupon(coupon_id: str, body: CouponPatchBody, _: dict = Depends(COUPONS)):
+async def update_coupon(coupon_id: str, body: CouponPatchBody, _: dict = Depends(COUPONS_MANAGE)):
     patch = {k: v for k, v in body.dict().items() if v is not None}
     if patch.get("code") is not None:
         patch["code"] = str(patch["code"]).strip().upper()
@@ -114,7 +119,7 @@ async def update_coupon(coupon_id: str, body: CouponPatchBody, _: dict = Depends
 
 
 @router.delete("/coupons/{coupon_id}")
-async def delete_coupon(coupon_id: str, _: dict = Depends(COUPONS)):
+async def delete_coupon(coupon_id: str, _: dict = Depends(COUPONS_MANAGE)):
     res = supabase.table("store_coupons").delete().eq("id", coupon_id).execute()
     if not res.data:
         raise HTTPException(404, "Coupon not found")
@@ -137,7 +142,7 @@ def _deal_payload(d: dict) -> dict:
 
 
 @router.get("/deals")
-async def list_deals(_: dict = Depends(DEALS)):
+async def list_deals(_: dict = Depends(DEALS_VIEW)):
     res = (supabase.table("store_deals").select("*").order("created_at", desc=True).execute())
     out = []
     for d in res.data or []:
@@ -159,7 +164,7 @@ class DealBody(BaseModel):
 
 
 @router.post("/deals")
-async def create_deal(body: DealBody, _: dict = Depends(DEALS)):
+async def create_deal(body: DealBody, _: dict = Depends(DEALS_MANAGE)):
     if not (0 <= body.discount_percent <= 100):
         raise HTTPException(400, "Discount must be 0-100")
     try:
@@ -170,7 +175,7 @@ async def create_deal(body: DealBody, _: dict = Depends(DEALS)):
 
 
 @router.patch("/deals/{deal_id}")
-async def update_deal(deal_id: str, body: DealBody, _: dict = Depends(DEALS)):
+async def update_deal(deal_id: str, body: DealBody, _: dict = Depends(DEALS_MANAGE)):
     patch = {**body.dict(), "updated_at": _now()}
     if not (0 <= patch["discount_percent"] <= 100):
         raise HTTPException(400, "Discount must be 0-100")
@@ -181,7 +186,7 @@ async def update_deal(deal_id: str, body: DealBody, _: dict = Depends(DEALS)):
 
 
 @router.delete("/deals/{deal_id}")
-async def delete_deal(deal_id: str, _: dict = Depends(DEALS)):
+async def delete_deal(deal_id: str, _: dict = Depends(DEALS_MANAGE)):
     res = supabase.table("store_deals").delete().eq("id", deal_id).execute()
     if not res.data:
         raise HTTPException(404, "Deal not found")
