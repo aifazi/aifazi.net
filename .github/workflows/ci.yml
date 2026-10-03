@@ -199,8 +199,10 @@ jobs:
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [frontend-lint, frontend-build, backend-lint, backend-security, mobile-lint, secret-scan]
-    if: failure()
+    needs: [frontend-lint, frontend-build, backend-lint, backend-security, mobile-lint, secret-scan, dependency-review]
+    # dependency-review is pull_request-only (its own `if`), so on push events
+    # it is skipped — the explicit result check keeps this job correct there.
+    if: failure() || needs.dependency-review.result == 'failure'
     steps:
       - name: Notify
         run: echo "One or more CI jobs failed. Check the workflow logs."

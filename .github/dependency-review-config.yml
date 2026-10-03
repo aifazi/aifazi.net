@@ -33,12 +33,7 @@ pip:
 # Maximum number of vulnerabilities to report (default: 100)
 max-vulnerabilities: 50
 
-# Severity threshold for failing the build
-# Options: low, medium, high, critical
-severity-threshold: high
-
-# Allow scoped packages from specific registries
-allowed-registries:
-  - "https://registry.npmjs.org"
-  - "https://registry.yarnpkg.com"
-  - "https://pypi.org/simple"
+# Round-5 audit (A5-3): `severity-threshold` and `allowed-registries` were
+# removed — the action's schema does not know these keys and silently ignored
+# them. `fail-on-severity` above is the real severity control; the file is
+# auto-loaded by actions/dependency-review-action (no workflow wiring needed).
