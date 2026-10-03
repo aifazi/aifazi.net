@@ -345,10 +345,24 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
         if n.get("gid") is not None:
             if not isinstance(n["gid"], str) or not n["gid"] or len(n["gid"]) > 40:
                 raise HTTPException(400, "Node gid must be a short string")
-        if not isinstance(n.get("workloads", []), list) or len(n.get("workloads", [])) > 12:
+        workloads = n.get("workloads", [])
+        if not isinstance(workloads, list) or len(workloads) > 12:
             raise HTTPException(400, "Invalid node workloads")
-        if not isinstance(n.get("deps", []), list) or len(n.get("deps", [])) > 24:
+        # A5-9: the frontend sanitizeDoc silently drops non-string entries and
+        # truncates each to 60 chars on next load — reject them here instead of
+        # storing data that would be lost on the round-trip.
+        for w in workloads:
+            if not isinstance(w, str) or not w or len(w) > 60:
+                raise HTTPException(400, "Node workloads must be non-empty strings (<=60)")
+        deps = n.get("deps", [])
+        if not isinstance(deps, list) or len(deps) > 24:
             raise HTTPException(400, "Invalid node deps")
+        # A5-9: deps must be strings — sanitizeDoc drops anything else on load.
+        # No length cap: sanitizeDoc keeps any string, so long legacy refs
+        # (e.g. from JSON import) must not fail to save.
+        for d in deps:
+            if not isinstance(d, str) or not d:
+                raise HTTPException(400, "Node deps must be non-empty strings")
         clean_nodes.append(n)
     ids = {n["id"] for n in clean_nodes}
     if len(ids) != len(clean_nodes):
