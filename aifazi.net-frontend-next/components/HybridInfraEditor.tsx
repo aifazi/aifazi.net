@@ -11,6 +11,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { getRole } from '@/lib/api'
 import { useInfraTone, infraPalette } from '@/lib/infraTheme'
+import { decodeDraftPayload, encodeDraftPayload } from '@/lib/infraDraft'
 import HybridInfra from './HybridInfra'
 import { HybridInfraCanvas, type HybridInfraCanvasHandle } from './HybridInfraCanvas'
 import InfraLibraryPalette from './InfraLibraryPalette'
@@ -73,13 +74,20 @@ const BUILTIN_DOCS: Record<string, () => DiagramDoc> = {
   ...TEMPLATE_SEEDS,
 }
 
+/* N11: full HTML-entity escape for values embedded in attribute strings
+ * (& first, then < > " ') — the old snippet only escaped `"`. */
+const escapeHtmlAttr = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
 /* ── Draft persistence helpers (module-level: stable identity for effects) ──
  * One localStorage key per diagram (N6) so autosaves never clobber each
  * other, with restore offers scoped to the doc being edited. */
 const draftKeyFor = (slug: string) => `hi-editor-draft:${slug}`
 const writeDraft = (d: DiagramDoc) => {
   try {
-    localStorage.setItem(draftKeyFor(d.slug), JSON.stringify({ doc: d, at: new Date().toISOString() }))
+    // N12: base64-encoded payload — raw doc text (incl. operator notes) no
+    // longer sits plaintext in localStorage.
+    localStorage.setItem(draftKeyFor(d.slug), encodeDraftPayload({ doc: d, at: new Date().toISOString() }))
   } catch {
     /* quota / private mode */
   }
@@ -95,7 +103,11 @@ const readDraft = (slug: string): { doc: DiagramDoc; at: string } | null => {
   try {
     const raw = localStorage.getItem(draftKeyFor(slug))
     if (!raw) return null
-    const parsed = JSON.parse(raw) as { doc?: unknown; at?: string }
+    // N12: base64 payloads now; legacy plaintext drafts still readable
+    // (the next autosave rewrites them encoded).
+    const decoded = decodeDraftPayload(raw)
+    if (!decoded) return null
+    const parsed = JSON.parse(decoded) as { doc?: unknown; at?: string }
     const clean = parsed.doc ? sanitizeDoc(parsed.doc) : null
     if (!clean || !parsed.at || clean.slug !== slug) return null
     return { doc: clean, at: parsed.at }
@@ -520,6 +532,18 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     docRef.current = next
     setDoc(next)
   }
+  // F12: drop selection entries whose ids no longer exist in the restored
+  // doc — otherwise a stale "N NODES SELECTED" badge (and multi-op target
+  // set) survives undo/redo.
+  const pruneSelection = (d: DiagramDoc) => {
+    const alive = new Set([...d.nodes.map((n) => n.id), ...(d.decorations ?? []).map((x) => x.id)])
+    if (selectedId && !alive.has(selectedId)) setSelectedId(null)
+    setSelIds((prev) => {
+      if (prev.size <= 1) return prev
+      const next = new Set([...prev].filter((id) => alive.has(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }
   const undo = () => {
     const h = histRef.current
     const prev = h.past.pop()
@@ -529,13 +553,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     if (d) {
       docRef.current = d
       setDoc(d)
-      if (
-        selectedId &&
-        !d.nodes.some((n) => n.id === selectedId) &&
-        !d.decorations?.some((x) => x.id === selectedId)
-      ) {
-        setSelectedId(null)
-      }
+      pruneSelection(d)
     }
     syncHistButtons()
   }
@@ -548,6 +566,8 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
     if (d) {
       docRef.current = d
       setDoc(d)
+      // F12: redo previously skipped this entirely.
+      pruneSelection(d)
     }
     syncHistButtons()
   }
@@ -745,8 +765,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
-            <label style={LABEL}>Layer</label>
+            <label style={LABEL} htmlFor="decor-layer">Layer</label>
             <Select
+              id="decor-layer"
               value={d.z ?? 'front'}
               onChange={(v) => updateDecoration(d.id, { z: v as InfraDecoration['z'] })}
               options={[
@@ -758,8 +779,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           </div>
           {d.kind === 'label' && (
             <div>
-              <label style={LABEL}>Align</label>
+              <label style={LABEL} htmlFor="decor-align">Align</label>
               <Select
+                id="decor-align"
                 value={d.align ?? 'left'}
                 onChange={(v) => updateDecoration(d.id, { align: v as 'left' | 'center' })}
                 options={[{ value: 'left', label: 'left' }, { value: 'center', label: 'center' }]}
@@ -771,8 +793,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         {d.kind === 'label' ? (
           <>
             <div>
-              <label style={LABEL}>Text</label>
+              <label style={LABEL} htmlFor="decor-text">Text</label>
               <Input
+                id="decor-text"
                 value={d.text ?? ''}
                 onChange={(v) => updateDecoration(d.id, { text: v.slice(0, 200) })}
                 style={INPUT}
@@ -780,8 +803,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               <div>
-                <label style={LABEL}>Size</label>
+                <label style={LABEL} htmlFor="decor-size">Size</label>
                 <Input
+                  id="decor-size"
                   type="number"
                   value={d.size ?? 10}
                   min={6}
@@ -791,16 +815,18 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 />
               </div>
               <div>
-                <label style={LABEL}>Weight</label>
+                <label style={LABEL} htmlFor="decor-weight">Weight</label>
                 <Select
+                  id="decor-weight"
                   value={d.weight ?? '500'}
                   onChange={(v) => updateDecoration(d.id, { weight: v })}
                   options={['400', '500', '600', '700', '800'].map((w) => ({ value: w, label: w }))}
                 />
               </div>
               <div>
-                <label style={LABEL}>Color</label>
+                <label style={LABEL} htmlFor="decor-color">Color</label>
                 <Select
+                  id="decor-color"
                   value={tokenSel(d.color, 'custom')}
                   onChange={(v) => updateDecoration(d.id, { color: v === 'custom' ? d.color : v })}
                   options={[
@@ -986,8 +1012,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               </div>
             </div>
             <div>
-              <label style={LABEL}>Connect from nodes (comma ids)</label>
+              <label style={LABEL} htmlFor="decor-connects">Connect from nodes (comma ids)</label>
               <Input
+                id="decor-connects"
                 value={(d.connects ?? []).join(', ')}
                 onChange={(v) =>
                   updateDecoration(d.id, {
@@ -1692,22 +1719,39 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
         // can never win in the loader (?diagram= prefers the builtin), so a
         // DB row with one would be unreachable — exclude them here and let
         // the backend reserve them too.
-        const taken = new Set(diagrams.map((d) => d.slug))
-        const base =
-          cur.slug && !Object.hasOwn(BUILTIN_DOCS, cur.slug) && !taken.has(cur.slug)
-            ? cur.slug
-            : slugify(cur.title || 'diagram')
-        let slug = base
-        let n = 2
-        while (taken.has(slug) || Object.hasOwn(BUILTIN_DOCS, slug)) {
-          slug = `${base}-${n}`
-          n += 1
+        const deriveSlug = (taken: Set<string>) => {
+          const base =
+            cur.slug && !Object.hasOwn(BUILTIN_DOCS, cur.slug) && !taken.has(cur.slug)
+              ? cur.slug
+              : slugify(cur.title || 'diagram')
+          let slug = base
+          let n = 2
+          while (taken.has(slug) || Object.hasOwn(BUILTIN_DOCS, slug)) {
+            slug = `${base}-${n}`
+            n += 1
+          }
+          return slug
         }
-        const created = await createDiagram({
-          ...cur,
-          slug,
-          updatedAt: new Date().toISOString(),
-        })
+        // N13: `diagrams` can be stale within a session (another admin saved
+        // after mount / the mount fetch failed). The server 409 is the real
+        // enforcer — on conflict, re-read the list and retry once with a
+        // re-derived slug instead of surfacing a raw 409 toast.
+        let taken = new Set(diagrams.map((d) => d.slug))
+        const sendCreate = (slug: string) =>
+          createDiagram({ ...cur, slug, updatedAt: new Date().toISOString() })
+        let created: DiagramDoc
+        try {
+          created = await sendCreate(deriveSlug(taken))
+        } catch (e) {
+          if ((e as { response?: { status?: number } }).response?.status !== 409) throw e
+          try {
+            const fresh = await (isAdminRef.current ? listAllDiagrams() : listDiagrams())
+            taken = new Set(fresh.map((d) => d.slug))
+          } catch {
+            throw e // offline — keep the original error
+          }
+          created = await sendCreate(deriveSlug(taken))
+        }
         const clean = sanitizeDoc(created)
         if (!clean) throw new Error('Server returned an invalid doc')
         setDocId(clean.id)
@@ -1945,7 +1989,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
       const origin = typeof window !== 'undefined' ? window.location.origin : ''
       const page = `${origin}/hybrid-infra?diagram=${encodeURIComponent(slug)}`
       const embed = `${origin}/hybrid-infra/embed?diagram=${encodeURIComponent(slug)}`
-      const safeTitle = cur.title.replace(/"/g, '&quot;')
+      const safeTitle = escapeHtmlAttr(cur.title)
       setShareUrls({
         page,
         embed,
@@ -2337,17 +2381,8 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
           JSON
         </button>
         <button type="button" onClick={() => fileRef.current?.click()} style={BTN}>IMPORT</button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="application/json,.json"
-          hidden
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            e.target.value = ''
-            if (f) void importDoc(f)
-          }}
-        />
+        {/* F16: the hidden file input lives at the top-level render (single
+            instance) — the ref drives it from here. */}
         <button
           type="button"
           onClick={toggleEditFullscreen}
@@ -2408,9 +2443,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               DRAFT — links only open for signed-in admins. Toggle PUBLISHED to share publicly.
             </div>
           )}
-          <label style={LABEL}>PUBLIC LINK</label>
+          <label style={LABEL} htmlFor="share-page">PUBLIC LINK</label>
           <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-            <Input readOnly value={shareUrls.page} style={INPUT} onFocus={(e) => e.target.select()} />
+            <Input id="share-page" readOnly value={shareUrls.page} style={INPUT} onFocus={(e) => e.target.select()} />
             <button
               type="button"
               onClick={() => void copyText(shareUrls.page, 'Share link copied')}
@@ -2419,9 +2454,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               COPY
             </button>
           </div>
-          <label style={LABEL}>EMBED (IFRAME)</label>
+          <label style={LABEL} htmlFor="share-embed">EMBED (IFRAME)</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Input readOnly value={shareUrls.snippet} style={INPUT} onFocus={(e) => e.target.select()} />
+            <Input id="share-embed" readOnly value={shareUrls.snippet} style={INPUT} onFocus={(e) => e.target.select()} />
             <button
               type="button"
               onClick={() => void copyText(shareUrls.snippet, 'Embed snippet copied')}
@@ -2756,16 +2791,18 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 )}
               </div>
               <div>
-                <label style={LABEL}>Name</label>
+                <label style={LABEL} htmlFor="node-name">Name</label>
                 <Input
+                  id="node-name"
                   value={selected.name}
                   onChange={(v) => updateNode(selected.id, { name: v.slice(0, 80) })}
                   style={INPUT}
                 />
               </div>
               <div>
-                <label style={LABEL}>Role</label>
+                <label style={LABEL} htmlFor="node-role">Role</label>
                 <Input
+                  id="node-role"
                   value={selected.role}
                   onChange={(v) => updateNode(selected.id, { role: v.slice(0, 80) })}
                   style={INPUT}
@@ -2773,8 +2810,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div>
-                  <label style={LABEL}>Category</label>
+                  <label style={LABEL} htmlFor="node-category">Category</label>
                   <Select
+                    id="node-category"
                     value={selected.category}
                     onChange={(v) => updateNode(selected.id, { category: v as InfraCategory })}
                     options={[
@@ -2790,8 +2828,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                   />
                 </div>
                 <div>
-                  <label style={LABEL}>Layer</label>
+                  <label style={LABEL} htmlFor="node-layer">Layer</label>
                   <Select
+                    id="node-layer"
                     value={selected.layer}
                     onChange={(v) => {
                       const layer = v as InfraComponent['layer']
@@ -2824,8 +2863,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 </div>
               </div>
               <div>
-                <label style={LABEL}>Description</label>
+                <label style={LABEL} htmlFor="node-desc">Description</label>
                 <TextArea
+                  id="node-desc"
                   value={selected.desc}
                   onChange={(v) => updateNode(selected.id, { desc: v.slice(0, 2000) })}
                   rows={3}
@@ -2833,8 +2873,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 />
               </div>
               <div>
-                <label style={LABEL}>Operator note</label>
+                <label style={LABEL} htmlFor="node-notes">Operator note</label>
                 <TextArea
+                  id="node-notes"
                   value={selected.notes ?? ''}
                   onChange={(v) => updateNode(selected.id, { notes: v.slice(0, 2000) || undefined })}
                   rows={2}
@@ -2883,8 +2924,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 </div>
               </div>
               <div>
-                <label style={LABEL}>Workloads (comma separated)</label>
+                <label style={LABEL} htmlFor="node-workloads">Workloads (comma separated)</label>
                 <Input
+                  id="node-workloads"
                   value={selected.workloads.join(', ')}
                   onChange={(v) =>
                     updateNode(selected.id, {
@@ -2897,8 +2939,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               {selected.layer === 'rack' ? (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <div>
-                    <label style={LABEL}>Rack U</label>
+                    <label style={LABEL} htmlFor="node-racku">Rack U</label>
                     <Input
+                      id="node-racku"
                       type="number" min={1} max={42}
                       value={selected.rackU ?? 1}
                       onChange={(v) => updateNode(selected.id, { rackU: Math.max(1, Math.min(42, Number(v) || 1)) })}
@@ -2906,8 +2949,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                     />
                   </div>
                   <div>
-                    <label style={LABEL}>U height</label>
+                    <label style={LABEL} htmlFor="node-rackh">U height</label>
                     <Input
+                      id="node-rackh"
                       type="number" min={1} max={8}
                       value={selected.rackH ?? 1}
                       onChange={(v) => updateNode(selected.id, { rackH: Math.max(1, Math.min(8, Number(v) || 1)) })}
@@ -2919,8 +2963,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {(['x', 'y', 'w', 'h'] as const).map((k) => (
                     <div key={k}>
-                      <label style={LABEL}>{k.toUpperCase()}</label>
+                      <label style={LABEL} htmlFor={`node-box-${k}`}>{k.toUpperCase()}</label>
                       <Input
+                        id={`node-box-${k}`}
                         type="number"
                         value={selected[k] ?? 0}
                         onChange={(val) => {

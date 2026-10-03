@@ -1574,19 +1574,43 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       }
 
       function hitAt(mx: number, my: number): string | null {
-        // Front annotations sit above nodes (captions inside cards must beat
-        // the card); back/panel annotations yield to nodes so clicking a
-        // device inside a zone panel still selects the device.
+        // F10: hit-test in reverse PAINT order (see renderFrame) so a click
+        // selects the visually topmost node, not the last one in the array.
+        // Within a paint group the later array entry paints on top.
+        // Panel/back annotations still yield to the device groups (a device
+        // inside a zone panel beats the panel), as before.
+        const nl = nodeList()
+        const nodeHit = (c: InfraComponent): boolean => {
+          const h = hits.get(c.id)
+          return !!h && mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h
+        }
+        const lastFirst = (pred: (c: InfraComponent) => boolean): string | null => {
+          for (let i = nl.length - 1; i >= 0; i--) {
+            if (pred(nl[i]) && nodeHit(nl[i])) return nl[i].id
+          }
+          return null
+        }
+        // 1. edge/cloud chips paint above everything else.
+        const chip = lastFirst((c) => c.layer === 'edge' || c.layer === 'cloud')
+        if (chip) return chip
+        // 2. front annotations (captions) — drawn at the end of the cluster
+        //    panel, under the edge/cloud chips.
         const front = decoHit(mx, my, 'front')
         if (front) return front
-        const nl = nodeList()
-        for (let i = nl.length - 1; i >= 0; i--) {
-          const h = hits.get(nl[i].id)
-          if (h && mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h) {
-            return nl[i].id
-          }
-        }
-        return decoHit(mx, my, 'panel') ?? decoHit(mx, my, 'back')
+        // 3. users chips, then the fixed 'legacy' box.
+        const user = lastFirst((c) => c.layer === 'users')
+        if (user) return user
+        const legacy = byId('legacy')
+        if (legacy && nodeHit(legacy)) return legacy.id
+        // 4. vm chips, then the editable 'panel' annotations under them.
+        const vm = lastFirst((c) => c.layer === 'vm')
+        if (vm) return vm
+        const panel = decoHit(mx, my, 'panel')
+        if (panel) return panel
+        // 5. rack devices, then back annotations (below everything).
+        const rack = lastFirst((c) => c.layer === 'rack')
+        if (rack) return rack
+        return decoHit(mx, my, 'back')
       }
 
       function designFromClient(mx: number, my: number) {
@@ -1791,6 +1815,10 @@ export const HybridInfraCanvas = forwardRef<HybridInfraCanvasHandle, Props>(
       // browser's Ctrl+wheel page zoom, like a design tool). At a zoom
       // bound the wheel passes through so the page can still scroll.
       function onWheel(e: WheelEvent) {
+        // F11: never zoom mid-gesture — the drag's saved design-space offsets
+        // would stay in the pre-zoom coordinate space and the node would
+        // teleport. Ignore the wheel until the gesture ends.
+        if (dragId || panId !== null || mqId !== null) return
         const { mx, my } = toDesign(e)
         const factor = wheelZoomFactor(e.deltaY, e.deltaMode, H)
         if (wheelAtBound(viewRef.current, factor)) return

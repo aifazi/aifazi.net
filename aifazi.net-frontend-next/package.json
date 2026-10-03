@@ -21,7 +21,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@noble/ciphers": "^2.3.0",
-    "@sentry/nextjs": "^10.74.0",
+    "@sentry/nextjs": "^11.4.0",
     "@supabase/supabase-js": "^2.116.0",
     "axios": "^1.20.0",
     "cobe": "^2.0.1",

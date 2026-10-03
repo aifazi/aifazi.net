@@ -42,6 +42,15 @@ MAX_DECORATIONS = 100
 # Frontend theoretical max: 100 decos x (200-char text + 12 x 160-char lines)
 # ≈ 215 KB — the cap must never reject what sanitizeDoc can produce.
 MAX_DECOR_BYTES = 256 * 1024
+# N10: node/flow keys the stored doc may carry. _validate_doc rebuilds each
+# entry from this whitelist (mirroring _validate_decorations) so unknown keys
+# are dropped on write instead of drifting into the DB.
+_NODE_FIELDS = (
+    "id", "name", "category", "layer", "role", "desc", "notes",
+    "x", "y", "w", "h", "rackU", "rackH",
+    "accent", "pulse", "gid", "workloads", "deps", "shape",
+)
+_FLOW_FIELDS = ("id", "from", "to", "cat", "label", "dashed", "color")
 # Palette names for annotation colors — mirrors DECOR_TOKENS in hybrid-infra.ts.
 DECOR_TOKENS = {"ink", "sub", "muted", "cyan", "green", "purple", "amber", "red", "blue"}
 
@@ -345,11 +354,27 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
         if n.get("gid") is not None:
             if not isinstance(n["gid"], str) or not n["gid"] or len(n["gid"]) > 40:
                 raise HTTPException(400, "Node gid must be a short string")
-        if not isinstance(n.get("workloads", []), list) or len(n.get("workloads", [])) > 12:
+        workloads = n.get("workloads", [])
+        if not isinstance(workloads, list) or len(workloads) > 12:
             raise HTTPException(400, "Invalid node workloads")
-        if not isinstance(n.get("deps", []), list) or len(n.get("deps", [])) > 24:
+        # A5-9: the frontend sanitizeDoc silently drops non-string entries and
+        # truncates each to 60 chars on next load — reject them here instead of
+        # storing data that would be lost on the round-trip.
+        for w in workloads:
+            if not isinstance(w, str) or not w or len(w) > 60:
+                raise HTTPException(400, "Node workloads must be non-empty strings (<=60)")
+        deps = n.get("deps", [])
+        if not isinstance(deps, list) or len(deps) > 24:
             raise HTTPException(400, "Invalid node deps")
-        clean_nodes.append(n)
+        # A5-9: deps must be strings — sanitizeDoc drops anything else on load.
+        # No length cap: sanitizeDoc keeps any string, so long legacy refs
+        # (e.g. from JSON import) must not fail to save.
+        for d in deps:
+            if not isinstance(d, str) or not d:
+                raise HTTPException(400, "Node deps must be non-empty strings")
+        # N10: rebuild from the whitelist — validated fields only, unknown keys
+        # dropped (null values omitted to match the frontend doc shape).
+        clean_nodes.append({k: n[k] for k in _NODE_FIELDS if k in n and n[k] is not None})
     ids = {n["id"] for n in clean_nodes}
     if len(ids) != len(clean_nodes):
         raise HTTPException(400, "Duplicate node id")
@@ -371,7 +396,8 @@ def _validate_doc(nodes: list, flows: list) -> tuple[list, list]:
                 raise HTTPException(400, "Flow color must be #rrggbb")
         if "dashed" in f and f["dashed"] not in (None, True, False):
             raise HTTPException(400, "Flow dashed must be boolean")
-        clean_flows.append(f)
+        # N10: rebuild from the whitelist — unknown flow keys dropped on write.
+        clean_flows.append({k: f[k] for k in _FLOW_FIELDS if k in f and f[k] is not None})
     return clean_nodes, clean_flows
 
 

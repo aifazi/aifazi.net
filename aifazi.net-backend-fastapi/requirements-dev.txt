@@ -1,6 +1,11 @@
-# Dev/test-only dependencies for CI (backend-lint job).
+# Dev/test-only dependencies for CI (backend-lint + backend-security jobs).
 # Pinned for reproducible builds. Main deps live in requirements.txt
 # (installed first); these pins take precedence for the test run.
 pytest==9.1.1
 pytest-asyncio==1.4.0
 httpx==0.28.1
+# CI tooling — O4: was installed unpinned in ci.yml (floated on every run).
+ruff==0.16.2
+mypy==2.3.1
+bandit==1.9.4
+pip-audit==2.10.1

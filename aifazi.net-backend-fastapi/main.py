@@ -28,6 +28,7 @@ if dsn.startswith("https://"):
                     environment=os.getenv("ENV", "production"))
 
 from utils.body_limit import MAX_JSON_BODY_BYTES, MAX_UPLOAD_BODY_BYTES, BodySizeLimitMiddleware, BodyTooLarge
+from utils.cors_origins import build_cors, is_allowed_origin as _cors_is_allowed
 from utils.rate_limit import _ip_is_banned, _refresh_ip_bans, _require_redis_config, check_rate_limit
 from utils.request_ip import client_ip
 from utils.request_metrics import record_error
@@ -67,8 +68,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="aifazi.net API", version="2.0.0", lifespan=lifespan,
               docs_url=None, redoc_url=None, openapi_url=None)
-
-import re
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -337,46 +336,14 @@ _OPEN_GET_PREFIXES: tuple[str, ...] = (
 )
 
 # ── CORS allowed origins ───────────────────────────────────────────────────────
-# Localhost origins are dev-only: they must never be trusted in production,
-# where a permissive ACAO would let any local process read credentialed API
-# responses.
-_STATIC_ORIGINS = {
-    "https://aifazi.net",
-    "https://www.aifazi.net",
-    "https://admin.aifazi.net",
-    FRONTEND_URL,
-}
-if not _IS_PRODUCTION:
-    _STATIC_ORIGINS |= {
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:5174",
-    }
-
-_DYNAMIC_PATTERNS: list[re.Pattern] = []
-
-# Subdomains of the configured frontend root (store/fivem/status/cdn/...) are
-# trusted on any deployment — not just aifazi.net — so a fresh clone on its own
-# domain gets working cross-subdomain CORS without editing code.
-_FRONTEND_ROOT = FRONTEND_URL.split("//", 1)[-1].split("/", 1)[0]
-if "." in _FRONTEND_ROOT and not _FRONTEND_ROOT.replace(".", "").isdigit() and not _FRONTEND_ROOT.startswith("localhost"):
-    _STATIC_ORIGINS.add(f"https://{_FRONTEND_ROOT}")
-    _STATIC_ORIGINS.add(f"https://www.{_FRONTEND_ROOT}")
-    _DYNAMIC_PATTERNS.append(re.compile(rf"^https://[a-z0-9\-]+\.{re.escape(_FRONTEND_ROOT)}$"))
-
-if not _IS_PRODUCTION:
-    # Development only — allow Vercel preview deploys
-    _DYNAMIC_PATTERNS = [
-        re.compile(r"^https://[a-z0-9\-]+\.vercel\.app$"),
-        re.compile(r"^https://[a-z0-9\-]+\.aifazi\.net$"),
-    ]
-else:
-    _DYNAMIC_PATTERNS = []
+# Construction + fail-closed check live in utils/cors_origins.py. B16: prod
+# keeps the frontend-root subdomain pattern (the old inline `else` branch
+# wiped it, CORS-blocking store/fivem/status/... frontends that call the API
+# directly); localhost origins stay dev-only.
+_STATIC_ORIGINS, _DYNAMIC_PATTERNS = build_cors(FRONTEND_URL, _IS_PRODUCTION)
 
 def _is_allowed_origin(origin: str) -> bool:
-    if origin in _STATIC_ORIGINS:
-        return True
-    return any(p.match(origin) for p in _DYNAMIC_PATTERNS)
+    return _cors_is_allowed(origin, _STATIC_ORIGINS, _DYNAMIC_PATTERNS)
 
 
 # (max_calls, window_seconds) per path suffix

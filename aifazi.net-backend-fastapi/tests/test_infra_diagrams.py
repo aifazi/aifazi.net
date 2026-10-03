@@ -546,6 +546,84 @@ def test_bad_node_gid_rejected(client):
         assert client.post("/diagrams", json=body).status_code == 400, bad
 
 
+# -- A5-9: workloads/deps entry types (what sanitizeDoc silently drops) -------
+
+
+def test_node_workloads_deps_accepted(client):
+    """Valid strings round-trip untouched, at the frontend's caps."""
+    body = _doc()
+    body["nodes"][0]["workloads"] = ["api-gateway", "w" * 60]
+    body["nodes"][0]["deps"] = ["fw1", "x" * 200]
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 200, r.text
+    got = r.json()["diagram"]["nodes"][0]
+    assert got["workloads"] == ["api-gateway", "w" * 60]
+    # No length cap on deps — sanitizeDoc keeps any string (JSON import).
+    assert got["deps"] == ["fw1", "x" * 200]
+
+
+@pytest.mark.parametrize("bad", [123, None, ["w"], {"name": "w"}, ""])
+def test_bad_node_workload_rejected(client, bad):
+    """Entries the frontend sanitizeDoc would drop on load are a 400 here,
+    not silently stored and lost on the round-trip."""
+    body = _doc()
+    body["nodes"][0]["workloads"] = [bad]
+    assert client.post("/diagrams", json=body).status_code == 400, bad
+
+
+def test_long_node_workload_rejected(client):
+    """Over 60 chars the frontend would silently truncate on load."""
+    body = _doc()
+    body["nodes"][0]["workloads"] = ["w" * 61]
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+@pytest.mark.parametrize("bad", [123, None, ["d"], {"id": "d"}, ""])
+def test_bad_node_dep_rejected(client, bad):
+    body = _doc()
+    body["nodes"][0]["deps"] = [bad]
+    assert client.post("/diagrams", json=body).status_code == 400, bad
+
+
+def test_bad_node_workload_rejected_on_update(client):
+    """The gate applies to PUT (full-document replace) as well."""
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    body = _doc()
+    body["nodes"][0]["workloads"] = [{"name": "w"}]
+    r = client.put(f"/diagrams/{doc_id}", json=body)
+    assert r.status_code == 400, r.text
+
+
+# -- N10: unknown doc fields are stripped on write -----------------------------
+
+
+def test_unknown_node_and_flow_fields_stripped(client):
+    """N10: extra keys beyond the whitelisted node/flow shape are dropped on
+    write (schema-drift guard); whitelisted fields round-trip untouched."""
+    body = _doc()
+    body["nodes"].append({
+        "id": "lb1", "name": "LB-01", "category": "network",
+        "layer": "edge", "role": "Edge", "desc": "d",
+        "workloads": [], "deps": [],
+        "x": 10, "y": 60, "w": 100, "h": 50, "shape": "chip",
+    })
+    body["nodes"][0]["rogueKey"] = "x"
+    body["nodes"][0]["customMeta"] = {"a": 1}
+    body["nodes"][0]["x"] = None  # nulls are omitted, matching the frontend doc shape
+    body["flows"] = [{"from": "fw1", "to": "lb1", "label": "traffic", "rogue": True}]
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 200, r.text
+    stored = r.json()["diagram"]
+    assert "rogueKey" not in stored["nodes"][0]
+    assert "customMeta" not in stored["nodes"][0]
+    assert "x" not in stored["nodes"][0]
+    assert "rogue" not in stored["flows"][0]
+    assert stored["nodes"][0]["name"] == "FW-01"
+    assert stored["nodes"][1]["shape"] == "chip"
+    assert stored["flows"][0]["label"] == "traffic"
+
+
 # -- Hybrid-infra audit batch 3: B1/B2/B8/B9/N5/N7 + optional-admin ----------
 
 

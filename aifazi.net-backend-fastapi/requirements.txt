@@ -1,7 +1,11 @@
-# Generated from requirements.txt — pin with `pip-compile` or `pip freeze > requirements.lock`
-# for reproducible builds. Keep httpx/PyMuPDF pinned for security (see audit).
+# Direct runtime dependencies, pinned for reproducible installs (O4).
+# requirements.lock mirrors these pins for the deploy path.
+# Keep httpx/PyMuPDF pinned for security (see audit).
 httpx==0.28.1
 fastapi==0.141.1
+# Pinned explicitly (O4): fastapi's only hard constraint lets pydantic float
+# to a newer minor at install time.
+pydantic==2.13.5
 uvicorn[standard]==0.53.0
 supabase==2.31.0
 cryptography==50.0.1

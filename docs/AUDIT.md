@@ -813,7 +813,7 @@ Source-verified against current `HEAD`: **N9** (`page_layouts.py:332` bare execu
 | A5-6 | INFO | `43e18d0` commit message claims "micromatch chain updates" — no micromatch entry moved. | n/a |
 | A5-7 | MEDIUM | **Draft restore silently forks saved diagrams.** `HybridInfraEditor.tsx:1082` `acceptDraft` → `setDocId(null)`; next save takes the create branch, slug is in `taken` → creates `slug-2`. Restoring a draft of a saved diagram detaches from the server row and spawns a duplicate sibling (original untouched, revisions stranded) instead of re-attaching to the original `docId`. | **FIXED (this PR)** — `acceptDraft` re-attaches the server row uuid via `draftRestoreDocId()` (`lib/infraDocOps.ts`); the backend stamps the row uuid on every diagram response while never-saved docs carry a client `doc-*` id, which stays unattached so save() still creates the row; 4 tests |
 | A5-8 | MEDIUM | **U1 clobbers storage, not just paint.** The first-sync branch writes the stale theme to `localStorage` + cross-domain cookie (`providers.tsx:409-410`) before the mount-init effect's corrected value lands — a FOUC-stamped user preference is briefly overwritten in storage too. | **FIXED (this PR, resolves U1)** — first sync now adopts the DOM stamp when it is a valid theme instead of clobbering it, and skips the storage write on the first pass; decision extracted to `core/themeSync.ts` + 5 tests |
-| A5-9 | LOW | Untyped `workloads`/`deps` entries pass backend validation (`infra_diagrams.py:348-351` — `isinstance(list)` only), are stored, then silently dropped by `sanitizeDoc` on next load (round-trip data loss); `deps` never validated against node ids (dangling ids persist). Concrete evidence for B11's "narrower than docstring" status. | open |
+| A5-9 | LOW | Untyped `workloads`/`deps` entries pass backend validation (`infra_diagrams.py:348-351` — `isinstance(list)` only), are stored, then silently dropped by `sanitizeDoc` on next load (round-trip data loss); `deps` never validated against node ids (dangling ids persist). Concrete evidence for B11's "narrower than docstring" status. | **FIXED (this PR)** — `_validate_doc` now rejects non-string/empty `workloads`/`deps` entries and >60-char workloads (400), mirroring `sanitizeDoc`'s per-entry rules so stored data can't be lost on round-trip; deps stay length-uncapped (sanitizeDoc keeps any string). Dangling-id deps are kept by design: the frontend keeps and displays them, the editor cleans them on node delete. 13 tests |
 
 Minor (no IDs): N8 tiebreak fixed in `infra_diagrams` only — `page_layouts.py:146-149` still prunes on `created_at desc` alone; `page_layouts` never surfaces `snapshotFailed` (N7 parity); three coordinate ranges coexist (drag clamp ±200/1480 · `sanitizeDoc` ±50000 · backend any-finite); `forms.jsx` `Input` datetime branch drops extra props (same family as the Select/Checkbox finding).
 
@@ -828,5 +828,32 @@ Minor (no IDs): N8 tiebreak fixed in `infra_diagrams` only — `page_layouts.py:
 
 Security **8.5/10** (no new HIGH; A5-1/A5-2 closed) · Maintainability **B** · Testing **B** (backend 221, frontend 134, mobile 18; S1/R2 now guarded) · Operations **C+** (mobile pipeline still unverified — P0 stands).
 
-**Fixed this round (in worktree, uncommitted):** A5-1 + A5-2 with 10 new tests (`routers/seo_proxy.py`, `routers/fonts.py`, `tests/test_ssrf_routers.py`).
-**Next:** P0 mobile-release verification; A5-3 (via #400, auto-merge pending); A5-9; P2 list (§15.3); P3. (O3 done in this PR: mobile `npm test` + `lint:hooks` + Playwright e2e wired into `ci.yml`; mobile vitest include now covers `*.test.tsx`.)
+### 15.7 P2 backlog batch — closed in #406
+
+All §15.3 P2 items + O4 closed in one PR (`batch-p2-o4`, squash auto-merge):
+
+| ID | Fix |
+|----|-----|
+| N9 | `page_layouts.restore_revision` try/except → logged, typed 500 (infra parity); 1 test |
+| N10 | `_validate_doc` rebuilds node/flow dicts from the field whitelist — unknown keys dropped on write; 1 test |
+| N11 | `escapeHtmlAttr`: full entity set (`& < > " '`) for snippet titles |
+| N12 | Draft payloads base64-encoded in localStorage (`lib/infraDraft.ts`, 6 tests); legacy plaintext still readable, rewritten on next autosave |
+| N13 | Stale client-side slug-collision check removed — server 409 stays the enforcer |
+| F10 | `hitAt` walks reverse paint order (rack first, chips last) so clicks land on the topmost node |
+| F11 | `onWheel` ignores zoom while a drag/pan/marquee is in flight |
+| F12 | `undo`/`redo` prune `selIds` entries whose ids no longer exist |
+| F14 | Form labels now carry `htmlFor`/`aria-label` (19 labels) — closes the last P2 a11y gap |
+| F16 | Single hidden file input; dead second `ref` removed |
+| F19 | `published` fails closed (explicit `true` only); duplicate node ids rejected in `sanitizeDoc`; 2 tests |
+| B16 | CORS construction moved to `utils/cors_origins.py` — prod keeps the frontend-root subdomain pattern the old `else` branch wiped; localhost stays dev-only; 8 tests |
+| O4 | PyJWT lock 2.14→2.15; pydantic pinned 2.13.5 (requirements + lock); CI tooling pinned via `requirements-dev.txt`; `requirements.lock` "pip-compile reproducible" claim corrected |
+
+Gates on the batch: frontend tsc 0 · eslint 0 err / 58 warn (baseline) · vitest 151 passed · next build clean; backend ruff clean · mypy clean (73 files) · pytest 244 passed (10 new backend tests, 8 new frontend).
+
+### 15.8 E1 dependency majors — Sentry done, eslint 10 blocked (verified 2026-10-03)
+
+- **Sentry 10 → 11 (done, this PR):** `@sentry/nextjs` ^11.4.0. `withSentryConfig` now imported from `@sentry/nextjs/config` (the root import stopped working in v11); `instrumentation.ts` exports `onRequestError = Sentry.captureRequestError` (v11 manual-setup requirement — captures Server Component / middleware / proxy errors; both build-time deprecation warnings gone).
+- **ESLint 9 → 10 — NOT executed, blocked.** Verified against published artifacts: ESLint 10.0.0 removed `context.getFilename()` (absent from all 10.x), and the newest nested plugins in `eslint-config-next` 16.3.8 — eslint-plugin-react 7.37.5 (last release 2025-04), eslint-plugin-jsx-a11y 6.10.2, eslint-plugin-import 2.32.0 — all predate ESLint 10 and crash at rule load (`react/display-name` → `lib/util/version.js` → `getFilename is not a function`). No eslint-10-compatible releases exist on npm (checked latest + dist-tags). Kept eslint on the `maintenance` dist-tag (9.39.5, still updated). Re-open once the config-next plugin chain ships eslint-10 support.
+
+**Fixed this round:** A5-1 + A5-2 (merged #394/#395) · A5-3/A5-4 (#400/#401) · A5-7/A5-8 + U1 (#402) · A5-9 (#403) · P1 O3 (#404) · P2 backlog N9–N13/F10–F12/F14/F16/F19/B16 + O4 (#406) · E1 Sentry 11 (this PR).
+**Next:** P0 mobile-release verification; eslint 10 (blocked — §15.8); P3. (Round-5 additions A5-3/A5-9 and P1 O3 closed via #400/#403/#404; §15.3 P2 list + O4 closed in #406.)

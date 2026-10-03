@@ -377,6 +377,42 @@ def test_restore_missing_revision_404(client):  # type: ignore[no-untyped-def]
     assert client.get(f"/layouts/{created['id']}/revisions/nope").status_code == 404
 
 
+def test_restore_update_error_is_typed_500(monkeypatch):  # type: ignore[no-untyped-def]
+    """N9: a failing restore write is a logged, typed 500 — not a raw
+    PostgREST exception through the global handler (parity with
+    infra_diagrams restore)."""
+    box: list = []
+    client = _build_app(monkeypatch, _fake_require_admin, box)
+    module = box[0]
+    created = client.post("/layouts", json=_layout(slug="err-page", title="v1")).json()["layout"]
+    client.put(f"/layouts/{created['id']}", json=_layout(slug="err-page", title="v2"))
+    revs = client.get(f"/layouts/{created['id']}/revisions").json()["revisions"]
+
+    real_table = module.supabase.table
+
+    def failing_update_table(name):
+        q = real_table(name)
+        orig_update = q.update
+
+        def failing_update(payload):
+            qq = orig_update(payload)
+            real_execute = qq.execute
+
+            def failing_execute():
+                raise RuntimeError("db down")
+
+            qq.execute = failing_execute
+            return qq
+
+        q.update = failing_update
+        return q
+
+    monkeypatch.setattr(module.supabase, "table", failing_update_table)
+    r = client.post(f"/layouts/{created['id']}/revisions/{revs[0]['id']}/restore")
+    assert r.status_code == 500, r.text
+    assert "Could not restore layout" in r.text
+
+
 def test_revisions_require_admin(denied_client):  # type: ignore[no-untyped-def]
     assert denied_client.get("/layouts/x/revisions").status_code == 403
     assert denied_client.get("/layouts/x/revisions/y").status_code == 403
