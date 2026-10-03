@@ -371,6 +371,10 @@ _RL_RULES: list[tuple[str, int, int]] = [
     ("/auth/logout",         10,  60),
     ("/auth/discord",         5,   60),
     ("/auth/discord/connect", 5,   60),
+    # H2/C6 — one-time code exchange: tight per-IP bound so a leaked deep
+    # link cannot be brute-forced into the store (codes are single-use + 5min
+    # TTL, but this stops rapid replays from one IP).
+    ("/auth/mobile/exchange", 10,   60),
     ("/auth/staff/impersonate", 5, 60),
     ("/auth/2fa/setup",         5, 60),
     ("/auth/2fa/enable",        5, 60),
@@ -723,6 +727,7 @@ from routers import (
     mail_queue,
     mail_templates,
     mobile_admin,
+    mobile_oauth,
     mobile_release,
     monitor,
     network,
@@ -756,6 +761,7 @@ from routers import (
 )
 
 app.include_router(auth.router,           prefix="/api/auth")
+app.include_router(mobile_oauth.router,   prefix="/api/auth")  # H2/C6 one-time code exchange
 app.include_router(authentik_oidc.router, prefix="/api/auth")
 app.include_router(ldap_oauth.router,     prefix="/api/auth")
 app.include_router(config_check.router,   prefix="/api/auth")

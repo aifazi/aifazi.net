@@ -54,6 +54,7 @@ from routers.auth_shared import (
     bearer,
 )
 from utils.auth_tokens import make_forum_2fa_token, make_forum_token
+from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -160,13 +161,22 @@ async def _fetch_github_profile(access_token: str) -> dict:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("/login")
-async def github_login(dest: str = "/forum/profile", mobile: int = 0):
-    """Redirect the player to the GitHub OAuth consent screen."""
+async def github_login(dest: str = "/forum/profile", mobile: int = 0, state: str = ""):
+    """Redirect the player to the GitHub OAuth consent screen.
+
+    H2/C6 — the mobile app appends its own one-time `state` (CSPRNG hex); it is
+    carried inside the HMAC-signed OAuth state and echoed back in the deep-link
+    fragment so the app can verify the redirect belongs to its own flow.
+    """
     if not _client_id() or not _client_secret():
         raise HTTPException(500, "GitHub OAuth not configured — set _client_id()")
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
-    state = make_oauth_state("github", safe_dest, mobile=bool(mobile))
-    return RedirectResponse(_github_oauth_url(state))
+    extra = {"state": state[:128]} if state else None
+    try:
+        st = make_oauth_state("github", safe_dest, mobile=bool(mobile), extra=extra)
+    except ValueError:
+        st = make_oauth_state("github", safe_dest, mobile=bool(mobile))
+    return RedirectResponse(_github_oauth_url(st))
 
 
 @router.get("/connect-url")
@@ -355,18 +365,31 @@ async def github_callback(code: str | None = None, state: str | None = None, err
     if user.get("banned"):
         return RedirectResponse(f"{front}{m_login}?github_error=banned")
 
-    # 4. Issue the same JWT the rest of the site uses
+    # 4. 2FA users get a 5-minute partial token to complete via TOTP (web + mobile).
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "github")
         safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return RedirectResponse(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest)
+        return RedirectResponse(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest + state_echo(_st.get("extra")))
 
-    token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_user_activity(user["id"], user["username"], "github_connect" if mode == "connect" else "github_login", f"github_id={github_id}")
 
-    # 5. Redirect to frontend callback page with token
+    # 5a. H2/C6 — the mobile app deep link carries a one-time exchange code,
+    # never a token: the app exchanges it via POST /api/auth/mobile/exchange.
+    # Issue failure fails closed (error param) — no token-in-URL fallback.
+    if _st.get("mobile"):
+        safe_dest = _safe_relative_path(dest)
+        try:
+            code = issue_code("github", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
+        except Exception:
+            log.error("github_callback mobile code issue failed", exc_info=True)
+            return RedirectResponse(f"{front}?github_error=db")
+        return RedirectResponse(front + mobile_fragment(code, safe_dest) + state_echo(_st.get("extra")))
+
+    # 5b. Web — same JWT the rest of the site uses, delivered via HttpOnly
+    # cookies (fragment token only as the last-resort web fallback).
+    token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
     try:
         from utils.auth_tokens import _set_auth_cookies, make_refresh_token
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
@@ -376,10 +399,6 @@ async def github_callback(code: str | None = None, state: str | None = None, err
             }).eq("id", user["id"]).execute()
         except Exception:
             pass
-        if _st.get("mobile"):
-            # App deep link — deliver tokens via fragment (no cookie jar on the app).
-            safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
-            return RedirectResponse(front + "#token=" + token + "&refresh=" + refresh + "&dest=" + safe_dest)
         resp = RedirectResponse(front + "/auth/github-callback#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
         _set_auth_cookies(resp, token, refresh)
         return resp

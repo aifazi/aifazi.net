@@ -1,16 +1,23 @@
 import * as WebBrowser from 'expo-web-browser'
 import * as Crypto from 'expo-crypto'
+import { api } from './api'
 import { API_BASE } from './getApiBase'
 
 /**
  * OAuth login/signup for the native app.
  *
  * The backend handles each provider (Discord / GitHub / Steam) and, when started
- * with `?mobile=1`, redirects back to a deep link under OAUTH_REDIRECT_BASE with
- * the access + refresh tokens in the URL fragment. `expo-web-browser`'s auth
- * session captures that redirect and the URL is parsed here, so the app never has
- * to read HttpOnly cookies. Requires a dev-client/production build that registers
- * the `aifazi://` scheme (not Expo Go).
+ * with `?mobile=1`, redirects back to a deep link under OAUTH_REDIRECT_BASE
+ * carrying a one-time exchange CODE in the URL fragment (H2/C6 — never the
+ * tokens themselves). `expo-web-browser`'s auth session captures that redirect,
+ * the URL is parsed here, and the code is exchanged for access + refresh tokens
+ * via POST /auth/mobile/exchange, so no credential ever sits in a URL.
+ * Requires a dev-client/production build that registers the `aifazi://` scheme
+ * (not Expo Go).
+ *
+ * The app also issues a one-time `state` with the login URL; the backend
+ * echoes it back in the fragment and this module rejects any redirect that
+ * does not carry the exact state (fail closed).
  *
  * Completion: `loginWithOAuth` resolves from the `openAuthSessionAsync` promise.
  * On Android the same deep link can reach the app via expo-router's Linking
@@ -35,15 +42,22 @@ export type OAuthResult =
   | { ok: true; requires2fa: true; partialToken: string; username?: string }
   | { ok: false; cancelled: boolean; error?: string }
 
-type Pending = { provider: OAuthProvider; resolve: (r: OAuthResult) => void }
+/** What the deep-link fragment actually carries (H2/C6: a one-time code). */
+type ParsedOAuthResult =
+  | { ok: true; requires2fa: false; code: string; dest?: string }
+  | { ok: true; requires2fa: true; partialToken: string; username?: string }
+  | { ok: false; cancelled: boolean; error?: string }
+
+type Pending = { provider: OAuthProvider; resolve: (r: ParsedOAuthResult) => void }
 let pending: Pending | null = null
 
 /**
  * One-time OAuth `state` for deep-link verification. Generated fresh per
- * loginWithOAuth call (expo-crypto CSPRNG), appended to the provider URL, and
- * consumed/cleared on the first parseOAuthRedirect — never reused, never
- * logged. Fail closed: whenever a state was issued, the redirect must carry
- * the exact same state or the flow is rejected.
+ * loginWithOAuth call (expo-crypto CSPRNG), sent to the backend, carried
+ * through the HMAC-signed backend state, and echoed back in the redirect
+ * fragment. Consumed/cleared on the first parseOAuthRedirect — never reused,
+ * never logged. Fail closed: whenever a state was issued, the redirect must
+ * carry the exact same state or the flow is rejected.
  */
 let oauthState: string | null = null
 
@@ -75,7 +89,7 @@ function parseQuery(qs: string): Record<string, string> {
  * isn't one of ours (e.g. the redirect target was the web site or another scheme),
  * so the app never consumes a link it didn't expect.
  */
-export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): OAuthResult | null {
+export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): ParsedOAuthResult | null {
   if (!rawUrl.startsWith(`${OAUTH_REDIRECT_BASE}/${provider}`)) return null
   const hashIdx = rawUrl.indexOf('#')
   const qIdx = rawUrl.indexOf('?')
@@ -99,17 +113,28 @@ export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): OAu
       username: params.username || undefined,
     }
   }
-  if (params.token) {
+  // H2/C6 — the fragment carries a one-time code, never raw tokens.
+  if (params.code) {
     return {
       ok: true,
       requires2fa: false,
-      token: params.token,
-      refreshToken: params.refresh ?? '',
+      code: params.code,
       dest: params.dest || undefined,
     }
   }
   const errKey = `${provider}_error`
   return { ok: false, cancelled: false, error: params[errKey] || 'unknown' }
+}
+
+/**
+ * Exchange a one-time OAuth code (from the deep-link fragment) for access +
+ * refresh tokens. H2/C6 — no token is ever present in the redirect URL.
+ */
+export async function exchangeOAuthCode(code: string): Promise<{ token: string; refreshToken: string }> {
+  const res = await api.post('/auth/mobile/exchange', { code })
+  const data = (res.data ?? {}) as { token?: string; refreshToken?: string }
+  if (!data.token) throw new Error('Exchange failed — no token returned')
+  return { token: data.token, refreshToken: data.refreshToken ?? '' }
 }
 
 /** Single-flight completion: only resolves the session that is actually pending. */
@@ -132,19 +157,35 @@ export function cancelPendingOAuth() {
 
 /**
  * Start a provider OAuth flow from the native auth session browser.
- * Resolves with the parsed result; never throws.
+ * Resolves with tokens (after exchanging the one-time code) or an error;
+ * never throws.
  */
 export async function loginWithOAuth(provider: OAuthProvider): Promise<OAuthResult> {
   const state = await newOAuthState()
   return new Promise<OAuthResult>((resolve) => {
-    pending = { provider, resolve }
+    // The deep link delivers a one-time code; complete the sign-in by
+    // exchanging it server-side. 2FA and error results pass through as-is.
+    const settle = (parsed: ParsedOAuthResult): void => {
+      if (!parsed.ok || parsed.requires2fa) {
+        resolve(parsed)
+        return
+      }
+      void exchangeOAuthCode(parsed.code)
+        .then(({ token, refreshToken }) => {
+          resolve({ ok: true, requires2fa: false, token, refreshToken, dest: parsed.dest })
+        })
+        .catch(() => {
+          resolve({ ok: false, cancelled: false, error: 'exchange' })
+        })
+    }
+    pending = { provider, resolve: settle }
     const url = `${API_BASE}${LOGIN_PATHS[provider]}?mobile=1&state=${encodeURIComponent(state)}`
     WebBrowser.openAuthSessionAsync(url, OAUTH_REDIRECT_BASE)
       .then((res: WebBrowser.WebBrowserAuthSessionResult) => {
         if (!pending) return // already completed via deep link
         if (res.type === 'success' && res.url) {
           pending = null
-          resolve(parseOAuthRedirect(res.url, provider) ?? { ok: false, cancelled: false, error: 'invalid_redirect' })
+          settle(parseOAuthRedirect(res.url, provider) ?? { ok: false, cancelled: false, error: 'invalid_redirect' })
           return
         }
         // Browser closed without returning a URL. On Android the backend

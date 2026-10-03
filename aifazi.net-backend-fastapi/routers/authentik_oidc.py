@@ -33,6 +33,7 @@ from routers.auth_shared import (
     bearer,
 )
 from utils.auth_tokens import _set_auth_cookies, make_forum_2fa_token, make_forum_token, make_refresh_token
+from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -78,13 +79,23 @@ def _authorize_url(state: str) -> str:
 
 
 @router.get("/authentik/login")
-async def authentik_login(dest: str = "/forum/profile", mobile: int = 0):
+async def authentik_login(dest: str = "/forum/profile", mobile: int = 0, state: str = ""):
+    """Start the Authentik OIDC flow.
+
+    H2/C6 — the mobile app appends its own one-time `state` (CSPRNG hex); it is
+    carried inside the HMAC-signed OAuth state and echoed back in the deep-link
+    fragment so the app can verify the redirect belongs to its own flow.
+    """
     cfg = _ak()
     if not cfg["client_id"] or not cfg["client_secret"]:
         raise HTTPException(500, "Authentik OIDC not configured")
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
-    state = make_oauth_state("authentik", safe_dest, mobile=bool(mobile))
-    return _Redir(_authorize_url(state))
+    extra = {"state": state[:128]} if state else None
+    try:
+        signed_state = make_oauth_state("authentik", safe_dest, mobile=bool(mobile), extra=extra)
+    except ValueError:
+        signed_state = make_oauth_state("authentik", safe_dest, mobile=bool(mobile))
+    return _Redir(_authorize_url(signed_state))
 
 
 @router.get("/authentik/connect-url")
@@ -251,6 +262,7 @@ async def authentik_callback(
             front + m_login + "#twofa=forum&partial_token=" + quote(str(partial), safe='')
             + "&username=" + quote(str(user.get('username', '')), safe='')
             + "&next=" + quote(safe_dest, safe='/')
+            + state_echo(st.get("extra"))
         )
 
     token = make_forum_token(user["id"], user["username"], user.get("role", "user"))
@@ -282,14 +294,16 @@ async def authentik_callback(
     _set_auth_cookies(response, token, refresh)
 
     if st.get("mobile"):
-        # Tokens go in the URL fragment (never the query string) so they are
-        # not written to proxy/server access logs. Matches steam/github/discord.
+        # H2/C6 — one-time exchange code in the app deep link, never a token:
+        # the app exchanges it via POST /api/auth/mobile/exchange. Issue
+        # failure fails closed (error param) — no token-in-URL fallback.
         safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
-        return _Redir(
-            front + "#token=" + quote(str(token), safe='')
-            + "&refresh=" + quote(str(refresh), safe='')
-            + "&dest=" + quote(safe_dest, safe='/')
-        )
+        try:
+            code = issue_code("authentik", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
+        except Exception:
+            log.error("authentik mobile code issue failed", exc_info=True)
+            return _Redir(f"{front}{m_login}?authentik_error=db")
+        return _Redir(front + mobile_fragment(code, safe_dest) + state_echo(st.get("extra")))
     safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
     sep = "&" if "?" in safe_dest else "?"
     return _Redir(SITE_URL + safe_dest + sep + "authentik=1")

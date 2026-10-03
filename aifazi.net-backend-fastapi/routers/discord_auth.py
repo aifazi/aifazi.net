@@ -209,16 +209,27 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
     if is_new and db_user.get("email"):
         await _send_discord_welcome(db_user["email"], db_user["username"])
 
+    # Mobile deep link — H2/C6: one-time exchange code in the fragment (never
+    # a token) so OS intent logs / proxy access logs capture no credential.
+    # The app exchanges it via POST /api/auth/mobile/exchange. Issue failure
+    # fails closed — no token-in-URL fallback.
+    if mobile:
+        safe_dest = _safe_relative_path(dest)
+        try:
+            from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
+            one_time_code = issue_code(
+                "discord", str(db_user["discord_id"]), db_user.get("username") or "",
+                "player", safe_dest, kind="discord_player",
+            )
+        except Exception:
+            return RedirectResponse("aifazi://auth/discord?discord_error=db")
+        return RedirectResponse(
+            "aifazi://auth/discord" + mobile_fragment(one_time_code, safe_dest)
+            + state_echo(state_info.get("extra"))
+        )
+
     # Issue JWT
     jwt_token = _make_player_token(db_user)
-
-    # Mobile deep link — token in fragment (never query) so OS intent logs /
-    # proxy access logs do not capture it. Matches authentik/github/steam.
-    if mobile:
-        return RedirectResponse(
-            "aifazi://auth/discord#token=" + _urlparse.quote(jwt_token, safe='')
-            + "&dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/')
-        )
 
     # Web — set HttpOnly cookie (primary) + keep hash for legacy clients; frontend
     # prefers cookie via /auth/me and clears hash immediately. Token never in query.

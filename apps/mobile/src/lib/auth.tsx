@@ -94,6 +94,7 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   db: 'Something went wrong. Please try again.',
   signin_failed: 'Could not reach the sign-in service. Please try again.',
   invalid_redirect: 'Sign-in returned an unexpected result. Please try again.',
+  exchange: 'Sign-in did not complete. Please try again.',
   unknown: 'Sign-in failed. Please try again.',
   '1': 'The sign-in service rejected the request. Please try again.',
   '2': 'Could not reach the sign-in service. Please try again.',

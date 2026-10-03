@@ -928,4 +928,47 @@ Security **8.5/10** (no new exploitable finding; R6-3 minimal; all three S2-clas
 
 ---
 
+## 17. H2 Closed — mobile OAuth one-time exchange codes (2026-10-04, mobile revamp batch C6)
+
+**H2 (tokens in URL on OAuth callbacks) is now closed for every mobile deep-link path.** The mobile OAuth completion redirect no longer carries access/refresh tokens anywhere — not in the fragment, not in the query. It carries a **one-time exchange code** that the app POSTs to a dedicated endpoint.
+
+### What changed
+
+| Area | Change |
+|------|--------|
+| `utils/mobile_oauth_codes.py` (new) | Code = PASETO v4 (auth purpose) with a **5-minute TTL** + `token_type: "mobile_oauth_code"` claim (`user_id`, `username`, `role`, `provider`, `dest`). Single-use: the code's **SHA-256 hash** is stored in `mobile_oauth_claims`; exchange atomically consumes the claim (`update … where consumed_at IS NULL`), so only the first exchange ever succeeds. Fail-closed: claim-table insert failure → the callback redirects with `*_error=db` instead of any token-in-URL fallback. |
+| `routers/mobile_oauth.py` (new) | `POST /api/auth/mobile/exchange` — code is the only credential (user is unauthenticated by design). Returns `{token, refreshToken, dest}`; 400 on invalid/expired/consumed. New RL rule `("/auth/mobile/exchange", 10, 60)` (tight per-IP bound). |
+| `routers/github_auth.py`, `steam_auth.py`, `authentik_oidc.py` | Mobile branch now mints a code (`#code=…&dest=…[&state=…]`) instead of `#token=&refresh=`. Web path unchanged (HttpOnly cookies; the web last-resort fragment fallback remains cookie-first). Steam's mobile-only `new_account=1` hint (no consumer) dropped with the token fragment. |
+| `routers/auth_discord.py` | **Mobile Discord login now works at all** (previously web-only: the app's `/api/auth/discord/login` had no mobile branch, so mobile Discord sign-in was broken). `mobile=1` + app `state` are carried in the signed OAuth state; callback returns the code deep link under `aifazi:///oauth/callback/discord`. |
+| `routers/discord_auth.py` | Dead-but-pinned `aifazi://auth/discord#token=` player branch converted to the same one-time-code pattern (`kind: discord_player`; exchange mints the player JWT). H2 is closed repo-wide: no mobile deep link embeds a token. |
+| `apps/mobile/src/lib/oauth.ts` | `parseOAuthRedirect` reads `code` (token branch removed); `loginWithOAuth` exchanges the code via `POST /auth/mobile/exchange` before resolving (public contract unchanged). The app's one-time **state** (already fail-closed since 8a8b1ff) is now honored end-to-end: backend carries it in the signed OAuth state and echoes it in the fragment; a redirect without the exact state is rejected. |
+| `main.py` | Router mount + rate-limit rule. |
+
+### Tests
+
+- Backend: `tests/test_mobile_oauth_codes.py` (12 tests: round-trip, single-use, unknown/wrong-type/garbage/expired codes, fragment shape, endpoint success/single-use/invalid/short) + `test_oauth_no_query_tokens.py` updated (mobile deep links pinned code-based; new scan asserts no mobile branch embeds `#token=`). Backend suite: **257 passing**, mypy clean, ruff clean.
+- Mobile: `src/lib/oauth.test.ts` (17 tests: code parse, state fail-closed, 2FA passthrough, exchange success/failure, single-flight Android sink). Mobile suite: **83 passing** (was 66), typecheck clean, eslint 0/0.
+
+### Deployment prerequisite (operator)
+
+Run once in the Supabase SQL editor (same pattern as `email_config` / `audit_logs`):
+
+```sql
+CREATE TABLE IF NOT EXISTS mobile_oauth_claims (
+    code_hash   TEXT PRIMARY KEY,
+    user_id     TEXT NOT NULL,
+    provider    TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    consumed_at TIMESTAMPTZ
+);
+```
+
+Until then, mobile OAuth sign-in fails closed with `Sign-in did not complete.` (no token is ever exposed).
+
+### New finding filed (out of scope, follow-up)
+
+`paseto_token.create_token` clobbers any payload `purpose` claim with the PASETO purpose (later dict key wins). The GitHub/Steam **account-linking** flows (`_make_github_link_token` / `_make_steam_link_token` → `{"purpose": "github_link"|"steam_link"}`) therefore never round-trip their purpose claim: `_decode_github_link_token` / `_decode_steam_link_token` always return `None` and the connect flow fails with `github_error=link` / `steam_error=link`. Use a `token_type` claim instead (as this batch does).
+
+---
+
 *Round-6 audit, static + source-verified + action-docs cross-check. Every MEDIUM claim manually confirmed. No production traffic tested.*
