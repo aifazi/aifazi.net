@@ -38,11 +38,13 @@ afterEach(() => {
 
 const IMG_STYLE = { maxWidth: 480, width: '100%', height: 'auto', borderRadius: 12, border: '1px solid var(--border)' }
 
+// altKey/minRole/module are inferred-required by TS (no default in the
+// signature); empty strings keep the no-permission, no-opts behavior.
+const PROPS = { contentKey: 'hero.img', altKey: '', minRole: '', module: '', defaultValue: 'https://example.com/pic.png', imgStyle: IMG_STYLE }
+
 describe('EditableImage visitor branch (R2)', () => {
   it('applies imgStyle sizing for non-admin visitors', () => {
-    const el = render(
-      <EditableImage contentKey="hero.img" defaultValue="https://example.com/pic.png" imgStyle={IMG_STYLE} />,
-    )
+    const el = render(<EditableImage {...PROPS} />)
     const img = el.querySelector('img')
     expect(img).not.toBeNull()
     const style = img!.getAttribute('style') || ''
@@ -53,9 +55,7 @@ describe('EditableImage visitor branch (R2)', () => {
   })
 
   it('shows no admin edit chrome to visitors', () => {
-    const el = render(
-      <EditableImage contentKey="hero.img" defaultValue="https://example.com/pic.png" imgStyle={IMG_STYLE} />,
-    )
+    const el = render(<EditableImage {...PROPS} />)
     expect(el.textContent).not.toContain('IMAGE')
   })
 })
