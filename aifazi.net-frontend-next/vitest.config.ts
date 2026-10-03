@@ -8,7 +8,7 @@ export default defineConfig({
   esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
-    include: ['lib/**/*.test.{ts,tsx}', 'core/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
+    include: ['lib/**/*.test.{ts,tsx}', 'core/**/*.test.{ts,tsx}', 'context/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
   },
   resolve: {
     alias: { '@': path.resolve(__dirname) },

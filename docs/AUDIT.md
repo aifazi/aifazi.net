@@ -235,7 +235,7 @@ Against **72 routers** and a large SPA this is ~5–8% behavioral coverage.
 
 ### 5.2 Accessibility — partially documented
 
-You already have `aifazi.net-frontend-next/DESIGN-UX-A11Y-AUDIT.md` with solid HIGH items (clickable divs without roles, dialog focus trap, tiny 7–10px type, focus outline killed on command inputs). Treat that document as the a11y backlog; this audit concurs.
+You already have `aifazi.net-frontend-next/DESIGN-UX-A11Y-AUDIT.md` (frontend dir, `DESIGN-UX-A11Y-AUDIT.md`) with solid HIGH items (clickable divs without roles, dialog focus trap, tiny 7–10px type, focus outline killed on command inputs). Treat that document as the a11y backlog; this audit concurs.
 
 Quick wins to do first:
 1. Focus trap + restore in `core/dialog.jsx`; unique ids for `aria-labelledby`.
@@ -808,7 +808,7 @@ Source-verified against current `HEAD`: **N9** (`page_layouts.py:332` bare execu
 | A5-1 | MEDIUM | **S2-class bypass survived in two legacy routers.** `seo_proxy.py:82-91` (property checks + raw blocklist scan) and `fonts.py:57-70` (property checks only) did their own IP validation instead of calling the fixed `is_blocked_ip()` — `::ffff:169.254.169.254` passed both. Exposure low (both host-allowlisted) but the shared-guard contract was broken. | **FIXED this round** — both now route through `is_blocked_ip`; 6 tests |
 | A5-2 | LOW | `fonts.py` `/from-url` used `follow_redirects=True` without re-validating redirect targets (validated host 1, follow to host 2). | **FIXED this round** — `request` event hook re-checks every hop against the allowlist; 2 tests; 400 on escape |
 | A5-3 | LOW | `dependency-review-config.yml` contains two keys the action's schema does not know (`severity-threshold`, `allowed-registries`) — silently ignored. **Corrects §14 O3**: the file IS auto-loaded by `actions/dependency-review-action`; its valid keys (`fail-on-severity: high`, `allow-licenses`, `max-vulnerabilities: 50`) are in effect — "(rules inert)" was wrong. Job runs on `pull_request` only. | open |
-| A5-4 | LOW | S1 (coupon/deal gating) and R2 (visitor image sizing) landed without tests. S1 is the only security fix in #394/#395 unguarded. | open |
+| A5-4 | LOW | S1 (coupon/deal gating) and R2 (visitor image sizing) landed without tests. S1 is the only security fix in #394/#395 unguarded. | **FIXED** — 8 S1 gating tests + 2 R2 visitor tests (`tests/test_store_marketing_gating.py`, `context/EditContext.test.tsx`); `vitest.config.ts` include gained `context/**` |
 | A5-5 | LOW (env) | Main checkout frontend `node_modules` stale/corrupt (pre-#394 tree) — raw local `npm test`/`build` there misreport. Fixed by `npm ci` (re-synced). | open → re-synced |
 | A5-6 | INFO | `43e18d0` commit message claims "micromatch chain updates" — no micromatch entry moved. | n/a |
 | A5-7 | MEDIUM | **Draft restore silently forks saved diagrams.** `HybridInfraEditor.tsx:1082` `acceptDraft` → `setDocId(null)`; next save takes the create branch, slug is in `taken` → creates `slug-2`. Restoring a draft of a saved diagram detaches from the server row and spawns a duplicate sibling (original untouched, revisions stranded) instead of re-attaching to the original `docId`. | open |
@@ -826,7 +826,7 @@ Minor (no IDs): N8 tiebreak fixed in `infra_diagrams` only — `page_layouts.py:
 
 ### 15.6 Grades & state
 
-Security **8.5/10** (no new HIGH; A5-1/A5-2 closed) · Maintainability **B** · Testing **B** (backend 213, frontend 132, mobile 18; S1/R2 still untested) · Operations **C+** (mobile pipeline still unverified — P0 stands).
+Security **8.5/10** (no new HIGH; A5-1/A5-2 closed) · Maintainability **B** · Testing **B** (backend 221, frontend 134, mobile 18; S1/R2 now guarded) · Operations **C+** (mobile pipeline still unverified — P0 stands).
 
 **Fixed this round (in worktree, uncommitted):** A5-1 + A5-2 with 10 new tests (`routers/seo_proxy.py`, `routers/fonts.py`, `tests/test_ssrf_routers.py`).
 **Next:** P0 mobile-release verification; A5-7 (re-attach on draft accept instead of `setDocId(null)`); A5-8 (no storage write in first-sync before stored value resolves); P2 list (§15.3); P1 O3 (add `npm test` + Playwright to mobile CI, remove the two invalid config keys); P3.
