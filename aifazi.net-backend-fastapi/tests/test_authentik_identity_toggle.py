@@ -1,6 +1,6 @@
 """Authentik identity enable/disable (admin_actions.py) — the former 501 stub
 is now a real flow: local `users.banned` enforcement first, then best-effort
-Authentik admin API sync (PATCH {issuer}/api/v1/core/users/{uuid}/) when
+Authentik admin API sync (PATCH {issuer}/api/v3/core/users/{uuid}/) when
 AUTHENTIK_API_TOKEN is set and the user row carries an authentik_id.
 """
 from __future__ import annotations
@@ -205,7 +205,7 @@ def test_linked_user_with_token_patches_authentik(monkeypatch):
 
     assert len(requests) == 1
     req = requests[0]
-    assert req["url"] == "https://auth.aifazi.net/api/v1/core/users/3f2a9c1e-0000-0000-0000-000000000001/"
+    assert req["url"] == "https://auth.aifazi.net/api/v3/core/users/3f2a9c1e-0000-0000-0000-000000000001/"
     assert req["json"] == {"disabled": True}
     assert req["headers"]["Authorization"] == "Bearer ak-admin-token"
 
@@ -247,4 +247,4 @@ def test_linked_user_with_token_honors_issuer_override(monkeypatch):
     r = client.post("/identity/users/u1/disable", json={"confirm": True})
     assert r.status_code == 200, r.text
     assert len(requests) == 1
-    assert requests[0]["url"] == "https://auth.example.com/api/v1/core/users/3f2a9c1e-0000-0000-0000-000000000004/"
+    assert requests[0]["url"] == "https://auth.example.com/api/v3/core/users/3f2a9c1e-0000-0000-0000-000000000004/"

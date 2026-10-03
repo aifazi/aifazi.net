@@ -838,7 +838,7 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
 #      the local block holds even when Authentik is unreachable.
 #   2. Best-effort syncs the Authentik user when the local row carries an
 #      authentik_id (the user UUID `sub` written by the OIDC callback):
-#      PATCH {issuer}/api/v1/core/users/{uuid}/ {"disabled": not enable} with
+#      PATCH {issuer}/api/v3/core/users/{uuid}/ {"disabled": not enable} with
 #      the AUTHENTIK_API_TOKEN Bearer. On sync failure the local change stands
 #      and the endpoint returns 502; without a configured token it stands with
 #      200 + a `warning` field. No LDAP writes, no password handling anywhere.
@@ -851,10 +851,12 @@ def _authentik_admin_url() -> str:
 
     Reuses the same config source as the OIDC router (AUTHENTIK_ISSUER,
     default https://auth.aifazi.net) — the admin REST API lives under the
-    issuer host at /api/v1/.
+    issuer host. Version: v3 is the current Authentik API (v1/v2 are gone;
+    verified against the 2025.10 deployment: /api/v3/core/users/ → 200 while
+    /api/v1/... → 404).
     """
     issuer = str(_authentik_cfg().get("issuer") or "").rstrip("/")
-    return f"{issuer}/api/v1/core/users" if issuer else ""
+    return f"{issuer}/api/v3/core/users" if issuer else ""
 
 
 @router.get("/identity/users")

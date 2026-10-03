@@ -70,7 +70,7 @@ Current counts: frontend **151 passed** (+1 skip) · backend **280** · mobile *
 
 - [ ] **C3 — R2 backup target #2**: backup still same-host WebDAV; needs bucket + S3 credentials, then dual-target job + restore test.
 - [ ] **H1**: confirm prod secret rotation status. **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; only the `mobile_oauth_claims` migration (P0 above) is outstanding. The PASETO `purpose`-claim clobber follow-up (broke GitHub/Steam account-linking) is **closed** in §18 — link tokens now use `token_type`.
-- [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v1/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501.
+- [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v3/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501.
 - [ ] **EAS rebuild** handoff (`apps/mobile/EAS-REBUILD.md`) once the pipeline is verified.
 - [ ] Mobile npm advisories (31, 0 critical) — only clearable via Expo SDK bumps; build-chain only.
 
