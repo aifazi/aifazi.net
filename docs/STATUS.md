@@ -74,7 +74,7 @@ Current counts: frontend **132 passed** (+1 skip) · backend **213** · mobile *
 
 | Question | Where |
 |----------|-------|
-| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §14 Round 4 (2026-10-03) |
+| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §15 Round 5 (2026-10-03) |
 | Server/ops/inbox backlog? | [ROADMAP.md](ROADMAP.md) |
 | How to test a PR before merge? | [PREVIEW.md](PREVIEW.md) |
 | Infra/VPS hardening state? | [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) |

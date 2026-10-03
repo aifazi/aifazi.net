@@ -1,7 +1,7 @@
 # aifazi.net — Product Design Audit
 
 **Scope:** web frontend visual system, UX flows, consistency (code-grounded; no live screenshots this pass)  
-**Related:** [`DESIGN-UX-A11Y-AUDIT.md`](aifazi.net-frontend-next/DESIGN-UX-A11Y-AUDIT.md) (a11y/UX detail) · session type/focus/keyboard fixes
+**Related:** [`DESIGN-UX-A11Y-AUDIT.md`](../aifazi.net-frontend-next/DESIGN-UX-A11Y-AUDIT.md) (a11y/UX detail) · session type/focus/keyboard fixes
 
 ## 1. Brand & visual direction
 

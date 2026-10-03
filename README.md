@@ -12,6 +12,7 @@ Monorepo for [aifazi.net](https://aifazi.net) — personal platform with portfol
 | `docker/` | Dev Dockerfiles |
 | `supabase/` | Database migrations (self-hosted Supabase) |
 | `scripts/` | Ops, deploy, and migration helpers |
+| `docs/` | Project docs: status, audits, roadmap, security, PR workflow |
 
 ## Highlights
 
@@ -74,16 +75,16 @@ docker compose up
 
 - CSP is emitted per-request in `aifazi.net-frontend-next/proxy.ts` (nonce-based `script-src`)
 - HTML sanitization: `lib/sanitizeHtml.ts` (DOMPurify on client, strict scrubber on SSR)
-- See [SECURITY.md](SECURITY.md) for vulnerability reporting and [SECRETS-ROTATION.md](SECRETS-ROTATION.md) for key hygiene
+- See [docs/SECURITY.md](docs/SECURITY.md) for vulnerability reporting and [docs/SECRETS-ROTATION.md](docs/SECRETS-ROTATION.md) for key hygiene
 
 ## Documentation
 
 | Doc | Contents |
 |-----|----------|
-| [STATUS.md](STATUS.md) | Current focus + open backlog (start here) |
-| [AUDIT.md](AUDIT.md) | Security / UX audit findings |
-| [DESIGN-AUDIT.md](DESIGN-AUDIT.md) | Visual design review |
-| [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) | Infrastructure hardening |
-| [PREVIEW.md](PREVIEW.md) | PR workflow: preview deploy → test → merge |
-| [ROADMAP.md](ROADMAP.md) | Planned work |
+| [docs/STATUS.md](docs/STATUS.md) | Current focus + open backlog (start here) |
+| [docs/AUDIT.md](docs/AUDIT.md) | Security / UX audit findings |
+| [docs/DESIGN-AUDIT.md](docs/DESIGN-AUDIT.md) | Visual design review |
+| [docs/VPS-INFRA-AUDIT.md](docs/VPS-INFRA-AUDIT.md) | Infrastructure hardening |
+| [docs/PREVIEW.md](docs/PREVIEW.md) | PR workflow: preview deploy → test → merge |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Planned work |
 | `aifazi.net-frontend-next/docs/` | Frontend QA & theme certification |
