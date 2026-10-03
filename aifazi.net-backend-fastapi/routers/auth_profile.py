@@ -9,10 +9,12 @@ from datetime import datetime, timezone
 
 import bcrypt as _bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
 from database import supabase
 from dependencies import get_current_user
+from routers.auth_shared import _get_forum_user, bearer
 
 router = APIRouter()
 log = logging.getLogger("auth.profile")
@@ -250,3 +252,62 @@ async def delete_account(body: DeleteAccountBody, user: dict = Depends(get_curre
         "banned": True,
     }).eq("username", username).execute()
     return {"ok": True}
+
+
+# ── Activity log + helpdesk tickets (forum bearer auth) ─────────────────────────
+@router.get("/activity")
+async def user_activity_log(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    payload = _get_forum_user(creds)
+    if not payload:
+        raise HTTPException(401, "Not authenticated")
+    try:
+        rows = supabase.table("user_activity_logs").select("action,detail,ip,created_at").eq("user_id", payload["id"]).order("created_at", desc=True).limit(50).execute()
+        return rows.data or []
+    except Exception:
+        return []
+
+
+@router.get("/my-tickets")
+async def user_my_tickets(creds: HTTPAuthorizationCredentials | None = Depends(bearer)):
+    payload = _get_forum_user(creds)
+    if not payload:
+        raise HTTPException(401, "Not authenticated")
+    user_res = supabase.table("users").select("email").eq("id", payload["id"]).execute()
+    email = (user_res.data[0].get("email", "") if user_res.data else "") or ""
+    user_id = payload.get("id", "")
+    select_cols = "id,ticket_id,subject,status,priority,created_at,updated_at,response,responded_at,category,email,user_id"
+    seen: dict[str, dict] = {}
+    try:
+        res = supabase.table("helpdesk_tickets").select(select_cols).eq("user_id", user_id).order("created_at", desc=True).limit(100).execute()
+        for t in (res.data or []):
+            if t["id"] in seen:
+                continue
+            t_uid = str(t.get("user_id") or "")
+            t_em = (t.get("email") or "").strip().lower()
+            if t_uid and t_em:
+                if t_uid == user_id and t_em == email.lower():
+                    seen[t["id"]] = t
+            elif t_uid and t_uid == user_id or t_em and t_em == email.lower():
+                seen[t["id"]] = t
+    except Exception:
+        pass
+    if email:
+        try:
+            res_email = supabase.table("helpdesk_tickets").select(select_cols).eq("email", email).order("created_at", desc=True).limit(100).execute()
+            for t in (res_email.data or []):
+                if t["id"] in seen:
+                    continue
+                t_uid = str(t.get("user_id") or "")
+                t_em = (t.get("email") or "").strip().lower()
+                if t_uid and t_em:
+                    if t_uid == user_id and t_em == email.lower():
+                        seen[t["id"]] = t
+                elif t_uid and t_uid == user_id or t_em and t_em == email.lower():
+                    seen[t["id"]] = t
+        except Exception:
+            pass
+    tickets = sorted(seen.values(), key=lambda t: t.get("created_at", ""), reverse=True)
+    for t in tickets:
+        t.pop("email", None)
+        t.pop("user_id", None)
+    return tickets

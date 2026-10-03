@@ -18,7 +18,7 @@ from fastapi.responses import RedirectResponse as _Redir
 from fastapi.security import HTTPAuthorizationCredentials
 
 from database import supabase
-from routers.auth import (
+from routers.auth_shared import (
     ACTIVE_IDENTITY_MESSAGE,
     _active_identity_locked,
     _auth_log,
@@ -29,13 +29,10 @@ from routers.auth import (
     _next_available_username,
     _normalized_email,
     _record_user_activity,
-    _set_auth_cookies,
     _upsert_forum_session,
     bearer,
-    make_forum_2fa_token,
-    make_forum_token,
-    make_refresh_token,
 )
+from utils.auth_tokens import _set_auth_cookies, make_forum_2fa_token, make_forum_token, make_refresh_token
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,

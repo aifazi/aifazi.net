@@ -1,9 +1,9 @@
 """auth_2fa.py — Two-Factor Authentication (TOTP) endpoints.
 
-Mirrors routers/auth.py (monolith): admin TOTP state lives in the admin_2fa
-table, user TOTP in users.totp_secret/totp_enabled, recovery codes are
-bcrypt-hashed dicts on the same rows. Tokens minted here include the
-users-row id so /refresh can validate them.
+Admin TOTP state lives in the admin_2fa table, user TOTP in
+users.totp_secret/totp_enabled, recovery codes are bcrypt-hashed dicts on
+the same rows. Shared 2FA/recovery helpers live in routers/auth_shared.py.
+Tokens minted here include the users-row id so /refresh can validate them.
 """
 import logging
 from datetime import datetime, timezone
@@ -57,7 +57,7 @@ class RecoveryCodesBody(BaseModel):
 # ── Routes ───────────────────────────────────────────────────────────────────
 @router.get("/2fa/status")
 async def twofa_status(user: dict = Depends(get_current_user)):
-    from routers.auth import _get_admin_2fa, _has_recovery_codes
+    from routers.auth_shared import _get_admin_2fa, _has_recovery_codes
 
     if _is_env_admin(user):
         row = _get_admin_2fa()
@@ -74,7 +74,7 @@ async def twofa_status(user: dict = Depends(get_current_user)):
 
 @router.post("/2fa/setup")
 async def twofa_setup(user: dict = Depends(get_current_user)):
-    from routers.auth import _make_qr_b64, _upsert_admin_2fa
+    from routers.auth_shared import _make_qr_b64, _upsert_admin_2fa
     from utils.auth_tokens import ADMIN_USERNAME
 
     secret = pyotp.random_base32()
@@ -91,7 +91,7 @@ async def twofa_setup(user: dict = Depends(get_current_user)):
 
 @router.post("/2fa/enable")
 async def twofa_enable(body: TwoFAEnableBody, user: dict = Depends(get_current_user)):
-    from routers.auth import _get_admin_2fa, _rotate_recovery_codes, _upsert_admin_2fa
+    from routers.auth_shared import _get_admin_2fa, _rotate_recovery_codes, _upsert_admin_2fa
 
     if _is_env_admin(user):
         row = _get_admin_2fa()
@@ -121,7 +121,7 @@ async def twofa_confirm(body: TwoFAEnableBody, user: dict = Depends(get_current_
 
 @router.post("/2fa/disable")
 async def twofa_disable(body: TwoFADisableBody, user: dict = Depends(get_current_user)):
-    from routers.auth import (
+    from routers.auth_shared import (
         _check_admin_password,
         _get_admin_2fa,
         _upsert_admin_2fa,
@@ -159,7 +159,7 @@ async def twofa_disable(body: TwoFADisableBody, user: dict = Depends(get_current
 @router.post("/2fa/recovery-codes")
 async def twofa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get_current_user)):
     """Regenerate recovery codes. Requires password AND a valid 2FA entry."""
-    from routers.auth import (
+    from routers.auth_shared import (
         _check_admin_password,
         _get_admin_2fa,
         _rotate_recovery_codes,
@@ -196,7 +196,7 @@ async def twofa_recovery_codes(body: RecoveryCodesBody, user: dict = Depends(get
 async def twofa_verify(body: TwoFAVerifyBody, request: Request, response: Response):
     """Complete login with the TOTP/recovery code for a tfa_pending partial."""
     from paseto_token import decode_token as _paseto_decode
-    from routers.auth import (
+    from routers.auth_shared import (
         _get_admin_2fa,
         _send_new_device_alert,
         _upsert_forum_session,

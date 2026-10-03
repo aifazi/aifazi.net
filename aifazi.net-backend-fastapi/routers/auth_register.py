@@ -14,6 +14,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from database import _escape_ilike, supabase
+from paseto_token import decode_token as _paseto_decode_token
+from routers.auth_shared import _normalized_email
 from utils.email import render_template
 from utils.email_queue import queue_email
 from utils.timezone import utc_now
@@ -371,3 +373,54 @@ async def find_username(email: str):
 async def find_username_post(body: FindUsernameBody):
     """POST twin (ForumAuth.jsx sends {email}); same generic response."""
     return await find_username(body.email or "")
+
+
+# ── Verify-email (POST twin) ───────────────────────────────────────────────────
+class VerifyEmailBody(BaseModel):
+    token: str
+
+
+async def _verify_email_token(token: str):
+    res = supabase.table("users").select("*").eq("verify_token", token).execute()
+    if not res.data:
+        try:
+            payload = _paseto_decode_token(token, purpose="email_verify")
+            if not payload:
+                raise HTTPException(400, "Invalid or expired token")
+        except Exception:
+            raise HTTPException(400, "Invalid or expired token")
+        if payload.get("purpose") != "email_verify":
+            raise HTTPException(400, "Invalid or expired token")
+        email = _normalized_email(payload.get("email") or "")
+        source = payload.get("source")
+        if source == "staff" and payload.get("staff_id"):
+            supabase.table("users").update({"email_verified": True}).eq("id", payload["staff_id"]).eq("email", email).execute()
+            return {"message": "Email verified"}
+        if source == "admin":
+            admin_name = payload.get("admin_username") or os.getenv("ADMIN_USERNAME", "admin")
+            supabase.table("admin_2fa").update({"email_verified": True}).eq("username", admin_name).eq("email", email).execute()
+            return {"message": "Email verified"}
+        raise HTTPException(400, "Invalid or expired token")
+    user = res.data[0]
+    expires = datetime.fromisoformat(user["verify_expires"].replace("Z", "+00:00"))
+    if expires < datetime.now(timezone.utc):
+        raise HTTPException(400, "Token expired")
+    update_patch = {"email_verified": True, "verify_token": None, "verify_expires": None}
+    if user.get("pending_email"):
+        update_patch["email"] = user["pending_email"]
+        update_patch["pending_email"] = None
+        update_patch["pending_email_verified"] = None
+    supabase.table("users").update(update_patch).eq("id", user["id"]).execute()
+    return {"message": "Email verified"}
+
+
+@router.post("/verify-email")
+async def verify_email_post(body: VerifyEmailBody):
+    """POST twin of GET /verify-email/{token} — same shared helper.
+
+    Accepts {"token": "..."} so clients that cannot (or should not) put the
+    token in the URL can verify with a JSON body. Frontend switches in
+    parallel; the GET routes stay for back-compat. Path is already in
+    main.py _OPEN_EXACT (path-based), so no gate change is needed.
+    """
+    return await _verify_email_token(body.token)

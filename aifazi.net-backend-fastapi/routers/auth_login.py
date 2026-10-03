@@ -54,7 +54,7 @@ class RefreshBody(BaseModel):
 # ── Routes ───────────────────────────────────────────────────────────────────
 @router.post("/login")
 async def login(body: LoginBody, request: Request, response: Response):
-    from routers.auth import (
+    from routers.auth_shared import (
         _check_admin_password,
         _find_user_by_ci,
         _get_admin_2fa,
@@ -223,7 +223,7 @@ async def refresh_token(request: Request, response: Response, body: RefreshBody 
     import hmac as _hmac
 
     from paseto_token import decode_token as _paseto_decode
-    from routers.auth import _REFRESH_ROTATION_GRACE
+    from routers.auth_shared import _REFRESH_ROTATION_GRACE
     from utils.auth_tokens import _set_auth_cookies, make_refresh_token, make_token
 
     token_str = request.cookies.get("refresh_token") or body.refreshToken or ""
