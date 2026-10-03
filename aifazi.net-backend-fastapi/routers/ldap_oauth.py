@@ -33,16 +33,14 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse as _R
 from pydantic import BaseModel, Field
 
 from database import supabase
-from routers.auth import (
+from routers.auth_shared import (
     _audit,
     _auth_log,
     _find_user_by_ci,
     _record_user_activity,
-    _set_auth_cookies,
     _upsert_forum_session,
-    make_forum_token,
-    make_refresh_token,
 )
+from utils.auth_tokens import _set_auth_cookies, make_forum_token, make_refresh_token
 from utils.ldap_client import (
     LdapAuthFailed,
     LdapUnavailable,

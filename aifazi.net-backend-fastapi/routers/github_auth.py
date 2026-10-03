@@ -39,7 +39,7 @@ except ImportError:
 
 from database import supabase
 from jwt_compat import JWTError
-from routers.auth import (
+from routers.auth_shared import (
     ACTIVE_IDENTITY_MESSAGE,
     ALGO,
     SECRET,
@@ -52,9 +52,8 @@ from routers.auth import (
     _normalized_email,
     _record_user_activity,
     bearer,
-    make_forum_2fa_token,
-    make_forum_token,
 )
+from utils.auth_tokens import make_forum_2fa_token, make_forum_token
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -369,7 +368,7 @@ async def github_callback(code: str | None = None, state: str | None = None, err
 
     # 5. Redirect to frontend callback page with token
     try:
-        from routers.auth import _set_auth_cookies, make_refresh_token
+        from utils.auth_tokens import _set_auth_cookies, make_refresh_token
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({

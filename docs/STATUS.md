@@ -56,7 +56,8 @@ Current counts: frontend **132 passed** (+1 skip) · backend **213** · mobile *
 
 ### P3 — structure / product
 
-- [ ] God-file splits: `ThemeLibrary.jsx` (4038), `ServerRackAnimation.jsx` (2379), `AdminPanels.jsx` (1773), `auth.py` (1974).
+- [x] God-file split: `auth.py` — done in #408: 2145 → 29-line assembly module; shared helpers in `routers/auth_shared.py`; `/config-check` in its own `routers/config_check.py`; remaining routes moved to the domain sub-routers (auth_sessions/auth_register/auth_profile/auth_staff); ~1300 lines of shadowed dead implementations removed; route surface verified identical (61 /api/auth routes before/after, pytest 244 green).
+- [ ] God-file splits remaining: `ThemeLibrary.jsx` (4240), `ServerRackAnimation.jsx` (2494), `AdminPanels.jsx` (1891).
 - [ ] Canonicals + JSON-LD for `/p/[slug]`, store, forum; og:image for diagram share links.
 - [ ] **ROADMAP.md reconciliation**: header says 2026-09-04, 33 unchecked items (at least one already done) — triage each: execute, park, or close.
 - [ ] Dead files: delete or wire the 22 unreferenced `scripts/*` codemods; wire backend `check_migrations.py` / `check_policies.py` into CI or remove.
