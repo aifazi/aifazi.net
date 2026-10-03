@@ -1,7 +1,7 @@
 # aifazi.net — Project Status
 
 > **What we're doing right now, and what's left to do.** Updated 2026-10-04.
-> Audit history: [AUDIT.md](AUDIT.md) (latest §17, H2 closed) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
+> Audit history: [AUDIT.md](AUDIT.md) (latest §18: PASETO link-token fix, Authentik admin toggle, login-animation findings) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
 
 ## Where we are (what we're doing)
 
@@ -31,7 +31,7 @@ Verification gate — every PR:
 | Mobile | `npm run typecheck` · `npm run lint` · `npm test` |
 | e2e (feature PRs) | start server → `npx playwright test` |
 
-Current counts: frontend **151 passed** (+1 skip) · backend **257** · mobile **83** · npm audit **7 (0 critical)**.
+Current counts: frontend **151 passed** (+1 skip) · backend **280** · mobile **83** · npm audit **7 (0 critical)**.
 
 ## What remains
 
@@ -69,8 +69,8 @@ Current counts: frontend **151 passed** (+1 skip) · backend **257** · mobile *
 ### Decisions & standing risks (owner)
 
 - [ ] **C3 — R2 backup target #2**: backup still same-host WebDAV; needs bucket + S3 credentials, then dual-target job + restore test.
-- [ ] **H1**: confirm prod secret rotation status. **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; only the `mobile_oauth_claims` migration (P0 above) is outstanding. New follow-up filed: PASETO `purpose`-claim clobber breaks GitHub/Steam account-linking (AUDIT §17).
-- [ ] **Authentik** enable/disable stay 501 stubs until an `AUTHENTIK_API_TOKEN` exists.
+- [ ] **H1**: confirm prod secret rotation status. **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; only the `mobile_oauth_claims` migration (P0 above) is outstanding. The PASETO `purpose`-claim clobber follow-up (broke GitHub/Steam account-linking) is **closed** in §18 — link tokens now use `token_type`.
+- [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v1/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501.
 - [ ] **EAS rebuild** handoff (`apps/mobile/EAS-REBUILD.md`) once the pipeline is verified.
 - [ ] Mobile npm advisories (31, 0 critical) — only clearable via Expo SDK bumps; build-chain only.
 

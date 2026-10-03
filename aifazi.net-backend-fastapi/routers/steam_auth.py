@@ -108,7 +108,11 @@ def _make_forum_2fa_token(user_id: str, username: str, role: str, provider: str 
 
 
 def _make_steam_link_token(user_id: str) -> str:
-    return _paseto_create_token({"id": user_id, "purpose": "steam_link"}, expires_in=10 * 60, purpose="auth")
+    # `token_type`, not a payload `purpose`: paseto_token.create_token clobbers
+    # any payload-level `purpose` claim with the outer PASETO purpose, so a
+    # payload `purpose` can never survive the round-trip (same convention as
+    # access/refresh/mobile OAuth codes).
+    return _paseto_create_token({"id": user_id, "token_type": "steam_link"}, expires_in=10 * 60, purpose="auth")
 
 
 def _decode_steam_link_token(token: str | None) -> dict | None:
@@ -118,7 +122,7 @@ def _decode_steam_link_token(token: str | None) -> dict | None:
         payload = _paseto_decode_token(token, purpose="auth")
         if not payload:
             return None
-        return payload if payload.get("purpose") == "steam_link" else None
+        return payload if payload.get("token_type") == "steam_link" else None
     except Exception:
         return None
 

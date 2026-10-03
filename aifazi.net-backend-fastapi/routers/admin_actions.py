@@ -5,8 +5,14 @@ Mounted at /api/admin in main.py
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+try:
+    import httpx as _httpx
+except ImportError:
+    _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
+
 from database import _escape_ilike, supabase
 from dependencies import require_admin, require_staff
+from routers.authentik_oidc import _ak as _authentik_cfg
 from utils.audit import record as _audit
 from utils.rate_limit import invalidate_ip_bans_cache
 
@@ -824,15 +830,31 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
             "target": {"user_id": target_id, "username": target_name}}
 
 
-# ── Authentik user lifecycle (read-first, safe subset) ────────────────────────
-# No usable Authentik admin credential exists server-side (only the OIDC
-# client id/secret + issuer in authentik_oidc.py; no API token, no LDAP write
-# path). So: list-only against the LOCAL users table annotated with Authentik
-# linkage (users.authentik_id, written by the OIDC callback), and stub
-# disable/enable with 501 until AUTHENTIK_API_TOKEN is configured. No LDAP
-# writes, no password handling anywhere.
+# ── Authentik user lifecycle ──────────────────────────────────────────────────
+# The admin "identity" panel manages the LOCAL users table; Authentik stays
+# the upstream identity provider. Disable/enable:
+#   1. Applies the local enforcement FIRST — users.banned is checked by
+#      dependencies.get_current_user (site-wide 403 "Account suspended"), so
+#      the local block holds even when Authentik is unreachable.
+#   2. Best-effort syncs the Authentik user when the local row carries an
+#      authentik_id (the user UUID `sub` written by the OIDC callback):
+#      PATCH {issuer}/api/v1/core/users/{uuid}/ {"disabled": not enable} with
+#      the AUTHENTIK_API_TOKEN Bearer. On sync failure the local change stands
+#      and the endpoint returns 502; without a configured token it stands with
+#      200 + a `warning` field. No LDAP writes, no password handling anywhere.
 def _authentik_admin_configured() -> bool:
     return bool(os.getenv("AUTHENTIK_API_TOKEN", "").strip())
+
+
+def _authentik_admin_url() -> str:
+    """Authentik admin API base for user objects (requires AUTHENTIK_API_TOKEN).
+
+    Reuses the same config source as the OIDC router (AUTHENTIK_ISSUER,
+    default https://auth.aifazi.net) — the admin REST API lives under the
+    issuer host at /api/v1/.
+    """
+    issuer = str(_authentik_cfg().get("issuer") or "").rstrip("/")
+    return f"{issuer}/api/v1/core/users" if issuer else ""
 
 
 @router.get("/identity/users")
@@ -865,24 +887,80 @@ class IdentityToggleBody(BaseModel):
     confirm: bool = False
 
 
-async def _identity_toggle_stub(user_id: str, enable: bool, body: IdentityToggleBody,
-                                request: Request, admin: dict):
+async def _identity_toggle(user_id: str, enable: bool, body: IdentityToggleBody,
+                           request: Request, admin: dict) -> dict:
+    """Disable/enable a user: local ban flag first, then Authentik sync."""
     if not body.confirm:
         raise HTTPException(400, "This action requires confirm:true")
+
+    # 1. Load the local user — 404 if unknown.
+    try:
+        res = supabase.table("users") \
+            .select("id,username,banned,authentik_id") \
+            .eq("id", user_id).limit(1).execute()
+    except Exception as exc:
+        raise HTTPException(502, f"Could not load user: {str(exc)[:150]}")
+    if not res.data:
+        raise HTTPException(404, "User not found")
+    user = res.data[0]
+
+    # 2. Local enforcement first — banned users are rejected site-wide by
+    #    dependencies.get_current_user, regardless of the Authentik state.
+    try:
+        supabase.table("users").update({"banned": not enable}).eq("id", user_id).execute()
+    except Exception as exc:
+        raise HTTPException(502, f"Local change failed: {str(exc)[:150]}")
+
+    # 3. Best-effort Authentik sync.
+    authentik_id = str(user.get("authentik_id") or "").strip()
+    warning = ""
+    if authentik_id and _authentik_admin_configured():
+        token = os.getenv("AUTHENTIK_API_TOKEN", "").strip()
+        try:
+            if _httpx is None:
+                raise RuntimeError("httpx is not installed")
+            async with _httpx.AsyncClient(timeout=10) as c:
+                r = await c.patch(
+                    f"{_authentik_admin_url()}/{authentik_id}/",
+                    json={"disabled": not enable},
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+            if r.status_code >= 400:
+                raise RuntimeError(f"Authentik API {r.status_code}: {r.text[:150]}")
+        except Exception as exc:
+            _audit(_actor(admin), f"identity_user_{'enable' if enable else 'disable'}",
+                   target=f"users:{user_id}",
+                   details={"enabled": enable, "status": "sync_failed",
+                            "authentik_id": authentik_id, "error": str(exc)[:200]},
+                   ip=_ip(request))
+            raise HTTPException(502, f"Local change applied; Authentik sync failed: {str(exc)[:150]}")
+    elif authentik_id:
+        warning = "Authentik not synced (AUTHENTIK_API_TOKEN not set)"
+
+    details: dict = {"enabled": enable,
+                     "status": "local_only" if warning else "ok",
+                     "authentik_id": authentik_id}
+    if warning:
+        details["warning"] = warning
     _audit(_actor(admin), f"identity_user_{'enable' if enable else 'disable'}",
            target=f"users:{user_id}",
-           details={"enabled": enable, "status": "not_configured"},
+           details=details,
            ip=_ip(request))
-    raise HTTPException(501, "Authentik admin token not configured (set AUTHENTIK_API_TOKEN)")
+
+    out = {"ok": True, "user_id": user_id, "username": user.get("username") or "",
+           "enabled": enable, "active": enable}
+    if warning:
+        out["warning"] = warning
+    return out
 
 
 @router.post("/identity/users/{user_id}/disable")
 async def disable_identity_user(user_id: str, body: IdentityToggleBody,
                                 request: Request, admin: dict = Depends(require_admin)):
-    await _identity_toggle_stub(user_id, False, body, request, admin)
+    return await _identity_toggle(user_id, False, body, request, admin)
 
 
 @router.post("/identity/users/{user_id}/enable")
 async def enable_identity_user(user_id: str, body: IdentityToggleBody,
                                request: Request, admin: dict = Depends(require_admin)):
-    await _identity_toggle_stub(user_id, True, body, request, admin)
+    return await _identity_toggle(user_id, True, body, request, admin)
