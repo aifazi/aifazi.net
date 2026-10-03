@@ -12,6 +12,7 @@
 | **Audit-driven hardening** | Round 6 closed same-day | 2026-10-03: #398–#409 verified (all P2 N-series/F-series + O4 + U1 + B11 + auth.py split + Sentry 11); 4 new findings — **R6-1** dep-review policy file not wired into CI (MEDIUM), R6-2 dead config key, R6-3 mapped-IPv6 in LDAP URL validator, R6-4 config-check double-registered (all LOW) |
 | **Repo hygiene** | Mostly done | Branches/stashes/caches/artifacts cleaned; Playwright artifact untracked (#393). Leftover (Round 5, AUDIT §15): 3 local branches (`bevel-sandwich`, `unique-blade`, `chore/batch3-local-sync`) + 3 worktrees, all at `main`'s commit, no unmerged work, stash empty; remote has `main` only |
 | **Mobile release pipeline** | Fix applied, **unverified** | Actions create-PR setting enabled 2026-10-03 (was broken 6 weeks); no OTA shipped since 2026-08-29 |
+| **Mobile revamp (Talk + VPN)** | M2/M3 implemented, pending device QA | 2026-10-03: Nextcloud Talk MVP (in-app room list + native chat over API v4, iOS in-WebView calls / Android browser calls, TURN/tunnel media hint) + VPN hardening (biometric gate C7, live connection state, WireGuard handoff, session durations); NC 34 session bootstrap uses the `/login` form (OCS `login/v1` gone — 404); vitest 18→66. Left: M0.1 Android media spike, NC app password (owner), M1/EAS before ship — ledger in `apps/mobile/PLAN-ROADMAP.md` |
 | **Docs consolidation** | In progress | This file + AUDIT.md §14; ROADMAP.md still stale (see P3) |
 
 ### How we ship (per change)
@@ -30,7 +31,7 @@ Verification gate — every PR:
 | Mobile | `npm run typecheck` · `npm run lint` · `npm test` |
 | e2e (feature PRs) | start server → `npx playwright test` |
 
-Current counts: frontend **151 passed** (+1 skip) · backend **244** · mobile **18** · npm audit **7 (0 critical)**.
+Current counts: frontend **151 passed** (+1 skip) · backend **244** · mobile **66** · npm audit **7 (0 critical)**.
 
 ## What remains
 

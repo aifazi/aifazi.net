@@ -6,14 +6,15 @@ true as of 2026-10-03).
 
 ## Verified current state (2026-10-03)
 
-- **26 routes, no stubs**: dashboard, forum, blog (+offline), profile
-  (8 sub-screens), store (catalog / detail / cart / checkout / success),
-  helpdesk (new ticket / detail + replies), VPN dashboard + peer config,
-  CalDAV calendar + Nextcloud setup, notification center, status
-  (incidents render), projects, auth (login / 2FA / biometric / OAuth),
-  verify-email.
+- **28 routes, no stubs** (26 + `talk` / `talk-room` from the revamp
+  below): dashboard, forum, blog (+offline), profile (8 sub-screens),
+  store (catalog / detail / cart / checkout / success), helpdesk (new
+  ticket / detail + replies), VPN dashboard + peer config, CalDAV
+  calendar + Nextcloud setup, notification center, status (incidents
+  render), projects, auth (login / 2FA / biometric / OAuth),
+  verify-email, Nextcloud Talk (room list + chat + calls).
 - **Tooling**: CI `mobile-lint` job (lint + route typegen + typecheck +
-  vitest), 18 passing tests; ESLint + tsc scripts.
+  vitest), 66 passing tests (was 18 pre-revamp); ESLint + tsc scripts.
 - **Release**: EAS local versioning — `app.json` 1.0.39 / versionCode
   1000039, package `net.aifazi.mobile`, 4 build profiles
   (development/preview/production/production-apk), OTA channel
@@ -71,7 +72,80 @@ Security:
 - **H2**: mobile OAuth `#token=` fragments (steam / github / discord /
   auth) — one-time exchange codes not yet implemented for the mobile
   deep-link path
-- VPN screen reachable without an app-level biometric lock gate
+- ~~VPN screen reachable without an app-level biometric lock gate~~ —
+  **C7 closed 2026-10-03** (`src/lib/biometricLock.ts`, whole-route gate
+  on `app/vpn.tsx`; re-locks on foreground after 60s background)
+
+## Mobile revamp — Track T (Nextcloud Talk) + Track V (VPN hardening)
+
+Plan: `.opencode/plans/2026-10-03-mobile-revamp-nextcloud-talk-vpn.md`
+(2026-10-03). This is the status ledger for that plan; the roadmap above
+stays the master doc.
+
+### M0 — verification findings (live probes 2026-10-03, no app password yet)
+
+- NC **34.0.3** live; Talk (spreed) **24.0.5** with `conversation-v4` +
+  `signaling-v3` advertised in the public capabilities (embedded in the
+  login page `initial-state-core-capabilities`).
+- **The OCS `login/v1` endpoint no longer exists (404)** — session
+  bootstrap uses the standard HTML login form `POST /login`
+  (`user`/`pass`/`requesttoken`; guest token from the `<head>`
+  `data-requesttoken` attribute), verified against the live server.
+- OCS calls without a `requesttoken` answer `412 "CSRF check failed"` —
+  every OCS request carries the session token (`src/lib/talk.ts`).
+- `GET /ocs/v2.php/apps/spreed/api/v4/room` → 401 when logged out: the
+  v4 surface is live. Authenticated endpoint-shape check (rooms payload,
+  chat POST echo, TURN `secure` entries) still needs the app-password
+  session — M0.2 remainder, owner decision #4.
+
+### M2 — Talk MVP: implemented (this PR, pending device QA)
+
+- M2.1 `src/lib/ncSession.ts` — app-password session bootstrap
+  (login-form flow above), manual cookie capture with native-jar fallback
+  (RN fetch doesn't expose Set-Cookie on every platform), single-flight
+  401 re-login, missing-creds / auth-failed / two-factor-blocked errors.
+- M2.2 `app/talk.tsx` — room list with `hasCall` badges, entry via
+  Profile → Overview → **Talk** (existing button, now the in-app screen);
+  calls: **iOS** in-app WebView of `/call/{token}`
+  (`mediaCapturePermissionGrantType=grant`), **Android** external
+  browser (system WebRTC) + in-app chat — the M0.1 owner decision can
+  flip Android to in-WebView later.
+- M2.3 `app/talk-room.tsx` + `src/lib/chatStore.ts` — native chat pane
+  (API v4, focus + 15s-while-active polling, stops in background),
+  optimistic outbox (offline-safe, tap-to-retry), presence via
+  `lastMessage`/`last-activity` on the room list. Read-marker *write*
+  (unread→read ack) not implemented — follow-up.
+- M2.4 media-path hint on both Talk screens: VPN peer connected →
+  "media goes direct, no TURN"; otherwise the verified TURN relay host
+  from the signaling capabilities (`describeMediaPath`, vitest-covered).
+- New dep: `react-native-webview` ^14 (plan-approved, the only new
+  runtime dep).
+- Vitest: 18 → 66 tests (ncSession / talk / chatStore / vpn additions).
+
+### M3 — VPN hardening: implemented (this PR)
+
+- M3.1 biometric gate on the whole VPN route (C7, see above).
+- M3.2 live connection state — `deriveConnectionState(peers)` drives
+  `ConnectionRing`; 10s peer polling + foreground refetch (was a
+  hard-coded `'disconnected'`).
+- M3.3 WireGuard handoff — ring tap opens the WireGuard app
+  (`wireguard://` deep link → store-page fallback) + import checklist.
+- M3.4 session duration per row in `SessionHistory` (bytes already
+  shown; keys still component-state-only — unchanged).
+
+### Still open (owner/device)
+
+- **M0.1 device spike** — Android WebView media-capture matrix on a
+  real device; decides the Android call strategy (current default:
+  browser).
+- **M0.2 remainder** — authenticated endpoint-shape verification with
+  the dedicated NC **app password** (owner decision #4; also the
+  runtime prerequisite for M2 to actually work).
+- **M1** — release pipeline (owner/EAS) before anything ships.
+- Talk QA matrix (plan §M2): iOS in-app 1:1 call, Android browser call,
+  both-on-VPN P2P / one-off-VPN TURN, re-login after NC restart.
+- Then: C6 (H2 one-time exchange codes) → M4 → M5 per the plan's
+  suggested order.
 
 ---
 

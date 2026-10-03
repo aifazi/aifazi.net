@@ -258,6 +258,8 @@ function RootNav() {
         <Stack.Screen name="store-success" options={{ headerShown: false }} />
         <Stack.Screen name="calendar" options={{ headerShown: false }} />
         <Stack.Screen name="nextcloud-setup" options={{ headerShown: false }} />
+        <Stack.Screen name="talk" options={{ headerShown: false }} />
+        <Stack.Screen name="talk-room" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <ThemeTransitionOverlay />
