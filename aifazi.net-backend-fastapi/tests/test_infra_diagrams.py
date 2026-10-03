@@ -546,6 +546,55 @@ def test_bad_node_gid_rejected(client):
         assert client.post("/diagrams", json=body).status_code == 400, bad
 
 
+# -- A5-9: workloads/deps entry types (what sanitizeDoc silently drops) -------
+
+
+def test_node_workloads_deps_accepted(client):
+    """Valid strings round-trip untouched, at the frontend's caps."""
+    body = _doc()
+    body["nodes"][0]["workloads"] = ["api-gateway", "w" * 60]
+    body["nodes"][0]["deps"] = ["fw1", "x" * 200]
+    r = client.post("/diagrams", json=body)
+    assert r.status_code == 200, r.text
+    got = r.json()["diagram"]["nodes"][0]
+    assert got["workloads"] == ["api-gateway", "w" * 60]
+    # No length cap on deps — sanitizeDoc keeps any string (JSON import).
+    assert got["deps"] == ["fw1", "x" * 200]
+
+
+@pytest.mark.parametrize("bad", [123, None, ["w"], {"name": "w"}, ""])
+def test_bad_node_workload_rejected(client, bad):
+    """Entries the frontend sanitizeDoc would drop on load are a 400 here,
+    not silently stored and lost on the round-trip."""
+    body = _doc()
+    body["nodes"][0]["workloads"] = [bad]
+    assert client.post("/diagrams", json=body).status_code == 400, bad
+
+
+def test_long_node_workload_rejected(client):
+    """Over 60 chars the frontend would silently truncate on load."""
+    body = _doc()
+    body["nodes"][0]["workloads"] = ["w" * 61]
+    assert client.post("/diagrams", json=body).status_code == 400
+
+
+@pytest.mark.parametrize("bad", [123, None, ["d"], {"id": "d"}, ""])
+def test_bad_node_dep_rejected(client, bad):
+    body = _doc()
+    body["nodes"][0]["deps"] = [bad]
+    assert client.post("/diagrams", json=body).status_code == 400, bad
+
+
+def test_bad_node_workload_rejected_on_update(client):
+    """The gate applies to PUT (full-document replace) as well."""
+    client.post("/diagrams", json=_doc())
+    doc_id = client.get("/diagrams/admin/all").json()["diagrams"][0]["id"]
+    body = _doc()
+    body["nodes"][0]["workloads"] = [{"name": "w"}]
+    r = client.put(f"/diagrams/{doc_id}", json=body)
+    assert r.status_code == 400, r.text
+
+
 # -- Hybrid-infra audit batch 3: B1/B2/B8/B9/N5/N7 + optional-admin ----------
 
 
