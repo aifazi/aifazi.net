@@ -80,3 +80,27 @@ Each item: name, role, category, layer, shape, defaultW/H, workloads. Validation
 | D library redesign | medium (UI extract) | medium |
 
 Backend untouched in all four.
+
+---
+
+## Status — COMPLETED 2026-10-03
+
+| PR | Branch | PR # | Merge |
+|----|--------|------|-------|
+| A fullscreen fixes | `fix/fullscreen-overlays` | #388 | `f938d84` |
+| B editable decorations | `feat/infra-decorations` | #389 | `96d0758` |
+| C library expansion | `feat/infra-library-expansion` | #390 | `3c3bc83` |
+| D library redesign | `feat/infra-library-sidebar` | #391 | `18edda2` |
+
+Deviations from the original sketch:
+
+- PR B added backend persistence after all (`routers/infra_diagrams.py`
+  `_validate_decorations` + create/update/revision roundtrip) so annotations
+  survive save/load — "backend untouched in all four" does not hold.
+- Library landed at 62 items / 9 groups (plan said ~55).
+- Plan A's seed carries 16 decorations (3 zone boxes + 12 captions/labels +
+  cluster panel + collaboration bar).
+
+Final verification: frontend 125 tests + 1 skipped, lint 0 errors / 58
+warnings baseline, local e2e 3/3 per PR; backend 200 tests (PR B only).
+Merged remote branches cleaned up — only `origin/main` remains.
