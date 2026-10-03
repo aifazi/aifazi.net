@@ -1430,7 +1430,9 @@ export function EditableImage({ contentKey, altKey, defaultValue = '', defaultAl
   const fileRef = useRef()
 
   if (!isAdmin) {
-    return <Image unoptimized width={800} height={600} src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={style} />
+    // Callers size images via imgStyle (e.g. BlockRenderer's maxWidth/border);
+    // style alone defaulted to {} and dropped it (Round-4 audit HIGH).
+    return <Image unoptimized width={800} height={600} src={safeImageSrc(value) || safeImageSrc(defaultValue)} alt={altValue || defaultAlt} style={{ ...imgStyle, ...style }} />
   }
 
   const openModal = () => { setDraftUrl(value || defaultValue); setDraftAlt(altValue || defaultAlt); setOpen(true) }
