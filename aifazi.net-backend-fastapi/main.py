@@ -702,6 +702,7 @@ from routers import (
     banners,
     blog,
     cdn_settings,
+    config_check,
     contact,
     content,
     content_aggregator,
@@ -757,6 +758,7 @@ from routers import (
 app.include_router(auth.router,           prefix="/api/auth")
 app.include_router(authentik_oidc.router, prefix="/api/auth")
 app.include_router(ldap_oauth.router,     prefix="/api/auth")
+app.include_router(config_check.router,   prefix="/api/auth")
 app.include_router(blog.router,           prefix="/api/blog")
 app.include_router(upload.router,         prefix="/api/upload")
 app.include_router(contact.router,        prefix="/api/contact")

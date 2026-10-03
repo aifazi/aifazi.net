@@ -415,7 +415,7 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     # Set HttpOnly auth cookies (primary) + keep hash for legacy mobile deep links.
     # Access token never in query param. Token never in URL for web clients.
     try:
-        from routers.auth import _set_auth_cookies, make_refresh_token
+        from utils.auth_tokens import _set_auth_cookies, make_refresh_token
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
         try:
             supabase.table("users").update({
