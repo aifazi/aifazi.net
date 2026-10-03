@@ -3,7 +3,16 @@
  */
 import { View, Text } from 'react-native'
 import { useTheme } from '@/src/theme'
-import { formatBytes, type VpnSession } from '@/src/lib/vpn'
+import { formatBytes, formatDuration, type VpnSession } from '@/src/lib/vpn'
+
+/** M3.4 — per-session duration (still-running sessions show 'Active'). */
+function sessionDuration(s: VpnSession): string {
+  const start = new Date(s.connected_at).getTime()
+  if (!s.disconnected_at || !Number.isFinite(start)) return ''
+  const end = new Date(s.disconnected_at).getTime()
+  if (!Number.isFinite(end) || end <= start) return ''
+  return formatDuration((end - start) / 1000)
+}
 
 interface Props {
   sessions: VpnSession[]
@@ -51,7 +60,7 @@ export function SessionHistory({ sessions }: Props) {
           <View style={{ flex: 1 }}>
             <Text style={{ color: c.text, fontSize: 14, fontWeight: '500' }}>{session.device_name}</Text>
             <Text style={{ color: c.text2, fontSize: 11, marginTop: 2 }}>
-              {timeAgo(session.connected_at)} · {session.disconnected_at ? 'Ended' : 'Active'}
+              {timeAgo(session.connected_at)} · {session.disconnected_at ? sessionDuration(session) || 'Ended' : 'Active'}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>

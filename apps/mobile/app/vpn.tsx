@@ -3,8 +3,16 @@
  *
  * Full-tunnel VPN management screen with connection ring, traffic stats,
  * device management, server info, and session history.
+ *
+ * M3 revamp (2026-10-03 plan):
+ *  - M3.1 biometric app-lock gate over the whole route (roadmap C7)
+ *  - M3.2 live connection state: ring driven by polled peer data
+ *    (10s interval while mounted, refetch on app foreground) instead of
+ *    the old one-shot hard-coded 'disconnected'
+ *  - M3.3 WireGuard handoff: ring tap opens the WireGuard app (deep link
+ *    with store fallback) + import checklist below
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -13,6 +21,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  AppState,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -36,10 +45,14 @@ import {
   listVpnSessions,
   getPublicIp,
   detectDeviceOs,
+  openWireGuardApp,
+  deriveConnectionState,
   type VpnPeer,
   type VpnStatus,
   type VpnSession,
 } from '@/src/lib/vpn'
+import { useBiometricLock } from '@/src/lib/biometricLock'
+import { Icon } from '@/src/components/icon'
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected'
 
@@ -49,6 +62,9 @@ export default function VpnScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { user } = useAuth()
+  // M3.1 — the whole route sits behind the biometric app-lock gate when the
+  // device has enrolled biometrics (never blocks users without biometrics).
+  const lock = useBiometricLock()
 
   const [status, setStatus] = useState<VpnStatus | null>(null)
   const [peers, setPeers] = useState<VpnPeer[]>([])
@@ -56,7 +72,11 @@ export default function VpnScreen() {
   const [publicIp, setPublicIp] = useState<string>('')
   const [totalRx, setTotalRx] = useState(0)
   const [totalTx, setTotalTx] = useState(0)
-  const [connectionState] = useState<ConnectionState>('disconnected')
+  // M3.2 — live state, derived from polled peer data.
+  const connectionState = useMemo<ConnectionState>(
+    () => deriveConnectionState(peers),
+    [peers],
+  )
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -92,26 +112,53 @@ export default function VpnScreen() {
     }
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  // M3.1 — the dashboard only loads behind an open gate (or no gate at all
+  // on devices without enrolled biometrics).
+  useEffect(() => {
+    if (!lock.locked) loadData()
+  }, [loadData, lock.locked])
+
+  // M3.2 — live peer polling: 10s cadence while mounted + a refetch whenever
+  // the app returns to the foreground (tunnel state changes out-of-app too).
+  useEffect(() => {
+    if (lock.locked || loading) return
+    const refetchPeers = () => {
+      listPeers()
+        .then(setPeers)
+        .catch(() => {})
+    }
+    const timer = setInterval(refetchPeers, 10_000)
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s === 'active') refetchPeers()
+    })
+    return () => {
+      clearInterval(timer)
+      sub.remove()
+    }
+  }, [lock.locked, loading])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     loadData()
   }, [loadData])
 
+  // M3.3 — ring tap hands off to the user's native WireGuard app (the real
+  // tunnel lives there): deep link first, store page as fallback.
   const handleToggleConnection = useCallback(() => {
     if (peers.length === 0) {
       Alert.alert('No Devices', 'Add a VPN device first, then scan the QR code in the WireGuard app to connect.')
       return
     }
-    Alert.alert(
-      'Connect via WireGuard',
-      'Open the WireGuard app on your device and toggle the VPN connection there. This app manages your VPN devices — the actual tunnel is controlled by the WireGuard app.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'OK' },
-      ],
-    )
+    openWireGuardApp(detectDeviceOs())
+      .then((how) => {
+        if (how === 'none') {
+          Alert.alert(
+            'Open WireGuard manually',
+            'Install the WireGuard app, add the tunnel from the QR code in the device config, then toggle the connection there.',
+          )
+        }
+      })
+      .catch(() => {})
   }, [peers.length])
 
   const handleAddDevice = useCallback(async () => {
@@ -168,6 +215,47 @@ export default function VpnScreen() {
     },
     [loadData],
   )
+
+  // M3.1 — whole-route biometric gate (C7).
+  if (lock.locked) {
+    return (
+      <Screen scroll={false}>
+        <Header title="VPN" onBack={() => router.back()} />
+        <View style={{ flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              backgroundColor: withAlpha(c.accent, 0.13),
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Icon name="lock" size={30} color={c.accent} />
+          </View>
+          <Text style={{ color: c.text, fontSize: 17, fontWeight: '700', marginTop: 16 }}>VPN is locked</Text>
+          <Text style={{ color: c.text2, fontSize: 13, textAlign: 'center', lineHeight: 19, marginTop: 8 }}>
+            Unlock with your biometrics to view VPN devices, sessions and keys.
+          </Text>
+          <TouchableOpacity
+            onPress={() => { void lock.unlock() }}
+            accessibilityRole="button"
+            accessibilityLabel="Unlock VPN screen"
+            style={{
+              marginTop: 20,
+              backgroundColor: c.accent,
+              borderRadius: 12,
+              paddingHorizontal: 32,
+              paddingVertical: 12,
+            }}
+          >
+            <Text style={{ color: c.onAccent, fontSize: 14, fontWeight: '700' }}>UNLOCK</Text>
+          </TouchableOpacity>
+        </View>
+      </Screen>
+    )
+  }
 
   if (loading) {
     return (
