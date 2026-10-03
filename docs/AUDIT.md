@@ -850,5 +850,10 @@ All §15.3 P2 items + O4 closed in one PR (`batch-p2-o4`, squash auto-merge):
 
 Gates on the batch: frontend tsc 0 · eslint 0 err / 58 warn (baseline) · vitest 151 passed · next build clean; backend ruff clean · mypy clean (73 files) · pytest 244 passed (10 new backend tests, 8 new frontend).
 
-**Fixed this round:** A5-1 + A5-2 (merged #394/#395) · A5-3/A5-4 (#400/#401) · A5-7/A5-8 + U1 (#402) · A5-9 (#403) · P1 O3 (#404) · P2 backlog N9–N13/F10–F12/F14/F16/F19/B16 + O4 (#406).
-**Next:** P0 mobile-release verification; E1 dependency majors (eslint 10 / Sentry 11 — separate PR); P3. (Round-5 additions A5-3/A5-9 and P1 O3 closed via #400/#403/#404; §15.3 P2 list + O4 closed in #406.)
+### 15.8 E1 dependency majors — Sentry done, eslint 10 blocked (verified 2026-10-03)
+
+- **Sentry 10 → 11 (done, this PR):** `@sentry/nextjs` ^11.4.0. `withSentryConfig` now imported from `@sentry/nextjs/config` (the root import stopped working in v11); `instrumentation.ts` exports `onRequestError = Sentry.captureRequestError` (v11 manual-setup requirement — captures Server Component / middleware / proxy errors; both build-time deprecation warnings gone).
+- **ESLint 9 → 10 — NOT executed, blocked.** Verified against published artifacts: ESLint 10.0.0 removed `context.getFilename()` (absent from all 10.x), and the newest nested plugins in `eslint-config-next` 16.3.8 — eslint-plugin-react 7.37.5 (last release 2025-04), eslint-plugin-jsx-a11y 6.10.2, eslint-plugin-import 2.32.0 — all predate ESLint 10 and crash at rule load (`react/display-name` → `lib/util/version.js` → `getFilename is not a function`). No eslint-10-compatible releases exist on npm (checked latest + dist-tags). Kept eslint on the `maintenance` dist-tag (9.39.5, still updated). Re-open once the config-next plugin chain ships eslint-10 support.
+
+**Fixed this round:** A5-1 + A5-2 (merged #394/#395) · A5-3/A5-4 (#400/#401) · A5-7/A5-8 + U1 (#402) · A5-9 (#403) · P1 O3 (#404) · P2 backlog N9–N13/F10–F12/F14/F16/F19/B16 + O4 (#406) · E1 Sentry 11 (this PR).
+**Next:** P0 mobile-release verification; eslint 10 (blocked — §15.8); P3. (Round-5 additions A5-3/A5-9 and P1 O3 closed via #400/#403/#404; §15.3 P2 list + O4 closed in #406.)
