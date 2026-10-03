@@ -1,6 +1,7 @@
 'use client'
 
-import Clickable from '@/core/Clickable'
+import Image from 'next/image'
+import Clickable, { keyboardActivate } from '@/core/Clickable'
 
 // Shared web avatar helpers + renderer.
 // Mirrors mobile (apps/mobile/src/components/Avatar.tsx): a value like
@@ -70,6 +71,7 @@ export function avatarUrl(avatar) {
  * - `imgStyle` extra inline styles for the <img>
  * - `imgClassName` optional class for the <img> (e.g. community-avatar)
  * - `fallback` URL used when the value is not a usable URL
+ * @param {{ avatar: any, name?: string, size?: number, style?: any, imgStyle?: any, imgClassName?: any, fallback?: any, onClick?: any }} props
  */
 export function UserAvatar({ avatar, name = '', size = 40, style, imgStyle, imgClassName, fallback, onClick }) {
   const emoji = builtinAvatarEmoji(avatar)
@@ -91,15 +93,25 @@ export function UserAvatar({ avatar, name = '', size = 40, style, imgStyle, imgC
   }
   const src = avatarUrl(avatar) || fallback
   if (!src) return null
-  const ImgTag = onClick ? Clickable : 'img'
+  // Render a real image in both branches: Clickable's default as='div' would
+  // swallow src/alt and show an empty circle (Round-4 audit HIGH).
   return (
-    <ImgTag
+    <Image
+      unoptimized
+      width={size}
+      height={size}
       src={src}
       alt={name || 'avatar'}
-      loading="lazy"
       onClick={onClick}
+      onKeyDown={onClick ? keyboardActivate(onClick) : undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={imgClassName}
-      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, ...imgStyle }}
+      style={{
+        width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0,
+        cursor: onClick ? 'pointer' : undefined,
+        ...imgStyle,
+      }}
     />
   )
 }
