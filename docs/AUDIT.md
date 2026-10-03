@@ -972,3 +972,46 @@ Until then, mobile OAuth sign-in fails closed with `Sign-in did not complete.` (
 ---
 
 *Round-6 audit, static + source-verified + action-docs cross-check. Every MEDIUM claim manually confirmed. No production traffic tested.*
+
+## 18. PASETO link-token fix + Authentik admin toggle + login-animation findings (2026-10-04)
+
+### 18.1 Closes §17 "New finding filed" — GitHub/Steam account-link tokens
+
+**Root cause.** `paseto_token.create_token` builds `data = {**payload, "iat", "exp", "purpose": purpose}` — the outer PASETO purpose **clobbers** any payload-level `purpose` claim. The link tokens were minted as `{"id": …, "purpose": "github_link"|"steam_link"}` under `purpose="auth"`, so the stored claim was always `purpose: "auth"` and the decoders' `payload.get("purpose") == "<provider>_link"` check **never matched** → every account-link (connect) flow failed with `github_error=link` / `steam_error=link`.
+
+**Fix** (matches the `mobile_oauth_code` / access-token convention): the marker moved from `purpose` to `token_type`.
+
+| File | Change |
+|------|--------|
+| `routers/github_auth.py` | `_make_github_link_token` → payload `{"id": …, "token_type": "github_link"}` (+ comment documenting the clobber); `_decode_github_link_token` now checks `payload.get("token_type") == "github_link"`. |
+| `routers/steam_auth.py` | Same pair with `steam_link` (`_make_steam_link_token` / `_decode_steam_link_token`). |
+
+Verified safe, untouched: `fivem_connect` (HS256 via `jwt_compat`, payload `purpose` preserved), `email_verify` (JWT path), `admin_gate` (outer purpose coincidentally equals the marker), all `token_type`-based tokens.
+
+**Regression test.** New `tests/test_oauth_link_tokens.py` (14 tests): maker→decoder round-trip for both providers (asserts `id` + `token_type`), rejection of a real `token_type: "access"` forum token, cross-provider foreign `token_type` rejection, garbage/None/empty rejection, plus one assertion documenting the clobber itself (`create_token({"purpose": "x"}, purpose="auth")` decodes to `purpose: "auth"`).
+
+### 18.2 Authentik enable/disable — 501 stub replaced
+
+`POST /api/admin/identity/users/{user_id}/disable|enable` (`routers/admin_actions.py`) was a stub that audited + raised 501. It is now a real flow (`_identity_toggle`):
+
+1. `confirm: true` still required (400 otherwise); local user row loaded (`id,username,banned,authentik_id`) → 404 if unknown.
+2. **Local enforcement first** — `users.banned = not enable`. `dependencies.get_current_user` rejects banned users site-wide (403 "Account suspended"), so the block holds even if Authentik is unreachable or the token is unset.
+3. **Authentik sync** (best-effort) when the row carries `authentik_id` (the user UUID `sub` written by the OIDC callback in `routers/authentik_oidc.py`):
+   - `AUTHENTIK_API_TOKEN` set → `PATCH {issuer}/api/v1/core/users/{uuid}/` `{"disabled": not enable}` with `Authorization: Bearer …`, 10 s timeout. Failure → **502** "Local change applied; Authentik sync failed: …" (local change stands; audited as `sync_failed`).
+   - token unset → **200** with `warning: "Authentik not synced (AUTHENTIK_API_TOKEN not set)"` (audited as `local_only`).
+   - no `authentik_id` → local-only, no warning.
+4. Success audited as before (`identity_user_enable` / `identity_user_disable`) with the outcome.
+
+Issuer comes from the same config source as the OIDC router — `AUTHENTIK_ISSUER` (default `https://auth.aifazi.net`) via `routers/authentik_oidc._ak`, exposed here as `_authentik_admin_url()`. **No DB migration**: uses the existing `users` table + the `AUTHENTIK_API_TOKEN` env var (operator must add the token to enable the Authentik half; until then the panel keeps working in local-only mode with the warning). No frontend change needed — `OAuthSettings.jsx` already posts `{confirm: true}` and surfaces any `warning`/error text.
+
+**Test.** New `tests/test_authentik_identity_toggle.py` (9 tests, TestClient on the real router with `database`/`dependencies` stubbed + fake `httpx.AsyncClient`): confirm guard 400, unknown user 404, local ban/clear writes, linked-user-no-token → 200+warning, linked+token → correct PATCH URL/payload/headers (default issuer **and** `AUTHENTIK_ISSUER` override), sync failure → 502 while the local write stands.
+
+### 18.3 Login page "static" — verified findings
+
+Reported: the login page lost its animations. Verified:
+
+- **Deployed build is current.** `aifazi.net/login` CSS hashes (`559debdad8aca924.css`, `58f042b1223b42ce.css`) match the latest Vercel production deployment (single prod deployment at check time = the C6 merge); `vercel ls aifazi.net` cross-checked.
+- **All animation assets ship in the build.** Fresh `next build --webpack` in this worktree: `/login` 200; the login CSS carries all keyframes (`authBorderFlow`, `authShieldGlow`, … — 55 `@keyframes`/`prefers-reduced-motion` references in `a939f57f05c1a180.css`) and the GSAP bundle ships in shared chunk `1705-*.js`. The **production `1705` chunk is the same size as the local build's (72,031 bytes, 19 `gsap` references)** — i.e. `loadGsap()`'s dynamic `import('gsap')` resolves to a real chunk on both; no chunk-load failure at build level.
+- **SSR HTML has no login markup — expected.** `app/login/page.tsx` wraps the client in `<Suspense fallback={null}>` and `useSearchParams` suspends on the server; the page is client-rendered after hydration.
+- **Most likely explanation: `prefers-reduced-motion`.** Every effect is gated: the GSAP effects early-return via `reducedMotion()`, and the CSS has `@media (prefers-reduced-motion: reduce)` blocks (present in the shipped CSS, 2 blocks). If the viewing OS has "animation effects" off (Windows: Settings → Accessibility → Visual effects → "Animation effects"; also many accessibility/privacy browser profiles), the page is **intentionally a static frame**. Check on the affected machine: `window.matchMedia('(prefers-reduced-motion: reduce)').matches` in devtools — `true` means this is the cause, not a regression.
+- Caveat: live pixel-compare in a real browser was not possible from this session (integrated browser unavailable here); the build-level checks above cover everything short of a rendered frame.
