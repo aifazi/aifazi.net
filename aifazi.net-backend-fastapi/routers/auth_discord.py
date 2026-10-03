@@ -12,6 +12,7 @@ from fastapi.responses import RedirectResponse
 
 from database import supabase
 from dependencies import get_current_user
+from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -25,6 +26,10 @@ DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
 DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "")
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
+# H2/C6 — deep-link base for mobile OAuth completion. Server-controlled; the
+# app only accepts redirects under this exact prefix (matches MOBILE_AUTH_URL
+# in the other provider routers and OAUTH_REDIRECT_BASE in apps/mobile).
+MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstrip("/")
 
 
 def _validate_frontend_url(value: str) -> str:
@@ -64,8 +69,16 @@ async def discord_login(request: Request):
     dest = _safe_relative_path(
         request.query_params.get("redirect") or request.query_params.get("dest") or "/profile"
     )
+    # H2/C6 — the mobile app starts the flow with `mobile=1` plus its own
+    # one-time `state` (CSPRNG hex), which the callback echoes back in the
+    # deep-link fragment so the app can bind the redirect to its own flow.
+    is_mobile = request.query_params.get("mobile") == "1"
+    app_state = request.query_params.get("state") or ""
+    extra = {"state": app_state[:128]} if app_state else None
     try:
-        state = make_oauth_state("discord", dest)
+        state = make_oauth_state("discord", dest, mobile=is_mobile, extra=extra)
+    except ValueError:
+        state = make_oauth_state("discord", dest, mobile=is_mobile)
     except RuntimeError:
         raise HTTPException(503, "OAuth state signing is not configured")
     return RedirectResponse(
@@ -75,6 +88,23 @@ async def discord_login(request: Request):
             f"response_type=code&"
             f"scope=identify%20email%20guilds.members.read&"
             f"state={urllib.parse.quote(state)}"
+    )
+
+
+def _mobile_code_redirect(user_id: str, user_username: str, st: dict | None) -> RedirectResponse:
+    """H2/C6 — mobile deep link carrying a one-time exchange code, never a token.
+
+    The app exchanges the code via POST /api/auth/mobile/exchange. Issue
+    failure fails closed (error param) — no token-in-URL fallback.
+    """
+    dest = _safe_relative_path((st or {}).get("dest") or "/profile")
+    try:
+        code = issue_code("discord", user_id, user_username, "user", dest)
+    except Exception:
+        log.error("discord mobile code issue failed", exc_info=True)
+        return RedirectResponse(f"{MOBILE_AUTH_URL}/discord?discord_error=db")
+    return RedirectResponse(
+        MOBILE_AUTH_URL + "/discord" + mobile_fragment(code, dest) + state_echo((st or {}).get("extra"))
     )
 
 
@@ -115,9 +145,13 @@ async def discord_callback(request: Request):
     if not discord_id:
         raise HTTPException(400, "Invalid Discord user data")
 
+    # H2/C6 — mobile flows (started with mobile=1) never receive tokens in the
+    # redirect: they get a one-time exchange code deep link instead.
+    is_mobile = bool((login_payload or {}).get("mobile"))
+
     # Check if user exists
     existing = supabase.table("users").select("id,username,discord_id").eq("discord_id", discord_id).limit(1).execute()
-    # Tokens are delivered via HttpOnly SameSite=Lax cookies (same
+    # Web tokens are delivered via HttpOnly SameSite=Lax cookies (same
     # _set_auth_cookies pattern as routers/auth.py) — never in the redirect
     # URL, where they would leak via history, logs, and Referer headers.
     from datetime import datetime, timezone
@@ -127,6 +161,8 @@ async def discord_callback(request: Request):
     if existing.data:
         # User exists — issue forum-style tokens (id included for /refresh).
         user = existing.data[0]
+        if is_mobile:
+            return _mobile_code_redirect(user["id"], user["username"], login_payload)
         token = make_forum_token(user["id"], user["username"], "user")
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": "user"}, 60 * 24 * 7)
         supabase.table("users").update({
@@ -150,6 +186,8 @@ async def discord_callback(request: Request):
         new_id = ins.data[0]["id"] if ins.data else None
         if not new_id:
             raise HTTPException(500, "Failed to create user")
+        if is_mobile:
+            return _mobile_code_redirect(new_id, new_username, login_payload)
         token = make_forum_token(new_id, new_username, "user")
         refresh = make_refresh_token({"id": new_id, "username": new_username, "role": "user"}, 60 * 24 * 7)
         if new_id:

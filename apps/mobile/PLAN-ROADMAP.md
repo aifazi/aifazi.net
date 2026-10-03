@@ -14,7 +14,8 @@ true as of 2026-10-03).
   render), projects, auth (login / 2FA / biometric / OAuth),
   verify-email, Nextcloud Talk (room list + chat + calls).
 - **Tooling**: CI `mobile-lint` job (lint + route typegen + typecheck +
-  vitest), 66 passing tests (was 18 pre-revamp); ESLint + tsc scripts.
+  vitest), **83 passing tests** (was 18 pre-revamp; 66 after M2/M3, 83 after
+  C6 — `src/lib/oauth.test.ts` added); ESLint + tsc scripts.
 - **Release**: EAS local versioning — `app.json` 1.0.39 / versionCode
   1000039, package `net.aifazi.mobile`, 4 build profiles
   (development/preview/production/production-apk), OTA channel
@@ -69,9 +70,20 @@ Debt:
   Expo SDK bumps)
 
 Security:
-- **H2**: mobile OAuth `#token=` fragments (steam / github / discord /
-  auth) — one-time exchange codes not yet implemented for the mobile
-  deep-link path
+- ~~H2: mobile OAuth `#token=` fragments (steam / github / discord / auth) —
+  one-time exchange codes~~ — **C6/H2 closed 2026-10-04**: mobile deep links
+  now carry a one-time exchange code (`#code=…&dest=…[&state=…]`) instead of
+  tokens; the app exchanges it via `POST /api/auth/mobile/exchange`
+  (5-minute-TTL PASETO + `mobile_oauth_claims` claim table, atomic
+  single-use consume). All four provider callbacks converted
+  (`github_auth` / `steam_auth` / `authentik_oidc` / `discord_auth`), and
+  `auth_discord.py` gained the mobile branch the app actually uses (mobile
+  Discord sign-in was broken before — web-only). The app's one-time `state`
+  is now carried through the signed backend state and echoed in the fragment
+  (strict check since 8a8b1ff now works end-to-end). **Operator step
+  before ship:** run the `mobile_oauth_claims` CREATE TABLE in the Supabase
+  SQL editor (SQL in `docs/AUDIT.md` §17) — until then mobile OAuth fails
+  closed with a clean error.
 - ~~VPN screen reachable without an app-level biometric lock gate~~ —
   **C7 closed 2026-10-03** (`src/lib/biometricLock.ts`, whole-route gate
   on `app/vpn.tsx`; re-locks on foreground after 60s background)
@@ -144,8 +156,10 @@ stays the master doc.
 - **M1** — release pipeline (owner/EAS) before anything ships.
 - Talk QA matrix (plan §M2): iOS in-app 1:1 call, Android browser call,
   both-on-VPN P2P / one-off-VPN TURN, re-login after NC restart.
-- Then: C6 (H2 one-time exchange codes) → M4 → M5 per the plan's
-  suggested order.
+- **OAuth deep-link QA** (C6): Discord/GitHub/Steam sign-in on a real
+  device (iOS ASWebAuthenticationSession path + Android intent path),
+  incl. 2FA-on-account flow and the state-mismatch rejection.
+- Then: M4 → M5 per the plan's suggested order (C6 done 2026-10-04).
 
 ---
 
@@ -204,9 +218,12 @@ stays the master doc.
   `apiErrorMessage`-style shared error helper.
 - **C5. Test depth (18 → N)** — API client interceptors, single-flight
   refresh, `auth-cleared` event, cache/offline behavior.
-- **C6. H2 OAuth one-time exchange codes** — backend
-  (steam/github/discord/auth) + mobile callback; removes `#token=`
-  fragments from the mobile deep-link path.
+- ~~**C6. H2 OAuth one-time exchange codes**~~ — **done 2026-10-04**:
+  `utils/mobile_oauth_codes.py` (5-min-TTL PASETO + SHA-256 claim row,
+  atomic single-use consume) + `POST /api/auth/mobile/exchange`
+  (`routers/mobile_oauth.py`, RL 10/60s) + all provider mobile branches
+  converted + mobile `oauth.ts` exchanges the code before resolving.
+  Backend 244→257 tests, mobile 66→83; AUDIT.md §17.
 - **C7. Biometric app-lock gate on the VPN screen.**
 - **C8. Expo SDK bump** for the 31 advisories — coordinate with C1/C2
   (large, separate effort).

@@ -45,6 +45,7 @@ except ImportError:
 from database import _escape_ilike, supabase
 from dependencies import CookieHTTPBearer
 from jwt_compat import JWTError, jwt
+from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -262,17 +263,26 @@ async def _verify_steam_openid(raw_params: dict) -> str | None:
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @router.get("/login")
-async def steam_login(dest: str = "/forum/profile", mobile: int = 0):
-    """Redirect user to Steam OpenID consent screen."""
+async def steam_login(dest: str = "/forum/profile", mobile: int = 0, state: str = ""):
+    """Redirect user to Steam OpenID consent screen.
+
+    H2/C6 — the mobile app appends its own one-time `state` (CSPRNG hex); it is
+    carried inside the HMAC-signed OAuth state and echoed back in the deep-link
+    fragment so the app can verify the redirect belongs to its own flow.
+    """
     # M10 — sign dest into a time-bound OAuth state token. Steam OpenID 2.0 has
     # no native state param, but return_to (which Steam echoes back on the
     # callback) is under our control, so we embed the state there. The callback
     # verifies signature + expiry and rejects any forged/echoed login (login-CSRF).
     safe_dest = _safe_relative_path(dest, default="/forum/profile")
-    state = make_oauth_state("steam", safe_dest, mobile=bool(mobile))
+    extra = {"state": state[:128]} if state else None
+    try:
+        signed_state = make_oauth_state("steam", safe_dest, mobile=bool(mobile), extra=extra)
+    except ValueError:
+        signed_state = make_oauth_state("steam", safe_dest, mobile=bool(mobile))
     # Embed dest in return_to so it survives the OpenID redirect
     return_to = (
-        f"{STEAM_CALLBACK}?state={_urlparse.quote(state, safe='')}"
+        f"{STEAM_CALLBACK}?state={_urlparse.quote(signed_state, safe='')}"
         f"&dest={_urlparse.quote(safe_dest, safe='/')}"
     )
     return RedirectResponse(_steam_openid_url(return_to))
@@ -357,13 +367,11 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
                 "steam_avatar":   steam_avatar,
                 "last_seen":      now,
             }).eq("id", current_user_id).execute()
-            is_new_account = False
         else:
             # ── 1. Already linked by steam_id ──────────────────────────────
             ex = supabase.table("users").select("*").eq("steam_id", steam64).execute()
             if ex.data:
                 user = ex.data[0]
-                is_new_account = False
                 supabase.table("users").update({
                     "steam_username": steam_username,
                     "steam_avatar":   steam_avatar,
@@ -372,7 +380,6 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
 
             else:
                 user = None
-                is_new_account = False
 
                 # ── 2. No existing Steam link — create new account ──────────
                 uname = _next_available_username(steam_username)
@@ -389,7 +396,6 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
                     "last_seen":        now,
                 }).execute()
                 user = row.data[0]
-                is_new_account = True
 
     except Exception as exc:
         import logging
@@ -404,16 +410,26 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
         safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
         safe_user = _urlparse.quote(user.get("username") or "")
         safe_partial = _urlparse.quote(partial, safe="")
-        return RedirectResponse(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest)
+        return RedirectResponse(front + m_login + "#twofa=forum&partial_token=" + safe_partial + "&username=" + safe_user + "&next=" + safe_dest + state_echo(_st.get("extra")))
 
-    token = _make_forum_token(user["id"], user["username"], user.get("role", "user"))
     _record_activity(user["id"], user["username"], "steam_connect" if mode == "connect" else "steam_login", f"steam64={steam64}")
 
-    safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
-    # For brand-new Steam accounts, send to profile edit tab so they can set email
-    new_flag = "&new_account=1" if is_new_account else ""
-    # Set HttpOnly auth cookies (primary) + keep hash for legacy mobile deep links.
-    # Access token never in query param. Token never in URL for web clients.
+    # H2/C6 — the mobile app deep link carries a one-time exchange code,
+    # never a token (the app exchanges it via POST /api/auth/mobile/exchange).
+    # Issue failure fails closed — no token-in-URL fallback. (The web-only
+    # `new_account=1` UI hint had no mobile consumer and was dropped with the
+    # token fragment.)
+    if _st.get("mobile"):
+        safe_dest = _safe_relative_path(dest)
+        try:
+            code = issue_code("steam", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
+        except Exception:
+            logging.getLogger("steam_auth").error("steam_callback mobile code issue failed", exc_info=True)
+            return RedirectResponse(f"{front}?steam_error=db")
+        return RedirectResponse(front + mobile_fragment(code, safe_dest) + state_echo(_st.get("extra")))
+
+    token = _make_forum_token(user["id"], user["username"], user.get("role", "user"))
+    # Web — set HttpOnly auth cookies (primary). Access token never in query.
     try:
         from utils.auth_tokens import _set_auth_cookies, make_refresh_token
         refresh = make_refresh_token({"id": user["id"], "username": user["username"], "role": user.get("role", "user")}, 60 * 24 * 7)
@@ -423,9 +439,6 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
             }).eq("id", user["id"]).execute()
         except Exception:
             pass
-        if _st.get("mobile"):
-            # App deep link — deliver tokens via fragment (no cookie jar on the app).
-            return RedirectResponse(front + "#token=" + token + "&refresh=" + refresh + "&dest=" + safe_dest + new_flag)
         resp = RedirectResponse(front + "/auth/steam-callback#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
         _set_auth_cookies(resp, token, refresh)
         return resp

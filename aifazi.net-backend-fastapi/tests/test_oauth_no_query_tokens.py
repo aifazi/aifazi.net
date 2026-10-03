@@ -1,7 +1,9 @@
-"""OAuth redirect regression: raw tokens must never be in query strings.
+"""OAuth redirect regression: raw tokens must never be in URLs.
 
-Mobile deep links use URL fragments (#token=), web uses HttpOnly cookies.
-Query (?token=) would leak via proxy/server logs and Referer.
+H2/C6 — mobile deep links carry one-time exchange codes (#code=) that the
+app exchanges server-side (POST /api/auth/mobile/exchange); web uses HttpOnly
+cookies. Query (?token=) leaks via proxy/server logs and Referer; fragment
+tokens leak via OS intent logs / history, which is why mobile moved to codes.
 """
 from __future__ import annotations
 
@@ -18,10 +20,24 @@ def _src(name: str) -> str:
     return (ROUTERS / name).read_text(encoding="utf-8", errors="ignore")
 
 
-def test_discord_mobile_uses_fragment_not_query():
+def test_discord_mobile_deep_link_carries_no_token():
+    # H2/C6 — the mobile deep link carries a one-time exchange code, not a token.
     src = _src("discord_auth.py")
-    assert "aifazi://auth/discord#token=" in src
+    assert "aifazi://auth/discord#token=" not in src
     assert "aifazi://auth/discord?token=" not in src
+    assert "issue_code" in src and "mobile_fragment" in src
+
+
+def test_no_oauth_mobile_branch_embeds_fragment_token():
+    # H2/C6 — no mobile deep-link redirect embeds a raw #token= fragment.
+    # (The web last-resort fragment fallbacks in github_auth are cookie-first
+    # and never reached when the flow is mobile: the mobile branch now returns
+    # a one-time code before any web token is minted.)
+    for name in ("authentik_oidc.py", "github_auth.py", "steam_auth.py", "discord_auth.py", "auth_discord.py"):
+        src = _src(name)
+        for line in src.splitlines():
+            if "#token=" in line and ("MOBILE" in line or "aifazi://" in line or "mobile" in line.lower() and "m_login" in line):
+                raise AssertionError(f"{name} mobile branch embeds #token=: {line.strip()[:160]}")
 
 
 def test_no_oauth_callback_embeds_query_token():
