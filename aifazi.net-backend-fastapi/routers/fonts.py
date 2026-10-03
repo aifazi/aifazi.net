@@ -29,6 +29,7 @@ from database import supabase
 from dependencies import require_staff
 from routers.cdn_upload import delete_media, upload_media
 from routers.upload import scan_for_malware
+from utils.ssrf import is_blocked_ip
 
 log = logging.getLogger("fonts")
 router = APIRouter()
@@ -64,10 +65,23 @@ def _host_is_private(hostname: str) -> bool:
         return True  # unresolvable — refuse rather than guess
     for info in infos:
         ip = ipaddress.ip_address(info[4][0])
-        if (ip.is_private or ip.is_loopback or ip.is_link_local
-                or ip.is_multicast or ip.is_reserved or ip.is_unspecified):
+        # Shared guard (round-5 A5-1): catches IPv4-mapped IPv6 such as
+        # ::ffff:169.254.169.254, which the property checks miss.
+        if is_blocked_ip(ip):
             return True
     return False
+
+
+class _RedirectLeftAllowlist(Exception):
+    """A redirect hop left the Google Fonts host allowlist (A5-2)."""
+
+
+def _redirect_guard(request: httpx.Request) -> None:
+    # follow_redirects=True must not escape the allowlist: re-check every
+    # hop, not just the first URL.
+    host = (request.url.host or "").lower()
+    if host not in _ALLOWED_FONT_HOSTS:
+        raise _RedirectLeftAllowlist(host)
 
 
 def _css_escape(value: str) -> str:
@@ -286,7 +300,8 @@ async def import_font_from_url(
         raise HTTPException(400, "URL host is not publicly reachable")
 
     try:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client, \
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True,
+                                     event_hooks={"request": [_redirect_guard]}) as client, \
                 client.stream("GET", url) as resp:
                 if resp.status_code != 200:
                     raise HTTPException(502, f"Could not download font (HTTP {resp.status_code})")
@@ -295,6 +310,8 @@ async def import_font_from_url(
                     content += chunk
                     if len(content) > FONT_MAX_BYTES:
                         raise HTTPException(413, f"Font exceeds {FONT_MAX_BYTES // 1024 // 1024} MB limit")
+    except _RedirectLeftAllowlist:
+        raise HTTPException(400, "Redirect left the allowed font hosts")
     except HTTPException:
         raise
     except Exception as exc:

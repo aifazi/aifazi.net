@@ -763,3 +763,70 @@ Security **8.5/10** (S1/S2 found & fixed same day; O1 setting tradeoff) · Maint
 ---
 
 *Round-4 audit, static + source-verified. Every HIGH claim manually confirmed. Highest-value remaining: O1 verification, U1, O3.*
+
+---
+
+## 15. Full Audit Round 5 — 2026-10-03 (PRs #394–#397 + repo-wide re-verification)
+
+**Scope:** full monorepo at `76e2294` — (a) diff audit of the two same-day fix PRs (#394 UI regressions R1-R3 + deps, #395 security S1/S2), (b) source re-verification of every OPEN/PARTIAL item from Rounds 3-4, (c) full local verification suites run live, (d) docs/hygiene cross-check of STATUS.md claims.
+**Method:** 3 parallel deep-dive passes (open-findings verification, #394/#395 diff audit, STATUS/docs cross-check) + live gate runs in a clean worktree + manual source verification of every MEDIUM+ claim. No live pen-test.
+
+### 15.1 Verification (all live, 2026-10-03)
+
+| Suite | Result |
+|-------|--------|
+| Frontend tsc / eslint / vitest / build | 0 errors · 0 errors / 58 warnings · 132 passed +1 skip · success (Next 16.3.8) |
+| Backend ruff / mypy / pytest | 0 · 0 (73 files) · **213 passed** (203 + 10 new, see 15.4) |
+| Mobile tsc / eslint / vitest | 0 · 0 · 18 passed |
+| npm audit frontend | 7 (2 moderate, 5 high, 0 critical) — matches §14 post-fix |
+| npm audit mobile | 31 (0 critical) — unchanged |
+| Playwright e2e | not re-run this round (needs local server + backend env); §14 state stands: 24/29 pass locally, 2 pre-existing failures (smoke needs `API_URL` in `.env.local`, theme flake = real U1 race) |
+
+**Environment notes.** Frontend gates ran in a clean worktree install (`npm ci`): the main checkout's `node_modules` was stale (still next 16.3.5, no `jsdom`, broken `node_modules` entries — its build failed with "Cannot find module 'next/package.json'"). Stale tree initially reported 112 tests; after re-sync the exact §14 counts reproduce. Backend ran on local Python 3.14; CI targets 3.12 (deploy target 3.12.9 — the S2 regression was re-verified executable on 3.12 in round 4).
+
+### 15.2 #394/#395 fixes — verified complete (5/5)
+
+| Fix | Verdict |
+|-----|---------|
+| R1 avatar blanking | Complete — real `next/image` in both branches, keyboard activation when `onClick` (`core/Clickable.jsx:10-21`), regression tests. Minor: `loading="lazy"` dropped (LOW). |
+| R2 `imgStyle` ignored | Complete — `EditContext.jsx:1435` merges both style channels; sole caller `BlockRenderer.jsx:86-91` sizes via `imgStyle`. |
+| R3 slider keyboard | Complete — `role="slider"` + Arrow/Home/End/PageUp/Down with step-snap and clamp, `aria-disabled`, 4 tests. Minor: PageUp/Down = 10×step (LOW, differs from native large-step). |
+| S1 coupon/deal view-writes | Complete — all 8 routes verified (`store_marketing_admin.py`): reads `view`, POST/PATCH/DELETE `manage`; no write left on view. **No gating test exists (A5-4).** |
+| S2 SSRF mapped-IPv6 | Complete — `utils/ssrf.py:36-37` unwraps `ipv4_mapped` before ALL checks; 20 meaningful assertions incl. allowed `::ffff:1.1.1.1`. |
+| Deps | `next` 16.3.5→16.3.8 (+ SWC suite), `dompurify`→3.4.16, `brace-expansion`/`fastq` transitive — all with integrity hashes; live `npm audit` confirms both criticals gone. |
+
+Diff contains no unexplained code changes (12 files: 5 fix + 2 test + lockfile + 3 docs). Commit-message nit: `43e18d0` claims "micromatch chain updates" but no micromatch entry moved (A5-6, INFO).
+
+### 15.3 P2 backlog re-verification — all stand as documented
+
+Source-verified against current `HEAD`: **N9** (`page_layouts.py:332` bare execute), **N10** (original node/flow dicts appended, `infra_diagrams.py:352,374`), **N11** (only `"` escaped, `:1945`), **N12** (plaintext draft, `:79-85`), **N13** (stale `diagrams` set, `:1692`), **F10** (hit order ≠ paint order), **F11** (no drag/pan guard in `onWheel`), **F12** (`selIds` unpruned on undo/redo, `:522-552`), **F14** **PARTIAL** — `role="status"` now present, zero `htmlFor` still, **F16** (two hidden file inputs, same `ref`), **F19** (`hybrid-infra.ts:880` fail-open `published`, no id dedupe), **B16** (CORS refactor kept the bug: `main.py:374` prod `else: _DYNAMIC_PATTERNS = []` wipes the subdomain pattern appended at `:365`), **U1** (theme state still seeded from server-global `initialTheme` at `providers.tsx:146`), **U2** (all 5 native controls in 4 files), **U3** (backend any-finite vs frontend clamps; no annotation-id dedupe), **N5-partial** (`page_layouts` still lacks the `updated_at` gate infra got at `:652-653`), **B15** (cap still 20 in both routers). Also confirmed: `Select`/`Checkbox` still drop caller `onClick` (`forms.jsx:184-187,288-293`); Clickable keyboard-activation still zeroes the video seek bar (`clientX=0`, `blogPostParts.jsx:143`).
+
+### 15.4 New findings this round
+
+| ID | Sev | Finding | Status |
+|----|-----|---------|--------|
+| A5-1 | MEDIUM | **S2-class bypass survived in two legacy routers.** `seo_proxy.py:82-91` (property checks + raw blocklist scan) and `fonts.py:57-70` (property checks only) did their own IP validation instead of calling the fixed `is_blocked_ip()` — `::ffff:169.254.169.254` passed both. Exposure low (both host-allowlisted) but the shared-guard contract was broken. | **FIXED this round** — both now route through `is_blocked_ip`; 6 tests |
+| A5-2 | LOW | `fonts.py` `/from-url` used `follow_redirects=True` without re-validating redirect targets (validated host 1, follow to host 2). | **FIXED this round** — `request` event hook re-checks every hop against the allowlist; 2 tests; 400 on escape |
+| A5-3 | LOW | `dependency-review-config.yml` contains two keys the action's schema does not know (`severity-threshold`, `allowed-registries`) — silently ignored. **Corrects §14 O3**: the file IS auto-loaded by `actions/dependency-review-action`; its valid keys (`fail-on-severity: high`, `allow-licenses`, `max-vulnerabilities: 50`) are in effect — "(rules inert)" was wrong. Job runs on `pull_request` only. | open |
+| A5-4 | LOW | S1 (coupon/deal gating) and R2 (visitor image sizing) landed without tests. S1 is the only security fix in #394/#395 unguarded. | open |
+| A5-5 | LOW (env) | Main checkout frontend `node_modules` stale/corrupt (pre-#394 tree) — raw local `npm test`/`build` there misreport. Fixed by `npm ci` (re-synced). | open → re-synced |
+| A5-6 | INFO | `43e18d0` commit message claims "micromatch chain updates" — no micromatch entry moved. | n/a |
+| A5-7 | MEDIUM | **Draft restore silently forks saved diagrams.** `HybridInfraEditor.tsx:1082` `acceptDraft` → `setDocId(null)`; next save takes the create branch, slug is in `taken` → creates `slug-2`. Restoring a draft of a saved diagram detaches from the server row and spawns a duplicate sibling (original untouched, revisions stranded) instead of re-attaching to the original `docId`. | open |
+| A5-8 | MEDIUM | **U1 clobbers storage, not just paint.** The first-sync branch writes the stale theme to `localStorage` + cross-domain cookie (`providers.tsx:409-410`) before the mount-init effect's corrected value lands — a FOUC-stamped user preference is briefly overwritten in storage too. | open (fold into U1 fix) |
+| A5-9 | LOW | Untyped `workloads`/`deps` entries pass backend validation (`infra_diagrams.py:348-351` — `isinstance(list)` only), are stored, then silently dropped by `sanitizeDoc` on next load (round-trip data loss); `deps` never validated against node ids (dangling ids persist). Concrete evidence for B11's "narrower than docstring" status. | open |
+
+Minor (no IDs): N8 tiebreak fixed in `infra_diagrams` only — `page_layouts.py:146-149` still prunes on `created_at desc` alone; `page_layouts` never surfaces `snapshotFailed` (N7 parity); three coordinate ranges coexist (drag clamp ±200/1480 · `sanitizeDoc` ±50000 · backend any-finite); `forms.jsx` `Input` datetime branch drops extra props (same family as the Select/Checkbox finding).
+
+### 15.5 Doc / claim corrections (applied this round)
+
+- **STATUS.md "Repo hygiene: only `main` remains" — wrong.** 3 extra local branches (`bevel-sandwich`, `unique-blade`, `chore/batch3-local-sync` @ a63d590, remote-gone/merged) and 3 extra worktrees exist; all at `main`'s commit, no unmerged work, stash empty, remote has `main` only. Corrected in STATUS.md.
+- **§14 O3 "(rules inert)" — wrong** (see A5-3); left in place as history, corrected here.
+- **ROADMAP.md staleness:** 33 unchecked items; 2 are factually done — expired-stock sweep `:155` (now calls `release_expired_stock_reservations` RPC) and CI-debt `:397` (mypy/bandit are blocking; the only `continue-on-error` left is `: false` for bandit). Marked done with dated notes. Header "as of 2026-09-04" predates its own 09-07/09-08 content; ~6 more items partially stale (firewall `:71-79` largely done 2026-09-24, `:321`, `:317`, `:423`, `:231`) — left for the owner's ROADMAP refresh.
+- All other STATUS.md/§14 claims verified CONFIRMED: test counts, npm audit counts, U4 missing env keys (12+ keys incl. `REDIS_URL`), U5 22/34 unreferenced scripts + unwired check scripts, O4 PyJWT 2.15-vs-2.14, mobile CI gap, Playwright-not-in-CI, SECRETS-ROTATION H1 pending, `app.json` frozen at 1.0.39.
+
+### 15.6 Grades & state
+
+Security **8.5/10** (no new HIGH; A5-1/A5-2 closed) · Maintainability **B** · Testing **B** (backend 213, frontend 132, mobile 18; S1/R2 still untested) · Operations **C+** (mobile pipeline still unverified — P0 stands).
+
+**Fixed this round (in worktree, uncommitted):** A5-1 + A5-2 with 10 new tests (`routers/seo_proxy.py`, `routers/fonts.py`, `tests/test_ssrf_routers.py`).
+**Next:** P0 mobile-release verification; A5-7 (re-attach on draft accept instead of `setDocId(null)`); A5-8 (no storage write in first-sync before stored value resolves); P2 list (§15.3); P1 O3 (add `npm test` + Playwright to mobile CI, remove the two invalid config keys); P3.
