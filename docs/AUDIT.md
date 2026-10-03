@@ -997,7 +997,7 @@ Verified safe, untouched: `fivem_connect` (HS256 via `jwt_compat`, payload `purp
 1. `confirm: true` still required (400 otherwise); local user row loaded (`id,username,banned,authentik_id`) → 404 if unknown.
 2. **Local enforcement first** — `users.banned = not enable`. `dependencies.get_current_user` rejects banned users site-wide (403 "Account suspended"), so the block holds even if Authentik is unreachable or the token is unset.
 3. **Authentik sync** (best-effort) when the row carries `authentik_id` (the user UUID `sub` written by the OIDC callback in `routers/authentik_oidc.py`):
-   - `AUTHENTIK_API_TOKEN` set → `PATCH {issuer}/api/v1/core/users/{uuid}/` `{"disabled": not enable}` with `Authorization: Bearer …`, 10 s timeout. Failure → **502** "Local change applied; Authentik sync failed: …" (local change stands; audited as `sync_failed`).
+   - `AUTHENTIK_API_TOKEN` set → `PATCH {issuer}/api/v3/core/users/{uuid}/` `{"disabled": not enable}` with `Authorization: Bearer …`, 10 s timeout. (v3 is the current Authentik API — the first draft used v1, which 404s on the 2025.10 deployment; caught during live verification on the VPS.) Failure → **502** "Local change applied; Authentik sync failed: …" (local change stands; audited as `sync_failed`).
    - token unset → **200** with `warning: "Authentik not synced (AUTHENTIK_API_TOKEN not set)"` (audited as `local_only`).
    - no `authentik_id` → local-only, no warning.
 4. Success audited as before (`identity_user_enable` / `identity_user_disable`) with the outcome.
