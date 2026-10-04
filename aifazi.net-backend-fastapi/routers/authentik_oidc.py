@@ -54,11 +54,19 @@ MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstri
 
 
 def _ak():
+    # Portal-over-env: site_config.settings.oauth.authentik wins over env vars
+    # so the admin panel is the single place to rotate the secret (the Oct 2026
+    # invalid_client incident was a DB↔env desync). Env stays as fallback.
+    try:
+        from routers.oauth_admin import get_authentik_config
+        merged = get_authentik_config()
+    except Exception:
+        merged = {}
     return {
-        "issuer": (os.getenv("AUTHENTIK_ISSUER") or "https://auth.aifazi.net").rstrip("/"),
-        "client_id": os.getenv("AUTHENTIK_CLIENT_ID", "aifazi-net"),
-        "client_secret": os.getenv("AUTHENTIK_CLIENT_SECRET", ""),
-        "redirect_uri": os.getenv(
+        "issuer": (merged.get("issuer") or os.getenv("AUTHENTIK_ISSUER") or "https://auth.aifazi.net").rstrip("/"),
+        "client_id": merged.get("client_id") or os.getenv("AUTHENTIK_CLIENT_ID", "aifazi-net"),
+        "client_secret": merged.get("client_secret") or os.getenv("AUTHENTIK_CLIENT_SECRET", ""),
+        "redirect_uri": merged.get("redirect_uri") or os.getenv(
             "AUTHENTIK_REDIRECT_URI",
             f"{API_URL}/api/auth/authentik/callback",
         ),
@@ -76,6 +84,24 @@ def _authorize_url(state: str) -> str:
     })
     # Authentik application slug path
     return f"{cfg['issuer']}/application/o/authorize/?{params}"
+
+
+def _ak_fail(request: Request, front: str, m_login: str, code: str, username: str = ""):
+    """Log an Authentik login/connect failure to auth_logs (never raises) and
+    build the error redirect. These rows feed the admin Identity panel's
+    sign-in activity feed, so a future invalid_client-style outage is visible
+    in the panel without VPS log access."""
+    try:
+        ip = request.client.host if getattr(request, "client", None) else ""
+    except Exception:
+        ip = ""
+    try:
+        ua = (request.headers.get("user-agent", "") or "")[:200]
+    except Exception:
+        ua = ""
+    _auth_log(username or "unknown", success=False, ip=ip or "", user_agent=ua,
+              reason=f"authentik_error={code}")
+    return _Redir(f"{front}{m_login}?authentik_error={code}")
 
 
 @router.get("/authentik/login")
@@ -126,7 +152,7 @@ async def authentik_callback(
     if not _httpx:
         raise HTTPException(500, "httpx not installed")
     if error or not code:
-        return _Redir(f"{SITE_URL}/login?authentik_error=1")
+        return _ak_fail(request, SITE_URL, "/login", "1")
 
     dest = "/forum/profile"
     mode = "login"
@@ -144,13 +170,13 @@ async def authentik_callback(
                 connect_user_id = parts[1]
                 dest = _safe_relative_path(parts[2], default="/profile")
         except ValueError:
-            return _Redir(f"{SITE_URL}/login?authentik_error=state")
+            return _ak_fail(request, SITE_URL, "/login", "state")
     else:
         try:
             st = verify_oauth_state_full(state_value, "authentik")
             dest = str(st.get("dest") or dest)
         except ValueError:
-            return _Redir(f"{SITE_URL}/login?authentik_error=state")
+            return _ak_fail(request, SITE_URL, "/login", "state")
 
     front = SITE_URL
     if st.get("mobile"):
@@ -170,13 +196,13 @@ async def authentik_callback(
             }, headers={"Content-Type": "application/x-www-form-urlencoded"}, timeout=15)
         if tok.status_code != 200:
             log.error("Authentik token exchange failed: %s %s", tok.status_code, tok.text[:200])
-            return _Redir(f"{front}{m_login}?authentik_error=2")
+            return _ak_fail(request, front, m_login, "2")
         access_token = tok.json().get("access_token")
         if not access_token:
-            return _Redir(f"{front}{m_login}?authentik_error=2")
+            return _ak_fail(request, front, m_login, "2")
     except Exception as exc:
         log.error("Authentik token exchange exception: %s", exc)
-        return _Redir(f"{front}{m_login}?authentik_error=2")
+        return _ak_fail(request, front, m_login, "2")
 
     userinfo_url = f"{cfg['issuer']}/application/o/userinfo/"
     try:
@@ -184,7 +210,7 @@ async def authentik_callback(
             me = await c.get(userinfo_url, headers={"Authorization": f"Bearer {access_token}"}, timeout=15)
         if me.status_code != 200:
             log.error("Authentik userinfo failed: %s %s", me.status_code, me.text[:200])
-            return _Redir(f"{front}{m_login}?authentik_error=3")
+            return _ak_fail(request, front, m_login, "3")
         u = me.json()
         ak_sub = str(u.get("sub") or "")
         ak_email = (u.get("email") or "").strip().lower()
@@ -192,20 +218,20 @@ async def authentik_callback(
         ak_username = u.get("preferred_username") or ak_name or (ak_email.split("@")[0] if ak_email else "user")
     except Exception as exc:
         log.error("Authentik userinfo exception: %s", exc)
-        return _Redir(f"{front}{m_login}?authentik_error=3")
+        return _ak_fail(request, front, m_login, "3")
 
     if not ak_sub:
-        return _Redir(f"{front}{m_login}?authentik_error=3")
+        return _ak_fail(request, front, m_login, "3")
 
     now = datetime.now(timezone.utc).isoformat()
     try:
         if mode == "connect":
             current_user_id = connect_user_id
             if not current_user_id:
-                return _Redir(f"{SITE_URL}/profile?authentik_error=link")
+                return _ak_fail(request, SITE_URL, "/profile", "link")
             row = supabase.table("users").select("*").eq("id", current_user_id).execute()
             if not row.data:
-                return _Redir(f"{SITE_URL}/profile?authentik_error=missing")
+                return _ak_fail(request, SITE_URL, "/profile", "missing")
             user = row.data[0]
             supabase.table("users").update({
                 "authentik_id": ak_sub,
@@ -222,7 +248,8 @@ async def authentik_callback(
                 if ak_email:
                     user = _find_user_by_ci("email", ak_email, "*")
                     if user and not user.get("email_verified"):
-                        return _Redir(f"{SITE_URL}/login?authentik_error=email_unverified")
+                        return _ak_fail(request, SITE_URL, "/login", "email_unverified",
+                                        ak_email or ak_username)
                     if user:
                         _ensure_identity_available("authentik_id", ak_sub, user["id"], "Authentik account")
                         supabase.table("users").update({
@@ -245,15 +272,15 @@ async def authentik_callback(
                     }).execute()
                     user = row.data[0] if row.data else None
                     if not user:
-                        return _Redir(f"{front}{m_login}?authentik_error=db")
+                        return _ak_fail(request, front, m_login, "db", ak_username)
     except Exception as exc:
         log.error("Authentik callback db error: %s", exc)
-        return _Redir(f"{front}{m_login}?authentik_error=db")
+        return _ak_fail(request, front, m_login, "db")
 
     if not user:
-        return _Redir(f"{front}{m_login}?authentik_error=db")
+        return _ak_fail(request, front, m_login, "db")
     if user.get("banned"):
-        return _Redir(f"{front}{m_login}?authentik_error=banned")
+        return _ak_fail(request, front, m_login, "banned", user.get("username") or "")
 
     if mode != "connect" and user.get("totp_enabled") and user.get("totp_secret"):
         partial = make_forum_2fa_token(user["id"], user["username"], user.get("role", "user"), "authentik")
@@ -302,7 +329,7 @@ async def authentik_callback(
             code = issue_code("authentik", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
         except Exception:
             log.error("authentik mobile code issue failed", exc_info=True)
-            return _Redir(f"{front}{m_login}?authentik_error=db")
+            return _ak_fail(request, front, m_login, "db", user.get("username") or "")
         return _Redir(front + mobile_fragment(code, safe_dest) + state_echo(st.get("extra")))
     safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
     sep = "&" if "?" in safe_dest else "?"

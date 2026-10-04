@@ -8,9 +8,12 @@ Migration: none beyond the existing site_config.settings JSONB column.
 """
 from __future__ import annotations
 
+import asyncio
 import ipaddress
+import os
 import re
 import secrets
+import socket
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -21,6 +24,11 @@ from database import supabase
 from dependencies import require_admin
 from utils.audit import record as _audit
 from utils.ssrf import is_blocked_ip, resolve_public_ips
+
+try:
+    import httpx as _httpx
+except ImportError:
+    _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
 router = APIRouter()
 
@@ -265,6 +273,7 @@ async def get_oauth_settings(request: Request, staff: dict = Depends(require_adm
             "bind_password_masked": _mask_secret(ldap.get("bind_password")),
         },
         "lldap_healthy": ldap_ok,
+        "upstream": upstream_public(),
         "clients": clients,
         "providers": providers_out,
         "endpoints": {
@@ -342,31 +351,272 @@ async def put_provider(name: str, body: ProviderIn, request: Request, staff: dic
 
 
 @router.post("/test-ldap")
-async def test_ldap(request: Request, staff: dict = Depends(require_admin)):
+async def test_ldap(request: Request, body: dict | None = None, staff: dict = Depends(require_admin)):
+    """Probe LLDAP with staged diagnostics. Accepts an optional inline
+    `{lldap: {...}}` body so the panel can test *draft* values without saving
+    first; otherwise probes the saved config. Never persists anything."""
     cfg = get_oauth_config()
-    ldap = cfg.get("lldap") or {}
-    import os
-    prev = {k: os.getenv(k) for k in ("LLDAP_URL", "LLDAP_BIND_DN", "LLDAP_BIND_PASSWORD", "LLDAP_BASE_DN")}
+    saved = dict(cfg.get("lldap") or {})
+    inline = ((body or {}).get("lldap") or {}) if isinstance(body, dict) else {}
+    if not isinstance(inline, dict):
+        inline = {}
+    eff = {**saved, **{k: v for k, v in inline.items() if v != "" or k == "bind_password"}}
+    if inline.get("url"):
+        try:
+            eff["url"] = _validate_ldap_url(str(inline["url"]))
+        except HTTPException as exc:
+            return {"ok": False, "steps": [_step("validate", False, exc.detail,
+                                                  "Use ldap:// or ldaps:// with a reachable host")],
+                    "message": exc.detail}
+    url = eff.get("url") or "ldap://lldap:3890"
+    result = _probe_lldap_staged(
+        url,
+        eff.get("bind_dn") or "",
+        eff.get("bind_password") or "",
+        eff.get("base_dn") or "dc=aifazi,dc=net",
+        eff.get("users_ou") or "",
+    )
+    if result["ok"]:
+        return {**result, "message": "LLDAP service bind + search succeeded"}
+    first_fail = next((s for s in result["steps"] if not s["ok"]), {})
+    return {**result, "message": f"LLDAP check failed at {first_fail.get('name', 'probe')}: {first_fail.get('detail', '')}"}
+
+
+def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
+                         users_ou: str, timeout: float = 5.0) -> dict:
+    """Layer-by-layer LLDAP probe so the panel can say *which* layer fails
+    (DNS → TCP → bind → search) instead of a bare boolean."""
+    steps: list[dict] = []
     try:
-        if ldap.get("url"):
-            os.environ["LLDAP_URL"] = ldap["url"]
-        if ldap.get("bind_dn"):
-            os.environ["LLDAP_BIND_DN"] = ldap["bind_dn"]
-        if ldap.get("bind_password"):
-            os.environ["LLDAP_BIND_PASSWORD"] = ldap["bind_password"]
-        if ldap.get("base_dn"):
-            os.environ["LLDAP_BASE_DN"] = ldap["base_dn"]
-        from utils.ldap_client import healthcheck
-        ok = healthcheck()
-    finally:
-        for k, v in prev.items():
-            if v is None:
-                os.environ.pop(k, None)
-            else:
-                os.environ[k] = v
-    if not ok:
-        raise HTTPException(502, "LLDAP bind failed — check URL, bind DN, and password")
-    return {"ok": True, "message": "LLDAP service bind succeeded"}
+        u = urlparse((url or "").strip())
+        host, port = u.hostname or "", u.port or 389
+        if u.scheme not in ("ldap", "ldaps") or not host:
+            raise ValueError("URL must be ldap(s)://host")
+    except Exception as exc:
+        return {"ok": False, "steps": [_step("parse", False, str(exc)[:150],
+                                              "Use the form ldap://host:port")]}
+    try:
+        infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+        steps.append(_step("dns", True, f"{host} → {infos[0][4][0]}"))
+    except Exception as exc:
+        return {"ok": False, "steps": [_step(
+            "dns", False, f"Cannot resolve {host}: {str(exc)[:120]}",
+            "Fix the LDAP URL host; for the bundled service use ldap://lldap:3890")]}
+    try:
+        sock = socket.create_connection((host, port), timeout=timeout)
+        sock.close()
+        steps.append(_step("tcp", True, f"{host}:{port} accepts connections"))
+    except Exception as exc:
+        steps.append(_step("tcp", False, f"{type(exc).__name__}: {str(exc)[:120]}",
+                            "The directory is down or unreachable from the backend network"))
+        return {"ok": False, "steps": steps}
+    if not bind_dn or not bind_pw:
+        steps.append(_step("bind", False, "Bind DN or password is empty",
+                            "Enter the service bind credentials"))
+        return {"ok": False, "steps": steps}
+    try:
+        from ldap3 import Connection, Server  # type: ignore
+        server = Server(url, connect_timeout=timeout)
+        conn = Connection(server, user=bind_dn, password=bind_pw,
+                          auto_bind=True, receive_timeout=timeout)
+    except Exception as exc:
+        kind = type(exc).__name__
+        if "Bind" in kind:
+            steps.append(_step("bind", False, f"{kind}: credentials rejected",
+                                "Check the bind DN and password (not a user password)"))
+        else:
+            steps.append(_step("bind", False, f"{kind}: {str(exc)[:120]}",
+                                "The server accepted TCP but the LDAP handshake failed"))
+        return {"ok": False, "steps": steps}
+    try:
+        search_base = base_dn or users_ou
+        conn.search(search_base=search_base, search_filter="(objectClass=*)",
+                    search_scope="BASE", attributes=["dn"], size_limit=1)
+        ok = bool(conn.entries)
+        conn.unbind()
+        if not ok:
+            steps.append(_step("search", False, f"Base DN {search_base} returned nothing",
+                                "Fix the Base DN (e.g. dc=aifazi,dc=net)"))
+            return {"ok": False, "steps": steps}
+        steps.append(_step("bind", True, f"Service bind as {bind_dn}"))
+        steps.append(_step("search", True, f"Base DN {search_base} is readable"))
+        return {"ok": True, "steps": steps}
+    except Exception as exc:
+        try:
+            conn.unbind()
+        except Exception:
+            pass
+        steps.append(_step("search", False, f"{type(exc).__name__}: {str(exc)[:120]}",
+                            "The bind worked but the Base DN search failed — fix Base DN"))
+        return {"ok": False, "steps": steps}
+
+
+# ── Social provider credential verification (no user login required) ──────────
+
+def _provider_resolved(pid: str) -> dict:
+    """Portal-or-env credentials for one social provider (values included —
+    internal use; the GET shape stays masked via upstream-style fields)."""
+    cfg = get_oauth_config()
+    stored = (cfg.get("providers") or {}).get(pid) or {}
+    client_id = (stored.get("client_id") or os.getenv(
+        {"discord": "DISCORD_CLIENT_ID", "github": "GITHUB_CLIENT_ID"}.get(pid, ""), "") or "").strip()
+    secret = (stored.get("client_secret") or os.getenv(
+        {"discord": "DISCORD_CLIENT_SECRET", "github": "GITHUB_CLIENT_SECRET"}.get(pid, ""), "") or "").strip()
+    api_key = (stored.get("api_key") or os.getenv("STEAM_API_KEY", "") or "").strip()
+    return {
+        "client_id": client_id,
+        "secret": secret,
+        "api_key": api_key,
+        "redirect_uri": stored.get("redirect_uri") or "",
+        "enabled": bool(stored.get("enabled", True)),
+        "configured": bool(api_key) if pid == "steam" else bool(client_id and secret),
+        "source": "portal" if (stored.get("client_id") or stored.get("api_key")) else "env",
+    }
+
+
+async def _test_provider_creds(pid: str, creds: dict) -> dict:
+    """Verify a provider's credentials server-to-server (no user involved).
+
+    Discord: client_credentials grant. GitHub: basic-auth rate_limit probe.
+    Steam: GetServerInfo key probe. Returns {ok, detail, hint}."""
+    if _httpx is None:
+        return {"ok": False, "detail": "httpx is not installed",
+                "hint": "Install httpx in the backend image to enable probing"}
+    try:
+        async with _httpx.AsyncClient(timeout=10) as c:
+            if pid == "discord":
+                r = await c.post(
+                    "https://discord.com/api/oauth2/token",
+                    data={"grant_type": "client_credentials", "scope": "identify"},
+                    auth=(creds["client_id"], creds["secret"]),
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
+                )
+                if r.status_code == 200:
+                    return {"ok": True, "detail": "Discord accepted the app credentials"}
+                return {"ok": False,
+                        "detail": f"Discord rejected the credentials (HTTP {r.status_code})",
+                        "hint": "Check the client ID/secret in the Discord developer portal"}
+            if pid == "github":
+                r = await c.get(
+                    "https://api.github.com/rate_limit",
+                    auth=(creds["client_id"], creds["secret"]),
+                    headers={"Accept": "application/vnd.github+json",
+                             "User-Agent": "aifazi-admin-probe"},
+                )
+                if r.status_code == 200:
+                    return {"ok": True, "detail": "GitHub accepted the OAuth app credentials"}
+                if r.status_code == 401:
+                    return {"ok": False, "detail": "GitHub rejected the credentials (401)",
+                            "hint": "Check the client ID/secret in GitHub developer settings"}
+                return {"ok": False, "detail": f"GitHub returned HTTP {r.status_code}",
+                        "hint": "Retry; check backend egress to api.github.com"}
+            if pid == "steam":
+                r = await c.get(
+                    "https://api.steampowered.com/ISteamWebAPIUtil/GetServerInfo/v1/",
+                    params={"key": creds["api_key"]},
+                )
+                try:
+                    body = r.json() if r.status_code == 200 else {}
+                except Exception:
+                    body = {}
+                if r.status_code == 200 and body.get("servertime"):
+                    return {"ok": True, "detail": "Steam accepted the Web API key"}
+                return {"ok": False,
+                        "detail": f"Steam rejected the key (HTTP {r.status_code})",
+                        "hint": "Check the key at steamcommunity.com/dev/apikey"}
+    except Exception as exc:
+        return {"ok": False, "detail": f"{type(exc).__name__}: {str(exc)[:150]}",
+                "hint": "Network/proxy issue from the backend — retry"}
+    return {"ok": False, "detail": f"Unknown provider {pid}", "hint": ""}
+
+
+@router.post("/providers/{name}/test")
+async def test_provider(name: str, staff: dict = Depends(require_admin)):
+    if name not in _SOCIAL_PROVIDERS:
+        raise HTTPException(404, "Unknown provider")
+    creds = _provider_resolved(name)
+    if not creds["configured"]:
+        raise HTTPException(400, f"{name} is not configured — save credentials first")
+    result = await _test_provider_creds(name, creds)
+    _audit(staff.get("username", ""), "settings_update", target=f"oauth_provider_test:{name}",
+           details={"ok": result["ok"]})
+    return {"ok": result["ok"], "detail": result.get("detail", ""),
+            "hint": result.get("hint", "")}
+
+
+@router.post("/clients/{client_id}/rotate")
+async def rotate_client(client_id: str, request: Request, staff: dict = Depends(require_admin)):
+    """Generate a fresh server-side secret for a confidential client. Returns
+    the plaintext exactly once (the panel shows a copy-now box); the old
+    secret stops working immediately — the confirm dialog states this."""
+    cfg = get_oauth_config()
+    clients = cfg.setdefault("clients", {})
+    if client_id not in clients:
+        raise HTTPException(404, "Client not found")
+    if clients[client_id].get("public"):
+        raise HTTPException(400, "Public clients have no secret to rotate")
+    secret = secrets.token_urlsafe(32)
+    clients[client_id]["secret"] = secret
+    save_oauth_config(cfg)
+    _audit(staff.get("username", ""), "settings_update", target="oauth_client_rotate",
+           details={"client_id": client_id})
+    return {"client_id": client_id, "secret": secret, "secret_masked": _mask_secret(secret)}
+
+
+@router.get("/health")
+async def health(request: Request, staff: dict = Depends(require_admin)):
+    """One-call doctor for the Identity panel Overview tab. Probes run live
+    (each step has its own timeout); providers are checked concurrently.
+    Skipped (not failed) when a subsystem is unconfigured or disabled."""
+    cfg = get_oauth_config()
+    out: dict = {"generated_at": datetime.now(timezone.utc).isoformat()}
+
+    ldap = dict(cfg.get("lldap") or {})
+    ldap_enabled = bool(ldap.get("enabled", True))
+    if not ldap_enabled:
+        out["lldap"] = {"status": "disabled", "enabled": False, "steps": []}
+    else:
+        probe = _probe_lldap_staged(
+            ldap.get("url") or "ldap://lldap:3890",
+            ldap.get("bind_dn") or "",
+            ldap.get("bind_password") or "",
+            ldap.get("base_dn") or "dc=aifazi,dc=net",
+            ldap.get("users_ou") or "",
+        )
+        out["lldap"] = {"status": "ok" if probe["ok"] else "error",
+                        "enabled": True, "steps": probe["steps"]}
+
+    ak = get_authentik_config()
+    if not ak.get("client_secret"):
+        out["upstream"] = {"status": "unconfigured", "configured": False, "steps": [],
+                           "hint": ("Save the client secret in the Upstream IdP tab"
+                                    if ak.get("client_id") else
+                                    "Set issuer, client ID and secret in the Upstream IdP tab")}
+    else:
+        steps = await _probe_authentik(ak)
+        steps.append(_step("client_secret", bool(ak.get("client_secret")),
+                           "Secret is set" if ak.get("client_secret") else "No client secret stored",
+                           "" if ak.get("client_secret")
+                           else "Save the Authentik provider secret, then watch signals"))
+        out["upstream"] = {"status": "ok" if all(s["ok"] for s in steps) else "error",
+                           "configured": True, "steps": steps}
+
+    async def _one(pid: str):
+        creds = _provider_resolved(pid)
+        if not creds["configured"]:
+            return pid, {"status": "unconfigured", "detail": "No credentials saved or in env"}
+        if not creds["enabled"]:
+            return pid, {"status": "disabled", "detail": "Disabled in the panel"}
+        r = await _test_provider_creds(pid, creds)
+        return pid, {"status": "ok" if r["ok"] else "error",
+                     "detail": r.get("detail", ""), "hint": r.get("hint", "")}
+
+    providers = dict(zip(_SOCIAL_PROVIDERS,
+                         await asyncio.gather(*[_one(pid) for pid in _SOCIAL_PROVIDERS])))
+    out["providers"] = {pid: status for pid, (_, status) in providers.items()}
+    clients = cfg.get("clients") or {}
+    out["clients"] = {"count": len(clients)}
+    return out
 
 
 @router.post("/clients")
@@ -441,3 +691,255 @@ async def delete_client(client_id: str, request: Request, staff: dict = Depends(
     save_oauth_config(cfg)
     _audit(staff.get("username", ""), "settings_update", target="oauth_client_delete", details={"client_id": client_id})
     return {"ok": True}
+
+
+# ── Upstream IdP (Authentik) — portal-over-env single source of truth ─────────
+# The Oct 2026 `invalid_client` incident was a DB↔env client-secret desync that
+# could only be fixed with VPS psql + Coolify env edits. Portal values stored in
+# site_config.settings.oauth.authentik now win over env vars, so rotation is a
+# single panel edit. Env remains as fallback (a bad portal value can be cleared
+# back to env). Every resolver below reports its per-field source so the panel
+# can show exactly which source is active.
+
+_AUTHENTIK_DEFAULTS = {
+    "issuer": "https://auth.aifazi.net",
+    "client_id": "aifazi-net",
+}
+
+
+def _portal_or_env(stored: dict, key: str, env_key: str, default: str = "") -> tuple[str, str]:
+    """Return (value, source) where source is portal|env|default."""
+    portal_val = (stored.get(key) or "").strip() if isinstance(stored.get(key), str) else stored.get(key)
+    if portal_val:
+        return str(portal_val), "portal"
+    env_val = (os.getenv(env_key, "") or "").strip()
+    if env_val:
+        return env_val, "env"
+    return default, "default"
+
+
+def get_authentik_config() -> dict:
+    """Merged Authentik config for backend + panel use.
+
+    Values: portal wins over env wins over built-in defaults. `sources` maps
+    each field to portal|env|default. Secrets are included in full — callers
+    serving this to the browser must mask (see `upstream_public()`).
+    """
+    stored = (get_oauth_config().get("authentik") or {})
+    if not isinstance(stored, dict):
+        stored = {}
+    issuer, issuer_src = _portal_or_env(stored, "issuer", "AUTHENTIK_ISSUER", _AUTHENTIK_DEFAULTS["issuer"])
+    client_id, client_id_src = _portal_or_env(stored, "client_id", "AUTHENTIK_CLIENT_ID", _AUTHENTIK_DEFAULTS["client_id"])
+    client_secret, secret_src = _portal_or_env(stored, "client_secret", "AUTHENTIK_CLIENT_SECRET", "")
+    redirect_uri, redirect_src = _portal_or_env(stored, "redirect_uri", "AUTHENTIK_REDIRECT_URI", "")
+    api_token, token_src = _portal_or_env(stored, "api_token", "AUTHENTIK_API_TOKEN", "")
+    return {
+        "issuer": issuer.rstrip("/"),
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "redirect_uri": redirect_uri,
+        "api_token": api_token,
+        "sources": {
+            "issuer": issuer_src,
+            "client_id": client_id_src,
+            "client_secret": secret_src,
+            "redirect_uri": redirect_src,
+            "api_token": token_src,
+        },
+    }
+
+
+def get_authentik_api_token() -> str:
+    """Admin-API bearer: portal value wins, env fallback (no default)."""
+    try:
+        return get_authentik_config().get("api_token") or ""
+    except Exception:
+        return (os.getenv("AUTHENTIK_API_TOKEN", "") or "").strip()
+
+
+def upstream_public() -> dict:
+    """Masked upstream block for the admin panel (never ships secrets)."""
+    cfg = get_authentik_config()
+    secret = cfg.get("client_secret") or ""
+    token = cfg.get("api_token") or ""
+    return {
+        "issuer": cfg.get("issuer") or "",
+        "client_id": cfg.get("client_id") or "",
+        "client_secret_set": bool(secret),
+        "client_secret_masked": _mask_secret(secret),
+        "redirect_uri": cfg.get("redirect_uri") or "",
+        "api_token_set": bool(token),
+        "api_token_masked": _mask_secret(token),
+        "sources": cfg.get("sources") or {},
+        "configured": bool(cfg.get("client_id") and secret),
+    }
+
+
+def _validate_issuer(raw: str) -> str:
+    value = (raw or "").strip().rstrip("/")
+    try:
+        u = urlparse(value)
+    except Exception:
+        raise HTTPException(400, f"Invalid issuer URL: {value[:80]}")
+    if u.scheme != "https" or not u.hostname:
+        raise HTTPException(400, "Issuer must be an https URL with a host")
+    host = u.hostname.lower()
+    if host == "localhost" or host in _METADATA_HOSTS:
+        raise HTTPException(400, f"Issuer host not allowed: {host}")
+    return value
+
+
+class UpstreamIn(BaseModel):
+    issuer: str = Field("", max_length=256)
+    client_id: str = Field("", max_length=128)
+    client_secret: str = Field("", max_length=256)
+    redirect_uri: str = Field("", max_length=512)
+    api_token: str = Field("", max_length=256)
+
+
+@router.get("/upstream")
+async def get_upstream(staff: dict = Depends(require_admin)):
+    return upstream_public()
+
+
+@router.put("/upstream")
+async def put_upstream(body: UpstreamIn, request: Request, staff: dict = Depends(require_admin)):
+    cfg = get_oauth_config()
+    stored = dict(cfg.get("authentik") or {})
+    changed: list[str] = []
+    cleared: list[str] = []
+    if body.issuer:
+        stored["issuer"] = _validate_issuer(body.issuer)
+        changed.append("issuer")
+    if body.client_id:
+        stored["client_id"] = body.client_id.strip()
+        changed.append("client_id")
+    if body.client_secret == CLEAR_SENTINEL:
+        stored.pop("client_secret", None)
+        cleared.append("client_secret")
+    elif body.client_secret:
+        stored["client_secret"] = body.client_secret
+        changed.append("client_secret")
+    if body.redirect_uri:
+        stored["redirect_uri"] = _validate_public_https_uri(body.redirect_uri)
+        changed.append("redirect_uri")
+    if body.api_token == CLEAR_SENTINEL:
+        stored.pop("api_token", None)
+        cleared.append("api_token")
+    elif body.api_token:
+        stored["api_token"] = body.api_token
+        changed.append("api_token")
+    cfg["authentik"] = stored
+    save_oauth_config(cfg)
+    _audit(staff.get("username", ""), "settings_update", target="oauth_upstream",
+           details={"changed": changed, "cleared": cleared})
+    return upstream_public()
+
+
+def _step(name: str, ok: bool, detail: str = "", hint: str = "") -> dict:
+    return {"name": name, "ok": bool(ok), "detail": str(detail)[:250], "hint": hint}
+
+
+async def _probe_authentik(cfg: dict) -> list[dict]:
+    """Staged upstream check: discovery → JWKS → authorize smoke.
+
+    The client *secret* cannot be verified without a real user login (Authentik
+    2025.10 exposes no secret-read API), so the authorize smoke only proves the
+    client_id is registered; secret health is reported via signals() instead.
+    """
+    steps: list[dict] = []
+    if _httpx is None:
+        return [_step("http-client", False, "httpx is not installed",
+                       "Install httpx in the backend image to enable probing")]
+    issuer = (cfg.get("issuer") or "").rstrip("/")
+    if not issuer:
+        return [_step("issuer", False, "No issuer configured", "Set the issuer in the Upstream IdP tab")]
+    try:
+        async with _httpx.AsyncClient(timeout=8, follow_redirects=True) as c:
+            try:
+                r = await c.get(f"{issuer}/.well-known/openid-configuration")
+                doc = r.json() if r.status_code == 200 else {}
+            except Exception as exc:
+                return [_step("discovery", False, f"Unreachable: {type(exc).__name__}: {str(exc)[:120]}",
+                               "Check the issuer URL and that Authentik is running")]
+            if r.status_code != 200 or not doc.get("token_endpoint"):
+                steps.append(_step("discovery", False, f"HTTP {r.status_code} — no token_endpoint in discovery doc",
+                                   "The issuer must serve OIDC discovery; check the URL"))
+                return steps
+            steps.append(_step("discovery", True, f"token_endpoint {doc.get('token_endpoint')}"))
+            jwks_uri = doc.get("jwks_uri") or f"{issuer}/application/o/jwks/"
+            try:
+                jr = await c.get(jwks_uri)
+                keys = (jr.json() if jr.status_code == 200 else {}).get("keys") or []
+            except Exception as exc:
+                steps.append(_step("jwks", False, f"Fetch failed: {type(exc).__name__}",
+                                   "JWKS must be reachable for token verification"))
+                return steps
+            if jr.status_code != 200 or not keys:
+                steps.append(_step("jwks", False, f"HTTP {jr.status_code} — empty key set",
+                                   "Check the Authentik provider signing settings"))
+                return steps
+            steps.append(_step("jwks", True, f"{len(keys)} signing key(s)"))
+            client_id = cfg.get("client_id") or ""
+            if not client_id:
+                steps.append(_step("authorize", False, "No client_id configured", "Set the client ID first"))
+                return steps
+            from urllib.parse import urlencode as _urlencode
+            auth_url = (f"{issuer}/application/o/authorize/?" + _urlencode({
+                "client_id": client_id,
+                "redirect_uri": cfg.get("redirect_uri") or f"{issuer}/",
+                "response_type": "code",
+                "scope": "openid",
+                "state": "healthcheck",
+            }))
+            try:
+                ar = await c.get(auth_url)
+            except Exception as exc:
+                steps.append(_step("authorize", False, f"Unreachable: {type(exc).__name__}",
+                                   "Discovery worked but authorize did not respond"))
+                return steps
+            if ar.status_code == 200:
+                steps.append(_step("authorize", True, "Authorize endpoint serves the login flow — client_id is registered"))
+            else:
+                steps.append(_step("authorize", False, f"HTTP {ar.status_code} — client_id likely not registered under this issuer",
+                                   "Create the OAuth2 provider + application in Authentik with this client ID"))
+    except Exception as exc:
+        steps.append(_step("probe", False, f"{type(exc).__name__}: {str(exc)[:150]}", "Retry; check backend egress"))
+    return steps
+
+
+@router.post("/upstream/verify")
+async def verify_upstream(staff: dict = Depends(require_admin)):
+    cfg = get_authentik_config()
+    steps = await _probe_authentik(cfg)
+    return {"ok": all(s["ok"] for s in steps), "steps": steps}
+
+
+@router.get("/upstream/signals")
+async def upstream_signals(staff: dict = Depends(require_admin)):
+    """Secret health via observed logins: the secret itself is unreadable, so a
+    fresh successful login is the proof it matches, and a stall is the alarm."""
+    out: dict = {"last_success_at": None, "last_success_user": None,
+                 "linked_recent": 0, "recent_logins": []}
+    try:
+        res = supabase.table("users").select("username,last_seen,authentik_id") \
+            .order("last_seen", desc=True).limit(200).execute()
+        linked = [r for r in (res.data or []) if r.get("authentik_id")]
+        out["linked_recent"] = len(linked)
+        fresh = [r for r in linked if r.get("last_seen")]
+        if fresh:
+            out["last_success_at"] = fresh[0].get("last_seen")
+            out["last_success_user"] = fresh[0].get("username")
+    except Exception as exc:
+        out["users_error"] = str(exc)[:150]
+    try:
+        res = supabase.table("audit_logs").select("actor,action,created_at") \
+            .in_("action", ["authentik_login", "authentik_connect"]) \
+            .order("created_at", desc=True).limit(5).execute()
+        out["recent_logins"] = [
+            {"at": r.get("created_at"), "user": r.get("actor"), "action": r.get("action")}
+            for r in (res.data or [])
+        ]
+    except Exception as exc:
+        out["audit_error"] = str(exc)[:150]
+    return out
