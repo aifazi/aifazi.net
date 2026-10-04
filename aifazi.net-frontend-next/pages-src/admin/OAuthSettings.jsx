@@ -368,6 +368,7 @@ function OAuthSettings() {
         client_secret: upDraft.client_secret || '',
         redirect_uri: upDraft.redirect_uri || '',
         api_token: upDraft.api_token || '',
+        provider_slug: upDraft.provider_slug || '',
       })
       setCfg(p => ({ ...p, upstream: r.data }))
       setUpDraft({})
@@ -796,10 +797,18 @@ function OAuthSettings() {
             <Input style={inputStyle} type="password" value={upDraft.api_token ?? ''} onChange={v => setUp('api_token', v)}
               placeholder={up.api_token_set ? 'Leave blank to keep' : 'Authentik API token'} />
           </div>
-          <div style={{ gridColumn: isMobile ? '1' : '1 / -1' }}>
+          <div>
             <label style={labelStyle}>Callback / redirect URI (must match Authentik exactly) <SourceBadge source={upSrc.redirect_uri} /></label>
             <Input style={inputStyle} value={upDraft.redirect_uri ?? ''} onChange={v => setUp('redirect_uri', v)}
               placeholder={up.redirect_uri || 'https://api.aifazi.net/api/auth/authentik/callback'} />
+          </div>
+          <div>
+            <label style={labelStyle}>Provider slug <SourceBadge source={upSrc.provider_slug} /></label>
+            <Input style={inputStyle} value={upDraft.provider_slug ?? ''} onChange={v => setUp('provider_slug', v)}
+              placeholder={up.provider_slug || 'Authentik application slug, e.g. aifazi-net'} />
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
+              Needed for discovery + JWKS checks (they live under /application/o/&lt;slug&gt;/).
+            </div>
           </div>
         </div>
 

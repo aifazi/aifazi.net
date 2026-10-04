@@ -401,7 +401,9 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
     except Exception as exc:
         return {"ok": False, "steps": [_step(
             "dns", False, f"Cannot resolve {host}: {str(exc)[:120]}",
-            "Fix the LDAP URL host; for the bundled service use ldap://lldap:3890")]}
+            f"'{host}' is not reachable from the backend container — use the actual "
+            "directory service hostname/IP on the backend Docker network (Coolify "
+            "service name), or turn the directory off if unused")]}
     try:
         sock = socket.create_connection((host, port), timeout=timeout)
         sock.close()
@@ -733,18 +735,23 @@ def get_authentik_config() -> dict:
     client_secret, secret_src = _portal_or_env(stored, "client_secret", "AUTHENTIK_CLIENT_SECRET", "")
     redirect_uri, redirect_src = _portal_or_env(stored, "redirect_uri", "AUTHENTIK_REDIRECT_URI", "")
     api_token, token_src = _portal_or_env(stored, "api_token", "AUTHENTIK_API_TOKEN", "")
+    slug_raw = stored.get("provider_slug") or os.getenv("AUTHENTIK_PROVIDER_SLUG", "")
+    provider_slug = str(slug_raw or "").strip()
+    slug_src = "portal" if stored.get("provider_slug") else ("env" if os.getenv("AUTHENTIK_PROVIDER_SLUG", "").strip() else "default")
     return {
         "issuer": issuer.rstrip("/"),
         "client_id": client_id,
         "client_secret": client_secret,
         "redirect_uri": redirect_uri,
         "api_token": api_token,
+        "provider_slug": provider_slug,
         "sources": {
             "issuer": issuer_src,
             "client_id": client_id_src,
             "client_secret": secret_src,
             "redirect_uri": redirect_src,
             "api_token": token_src,
+            "provider_slug": slug_src,
         },
     }
 
@@ -770,6 +777,7 @@ def upstream_public() -> dict:
         "redirect_uri": cfg.get("redirect_uri") or "",
         "api_token_set": bool(token),
         "api_token_masked": _mask_secret(token),
+        "provider_slug": cfg.get("provider_slug") or "",
         "sources": cfg.get("sources") or {},
         "configured": bool(cfg.get("client_id") and secret),
     }
@@ -795,6 +803,7 @@ class UpstreamIn(BaseModel):
     client_secret: str = Field("", max_length=256)
     redirect_uri: str = Field("", max_length=512)
     api_token: str = Field("", max_length=256)
+    provider_slug: str = Field("", max_length=128)  # Authentik application slug for discovery/JWKS
 
 
 @router.get("/upstream")
@@ -829,6 +838,9 @@ async def put_upstream(body: UpstreamIn, request: Request, staff: dict = Depends
     elif body.api_token:
         stored["api_token"] = body.api_token
         changed.append("api_token")
+    if body.provider_slug:
+        stored["provider_slug"] = body.provider_slug.strip().strip("/")
+        changed.append("provider_slug")
     cfg["authentik"] = stored
     save_oauth_config(cfg)
     _audit(staff.get("username", ""), "settings_update", target="oauth_upstream",
@@ -854,29 +866,59 @@ async def _probe_authentik(cfg: dict) -> list[dict]:
     issuer = (cfg.get("issuer") or "").rstrip("/")
     if not issuer:
         return [_step("issuer", False, "No issuer configured", "Set the issuer in the Upstream IdP tab")]
+    # Authentik serves OIDC discovery per application slug —
+    # /application/o/<slug>/.well-known/openid-configuration — and 404s the
+    # root /.well-known path. Try the slug URL first when known.
+    slug = (cfg.get("provider_slug") or "").strip().strip("/")
+    candidates = ([f"{issuer}/application/o/{slug}/.well-known/openid-configuration"] if slug else [])
+    candidates.append(f"{issuer}/.well-known/openid-configuration")
     try:
         async with _httpx.AsyncClient(timeout=8, follow_redirects=True) as c:
-            try:
-                r = await c.get(f"{issuer}/.well-known/openid-configuration")
-                doc = r.json() if r.status_code == 200 else {}
-            except Exception as exc:
-                return [_step("discovery", False, f"Unreachable: {type(exc).__name__}: {str(exc)[:120]}",
-                               "Check the issuer URL and that Authentik is running")]
-            if r.status_code != 200 or not doc.get("token_endpoint"):
-                steps.append(_step("discovery", False, f"HTTP {r.status_code} — no token_endpoint in discovery doc",
-                                   "The issuer must serve OIDC discovery; check the URL"))
+            doc: dict = {}
+            tried: list[str] = []
+            for disco_url in candidates:
+                try:
+                    r = await c.get(disco_url)
+                    tried.append(f"{disco_url} → HTTP {r.status_code}")
+                    if r.status_code == 200:
+                        maybe = r.json()
+                        if isinstance(maybe, dict) and maybe.get("token_endpoint"):
+                            doc = maybe
+                            break
+                except Exception as exc:
+                    tried.append(f"{disco_url} → {type(exc).__name__}")
+                    return [_step("discovery", False, f"Unreachable: {type(exc).__name__}: {str(exc)[:120]}",
+                                   "Check the issuer URL and that Authentik is running")]
+            if not doc:
+                hint = ("Set the Authentik application slug in the Upstream IdP tab — "
+                        "discovery lives at /application/o/<slug>/.well-known/openid-configuration"
+                        if not slug else
+                        "Check the application slug and that its provider exposes OIDC discovery")
+                steps.append(_step("discovery", False,
+                                   f"No token_endpoint in discovery doc ({'; '.join(tried)})", hint))
                 return steps
             steps.append(_step("discovery", True, f"token_endpoint {doc.get('token_endpoint')}"))
-            jwks_uri = doc.get("jwks_uri") or f"{issuer}/application/o/jwks/"
-            try:
-                jr = await c.get(jwks_uri)
-                keys = (jr.json() if jr.status_code == 200 else {}).get("keys") or []
-            except Exception as exc:
-                steps.append(_step("jwks", False, f"Fetch failed: {type(exc).__name__}",
-                                   "JWKS must be reachable for token verification"))
-                return steps
-            if jr.status_code != 200 or not keys:
-                steps.append(_step("jwks", False, f"HTTP {jr.status_code} — empty key set",
+            jwks_candidates = [u for u in [
+                doc.get("jwks_uri"),
+                f"{issuer}/application/o/{slug}/jwks/" if slug else "",
+                f"{issuer}/application/o/jwks/",
+            ] if u]
+            keys: list = []
+            jwks_status = 0
+            for jwks_uri in jwks_candidates:
+                try:
+                    jr = await c.get(jwks_uri)
+                    jwks_status = jr.status_code
+                    body = jr.json() if jr.status_code == 200 else {}
+                    if isinstance(body, dict) and body.get("keys"):
+                        keys = body["keys"]
+                        break
+                except Exception as exc:
+                    steps.append(_step("jwks", False, f"Fetch failed: {type(exc).__name__}",
+                                       "JWKS must be reachable for token verification"))
+                    return steps
+            if not keys:
+                steps.append(_step("jwks", False, f"HTTP {jwks_status} — empty key set",
                                    "Check the Authentik provider signing settings"))
                 return steps
             steps.append(_step("jwks", True, f"{len(keys)} signing key(s)"))

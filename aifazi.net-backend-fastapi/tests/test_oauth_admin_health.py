@@ -463,3 +463,48 @@ def test_health_skips_unconfigured_without_network(monkeypatch):
     assert body["clients"]["count"] == 0
     assert body["generated_at"]
 
+
+# ── provider slug (Authentik serves discovery per application slug) ──────────
+
+def test_upstream_put_slug(monkeypatch):
+    _, client, store, _ = _load(monkeypatch, {"settings": _settings()})
+    r = client.put("/admin/oauth/upstream", json={"provider_slug": "myapp"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["provider_slug"] == "myapp"
+    assert body["sources"]["provider_slug"] == "portal"
+    assert store["settings"]["oauth"]["authentik"]["provider_slug"] == "myapp"
+
+
+def test_upstream_verify_slug_discovery_when_root_404s(monkeypatch):
+    # Stock Authentik 404s the root /.well-known path; the probe must fall
+    # through to /application/o/<slug>/.well-known/openid-configuration.
+    base = "https://auth.example.com"
+    routes = {
+        ("GET", f"{base}/.well-known/openid-configuration"): _FakeResp(404, {}),
+        ("GET", f"{base}/application/o/myapp/.well-known/openid-configuration"): _FakeResp(200, {
+            "token_endpoint": f"{base}/application/o/token/",
+            "jwks_uri": f"{base}/application/o/myapp/jwks/"}),
+        ("GET", f"{base}/application/o/myapp/jwks/"): _FakeResp(200, {"keys": [{"kty": "RSA"}]}),
+        ("GET", f"{base}/application/o/authorize/"): _FakeResp(200, {"ok": True}),
+    }
+    _, client, _, _ = _load(monkeypatch, {"settings": _settings(authentik={
+        "issuer": base, "client_id": "cid", "client_secret": "s",
+        "provider_slug": "myapp"})}, httpx_routes=routes)
+    r = client.post("/admin/oauth/upstream/verify")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["ok"] is True, body
+    assert [s["name"] for s in body["steps"]] == ["discovery", "jwks", "authorize"]
+
+
+def test_upstream_verify_hints_slug_when_no_slug_set(monkeypatch):
+    base = "https://auth.example.com"
+    routes = {("GET", f"{base}/.well-known/openid-configuration"): _FakeResp(404, {})}
+    _, client, _, _ = _load(monkeypatch, {"settings": _settings(authentik={
+        "issuer": base, "client_id": "cid", "client_secret": "s"})}, httpx_routes=routes)
+    r = client.post("/admin/oauth/upstream/verify")
+    body = r.json()
+    assert body["ok"] is False
+    assert "slug" in body["steps"][0]["hint"]
+
