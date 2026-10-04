@@ -92,7 +92,8 @@ def _ak_fail(request: Request, front: str, m_login: str, code: str, username: st
     sign-in activity feed, so a future invalid_client-style outage is visible
     in the panel without VPS log access."""
     try:
-        ip = request.client.host if getattr(request, "client", None) else ""
+        _client = getattr(request, "client", None)
+        ip = getattr(_client, "host", "") or ""
     except Exception:
         ip = ""
     try:

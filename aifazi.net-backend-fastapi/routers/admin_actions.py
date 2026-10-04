@@ -924,10 +924,11 @@ async def _identity_toggle(user_id: str, enable: bool, body: IdentityToggleBody,
     warning = ""
     if authentik_id and _authentik_admin_configured():
         try:
-            from routers.oauth_admin import get_authentik_api_token
+            from routers.oauth_admin import get_authentik_api_token as _portal_token
+            token = _portal_token() or ""
         except Exception:
-            get_authentik_api_token = None  # type: ignore[assignment]
-        token = (get_authentik_api_token() if get_authentik_api_token else "") or os.getenv("AUTHENTIK_API_TOKEN", "").strip()
+            token = ""
+        token = token or os.getenv("AUTHENTIK_API_TOKEN", "").strip()
         try:
             if _httpx is None:
                 raise RuntimeError("httpx is not installed")

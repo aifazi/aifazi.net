@@ -378,7 +378,7 @@ async def test_ldap(request: Request, body: dict | None = None, staff: dict = De
     )
     if result["ok"]:
         return {**result, "message": "LLDAP service bind + search succeeded"}
-    first_fail = next((s for s in result["steps"] if not s["ok"]), {})
+    first_fail: dict = next((s for s in result["steps"] if not s["ok"]), {})
     return {**result, "message": f"LLDAP check failed at {first_fail.get('name', 'probe')}: {first_fail.get('detail', '')}"}
 
 
