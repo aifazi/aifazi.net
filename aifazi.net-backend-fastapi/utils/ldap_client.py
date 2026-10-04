@@ -38,6 +38,12 @@ def _parse_lldap_timeout(raw: str | None, default: float = 5.0) -> float:
 
 LLDAP_TIMEOUT = _parse_lldap_timeout(os.getenv("LLDAP_TIMEOUT"))
 
+# NOTE: never pass receive_timeout to ldap3 Connection() — on POSIX ldap3
+# packs it via struct ('LL', integers only), so a float kills the handshake
+# with "struct.error: required argument is not an integer". The socket keeps
+# connect_timeout (float-safe via settimeout) for both connect and recv, so
+# dropping the kwarg changes no timeout behavior.
+
 
 def _runtime_config() -> tuple[str, str, str, str, str]:
     """Return (url, base_dn, bind_dn, bind_password, users_ou) with portal overrides."""
@@ -130,7 +136,6 @@ def bind_user(identifier: str, password: str) -> LdapUser:
             user=bind_dn,
             password=bind_pw,
             auto_bind=True,
-            receive_timeout=LLDAP_TIMEOUT,
         )
     except Exception as exc:
         log.error("LLDAP service bind failed: %s", exc)
@@ -171,7 +176,6 @@ def bind_user(identifier: str, password: str) -> LdapUser:
             user=user_dn,
             password=password,
             auto_bind=True,
-            receive_timeout=LLDAP_TIMEOUT,
         )
         user_conn.unbind()
     except Exception as exc:
@@ -197,7 +201,6 @@ def healthcheck() -> bool:
             user=bind_dn,
             password=bind_pw,
             auto_bind=True,
-            receive_timeout=LLDAP_TIMEOUT,
         )
         conn.unbind()
         return True

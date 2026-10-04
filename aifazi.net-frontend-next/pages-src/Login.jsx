@@ -829,6 +829,36 @@ export default function Login() {
           .auth-illus { width: 220px; height: 200px; }
         }
 
+        /* ── Ambient fallback (no GSAP): pure-CSS motion mirroring the GSAP
+           timelines above. Runs when the gsap chunk fails/hangs; stands down
+           the moment GSAP loads (html.auth-gsap) so engines never fight.
+           Reduced-motion users are covered by the block below + globals. ── */
+        .auth-blob-1 { animation: authBlob1 16s ease-in-out infinite alternate; }
+        .auth-blob-2 { animation: authBlob2 18s ease-in-out infinite alternate; }
+        .auth-blob-3 { animation: authBlob3 20s ease-in-out infinite alternate; }
+        .auth-rays { animation: authRaysSpin 120s linear infinite; }
+        .auth-particle { animation: authParticleFloat 7s ease-in-out infinite alternate; }
+        .auth-orbit-1 { animation: authOrbitSpin 46s linear infinite; }
+        .auth-orbit-2 { animation: authOrbitSpinRev 70s linear infinite; }
+        .auth-shield-svg { animation: authShieldBreathe 3.2s ease-in-out infinite alternate; }
+        .auth-lock-svg { animation: authLockFloat 2.6s ease-in-out infinite alternate; }
+        .auth-illus-glow { animation: authGlowPulse 3.6s ease-in-out infinite alternate; }
+        @keyframes authBlob1 { from { transform: translate(0, 0) scale(1); } to { transform: translate(80px, 55px) scale(1.15); } }
+        @keyframes authBlob2 { from { transform: translate(0, 0) scale(1); } to { transform: translate(-70px, -45px) scale(1.1); } }
+        @keyframes authBlob3 { from { transform: translate(0, 0) scale(1); } to { transform: translate(45px, -65px) scale(1.2); } }
+        @keyframes authRaysSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes authParticleFloat { from { transform: translate3d(0, 10px, 0); } to { transform: translate3d(0, -50px, 0); } }
+        @keyframes authOrbitSpin { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes authOrbitSpinRev { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(-360deg); } }
+        @keyframes authShieldBreathe { from { transform: translate(-50%, -52%) scale(1); } to { transform: translate(-50%, -52%) translateY(-10px) scale(1.04); } }
+        @keyframes authLockFloat { from { transform: translateY(0); } to { transform: translateY(12px); } }
+        @keyframes authGlowPulse { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.12); opacity: .55; } }
+        html.auth-gsap .auth-blob-1, html.auth-gsap .auth-blob-2, html.auth-gsap .auth-blob-3,
+        html.auth-gsap .auth-rays, html.auth-gsap .auth-particle,
+        html.auth-gsap .auth-orbit-1, html.auth-gsap .auth-orbit-2,
+        html.auth-gsap .auth-shield-svg, html.auth-gsap .auth-lock-svg,
+        html.auth-gsap .auth-illus-glow { animation: none; }
+
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
           .auth-blob, .auth-rays, .auth-particle, .auth-submit, .auth-tab-indicator,
