@@ -1015,3 +1015,19 @@ Reported: the login page lost its animations. Verified:
 - **SSR HTML has no login markup — expected.** `app/login/page.tsx` wraps the client in `<Suspense fallback={null}>` and `useSearchParams` suspends on the server; the page is client-rendered after hydration.
 - **Most likely explanation: `prefers-reduced-motion`.** Every effect is gated: the GSAP effects early-return via `reducedMotion()`, and the CSS has `@media (prefers-reduced-motion: reduce)` blocks (present in the shipped CSS, 2 blocks). If the viewing OS has "animation effects" off (Windows: Settings → Accessibility → Visual effects → "Animation effects"; also many accessibility/privacy browser profiles), the page is **intentionally a static frame**. Check on the affected machine: `window.matchMedia('(prefers-reduced-motion: reduce)').matches` in devtools — `true` means this is the cause, not a regression.
 - Caveat: live pixel-compare in a real browser was not possible from this session (integrated browser unavailable here); the build-level checks above cover everything short of a rendered frame.
+
+### 18.4 Authentik `invalid_client` on the login page — root cause + resolution (2026-10-04)
+
+**Symptom.** Clicking "Authentik" on `aifazi.net/login` bounced to `login?authentik_error=2` — the code→token exchange (`POST {issuer}/application/o/token/`) failed with 400 `invalid_client`.
+
+**Root cause (verified live on the VPS):** the stored client secret and the backend env `AUTHENTIK_CLIENT_SECRET` were out of sync at the time.
+- Authentik server log (2026-10-03 22:41–22:42, one per attempt): `"event": "Invalid client secret"` from `authentik.providers.oauth2.views.token` — the authorization-code check in `token.py` `__post_init`: `client_type == CONFIDENTIAL and provider.client_secret != client_secret` → `invalid_client`.
+- It was **not** a redirect-URI mismatch: the registered strict URI `https://api.aifazi.net/api/auth/authentik/callback` matches what the backend sends. Also not an auth-method mismatch: on 2025.10.3 the `OAuth2Provider` has no `client_authentication_method` column — `extract_client_auth` accepts HTTP Basic **or** POST-body `client_id`/`client_secret`, so our `client_secret_post` usage is supported.
+- The 2025.10.3 API detail/provider endpoints 404 (only collection endpoints work), so the secret could not be read via API; it was compared in the `authentik` Postgres DB (`authentik_providers_oauth2_oauth2provider.client_secret`, stored plaintext): **now matches the env secret (43 chars, exact)**.
+
+**Resolution.** The DB secret was synced to the backend env value. Verified end-to-end on 2026-10-04: four token exchanges returned 200 (14:37:03 / :14 / :20 / :28), and both `admin` and `aifazi` (tanvir) completed sign-in — `users.authentik_id` set, `last_seen` updated.
+
+**Ops notes (2025.10.3 deployment specifics).**
+- psql: socket peer-auth fails for the `authentik` user; use `psql -h 127.0.0.1 -U postgres` inside the `supabase-db-*` container (its env already carries `PGPASSWORD`).
+- Tables use Django full names: `authentik_providers_oauth2_oauth2provider` (`client_id`, `client_secret`, `_redirect_uris` jsonb), `authentik_core_application` (`name`, `provider_id`), `authentik_core_provider` (no `enabled` / `client_authentication_method` columns in this version).
+- This codebase's token endpoint raises `invalid_client` for two distinct causes: secret mismatch (`"Invalid client secret"` warning) vs redirect-URI strict-match failure (`"Invalid redirect URI used by provider"` configuration-error event) — the server log tells them apart.
