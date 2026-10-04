@@ -12,7 +12,7 @@
 | **Audit-driven hardening** | Round 6 closed same-day | 2026-10-03: #398–#409 verified (all P2 N-series/F-series + O4 + U1 + B11 + auth.py split + Sentry 11); 4 new findings — **R6-1** dep-review policy file not wired into CI (MEDIUM), R6-2 dead config key, R6-3 mapped-IPv6 in LDAP URL validator, R6-4 config-check double-registered (all LOW) |
 | **Repo hygiene** | Mostly done | Branches/stashes/caches/artifacts cleaned; Playwright artifact untracked (#393). Leftover (Round 5, AUDIT §15): 3 local branches (`bevel-sandwich`, `unique-blade`, `chore/batch3-local-sync`) + 3 worktrees, all at `main`'s commit, no unmerged work, stash empty; remote has `main` only |
 | **Mobile release pipeline** | Fix applied, **unverified** | Actions create-PR setting enabled 2026-10-03 (was broken 6 weeks); no OTA shipped since 2026-08-29 |
-| **Mobile revamp (Talk + VPN)** | M2/M3 + C6 implemented, pending device QA | 2026-10-04: **C6/H2 done** — mobile OAuth deep links carry one-time exchange codes (never tokens): `POST /api/auth/mobile/exchange` + `mobile_oauth_claims` claim table, all four provider callbacks converted, mobile Discord login (previously broken/web-only) now works, app state echoed end-to-end; backend 244→257 tests, mobile 66→83. Before ship: run the `mobile_oauth_claims` migration SQL (AUDIT §17), then M0.1 Android media spike, NC app password (owner), M1/EAS — ledger in `apps/mobile/PLAN-ROADMAP.md` |
+| **Mobile revamp (Talk + VPN)** | M2/M3 + C6 implemented, pending device QA | 2026-10-04: **C6/H2 done** — mobile OAuth deep links carry one-time exchange codes (never tokens): `POST /api/auth/mobile/exchange` + `mobile_oauth_claims` claim table, all four provider callbacks converted, mobile Discord login (previously broken/web-only) now works, app state echoed end-to-end; backend 244→257 tests, mobile 66→83. Before ship: `mobile_oauth_claims` migration **run + verified live 2026-10-04** (incl. `users.authentik_id` column in prod), then M0.1 Android media spike, NC app password (owner), M1/EAS — ledger in `apps/mobile/PLAN-ROADMAP.md` |
 | **Docs consolidation** | In progress | This file + AUDIT.md §14; ROADMAP.md still stale (see P3) |
 
 ### How we ship (per change)
@@ -37,7 +37,7 @@ Current counts: frontend **151 passed** (+1 skip) · backend **280** · mobile *
 
 ### P0 — next action
 
-- [ ] **Run the `mobile_oauth_claims` migration** (Supabase SQL editor, SQL in AUDIT §17) — required before mobile OAuth sign-in works; until then it fails closed with a clean error, no token exposure.
+- [x] **Run the `mobile_oauth_claims` migration** (Supabase SQL editor, SQL in AUDIT §17) — **done + verified live 2026-10-04** (`mobile_oauth_claims` table present in prod Supabase; `users.authentik_id` column confirmed).
 - [ ] **Verify the mobile release pipeline end-to-end**: dispatch `mobile-release-build.yml` — the version-bump PR must now be created (`app.json` 1.0.39 → current release), APK attaches, run goes green → `mobile-ota-update` unblocks. **Owner decision:** shipping the OTA also releases ~3 weeks of pending mobile changes to production users.
 
 ### P1 — this sprint
@@ -69,8 +69,8 @@ Current counts: frontend **151 passed** (+1 skip) · backend **280** · mobile *
 ### Decisions & standing risks (owner)
 
 - [ ] **C3 — R2 backup target #2**: backup still same-host WebDAV; needs bucket + S3 credentials, then dual-target job + restore test.
-- [ ] **H1**: confirm prod secret rotation status. **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; only the `mobile_oauth_claims` migration (P0 above) is outstanding. The PASETO `purpose`-claim clobber follow-up (broke GitHub/Steam account-linking) is **closed** in §18 — link tokens now use `token_type`.
-- [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v3/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501.
+- [ ] **H1**: confirm prod secret rotation status. **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; the `mobile_oauth_claims` migration (P0 above) is also done + verified live. The PASETO `purpose`-claim clobber follow-up (broke GitHub/Steam account-linking) is **closed** in §18 — link tokens now use `token_type`.
+- [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v3/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501. Login `invalid_client` (2026-10-03) was a DB↔env client-secret desync — synced + verified end-to-end 2026-10-04 (AUDIT §18.4).
 - [ ] **EAS rebuild** handoff (`apps/mobile/EAS-REBUILD.md`) once the pipeline is verified.
 - [ ] Mobile npm advisories (31, 0 critical) — only clearable via Expo SDK bumps; build-chain only.
 
