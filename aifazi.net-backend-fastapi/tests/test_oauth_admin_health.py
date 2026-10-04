@@ -170,7 +170,13 @@ def _ldap3_module(bind_password_ok: str):
     mod.Server = lambda url, **k: types.SimpleNamespace(url=url)
 
     class _Conn:
-        def __init__(self, server, user=None, password=None, auto_bind=False, receive_timeout=None):
+        def __init__(self, server, user=None, password=None, auto_bind=False, receive_timeout=None, **k):
+            if receive_timeout is not None:
+                # Mirror real ldap3 on POSIX (strategy/base.py): the timeout
+                # is packed with struct integers-only — a float raises
+                # struct.error, which is exactly the Oct 2026 panel outage.
+                from struct import pack
+                pack("LL", receive_timeout, 0)
             if password != bind_password_ok:
                 raise _FakeBindError("invalidCredentials")
             self.entries = [types.SimpleNamespace(entry_dn="dc=x")]

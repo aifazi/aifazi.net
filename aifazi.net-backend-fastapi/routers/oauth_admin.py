@@ -419,15 +419,18 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
     try:
         from ldap3 import Connection, Server  # type: ignore
         server = Server(url, connect_timeout=timeout)
-        conn = Connection(server, user=bind_dn, password=bind_pw,
-                          auto_bind=True, receive_timeout=timeout)
+        # NOTE: no receive_timeout kwarg — ldap3 packs it with struct
+        # (integers only) on POSIX, so a float kills the handshake with
+        # "struct.error: required argument is not an integer". The socket
+        # keeps connect_timeout for recv via settimeout().
+        conn = Connection(server, user=bind_dn, password=bind_pw, auto_bind=True)
     except Exception as exc:
-        kind = type(exc).__name__
+        kind = _exc_name(exc)
         if "Bind" in kind:
             steps.append(_step("bind", False, f"{kind}: credentials rejected",
                                 "Check the bind DN and password (not a user password)"))
         else:
-            steps.append(_step("bind", False, f"{kind}: {str(exc)[:120]}",
+            steps.append(_step("bind", False, f"{kind}: {str(exc)[:200]}",
                                 "The server accepted TCP but the LDAP handshake failed"))
         return {"ok": False, "steps": steps}
     try:
@@ -448,7 +451,7 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
             conn.unbind()
         except Exception:
             pass
-        steps.append(_step("search", False, f"{type(exc).__name__}: {str(exc)[:120]}",
+        steps.append(_step("search", False, f"{_exc_name(exc)}: {str(exc)[:200]}",
                             "The bind worked but the Base DN search failed — fix Base DN"))
         return {"ok": False, "steps": steps}
 
@@ -850,6 +853,14 @@ async def put_upstream(body: UpstreamIn, request: Request, staff: dict = Depends
 
 def _step(name: str, ok: bool, detail: str = "", hint: str = "") -> dict:
     return {"name": name, "ok": bool(ok), "detail": str(detail)[:250], "hint": hint}
+
+
+def _exc_name(exc: BaseException) -> str:
+    """Qualified exception name — bare class names like struct's `error` are
+    cryptic in the panel; `struct.error` is self-explanatory."""
+    kind = type(exc).__name__
+    mod = type(exc).__module__
+    return kind if mod in ("builtins", "exceptions") else f"{mod}.{kind}"
 
 
 async def _probe_authentik(cfg: dict) -> list[dict]:

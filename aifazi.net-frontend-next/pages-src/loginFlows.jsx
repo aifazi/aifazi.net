@@ -11,7 +11,18 @@ let _gsapCache = null
 function loadGsap() {
   if (typeof window === 'undefined') return Promise.resolve(null)
   if (_gsapCache) return Promise.resolve(_gsapCache)
-  return import('gsap').then(m => { _gsapCache = m.gsap || m.default || m; return _gsapCache })
+  return import('gsap').then(m => {
+    _gsapCache = m.gsap || m.default || m
+    // GSAP owns ambient motion from here — the pure-CSS fallback keyframes
+    // (Login.jsx) stand down via html.auth-gsap so the engines never fight.
+    if (typeof document !== 'undefined') document.documentElement.classList.add('auth-gsap')
+    return _gsapCache
+  }).catch(err => {
+    // A failed/hung chunk used to kill all motion silently (no .catch on any
+    // caller). Warn once and let callers fall back — they all null-check.
+    if (typeof console !== 'undefined') console.warn('[auth] GSAP unavailable — CSS fallback active:', err)
+    return null
+  })
 }
 
 // Theme-reactive animation helpers — colors always come from var(--tokens).
