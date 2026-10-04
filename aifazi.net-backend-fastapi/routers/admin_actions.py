@@ -843,7 +843,13 @@ async def abuse_unban(body: AbuseUnbanBody, request: Request, user: dict = Depen
 #      and the endpoint returns 502; without a configured token it stands with
 #      200 + a `warning` field. No LDAP writes, no password handling anywhere.
 def _authentik_admin_configured() -> bool:
-    return bool(os.getenv("AUTHENTIK_API_TOKEN", "").strip())
+    # Portal-over-env (same merge as the OIDC router): a token saved in the
+    # Identity panel works without a Coolify env redeploy.
+    try:
+        from routers.oauth_admin import get_authentik_api_token
+        return bool(get_authentik_api_token())
+    except Exception:
+        return bool(os.getenv("AUTHENTIK_API_TOKEN", "").strip())
 
 
 def _authentik_admin_url() -> str:
@@ -917,7 +923,12 @@ async def _identity_toggle(user_id: str, enable: bool, body: IdentityToggleBody,
     authentik_id = str(user.get("authentik_id") or "").strip()
     warning = ""
     if authentik_id and _authentik_admin_configured():
-        token = os.getenv("AUTHENTIK_API_TOKEN", "").strip()
+        try:
+            from routers.oauth_admin import get_authentik_api_token as _portal_token
+            token = _portal_token() or ""
+        except Exception:
+            token = ""
+        token = token or os.getenv("AUTHENTIK_API_TOKEN", "").strip()
         try:
             if _httpx is None:
                 raise RuntimeError("httpx is not installed")

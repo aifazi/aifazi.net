@@ -1031,3 +1031,19 @@ Reported: the login page lost its animations. Verified:
 - psql: socket peer-auth fails for the `authentik` user; use `psql -h 127.0.0.1 -U postgres` inside the `supabase-db-*` container (its env already carries `PGPASSWORD`).
 - Tables use Django full names: `authentik_providers_oauth2_oauth2provider` (`client_id`, `client_secret`, `_redirect_uris` jsonb), `authentik_core_application` (`name`, `provider_id`), `authentik_core_provider` (no `enabled` / `client_authentication_method` columns in this version).
 - This codebase's token endpoint raises `invalid_client` for two distinct causes: secret mismatch (`"Invalid client secret"` warning) vs redirect-URI strict-match failure (`"Invalid redirect URI used by provider"` configuration-error event) — the server log tells them apart.
+
+### 18.5 Identity & OAuth panel redesign — zero-manual-ops workflows (2026-10-04)
+
+**Goal.** Every identity/OAuth procedure that previously needed VPS psql or Coolify env edits now runs from Admin → Identity & OAuth (tabbed: Overview / Directory / Upstream IdP / Social / Clients / Users / Activity).
+
+**Backend (all `require_admin`, all mutations audited, secrets never returned — masked only).**
+- `GET /admin/oauth/health` — one-call doctor: staged LLDAP probe (DNS → TCP → bind → search, each with fix hints), Authentik discovery/JWKS/authorize smoke, concurrent Discord (`client_credentials` grant) / GitHub (basic-auth `rate_limit`) / Steam (`GetServerInfo`) credential checks.
+- `POST /admin/oauth/test-ldap` — now accepts inline `{lldap}` draft config and **never persists** (the old flow saved first, then tested).
+- Upstream IdP: `GET/PUT /admin/oauth/upstream` (portal-over-env store in `site_config.settings.oauth.authentik`, `__CLEAR__` sentinel supported), `POST /upstream/verify`, `GET /upstream/signals` (last successful login + linked count + recent `authentik_login` rows — the secret itself is unreadable on 2025.10.3, so fresh success is the proof and a stall is the alarm).
+- `POST /admin/oauth/providers/{id}/test`, `POST /admin/oauth/clients/{id}/rotate` (server-generated secret, returned once, old secret dies immediately — confirm dialog states this).
+- Portal-over-env merge (`get_authentik_config()` in `routers/oauth_admin.py`): the OIDC router (`_ak()`) and the admin-API token check now prefer portal values, env fallback. Per-field `sources` (portal|env|default) are exposed so the panel shows which source is live.
+- OIDC callback failure paths now write `auth_logs` rows (`record_auth`, never raises) with `reason=authentik_error=<code>` — the panel's Activity feed maps each code to a cause + fix tab. Redirect URLs are byte-identical to before.
+
+**Panel.** Overview (doctor + site-wide OAuth kill-switch with danger confirm + recent-failures preview), Directory (draft-safe staged test, copy buttons), Upstream IdP (source badges, verify, signals, callback copy box, link to Authentik admin), Social (source badges, per-provider Test, store-env-in-portal), Clients (inline edit via existing `PUT`, rotate, one-time secret box), Users (linkage filter, token setup deep-links to Upstream tab), Activity (failures/all from `/admin/audit/auth-log` with the error-code map). Also fixed: LDAP form state bug (`p.ldap` → `p.lldap` was dropping fields locally).
+
+**Tests.** `tests/test_oauth_admin_health.py` (17 tests, hermetic: stubbed DB/deps/audit, fake httpx/ldap3/socket) — masking, portal-over-env precedence, CLEAR sentinel, staged LDAP layers incl. no-persist guarantee, provider tests, rotate-once, health skips. Full backend suite: 297 passed.
