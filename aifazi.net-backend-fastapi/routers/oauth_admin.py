@@ -607,14 +607,21 @@ async def health(request: Request, staff: dict = Depends(require_admin)):
                            "configured": True, "steps": steps}
 
     async def _one(pid: str):
-        creds = _provider_resolved(pid)
-        if not creds["configured"]:
-            return pid, {"status": "unconfigured", "detail": "No credentials saved or in env"}
-        if not creds["enabled"]:
-            return pid, {"status": "disabled", "detail": "Disabled in the panel"}
-        r = await _test_provider_creds(pid, creds)
-        return pid, {"status": "ok" if r["ok"] else "error",
-                     "detail": r.get("detail", ""), "hint": r.get("hint", "")}
+        # A single throwing probe must never 500 the whole doctor endpoint —
+        # report it as an error step so the panel still shows the rest.
+        try:
+            creds = _provider_resolved(pid)
+            if not creds["configured"]:
+                return pid, {"status": "unconfigured", "detail": "No credentials saved or in env"}
+            if not creds["enabled"]:
+                return pid, {"status": "disabled", "detail": "Disabled in the panel"}
+            r = await _test_provider_creds(pid, creds)
+            return pid, {"status": "ok" if r["ok"] else "error",
+                         "detail": r.get("detail", ""), "hint": r.get("hint", "")}
+        except Exception as exc:
+            return pid, {"status": "error",
+                         "detail": f"Probe crashed ({type(exc).__name__}): {str(exc)[:150]}",
+                         "hint": "Check backend logs — other checks still ran"}
 
     providers = dict(zip(_SOCIAL_PROVIDERS,
                          await asyncio.gather(*[_one(pid) for pid in _SOCIAL_PROVIDERS])))

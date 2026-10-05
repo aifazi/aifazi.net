@@ -514,3 +514,25 @@ def test_upstream_verify_hints_slug_when_no_slug_set(monkeypatch):
     assert body["ok"] is False
     assert "slug" in body["steps"][0]["hint"]
 
+
+def test_health_survives_crashing_provider_probe(monkeypatch):
+    # One throwing provider probe must not 500 the whole doctor endpoint —
+    # it is reported as an error step while the rest still runs.
+    mod, client, _, _ = _load(monkeypatch, {"settings": _settings(providers={
+        "discord": {"client_id": "id", "client_secret": "sec", "enabled": True}})},
+        httpx_routes={})
+    real_resolved = mod._provider_resolved
+
+    def _boom(pid):
+        if pid == "discord":
+            raise RuntimeError("probe exploded")
+        return real_resolved(pid)
+
+    monkeypatch.setattr(mod, "_provider_resolved", _boom)
+    r = client.get("/admin/oauth/health")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["providers"]["discord"]["status"] == "error"
+    assert "probe exploded" in body["providers"]["discord"]["detail"]
+    assert body["providers"]["github"]["status"] == "unconfigured"
+

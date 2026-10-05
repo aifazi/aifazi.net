@@ -620,7 +620,7 @@ function OrdersDocumentsTab({ user }) {
                     {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" style={{ color: CLRS.cyan, marginLeft: 8 }}>TRACK ↗</a>}
                   </div>
                 )}
-                {(o.downloads || []).length > 0 && (
+                {Array.isArray(o.downloads) && o.downloads.length > 0 && (
                   <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {o.downloads.map(d => (
                       <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer"
@@ -651,7 +651,7 @@ function OrdersDocumentsTab({ user }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
               {(detail.events || []).length === 0 ? (
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>No updates yet.</span>
-              ) : detail.events.map((ev, i) => (
+              ) : (Array.isArray(detail.events) ? detail.events : []).map((ev, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 11 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 4, background: CLRS.green, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
@@ -664,7 +664,7 @@ function OrdersDocumentsTab({ user }) {
             </div>
             <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>ITEMS</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
-              {(detail.items || []).map((it, i) => (
+              {(Array.isArray(detail.items) ? detail.items : []).map((it, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
                   <span style={{ color: 'var(--text)' }}>{it.product_name} × {it.quantity}</span>
                   <span style={{ color: 'var(--muted)' }}>${((it.line_total_cents || 0) / 100).toFixed(2)}</span>
@@ -675,7 +675,7 @@ function OrdersDocumentsTab({ user }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
               {(detail.downloads || []).length === 0 ? (
                 <span style={{ fontSize: 11, color: 'var(--muted)' }}>None</span>
-              ) : detail.downloads.map(d => (
+              ) : (Array.isArray(detail.downloads) ? detail.downloads : []).map(d => (
                 <a key={d.id} href={`/api/store/downloads/${d.token}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: CLRS.green, textDecoration: 'none' }}>
                   ⬇ {d.filename || d.product_name} ({d.downloads_used}/{d.downloads_allowed})
                 </a>
