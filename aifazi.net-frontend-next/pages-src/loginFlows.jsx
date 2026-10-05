@@ -541,7 +541,7 @@ function SignIn({ onSwitch, onTwoFA, shake }) {
                 try {
                   setError('')
                   setLoading(true)
-                  const res = await api.post('/auth/wg-login', {})
+                  const res = await api.get('/auth/wg-login')
                   if (res.data?.token) {
                     saveTokens({ token: res.data.token, refreshToken: res.data.refreshToken })
                     const dest = nextPath || '/profile'

@@ -22,9 +22,17 @@ from utils.oauth_state import (
 router = APIRouter()
 log = logging.getLogger("auth.discord")
 
+API_URL = (os.getenv("API_URL") or "https://api.aifazi.net").rstrip("/")
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "")
+# Default matches the redirect registered in the site Discord app
+# (Developer Portal → OAuth2 → Redirects). It MUST match exactly when the
+# flow starts — an empty/mismatched value makes Discord reject the login
+# with a redirect_uri error before any callback ever happens.
+DISCORD_REDIRECT_URI = (
+    os.getenv("DISCORD_REDIRECT_URI", "").strip()
+    or f"{API_URL}/api/auth/discord/callback"
+)
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 # H2/C6 — deep-link base for mobile OAuth completion. Server-controlled; the
 # app only accepts redirects under this exact prefix (matches MOBILE_AUTH_URL
