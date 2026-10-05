@@ -11,7 +11,16 @@ from pydantic import BaseModel
 
 from database import _escape_ilike, safe_search_term, supabase
 from dependencies import get_current_user, require_admin, require_staff
-from permissions import normalize_permissions, resolve_staff_access, role_permissions
+from permissions import (
+    ACTIONS,
+    MODULES,
+    ROLE_PERMISSION_PRESETS,
+    STAFF_ROLES,
+    admin_ids,
+    normalize_permissions,
+    resolve_staff_access,
+    role_permissions,
+)
 from routers.auth_shared import (
     StaffCreateBody,
     StaffUpdateBody,
@@ -40,6 +49,20 @@ async def get_permissions(user: dict = Depends(require_staff)):
     res = supabase.table("users").select("staff_permissions").eq("username", username).limit(1).execute()
     permissions = res.data[0].get("staff_permissions", []) if res.data else []
     return {"role": role, "permissions": permissions}
+
+
+@router.get("/staff/catalog")
+async def staff_catalog(admin: dict = Depends(require_admin)):
+    """Admin-only catalog driving the Access-tab permission matrix: module
+    labels, action verbs, staff roles, per-role presets, and the roles the
+    panel may assign (admin grants stay manual/DB by design)."""
+    return {
+        "modules": MODULES,
+        "actions": list(ACTIONS),
+        "staff_roles": sorted(STAFF_ROLES),
+        "role_presets": ROLE_PERMISSION_PRESETS,
+        "manageable_roles": ["moderator", "editor"],
+    }
 
 
 @router.get("/staff")
@@ -129,8 +152,23 @@ async def create_staff(payload: dict, request: Request, admin: dict = Depends(re
 
 
 @router.put("/staff/{staff_id}")
-async def update_staff(staff_id: str, payload: dict, admin: dict = Depends(require_admin)):
+async def update_staff(staff_id: str, payload: dict, request: Request, admin: dict = Depends(require_admin)):
     body = StaffUpdateBody(**(payload or {}))
+    target = supabase.table("users").select("id,username,role").eq("id", staff_id).limit(1).execute()
+    target_row = (target.data or [None])[0]
+    if not target_row:
+        raise HTTPException(404, "Staff member not found")
+    actor_name = str(admin.get("username") or "")
+    is_self = str(target_row.get("id")) == str(admin.get("id")) or \
+        (target_row.get("username") or "").lower() == actor_name.lower()
+    if body.role:
+        if body.role not in ("moderator", "editor"):
+            raise HTTPException(400, "Invalid role")
+        if is_self and body.role != (target_row.get("role") or ""):
+            raise HTTPException(400, "You cannot change your own role")
+        if (target_row.get("role") or "") == "admin" \
+                and not admin_ids(exclude_id=str(target_row.get("id"))):
+            raise HTTPException(409, "Cannot demote the last admin")
     updates: dict = {}
     if body.username:  updates["username"]      = _clean_username(body.username)
     if body.email is not None:
@@ -158,13 +196,26 @@ async def update_staff(staff_id: str, payload: dict, admin: dict = Depends(requi
     row = res.data[0]
     if body.email is not None and row.get("email") and not row.get("email_verified"):
         await _queue_staff_email_verification("staff", row["email"], staff_id=staff_id)
+    _audit(actor_name or "admin", "staff_update", target=target_row.get("username") or staff_id,
+           details={"role": body.role, "permissions": body.module_permissions},
+           ip=request.client.host if request.client else "")
     return _staff_public(row)
 
 
 @router.delete("/staff/{staff_id}")
 async def delete_staff(staff_id: str, request: Request, admin: dict = Depends(require_admin)):
-    row = supabase.table("users").select("username,role").eq("id", staff_id).execute()
-    target_name = row.data[0]["username"] if row.data else staff_id
+    row = supabase.table("users").select("id,username,role").eq("id", staff_id).execute()
+    target = (row.data or [None])[0]
+    if not target:
+        raise HTTPException(404, "Staff member not found")
+    actor_name = str(admin.get("username") or "")
+    if str(target.get("id")) == str(admin.get("id")) or \
+            (target.get("username") or "").lower() == actor_name.lower():
+        raise HTTPException(400, "You cannot remove your own staff access")
+    if (target.get("role") or "") == "admin" \
+            and not admin_ids(exclude_id=str(target.get("id"))):
+        raise HTTPException(409, "Cannot remove the last admin")
+    target_name = target.get("username") or staff_id
     supabase.table("users").update({"role": "member", "staff_permissions": {}}).eq("id", staff_id).execute()
     _audit(admin.get("username", "admin"), "staff_delete", target=target_name,
            details={}, ip=request.client.host if request.client else "")

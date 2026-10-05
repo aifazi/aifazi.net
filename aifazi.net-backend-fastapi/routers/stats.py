@@ -7,13 +7,14 @@ import time
 from datetime import datetime, timedelta, timezone
 from html import escape
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from database import call_with_retry, safe_search_term, supabase
 from dependencies import require_admin, require_staff
 from utils.email import render_template
 from utils.email_queue import queue_email
+from utils.audit import record as _audit
 
 router = APIRouter()
 
@@ -380,7 +381,7 @@ async def user_unban(user_id: str, _: dict = Depends(require_staff)):
     return {"message": "User unbanned", "user": _normalize(user)}
 
 @router.post("/actions/users/{user_id}/role")
-async def user_set_role(user_id: str, body: UserActionBody, user: dict = Depends(require_admin)):
+async def user_set_role(user_id: str, body: UserActionBody, request: Request, user: dict = Depends(require_admin)):
     """H10 — only admin can change roles. Self-promotion is explicitly blocked
     (a moderator knowing only this endpoint could otherwise POST their own id
     with role='admin' and gain full superuser in seconds)."""
@@ -390,7 +391,19 @@ async def user_set_role(user_id: str, body: UserActionBody, user: dict = Depends
         raise HTTPException(status_code=400, detail=f"Unknown role: {body.role}")
     if str(user.get("id")) == str(user_id):
         raise HTTPException(status_code=400, detail="You cannot change your own role")
+    target = supabase.table("users").select("id,username,role").eq("id", user_id).limit(1).execute()
+    target_row = (target.data or [None])[0]
+    if not target_row:
+        raise HTTPException(status_code=404, detail="User not found")
+    if (target_row.get("role") or "") == "admin" and body.role != "admin":
+        from permissions import admin_ids
+        if not admin_ids(exclude_id=str(target_row.get("id"))):
+            raise HTTPException(status_code=409, detail="Cannot demote the last admin")
     supabase.table("users").update({"role": body.role}).eq("id", user_id).execute()
+    _audit(str(user.get("username") or "admin"), "role_change",
+           target=target_row.get("username") or user_id,
+           details={"role": body.role, "reason": body.reason or ""},
+           ip=request.client.host if request.client else "")
     return {"message": f"Role set to {body.role}"}
 
 @router.post("/actions/users/{user_id}/send-reset")
