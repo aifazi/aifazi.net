@@ -5,6 +5,17 @@ import { Checkbox, Input, TextArea } from '@/core/forms'
 import { useDialog } from '../../components/Dialog'
 import { S, useIsMobile, PageHeader } from './shared'
 import { Icon } from './icons'
+import {
+  addedBeyondPreset,
+  canChangeRole,
+  canRemoveAccess,
+  countAdmins,
+  effectivePermissions,
+  groupModules,
+  isPresetGranted,
+  summarizePermissions,
+  togglePermission,
+} from '@/lib/staffAccess'
 
 const inputStyle = {
   width: '100%',
@@ -121,6 +132,7 @@ const TABS = [
   { id: 'social', label: 'Social' },
   { id: 'clients', label: 'Clients' },
   { id: 'users', label: 'Users' },
+  { id: 'access', label: 'Access' },
   { id: 'activity', label: 'Activity' },
 ]
 
@@ -149,6 +161,43 @@ function OAuthSettings() {
   const [provTest, setProvTest] = useState({}) // id -> {ok, detail, hint}
   const [upDraft, setUpDraft] = useState({}) // upstream form; empty = unchanged
   const [activity, setActivity] = useState({ logs: [], loading: false, showAll: false })
+  const [access, setAccess] = useState({ staff: [], catalog: null, me: null, loading: false })
+  const [accessSearch, setAccessSearch] = useState('')
+  const [promoteQ, setPromoteQ] = useState('')
+  const [promoteResults, setPromoteResults] = useState([])
+  const [editStaff, setEditStaff] = useState(null) // {id, username, role, newRole, overrides}
+
+  const meName = access.me?.username || ''
+  const adminCount = countAdmins(access.staff)
+
+  const loadAccess = useCallback(async () => {
+    setAccess(a => ({ ...a, loading: true }))
+    try {
+      const [staffRes, catRes, meRes] = await Promise.all([
+        api.get('/auth/staff'),
+        api.get('/auth/staff/catalog'),
+        api.get('/auth/verify'),
+      ])
+      setAccess({
+        staff: Array.isArray(staffRes.data) ? staffRes.data : [],
+        catalog: catRes.data || null,
+        me: meRes.data?.user || null,
+        loading: false,
+      })
+    } catch (e) {
+      setMsg({ type: 'err', text: e.response?.data?.detail || 'Failed to load access control' })
+      setTimeout(() => setMsg(null), 7000)
+      setAccess(a => ({ ...a, loading: false }))
+    }
+  }, [])
+
+  useEffect(() => {
+    // Lazy-load on first open (deferred: set-state-in-effect forbids sync
+    // setState here — same setTimeout pattern as the users loader below).
+    if (tab !== 'access' || access.catalog || access.loading) return undefined
+    const t = setTimeout(() => loadAccess(), 0)
+    return () => clearTimeout(t)
+  }, [tab, access.catalog, access.loading, loadAccess])
 
   const flash = (type, text, ms = 7000) => {
     setMsg({ type, text })
@@ -1156,6 +1205,95 @@ Authorization: Bearer ACCESS_TOKEN`}</pre>
     </div>
   )
 
+  const searchPromote = async (qq) => {
+    setPromoteQ(qq)
+    if (qq.trim().length < 2) { setPromoteResults([]); return }
+    try {
+      const r = await api.get(`/auth/staff/search-users?q=${encodeURIComponent(qq.trim())}`)
+      const staffIds = new Set(access.staff.map(s => s.id))
+      setPromoteResults((r.data?.users || []).filter(u => !staffIds.has(u.id)))
+    } catch { setPromoteResults([]) }
+  }
+
+  const promoteUser = async (u, role) => {
+    const ok = await dialog.confirm({
+      title: `Make ${u.username} ${role}?`,
+      message: `They receive the ${role} preset. Fine-tune modules afterwards in Edit.`,
+      confirmLabel: 'PROMOTE', variant: 'warning',
+    })
+    if (!ok) return
+    try {
+      await api.put(`/auth/staff/${u.id}`, { role })
+      flash('ok', `${u.username} is now ${role}.`)
+      setPromoteQ('')
+      setPromoteResults([])
+      loadAccess()
+    } catch (e) { flash('err', e.response?.data?.detail || 'Promote failed') }
+  }
+
+  const openEdit = (row) => {
+    const presets = access.catalog?.role_presets || {}
+    setEditStaff({
+      id: row.id,
+      username: row.username,
+      role: row.role,
+      newRole: row.role,
+      overrides: addedBeyondPreset(row.role, row.module_permissions, presets),
+    })
+  }
+
+  const saveEdit = async () => {
+    const e = editStaff
+    if (!e) return
+    try {
+      if (e.newRole !== e.role) {
+        const g = canChangeRole(e.username, meName, e.role, e.newRole, adminCount)
+        if (!g.ok) { flash('warn', g.reason); return }
+        if (e.newRole === 'moderator' || e.newRole === 'editor') {
+          await api.put(`/auth/staff/${e.id}`, { role: e.newRole, module_permissions: e.overrides })
+        } else {
+          const what = e.newRole === 'admin'
+            ? 'Grant FULL admin access (bypasses all permission checks)'
+            : `Set role to ${e.newRole} (module overrides become inactive for non-staff roles)`
+          const ok = await dialog.confirm({
+            title: `${e.username}: ${what}?`,
+            message: e.newRole === 'admin'
+              ? 'Admin is for owners only.'
+              : 'Stored overrides are kept and reactivate if promoted again.',
+            confirmLabel: 'CONFIRM', variant: e.newRole === 'admin' ? 'danger' : 'warning',
+          })
+          if (!ok) return
+          await api.post(`/api/admin/stats/actions/users/${e.id}/role`, { role: e.newRole })
+        }
+      } else if (e.newRole === 'moderator' || e.newRole === 'editor') {
+        await api.put(`/auth/staff/${e.id}`, { module_permissions: e.overrides })
+      } else {
+        flash('warn', 'Nothing to save — switch role to change access.')
+        return
+      }
+      flash('ok', `Saved access for ${e.username}.`)
+      setEditStaff(null)
+      loadAccess()
+    } catch (err) { flash('err', err.response?.data?.detail || 'Save failed') }
+  }
+
+  const removeAccess = async (row) => {
+    const g = canRemoveAccess(row.username, meName, row.role, adminCount)
+    if (!g.ok) { flash('warn', g.reason); return }
+    const ok = await dialog.confirm({
+      title: `Remove ${row.username}'s staff access?`,
+      message: 'Demotes to member and clears module overrides.',
+      confirmLabel: 'REMOVE', variant: 'danger',
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/auth/staff/${row.id}`)
+      flash('ok', `${row.username} demoted to member.`)
+      if (editStaff?.id === row.id) setEditStaff(null)
+      loadAccess()
+    } catch (e) { flash('err', e.response?.data?.detail || 'Remove failed') }
+  }
+
   const renderUsers = () => (
     <section style={sectionStyle(isMobile)}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
@@ -1229,6 +1367,184 @@ Authorization: Bearer ACCESS_TOKEN`}</pre>
     </section>
   )
 
+  const renderAccess = () => {
+    const cat = access.catalog
+    const q = accessSearch.trim().toLowerCase()
+    const rows = access.staff.filter(s =>
+      !q || (s.username || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q))
+    const roleBadge = (role) => {
+      const r = (role || '').toLowerCase()
+      const color = r === 'admin' ? 'var(--red, #f85149)'
+        : r === 'moderator' ? 'var(--cyan, #22d3ee)'
+        : r === 'editor' ? 'var(--green, #3fb950)' : 'var(--muted)'
+      return (
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '3px 10px', borderRadius: 8, border: `1px solid ${color}`, color }}>
+          {(role || 'member').toUpperCase()}
+        </span>
+      )
+    }
+    const e = editStaff
+    const eRole = e?.newRole || ''
+    const eIsStaffRole = eRole === 'moderator' || eRole === 'editor'
+    const eIsSelf = (e?.username || '').toLowerCase() === (meName || '').toLowerCase()
+    const eGroups = cat ? groupModules(cat.modules) : []
+    const abbrev = (a) => a[0].toUpperCase()
+    return (
+      <section style={sectionStyle(isMobile)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+          <Icon name="users" size={18} style={{ color: '#b56cff' }} />
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Access control</h3>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+            {access.staff.length} staff · {adminCount} admin{adminCount === 1 ? '' : 's'}
+          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <Input value={accessSearch} onChange={v => setAccessSearch(v)} placeholder="Filter staff…"
+              style={{ ...inputStyle, width: 180, padding: '6px 10px', fontSize: 12 }} />
+            <button type="button" onClick={loadAccess} style={{ ...btnGhost, padding: '6px 12px', fontSize: 12 }}>Refresh</button>
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 14 }}>
+          Roles carry a preset; per-module ticks <em>add</em> to it (they can never subtract).
+          Admins bypass all checks. Members need a staff role before modules apply.
+        </div>
+
+        <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--bg)', border: '1px solid var(--border)', marginBottom: 14 }}>
+          <div style={{ ...labelStyle, marginBottom: 8 }}>Promote a user to staff</div>
+          <Input value={promoteQ} onChange={v => searchPromote(v)} placeholder="Type 2+ letters to search users…"
+            style={{ ...inputStyle, marginBottom: promoteResults.length ? 8 : 0 }} />
+          {promoteResults.map(u => (
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', fontSize: 13 }}>
+              <span style={{ flex: 1 }}>{u.username} <span style={{ color: 'var(--muted)', fontSize: 11 }}>{u.email || ''}</span></span>
+              {['moderator', 'editor'].map(r => (
+                <button key={r} type="button" onClick={() => promoteUser(u, r)}
+                  style={{ ...btnGhost, padding: '5px 10px', fontSize: 11 }}>Make {r}</button>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {e && cat && (
+          <div style={{ padding: '14px', borderRadius: 12, background: 'var(--bg)', border: '1px solid #b56cff', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+              <strong style={{ fontSize: 14 }}>Edit access — {e.username}</strong>
+              {eIsSelf && <span style={{ fontSize: 11, color: 'var(--yellow, #d29922)' }}>You cannot change your own role.</span>}
+              <select value={e.newRole} disabled={eIsSelf} title={eIsSelf ? 'You cannot change your own role.' : 'Role'}
+                onChange={ev => setEditStaff({ ...e, newRole: ev.target.value })}
+                style={{ ...inputStyle, width: 'auto', marginLeft: 'auto', padding: '6px 10px', fontSize: 12 }}>
+                {['moderator', 'editor', 'member', 'user', 'chat', 'admin'].map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+            {eRole === 'admin' && (
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+                Full access — manage everywhere. Demoting follows the same guards.
+              </div>
+            )}
+            {!eIsStaffRole && eRole !== 'admin' && (
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+                No module access for this role — promote to moderator/editor first. Stored overrides are kept and reactivate on promotion.
+              </div>
+            )}
+            {eIsStaffRole && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                    <span style={{ color: 'var(--green, #3fb950)' }}>■</span> role preset (locked)
+                    {' · '}<span style={{ color: 'var(--cyan, #22d3ee)' }}>■</span> custom addition
+                  </span>
+                  <button type="button" onClick={() => setEditStaff({ ...e, overrides: {} })}
+                    style={{ ...btnGhost, padding: '4px 10px', fontSize: 11, marginLeft: 'auto' }}>
+                    Reset to {eRole} preset
+                  </button>
+                </div>
+                {eGroups.map((g, gi) => (
+                  <details key={g.id} open={gi === 0} style={{ marginBottom: 6, border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px' }}>
+                    <summary style={{ cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>{g.label} ({g.items.length})</summary>
+                    <div style={{ display: 'grid', gridTemplateColumns: `minmax(120px, 1fr) repeat(${cat.actions.length}, 26px)`, gap: 4, alignItems: 'center', marginTop: 8, marginBottom: 4, fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+                      <span />
+                      {cat.actions.map(a => <span key={a} title={a} style={{ textAlign: 'center' }}>{abbrev(a)}</span>)}
+                    </div>
+                    {g.items.map(item => (
+                      <div key={item.id} style={{ display: 'grid', gridTemplateColumns: `minmax(120px, 1fr) repeat(${cat.actions.length}, 26px)`, gap: 4, alignItems: 'center', padding: '3px 0', borderTop: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: 12 }} title={item.id}>
+                          {item.label}
+                          {(e.overrides[item.id] || []).length > 0 && (
+                            <span style={{ color: 'var(--cyan, #22d3ee)', marginLeft: 6 }} title="Custom addition beyond preset">•</span>
+                          )}
+                        </span>
+                        {cat.actions.map(a => {
+                          const locked = isPresetGranted(item.id, a, eRole, cat.role_presets)
+                          const on = locked || (e.overrides[item.id] || []).includes(a)
+                          return (
+                            <input key={a} type="checkbox" checked={on} disabled={locked}
+                              title={`${item.label} — ${a}${locked ? ` (granted by ${eRole} preset)` : ''}`}
+                              aria-label={`${item.label} — ${a}`}
+                              onChange={() => setEditStaff(prev => prev && ({
+                                ...prev,
+                                overrides: togglePermission(prev.overrides, item.id, a, prev.newRole, cat.role_presets),
+                              }))}
+                              style={{ width: 15, height: 15, accentColor: locked ? 'var(--green, #3fb950)' : 'var(--cyan, #22d3ee)', cursor: locked ? 'not-allowed' : 'pointer', justifySelf: 'center' }} />
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </details>
+                ))}
+              </>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button type="button" onClick={saveEdit} style={btnPrimary}>Save access</button>
+              <button type="button" onClick={() => setEditStaff(null)} style={btnGhost}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {access.loading ? (
+          <div style={{ padding: 16, color: 'var(--muted)', fontSize: 13 }}>Loading access control…</div>
+        ) : !cat ? (
+          <div style={{ padding: 16, color: 'var(--red, #f85149)', fontSize: 13 }}>Permission catalog unavailable.</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: 16, color: 'var(--muted)', fontSize: 13 }}>No staff match.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rows.map(row => {
+              const rm = canRemoveAccess(row.username, meName, row.role, adminCount)
+              const isSelf = (row.username || '').toLowerCase() === (meName || '').toLowerCase()
+              return (
+                <div key={row.id} style={{
+                  display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center',
+                  padding: '10px 14px', borderRadius: 12,
+                  background: 'var(--bg)', border: '1px solid var(--border)',
+                }}>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }}>
+                      {row.username}{isSelf ? <span style={{ fontSize: 11, color: 'var(--muted)' }}> (you)</span> : null}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>
+                      {row.role === 'admin'
+                        ? 'Full access'
+                        : summarizePermissions(effectivePermissions(row.role, row.module_permissions, cat.role_presets))}
+                    </div>
+                  </div>
+                  {roleBadge(row.role)}
+                  <button type="button" onClick={() => openEdit(row)}
+                    style={{ ...btnGhost, padding: '6px 12px', fontSize: 12 }}>Edit</button>
+                  <button type="button" onClick={() => removeAccess(row)} disabled={!rm.ok} title={rm.ok ? 'Demote to member' : rm.reason}
+                    style={{
+                      padding: '6px 12px', borderRadius: 8, fontSize: 12,
+                      border: '1px solid var(--red, #f85149)', cursor: rm.ok ? 'pointer' : 'not-allowed',
+                      background: 'transparent', color: 'var(--red, #f85149)', opacity: rm.ok ? 1 : 0.45,
+                    }}>Remove</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
+    )
+  }
+
   const renderActivity = () => {
     const rows = activity.showAll ? activity.logs : failures
     return (
@@ -1300,6 +1616,7 @@ Authorization: Bearer ACCESS_TOKEN`}</pre>
       {tab === 'social' && renderSocial()}
       {tab === 'clients' && renderClients()}
       {tab === 'users' && renderUsers()}
+      {tab === 'access' && renderAccess()}
       {tab === 'activity' && renderActivity()}
     </div>
   )
