@@ -279,12 +279,14 @@ function OAuthSettings() {
   const [provDraft, setProvDraft] = useState({})
   const setProv = (id, k, v) => setProvDraft(p => ({ ...p, [id]: { ...(p[id] || {}), [k]: v } }))
 
-  const saveProvider = async (id, body) => {
+  const saveProvider = async (id, body, currentEnabled) => {
     setSaving(true)
     try {
       const d = body || provDraft[id] || {}
       const r = await api.put(`/admin/oauth/providers/${id}`, {
-        enabled: d.enabled !== false,
+        // Preserve the current state when the Enabled checkbox is untouched —
+        // defaulting true here would silently resurrect a disabled provider.
+        enabled: d.enabled ?? currentEnabled ?? true,
         client_id: d.client_id || '',
         client_secret: d.client_secret || '',
         redirect_uri: d.redirect_uri || '',
@@ -1016,7 +1018,7 @@ function OAuthSettings() {
                   checked={d.enabled ?? p.enabled}
                   onChange={checked => setProv(p.id, 'enabled', checked)}
                   label="Enabled" />
-                <button type="button" onClick={() => saveProvider(p.id)} disabled={saving} style={btnPrimary}>
+                <button type="button" onClick={() => saveProvider(p.id, null, p.enabled)} disabled={saving} style={btnPrimary}>
                   Save {p.label}
                 </button>
                 {p.configured && (

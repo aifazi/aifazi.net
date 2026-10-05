@@ -1,7 +1,7 @@
 # aifazi.net — Project Status
 
-> **What we're doing right now, and what's left to do.** Updated 2026-10-04.
-> Audit history: [AUDIT.md](AUDIT.md) (latest §18: PASETO link-token fix, Authentik admin toggle, login-animation findings) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
+> **What we're doing right now, and what's left to do.** Updated 2026-10-05.
+> Audit history: [AUDIT.md](AUDIT.md) (latest §19: full Round 7 — 2 Critical, 25 High) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
 
 ## Where we are (what we're doing)
 
@@ -9,7 +9,7 @@
 |-------------|--------|--------|
 | **Hybrid-infra diagram editor** | Feature complete + hardened | Audit batches #375–#377, fullscreen #378/#388, doc-driven decorations #389, library 26→62 items + sidebar redesign #390/#391 |
 | **Core UI migration** | ~90% done | Native inputs/dialogs/buttons → `core/forms`, core dialog+notify, `Clickable` (#379–#384); leftovers remain (P2 below) |
-| **Audit-driven hardening** | Round 6 closed same-day | 2026-10-03: #398–#409 verified (all P2 N-series/F-series + O4 + U1 + B11 + auth.py split + Sentry 11); 4 new findings — **R6-1** dep-review policy file not wired into CI (MEDIUM), R6-2 dead config key, R6-3 mapped-IPv6 in LDAP URL validator, R6-4 config-check double-registered (all LOW) |
+| **Audit-driven hardening** | Round 7 published 2026-10-05 | 4 parallel audits + full suites green (backend 321, frontend 0/58, mobile clean); **2 Critical** (staff settings mass-assignment → IdP config; CDN PUT leaks plaintext secrets), **25 High** across backend/frontend/mobile/infra; 1 shipped in-round (provider-save enabled default). Fix plan P0→P2 in AUDIT §19 |
 | **Repo hygiene** | Mostly done | Branches/stashes/caches/artifacts cleaned; Playwright artifact untracked (#393). Leftover (Round 5, AUDIT §15): 3 local branches (`bevel-sandwich`, `unique-blade`, `chore/batch3-local-sync`) + 3 worktrees, all at `main`'s commit, no unmerged work, stash empty; remote has `main` only |
 | **Mobile release pipeline** | Fix applied, **unverified** | Actions create-PR setting enabled 2026-10-03 (was broken 6 weeks); no OTA shipped since 2026-08-29 |
 | **Mobile revamp (Talk + VPN)** | M2/M3 + C6 implemented, pending device QA | 2026-10-04: **C6/H2 done** — mobile OAuth deep links carry one-time exchange codes (never tokens): `POST /api/auth/mobile/exchange` + `mobile_oauth_claims` claim table, all four provider callbacks converted, mobile Discord login (previously broken/web-only) now works, app state echoed end-to-end; backend 244→257 tests, mobile 66→83. Before ship: `mobile_oauth_claims` migration **run + verified live 2026-10-04** (incl. `users.authentik_id` column in prod), then M0.1 Android media spike, NC app password (owner), M1/EAS — ledger in `apps/mobile/PLAN-ROADMAP.md` |
@@ -69,7 +69,7 @@ Current counts: frontend **151 passed** (+1 skip) · backend **280** · mobile *
 ### Decisions & standing risks (owner)
 
 - [ ] **C3 — R2 backup target #2**: backup still same-host WebDAV; needs bucket + S3 credentials, then dual-target job + restore test.
-- [ ] **H1**: confirm prod secret rotation status. **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; the `mobile_oauth_claims` migration (P0 above) is also done + verified live. The PASETO `purpose`-claim clobber follow-up (broke GitHub/Steam account-linking) is **closed** in §18 — link tokens now use `token_type`.
+- [ ] **H1**: confirm prod secret rotation status. **R7-20 (2026-10-05): live dumps (`.env.prod-pull`, `.env.pull`, `.env.pulled`, both `.env.local`) found on disk again — delete + rotate.** **H2: closed 2026-10-04** (AUDIT §17) — mobile OAuth deep links now carry one-time exchange codes; the `mobile_oauth_claims` migration (P0 above) is also done + verified live. The PASETO `purpose`-claim clobber follow-up (broke GitHub/Steam account-linking) is **closed** in §18 — link tokens now use `token_type`.
 - [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v3/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501. Login `invalid_client` (2026-10-03) was a DB↔env client-secret desync — synced + verified end-to-end 2026-10-04 (AUDIT §18.4).
 - [ ] **EAS rebuild** handoff (`apps/mobile/EAS-REBUILD.md`) once the pipeline is verified.
 - [ ] Mobile npm advisories (31, 0 critical) — only clearable via Expo SDK bumps; build-chain only.
@@ -78,7 +78,7 @@ Current counts: frontend **151 passed** (+1 skip) · backend **280** · mobile *
 
 | Question | Where |
 |----------|-------|
-| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §16 Round 6 (2026-10-03) |
+| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §19 Round 7 (2026-10-05) |
 | Server/ops/inbox backlog? | [ROADMAP.md](ROADMAP.md) |
 | How to test a PR before merge? | [PREVIEW.md](PREVIEW.md) |
 | Infra/VPS hardening state? | [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) |
