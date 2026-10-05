@@ -163,7 +163,9 @@ export default function HybridInfraLibrary({
         )}
         {failed && diagrams.length === 0 && (
           <p style={{ fontSize: 12, color: pal.muted, margin: 0, lineHeight: 1.6 }}>
-            Library unavailable offline — the built-in Plan A study above still works.
+            {typeof navigator !== 'undefined' && navigator.onLine === false
+              ? 'Library unavailable offline — the built-in Plan A study above still works.'
+              : 'Could not load the shared library (server error) — the built-in Plan A study above still works.'}
           </p>
         )}
       </div>

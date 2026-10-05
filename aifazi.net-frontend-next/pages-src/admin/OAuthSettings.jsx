@@ -550,7 +550,12 @@ function OAuthSettings() {
   const up = cfg.upstream || {}
   const upSrc = up.sources || {}
   const endpoints = cfg.endpoints || {}
-  const failures = (activity.logs || []).filter(l => !l.success)
+  // Newest-first, deterministic even if the API order ever changes.
+  const tsOf = (l) => {
+    const t = new Date(l.createdAt || l.created_at || 0).getTime()
+    return Number.isFinite(t) ? t : 0
+  }
+  const failures = (activity.logs || []).filter(l => !l.success).slice().sort((a, b) => tsOf(b) - tsOf(a))
 
   const statusColor = (s) => s === 'ok' || s === 'Connected' ? 'var(--green)'
     : s === 'error' || s === 'Unreachable' ? 'var(--red)'

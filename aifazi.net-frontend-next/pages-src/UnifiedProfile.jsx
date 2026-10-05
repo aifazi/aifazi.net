@@ -262,12 +262,15 @@ export default function UnifiedProfile() {
 
   useEffect(() => {
     if (!user) return
+    // Array.isArray: a truthy non-array body (e.g. an error envelope with
+    // HTTP 200) must never reach state — .slice()/.map() on it crashes render.
+    const asList = (v) => (Array.isArray(v) ? v : [])
     Promise.all([
-      api.get('/store/orders').then(r => r.data || []).catch(() => []),
-      api.get('/store/downloads').then(r => r.data || []).catch(() => []),
+      api.get('/store/orders').then(r => asList(r.data)).catch(() => []),
+      api.get('/store/downloads').then(r => asList(r.data)).catch(() => []),
     ]).then(([o, d]) => {
-      setOrders((o || []).slice(0, 3))
-      setDownloads((d || []).slice(0, 3))
+      setOrders(o.slice(0, 3))
+      setDownloads(d.slice(0, 3))
     })
   }, [user])
 
