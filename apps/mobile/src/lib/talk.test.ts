@@ -104,7 +104,7 @@ describe('describeMediaPath (M2.4)', () => {
 
 describe('getRooms', () => {
   it('normalizes the v4 room list (has-call / last-activity keys)', async () => {
-    vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope({ rooms: [
+    vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope([
       {
         token: 'abc',
         type: 1,
@@ -115,7 +115,7 @@ describe('getRooms', () => {
         'last-message': { id: 7, actorType: 'user', actorId: 'maria', actorDisplayName: 'Maria', message: 'hi', timestamp: 1730000000, messageType: 'comment' },
       },
       { token: 'def', type: 2, name: 'Team', 'has-call': false },
-    ] })))
+    ])))
     const rooms = await getRooms()
     expect(rooms).toHaveLength(2)
     expect(rooms[0]).toMatchObject({
@@ -130,18 +130,18 @@ describe('getRooms', () => {
   })
 
   it('returns [] when the server has no rooms', async () => {
-    vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope({ rooms: [] })))
+    vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope([])))
     await expect(getRooms()).resolves.toEqual([])
   })
 })
 
 describe('getRoomMessages', () => {
   it('normalizes and drops id-less rows', async () => {
-    vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope({ messages: [
+    vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope([
       { id: 1, actorType: 'user', actorId: 'u1', actorDisplayName: 'U1', message: 'a', timestamp: 100, messageType: 'comment' },
       { id: 2, actorType: 'user', actorId: 'u2', actorDisplayName: 'U2', message: 'b', timestamp: 200, messageType: 'comment', referenceId: 'ref-2' },
       { id: 0, message: 'nope' },
-    ] })))
+    ])))
     const messages = await getRoomMessages('abc')
     expect(messages.map((m) => m.id)).toEqual([1, 2])
     expect(messages[1].referenceId).toBe('ref-2')
@@ -222,15 +222,15 @@ describe('OCS transport', () => {
 describe('getTalkCapabilities', () => {
   it('reads spreed features + TURN hosts', async () => {
     vi.stubGlobal('fetch', mockFetchOnce(ocsEnvelope({
-      spreed: [
-        {
+      capabilities: {
+        spreed: {
           features: ['chat-v2', 'conversation-v4', 'signaling-v3'],
           'signaling-v3': {
             public: [{ backend: 'internal', name: 'Server', version: '3' }],
             secure: [{ backend: 'turn', host: 'turn.cloud.aifazi.net' }],
           },
         },
-      ],
+      },
     })))
     const caps = await getTalkCapabilities()
     expect(caps).toEqual({

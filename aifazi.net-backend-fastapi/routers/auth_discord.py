@@ -12,7 +12,7 @@ from fastapi.responses import RedirectResponse
 
 from database import supabase
 from dependencies import get_current_user
-from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
+from utils.mobile_oauth_codes import app_state_from, issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -107,7 +107,8 @@ def _mobile_code_redirect(user_id: str, user_username: str, st: dict | None) -> 
     """
     dest = _safe_relative_path((st or {}).get("dest") or "/profile")
     try:
-        code = issue_code("discord", user_id, user_username, "user", dest)
+        code = issue_code("discord", user_id, user_username, "user", dest,
+                          app_state=app_state_from((st or {}).get("extra")))
     except Exception:
         log.error("discord mobile code issue failed", exc_info=True)
         return RedirectResponse(f"{MOBILE_AUTH_URL}/discord?discord_error=db")

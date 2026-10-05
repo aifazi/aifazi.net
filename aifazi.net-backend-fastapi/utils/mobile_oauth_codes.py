@@ -23,9 +23,9 @@ Properties:
   issuing fails and the OAuth callback redirects with its usual
   `*_error=db` param instead of falling back to a token-in-fragment redirect.
 
-Operator migration (paste into the Supabase SQL editor — same pattern as the
-audit/email_settings tables; the backend never runs raw SQL outside the
-admin-gated DB console):
+Operator migration: apply supabase/migrations/20261005000000_mobile_oauth_claims.sql
+(same pattern as the audit/email_settings tables; the backend never runs raw
+SQL outside the admin-gated DB console):
 
     CREATE TABLE IF NOT EXISTS mobile_oauth_claims (
         code_hash   TEXT PRIMARY KEY,
@@ -35,16 +35,16 @@ admin-gated DB console):
         consumed_at TIMESTAMPTZ
     );
 
-Rows expire with their code (5-minute TTL in the PASETO payload); consumed or
-expired rows can be purged lazily (DELETE WHERE consumed_at IS NOT NULL AND
-created_at < now() - interval '1 day').
+Rows expire with their code (5-minute TTL in the PASETO payload). Anything
+older than a day is purged lazily on issue (best-effort, never fatal).
 """
 from __future__ import annotations
 
 import hashlib
+import hmac
 import logging
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from database import supabase
@@ -68,13 +68,31 @@ def code_hash(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
+def app_state_from(extra: object | None) -> str | None:
+    """Extract the app-issued one-time OAuth state echoed through the signed
+    backend state (``state_echo`` shape ``{"state": ...}``).
+
+    Returns None when absent so legacy flows (no app state) keep issuing
+    unbound codes. Anything non-string is ignored — never trust the shape.
+    """
+    if isinstance(extra, dict):
+        v = extra.get("state")
+        return str(v) if v else None
+    return None
+
+
 def issue_code(provider: str, user_id: str, username: str, role: str, dest: str,
-               kind: str = "forum") -> str:
+               kind: str = "forum", app_state: str | None = None) -> str:
     """Mint a one-time code and record its claim row.
 
     Raises on any failure (PASETO_SECRET missing, claim insert failed) so the
     caller can fail closed with an error redirect instead of issuing a token
     in the URL.
+
+    `app_state` binds the code to the app's one-time OAuth state (its
+    SHA-256 goes into the encrypted payload): exchange then requires the
+    same state, so an intercepted code alone is useless. Unbound (legacy)
+    codes exchange without it.
     """
     payload = {
         "token_type": CODE_TOKEN_TYPE,
@@ -86,7 +104,14 @@ def issue_code(provider: str, user_id: str, username: str, role: str, dest: str,
         "dest": str(dest),
         "jti": secrets.token_hex(16),
     }
+    if app_state:
+        payload["app_state_hash"] = hashlib.sha256(str(app_state).encode("utf-8")).hexdigest()
     code = _paseto_create_token(payload, expires_in=CODE_TTL_SECONDS, purpose="auth")
+    try:
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+        supabase.table(CLAIMS_TABLE).delete().lt("created_at", cutoff).execute()
+    except Exception:
+        pass  # purge is hygiene, never fatal to issuance
     supabase.table(CLAIMS_TABLE).insert({
         "code_hash": code_hash(code),
         "user_id": str(user_id),
@@ -116,11 +141,12 @@ def _consume(code: str) -> bool:
         return False
 
 
-def exchange_code(code: str | None) -> dict | None:
+def exchange_code(code: str | None, app_state: str | None = None) -> dict | None:
     """Verify + atomically consume a one-time code. Returns the payload or None.
 
     Rejects: non-strings, oversized input, bad/expired PASETO, wrong token
-    type, missing user claim, unknown codes, and already-consumed codes.
+    type, missing user claim, unknown codes, already-consumed codes, and —
+    for codes bound at issue time — a missing or mismatched app state.
     """
     if not isinstance(code, str) or not code or len(code) > MAX_CODE_LEN:
         return None
@@ -129,6 +155,11 @@ def exchange_code(code: str | None) -> dict | None:
         return None
     if not payload.get("user_id"):
         return None
+    bound = payload.get("app_state_hash")
+    if bound:
+        if not app_state or not hmac.compare_digest(
+                hashlib.sha256(str(app_state).encode("utf-8")).hexdigest(), str(bound)):
+            return None
     if not _consume(code):
         return None
     return payload

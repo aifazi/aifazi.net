@@ -1,7 +1,7 @@
-"""H2/C6 — one-time exchange codes for mobile OAuth deep links.
+"""H2/C6 â€” one-time exchange codes for mobile OAuth deep links.
 
 Covers:
-- utils.mobile_oauth_codes: issue→exchange round-trip, single-use
+- utils.mobile_oauth_codes: issueâ†’exchange round-trip, single-use
   enforcement, unknown / wrong-purpose / garbage / expired codes rejected,
   fragment builder shape (code + state echo, never a token).
 - POST /api/auth/mobile/exchange: success (token + refreshToken + dest),
@@ -34,7 +34,7 @@ def _load(name: str, path: str):
     return module
 
 
-# ── In-memory Supabase stand-in (mobile_oauth_claims + users) ───────────────
+# â”€â”€ In-memory Supabase stand-in (mobile_oauth_claims + users) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _Resp:
     def __init__(self, data):
         self.data = data
@@ -130,7 +130,7 @@ def codes(monkeypatch):
     return mod, db
 
 
-# ── utils.mobile_oauth_codes ────────────────────────────────────────────────
+# â”€â”€ utils.mobile_oauth_codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class TestIssueExchange:
     def test_roundtrip(self, codes):
         mod, db = codes
@@ -207,7 +207,7 @@ class TestFragmentShape:
         assert mod.state_echo(None) == ""
 
 
-# ── POST /api/auth/mobile/exchange ──────────────────────────────────────────
+# â”€â”€ POST /api/auth/mobile/exchange â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class TestExchangeEndpoint:
     @pytest.fixture()
     def client(self, monkeypatch):
@@ -254,3 +254,58 @@ class TestExchangeEndpoint:
         c, _, _ = client
         r = c.post("/mobile/exchange", json={"code": "abc"})
         assert r.status_code == 422  # pydantic min_length
+
+
+class TestAppStateBinding:
+    """H2 follow-up: codes bind the app's one-time OAuth state when the
+    issuer provides it; exchange then requires the same state."""
+
+    @pytest.fixture()
+    def bound_client(self, monkeypatch):
+        db = _ClaimsDB()
+        monkeypatch.setitem(sys.modules, "database", _db_stub(db))
+
+        spec = importlib.util.spec_from_file_location(
+            "utils.mobile_oauth_codes_bound",
+            os.path.join(BACKEND_DIR, "utils", "mobile_oauth_codes.py"),
+        )
+        assert spec is not None and spec.loader is not None
+        codes_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(codes_mod)
+        # Canonical name too: the router does `from utils.mobile_oauth_codes
+        # import exchange_code`, which would otherwise reuse a stale cached
+        # instance bound to another test's store.
+        monkeypatch.setitem(sys.modules, "utils.mobile_oauth_codes", codes_mod)
+
+        router_mod = _load("mobile_oauth_bound_under_test", os.path.join("routers", "mobile_oauth.py"))
+        app = FastAPI()
+        app.include_router(router_mod.router)
+        return TestClient(app, raise_server_exceptions=False), db, codes_mod
+
+    def test_bound_code_exchanges_with_state(self, bound_client):
+        c, _, codes_mod = bound_client
+        code = codes_mod.issue_code(
+            "github", "u10", "erin", "user", "/profile", app_state="s3cr3t-state")
+        r = c.post("/mobile/exchange", json={"code": code, "state": "s3cr3t-state"})
+        assert r.status_code == 200, r.text
+        assert r.json()["token"]
+
+    def test_bound_code_rejects_wrong_state(self, bound_client):
+        c, _, codes_mod = bound_client
+        code = codes_mod.issue_code(
+            "github", "u11", "fred", "user", "/profile", app_state="right")
+        r = c.post("/mobile/exchange", json={"code": code, "state": "wrong"})
+        assert r.status_code == 400
+
+    def test_bound_code_rejects_missing_state(self, bound_client):
+        c, _, codes_mod = bound_client
+        code = codes_mod.issue_code(
+            "github", "u12", "gina", "user", "/profile", app_state="right")
+        r = c.post("/mobile/exchange", json={"code": code})
+        assert r.status_code == 400
+
+    def test_unbound_legacy_code_still_exchanges(self, bound_client):
+        c, _, codes_mod = bound_client
+        code = codes_mod.issue_code("github", "u13", "hal", "user", "/profile")
+        r = c.post("/mobile/exchange", json={"code": code})
+        assert r.status_code == 200, r.text

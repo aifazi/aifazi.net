@@ -44,7 +44,7 @@ export type OAuthResult =
 
 /** What the deep-link fragment actually carries (H2/C6: a one-time code). */
 type ParsedOAuthResult =
-  | { ok: true; requires2fa: false; code: string; dest?: string }
+  | { ok: true; requires2fa: false; code: string; dest?: string; state?: string }
   | { ok: true; requires2fa: true; partialToken: string; username?: string }
   | { ok: false; cancelled: boolean; error?: string }
 
@@ -114,12 +114,14 @@ export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): Par
     }
   }
   // H2/C6 — the fragment carries a one-time code, never raw tokens.
+  // The echoed state is returned so the exchanger can bind the code to it.
   if (params.code) {
     return {
       ok: true,
       requires2fa: false,
       code: params.code,
       dest: params.dest || undefined,
+      state: params.state || undefined,
     }
   }
   const errKey = `${provider}_error`
@@ -129,12 +131,17 @@ export function parseOAuthRedirect(rawUrl: string, provider: OAuthProvider): Par
 /**
  * Exchange a one-time OAuth code (from the deep-link fragment) for access +
  * refresh tokens. H2/C6 — no token is ever present in the redirect URL.
+ * The app state (validated echo) is sent along so the server binds the code
+ * to this flow; an intercepted code alone is useless.
  */
-export async function exchangeOAuthCode(code: string): Promise<{ token: string; refreshToken: string }> {
-  const res = await api.post('/auth/mobile/exchange', { code })
-  const data = (res.data ?? {}) as { token?: string; refreshToken?: string }
+export async function exchangeOAuthCode(
+  code: string,
+  state?: string,
+): Promise<{ token: string; refreshToken: string; dest?: string }> {
+  const res = await api.post('/auth/mobile/exchange', { code, state })
+  const data = (res.data ?? {}) as { token?: string; refreshToken?: string; dest?: string }
   if (!data.token) throw new Error('Exchange failed — no token returned')
-  return { token: data.token, refreshToken: data.refreshToken ?? '' }
+  return { token: data.token, refreshToken: data.refreshToken ?? '', dest: data.dest }
 }
 
 /** Single-flight completion: only resolves the session that is actually pending. */
@@ -170,9 +177,11 @@ export async function loginWithOAuth(provider: OAuthProvider): Promise<OAuthResu
         resolve(parsed)
         return
       }
-      void exchangeOAuthCode(parsed.code)
-        .then(({ token, refreshToken }) => {
-          resolve({ ok: true, requires2fa: false, token, refreshToken, dest: parsed.dest })
+      // Prefer the server-signed dest over the fragment (route confusion);
+      // fall back to the fragment when the server omits it.
+      void exchangeOAuthCode(parsed.code, parsed.state)
+        .then(({ token, refreshToken, dest }) => {
+          resolve({ ok: true, requires2fa: false, token, refreshToken, dest: dest || parsed.dest })
         })
         .catch(() => {
           resolve({ ok: false, cancelled: false, error: 'exchange' })

@@ -54,7 +54,7 @@ from routers.auth_shared import (
     bearer,
 )
 from utils.auth_tokens import make_forum_2fa_token, make_forum_token
-from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
+from utils.mobile_oauth_codes import app_state_from, issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -385,7 +385,8 @@ async def github_callback(code: str | None = None, state: str | None = None, err
     if _st.get("mobile"):
         safe_dest = _safe_relative_path(dest)
         try:
-            code = issue_code("github", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
+            code = issue_code("github", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest,
+                               app_state=app_state_from(_st.get("extra")))
         except Exception:
             log.error("github_callback mobile code issue failed", exc_info=True)
             return RedirectResponse(f"{front}?github_error=db")

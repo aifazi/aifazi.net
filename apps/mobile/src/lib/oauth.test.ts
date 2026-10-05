@@ -38,9 +38,9 @@ afterEach(() => {
 })
 
 describe('parseOAuthRedirect (no state issued)', () => {
-  it('reads the one-time code + dest from the fragment', () => {
+  it('reads the one-time code + dest + echoed state from the fragment', () => {
     const r = parseOAuthRedirect(codeUrl('ignored-no-state-issued'), 'github')
-    expect(r).toEqual({ ok: true, requires2fa: false, code: CODE, dest: '/forum/profile' })
+    expect(r).toEqual({ ok: true, requires2fa: false, code: CODE, dest: '/forum/profile', state: 'ignored-no-state-issued' })
   })
 
   it('still handles the 2FA partial-token fragment', () => {
@@ -62,7 +62,7 @@ describe('parseOAuthRedirect (no state issued)', () => {
   })
 })
 
-const mockExchange = (data: { token?: string; refreshToken?: string } | Error = { token: 'ACCESS', refreshToken: 'REFRESH' }) => {
+const mockExchange = (data: { token?: string; refreshToken?: string; dest?: string } | Error = { token: 'ACCESS', refreshToken: 'REFRESH' }) => {
   vi.mocked(api.post).mockImplementation(async () => {
     if (data instanceof Error) throw data
     return { data }
@@ -70,7 +70,7 @@ const mockExchange = (data: { token?: string; refreshToken?: string } | Error = 
 }
 
 describe('loginWithOAuth (state issued, fail-closed)', () => {
-  it('exchanges the code and resolves with tokens', async () => {
+  it('exchanges the code with the echoed state and resolves with tokens', async () => {
     vi.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
       type: 'success',
       url: codeUrl(STATE),
@@ -79,7 +79,18 @@ describe('loginWithOAuth (state issued, fail-closed)', () => {
 
     const r = await loginWithOAuth('github')
     expect(r).toEqual({ ok: true, requires2fa: false, token: 'ACCESS', refreshToken: 'REFRESH', dest: '/forum/profile' })
-    expect(api.post).toHaveBeenCalledWith('/auth/mobile/exchange', { code: CODE })
+    expect(api.post).toHaveBeenCalledWith('/auth/mobile/exchange', { code: CODE, state: STATE })
+  })
+
+  it('prefers the server-signed dest over the fragment', async () => {
+    vi.mocked(WebBrowser.openAuthSessionAsync).mockResolvedValue({
+      type: 'success',
+      url: codeUrl(STATE),
+    } as never)
+    mockExchange({ token: 'ACCESS', refreshToken: 'REFRESH', dest: '/server' })
+
+    const r = await loginWithOAuth('github')
+    expect(r).toEqual({ ok: true, requires2fa: false, token: 'ACCESS', refreshToken: 'REFRESH', dest: '/server' })
   })
 
   it('rejects a redirect whose state does not match (CSRF)', async () => {
