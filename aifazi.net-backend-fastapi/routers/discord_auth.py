@@ -61,6 +61,11 @@ PASETO_SIGNING_KEY = os.getenv("PASETO_SECRET", "")
 JWT_ALGO    = "HS256"
 JWT_EXPIRE  = 60 * 24 * 7   # 7 days in minutes
 
+# Mobile deep-link base shared with the site routers (auth_discord,
+# github_auth, steam_auth, authentik_oidc) and the app OAUTH_REDIRECT_BASE.
+# Player mobile redirects MUST live under it or parseOAuthRedirect drops them.
+MOBILE_AUTH_URL = os.getenv("MOBILE_AUTH_URL", "aifazi:///oauth/callback").rstrip("/")
+
 DISCORD_API = "https://discord.com/api/v10"
 
 bearer = CookieHTTPBearer(auto_error=False)
@@ -216,15 +221,16 @@ async def discord_callback(code: str = "", error: str = "", state: str = ""):
     if mobile:
         safe_dest = _safe_relative_path(dest)
         try:
-            from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
+            from utils.mobile_oauth_codes import app_state_from, issue_code, mobile_fragment, state_echo
             one_time_code = issue_code(
                 "discord", str(db_user["discord_id"]), db_user.get("username") or "",
                 "player", safe_dest, kind="discord_player",
+                app_state=app_state_from(state_info.get("extra")),
             )
         except Exception:
-            return RedirectResponse("aifazi://auth/discord?discord_error=db")
+            return RedirectResponse(f"{MOBILE_AUTH_URL}/discord?discord_error=db")
         return RedirectResponse(
-            "aifazi://auth/discord" + mobile_fragment(one_time_code, safe_dest)
+            MOBILE_AUTH_URL + "/discord" + mobile_fragment(one_time_code, safe_dest)
             + state_echo(state_info.get("extra"))
         )
 

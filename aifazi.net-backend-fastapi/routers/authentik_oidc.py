@@ -33,7 +33,7 @@ from routers.auth_shared import (
     bearer,
 )
 from utils.auth_tokens import _set_auth_cookies, make_forum_2fa_token, make_forum_token, make_refresh_token
-from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
+from utils.mobile_oauth_codes import app_state_from, issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -327,7 +327,8 @@ async def authentik_callback(
         # failure fails closed (error param) — no token-in-URL fallback.
         safe_dest = _safe_relative_path(dest if isinstance(dest, str) else "/profile", default="/profile")
         try:
-            code = issue_code("authentik", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
+            code = issue_code("authentik", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest,
+                                app_state=app_state_from(st.get("extra")))
         except Exception:
             log.error("authentik mobile code issue failed", exc_info=True)
             return _ak_fail(request, front, m_login, "db", user.get("username") or "")
