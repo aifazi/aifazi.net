@@ -261,7 +261,9 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
   const canvasHandle = useRef<HybridInfraCanvasHandle>(null)
   // Share panel (B2): public + embed URLs, computed on first open.
   const [shareOpen, setShareOpen] = useState(false)
-  const [shareUrls, setShareUrls] = useState<{ page: string; embed: string; snippet: string } | null>(null)
+  const [shareUrls, setShareUrls] = useState<{ page: string; embed: string; snippet: string; ogImage: string } | null>(null)
+  // F3 embed polish: live scaled preview of the chrome-free embed view.
+  const [previewOpen, setPreviewOpen] = useState(false)
   // History panel (B4): revision list + inspected diff.
   const [histOpen, setHistOpen] = useState(false)
   const [revList, setRevList] = useState<InfraRevisionMeta[] | null>(null)
@@ -1990,11 +1992,19 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
       const page = `${origin}/hybrid-infra?diagram=${encodeURIComponent(slug)}`
       const embed = `${origin}/hybrid-infra/embed?diagram=${encodeURIComponent(slug)}`
       const safeTitle = escapeHtmlAttr(cur.title)
+      // F1: point scrapers at the zero-dep SVG share image with live counts.
+      const nodeCount = Array.isArray(cur.nodes) ? cur.nodes.length : 0
+      const flowCount = Array.isArray(cur.flows) ? cur.flows.length : 0
+      const ogImage =
+        `${origin}/api/og?title=${encodeURIComponent(cur.title || slug)}` +
+        `&nodes=${nodeCount}&flows=${flowCount}&slug=${encodeURIComponent(slug)}`
       setShareUrls({
         page,
         embed,
         snippet: `<iframe src="${embed}" width="100%" height="720" style="border:0" loading="lazy" title="${safeTitle}"></iframe>`,
+        ogImage,
       })
+      setPreviewOpen(false)
     }
     setShareOpen((v) => !v)
     setHistOpen(false)
@@ -2455,7 +2465,7 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
             </button>
           </div>
           <label style={LABEL} htmlFor="share-embed">EMBED (IFRAME)</label>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
             <Input id="share-embed" readOnly value={shareUrls.snippet} style={INPUT} onFocus={(e) => e.target.select()} />
             <button
               type="button"
@@ -2465,6 +2475,56 @@ export default function HybridInfraEditor({ startEditing = false }: { startEditi
               COPY
             </button>
           </div>
+          <label style={LABEL} htmlFor="share-og">SHARE IMAGE (OG)</label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <Input id="share-og" readOnly value={shareUrls.ogImage} style={INPUT} onFocus={(e) => e.target.select()} />
+            <button
+              type="button"
+              onClick={() => void copyText(shareUrls.ogImage, 'Share image URL copied')}
+              style={{ ...BTN, whiteSpace: 'nowrap' }}
+            >
+              COPY
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setPreviewOpen((v) => !v)}
+              aria-expanded={previewOpen}
+              aria-controls="share-embed-preview"
+              style={{ ...BTN, whiteSpace: 'nowrap' }}
+            >
+              {previewOpen ? 'HIDE PREVIEW' : 'SHOW PREVIEW'}
+            </button>
+            <span style={{ fontSize: 11, color: pal.muted, fontFamily: 'var(--font-mono)' }}>
+              Small scaled preview of the embed view.
+            </span>
+          </div>
+          {previewOpen && (
+            <div
+              id="share-embed-preview"
+              style={{
+                marginTop: 10,
+                border: `1px solid ${pal.border}`,
+                borderRadius: 10,
+                overflow: 'hidden',
+                background: pal.bg,
+              }}
+            >
+              {/* Scaled-down live preview: 2x content shrunk to half width so
+                  the full 720px-tall embed fits the panel without scrolling. */}
+              <div style={{ width: '200%', transform: 'scale(0.5)', transformOrigin: 'top left', height: 380 }}>
+                <iframe
+                  src={shareUrls.embed}
+                  title={`Preview of ${doc.title}`}
+                  loading="lazy"
+                  style={{ width: '100%', height: 760, border: 0, pointerEvents: 'none' }}
+                  tabIndex={-1}
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+          )}
           <p style={{ fontSize: 11, color: pal.muted, margin: '8px 0 0', lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
             The embed points at <code>/hybrid-infra/embed</code> — a chrome-free read-only view of this diagram.
           </p>

@@ -47,10 +47,40 @@ async def mobile_exchange(body: ExchangeIn):
     # The Discord player flow (routers/discord_auth.py) mints its own 7-day
     # player JWT for /api/discord/* — the code carries kind=discord_player.
     if payload.get("kind") == "discord_player":
+        # R7-8 — verify the player row still exists before minting (fail
+        # closed on unknown rows or directory outages). The callback upserts
+        # discord_users before issuing the code, so a missing row means a
+        # forged or stale code.
+        try:
+            prow = supabase.table("discord_users").select("discord_id") \
+                .eq("discord_id", user_id).execute()
+        except Exception:
+            raise HTTPException(503, "User directory unavailable")
+        if not prow.data:
+            raise HTTPException(400, "Sign-in code is invalid, expired, or already used")
         from routers.discord_auth import _make_player_token
         token = _make_player_token({"discord_id": user_id, "username": username, "avatar": ""})
         log.info("mobile oauth exchange: provider=%s kind=discord_player", provider)
         return {"token": token, "dest": dest}
+
+    # R7-8 — SELECT banned before minting. The callbacks mint this code only
+    # after authenticating the user, but a suspension issued after the code
+    # was minted must still deny: banned=True fails closed (403), as do
+    # directory errors (503). A missing row is tolerated with the code claims
+    # used as-is (provisioning parity — the OAuth callbacks create the user
+    # row just before issuing the code). The DB row, when present, is the
+    # source for username/role, not the code claims alone.
+    try:
+        urow = supabase.table("users").select("id,username,role,banned") \
+            .eq("id", user_id).execute()
+    except Exception:
+        raise HTTPException(503, "User directory unavailable")
+    db_user = (urow.data or [None])[0]
+    if db_user and db_user.get("banned"):
+        raise HTTPException(403, "Account suspended")
+    if db_user:
+        username = db_user.get("username") or username
+        role = db_user.get("role") or role
 
     token = make_forum_token(user_id, username, role)
     refresh = make_refresh_token({"id": user_id, "username": username, "role": role}, 60 * 24 * 7)

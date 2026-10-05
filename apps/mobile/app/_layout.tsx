@@ -151,9 +151,9 @@ function RootNav() {
       if (id === lastHandledId) return
       lastHandledId = id
       const data = (response.notification.request.content.data ?? {}) as Record<string, any>
-      if (!routePushData(data, (href) => router.push(href))) {
-        router.push('/notifications' as Href)
-      }
+      // Unknown payloads are a deliberate no-op: never navigate on
+      // unrecognized data (a crafted payload must not drive the router).
+      routePushData(data, (href) => router.push(href))
     }
     const sub = Notifications.addNotificationResponseReceivedListener(handleResponse)
     // Cold start: the tap that launched the app never fires the listener above.

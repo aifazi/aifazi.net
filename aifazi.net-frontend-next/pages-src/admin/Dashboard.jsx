@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import NextImage from 'next/image'
 import { useNavigate } from '@/lib/router-compat'
-import api, { getRole, getUsername, setEffectiveAccess, getAuthToken, setImpersonationToken } from '@/lib/api'
+import api, { getRole, getUsername, setEffectiveAccess, setImpersonationToken } from '@/lib/api'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { Checkbox, Input, Select, TextArea } from '../../core/ui.jsx'
@@ -11,7 +11,8 @@ import Clickable from '../../core/Clickable.jsx'
 import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader, PanelErrorBoundary, SkeletonGrid } from './shared'
 import { canViewKey, canView as canViewAny, resolveNavKey, firstPermittedKey } from './access'
-import { Modal, EmptyState, Pagination } from './ui'
+import { Modal, Pagination } from './ui'
+import { LoadingState, EmptyState } from '../../core/States.jsx'
 import AdminHeader from './AdminHeader'
 import Sidebar from './Sidebar'
 import { Icon, NAV_ICONS } from './icons'
@@ -19,24 +20,24 @@ import { useFadeUp, useStaggerIn } from '@/lib/animate'
 
 // Heavy admin panels are lazy-loaded so the initial admin bundle stays small —
 // each loads only when its tab is opened.
-const ForumAdmin = dynamic(() => import('../ForumAdmin').then(m => m.default || m), { ssr: false })
-const DBMonitor = dynamic(() => import('./DBMonitor').then(m => m.default || m), { ssr: false })
-const PostEditor = dynamic(() => import('./PostEditor').then(m => m.PostEditor), { ssr: false })
-const MediaLibrary = dynamic(() => import('./PostEditor').then(m => m.MediaLibrary), { ssr: false })
-const Mail = dynamic(() => import('./Mail').then(m => m.default || m), { ssr: false })
-const ThemeHub = dynamic(() => import('./ThemeHub').then(m => m.default || m), { ssr: false })
-const NewsletterPanel = dynamic(() => import('./AdminPanels').then(m => m.NewsletterPanel), { ssr: false })
-const StatsPanel = dynamic(() => import('./AdminPanels').then(m => m.StatsPanel), { ssr: false })
-const PageContentPanel = dynamic(() => import('./AdminPanels').then(m => m.PageContentPanel), { ssr: false })
-const ContentManager = dynamic(() => import('./ContentManager').then(m => m.default || m), { ssr: false })
-const PageBuilder = dynamic(() => import('./PageBuilder').then(m => m.default || m), { ssr: false })
-const HelpDeskPanel = dynamic(() => import('./HelpDeskPanel').then(m => m.default || m), { ssr: false })
-const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m), { ssr: false })
-const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false })
-const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false })
-const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false })
-const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false })
-const OAuthSettings = dynamic(() => import('./OAuthSettings').then(m => m.default || m), { ssr: false })
+const ForumAdmin = dynamic(() => import('../ForumAdmin').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const DBMonitor = dynamic(() => import('./DBMonitor').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const PostEditor = dynamic(() => import('./PostEditor').then(m => m.PostEditor), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const MediaLibrary = dynamic(() => import('./PostEditor').then(m => m.MediaLibrary), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const Mail = dynamic(() => import('./Mail').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const ThemeHub = dynamic(() => import('./ThemeHub').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const NewsletterPanel = dynamic(() => import('./AdminPanels').then(m => m.NewsletterPanel), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const StatsPanel = dynamic(() => import('./AdminPanels').then(m => m.StatsPanel), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const PageContentPanel = dynamic(() => import('./AdminPanels').then(m => m.PageContentPanel), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const ContentManager = dynamic(() => import('./ContentManager').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const PageBuilder = dynamic(() => import('./PageBuilder').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const HelpDeskPanel = dynamic(() => import('./HelpDeskPanel').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const Changelog = dynamic(() => import('./Changelog').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const FiveMPanel = dynamic(() => import('./FiveMPanel').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const OAuthSettings = dynamic(() => import('./OAuthSettings').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
 
 const STAT_CARD_VIEWS = { content: 'content', activity: 'db', communications: 'communications', staff: 'staff' }
 function StatsGrid({ dashStats, isMobile, setView }) {
@@ -334,17 +335,36 @@ function Dashboard({ onLogout }) {
   const [contactFilter, setContactFilter] = useState('all') // 'all' | 'replied' | 'unreplied'
   //  Shortcuts help 
   const [showShortcuts, setShowShortcuts] = useState(false)
+  // D5 — single-letter shortcuts can be disabled entirely (persisted,
+  // default ON so existing users see no change). Read live in the handler
+  // so cross-tab changes apply without re-subscribing.
+  const [shortcutsOff, setShortcutsOff] = useState(() => {
+    try { return localStorage.getItem('admin_shortcuts_off') === '1' } catch { return false }
+  })
+  const setShortcutsEnabled = on => {
+    try { localStorage.setItem('admin_shortcuts_off', on ? '0' : '1') } catch {}
+    setShortcutsOff(!on)
+  }
 
-  // Session expiry warning — checks JWT exp, warns 5 min before
-  const checkExpiry = () => {
-    const token = getAuthToken()
-    if (!token) return
+  // Session expiry warning — the old version decoded the token with
+  // atob(token.split('.')[1]), which assumes a 3-part JWT. Auth tokens here
+  // are opaque PASETO v4.local strings (24h access / 7d refresh, silently
+  // refreshed on 401 by lib/api), so the decode always threw and this banner
+  // could never appear. No endpoint returns an exp, so this probes the
+  // lightweight GET /auth/me instead (existing 30s interval, paused when the
+  // tab is hidden): consecutive failures mean the silent refresh is dead too
+  // — lib/api is then already redirecting to /login — while a single network
+  // blip never flashes the banner.
+  const expiryFails = useRef(0)
+  const checkExpiry = async () => {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      const expiresIn = (payload.exp * 1000) - Date.now()
-      if (expiresIn < 5 * 60 * 1000 && expiresIn > 0) setSessionWarning(true)
-      else setSessionWarning(false)
-    } catch {}
+      await api.get('/auth/me')
+      expiryFails.current = 0
+      setSessionWarning(false)
+    } catch {
+      expiryFails.current += 1
+      if (expiryFails.current >= 2) setSessionWarning(true)
+    }
   }
   useEffect(() => {
     const run = async () => { await checkExpiry() }
@@ -716,11 +736,19 @@ function Dashboard({ onLogout }) {
   }
 
   // Keyboard shortcuts (kept after goView so the guarded navigator is in scope)
+  // D5 — single-letter jumps stay out of the way while interacting: skip
+  // INPUT/TEXTAREA/SELECT/BUTTON, any dialog, checkbox/radio focus, and
+  // contentEditable. The help toggle (Ctrl/Cmd+Shift+?) and Escape always work.
   useEffect(() => {
     const handler = e => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === '?') { e.preventDefault(); setShowShortcuts(o => !o); return }
       if (e.key === 'Escape') { setShowShortcuts(false); return }
+      try { if (localStorage.getItem('admin_shortcuts_off') === '1') return } catch {}
+      const t = e.target
+      if (t && (t.isContentEditable || (t.closest && t.closest('[role="dialog"], dialog')))) return
+      const tag = t && t.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return
+      if (t && (t.type === 'checkbox' || t.type === 'radio')) return
       if (e.metaKey || e.ctrlKey) return
       if (e.key === 'h') goView('home')
       if (e.key === 'p') goView('content')
@@ -791,6 +819,15 @@ function Dashboard({ onLogout }) {
         /* ── Post-list card hover ── */
         .admin-post-row:hover { border-color: var(--cyan) !important; background: color-mix(in srgb, var(--cyan) 4%, transparent) !important; }
         .admin-post-row { transition: border-color 0.15s, background 0.15s; }
+
+        /* ── D4 admin responsive (360–768px): rows wrap, low-value columns
+           hide, actions stay reachable ── */
+        .admin-recent-row { flex-wrap: nowrap; }
+        .admin-recent-row .admin-row-title { min-width: 0; }
+        @media (max-width: 768px) {
+          .admin-hide-sm { display: none !important; }
+          .admin-recent-row { flex-wrap: wrap; }
+        }
       `}</style>
       <div style={{ display: 'flex', flex: 1, height: '100%', position: 'relative', zIndex: 1, minHeight: 0, overflow: 'hidden' }}>
 
@@ -826,7 +863,7 @@ function Dashboard({ onLogout }) {
           {/* Session expiry warning */}
           {sessionWarning && (
             <div style={{ marginBottom: 16, padding: '10px 16px', background: '#ffd70010', border: '1px solid #ffd70033', borderLeft: '3px solid #ffd700', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700' }}> Your session expires in less than 5 minutes. Save your work and re-login.</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ffd700' }}> Your session may have expired. Save your work — you may need to sign in again.</span>
               <button onClick={() => setSessionWarning(false)} aria-label="Dismiss session warning" style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
           )}
@@ -843,7 +880,7 @@ function Dashboard({ onLogout }) {
                   {canView('db') && (
                   <button onClick={() => goView('db')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 14px', background: 'color-mix(in srgb, var(--green) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', color: 'var(--green)', cursor: 'pointer', borderRadius: 6 }}> DB MONITOR</button>
                   )}
-                  <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
+                  <button onClick={() => setShowShortcuts(true)} title="Keyboard shortcuts (Ctrl+Shift+?)" aria-label="Keyboard shortcuts" aria-keyshortcuts="Control+Shift+?" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '7px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--muted)', cursor: 'pointer', borderRadius: 6 }}> ⌨</button>
                 </>}
               />
 
@@ -953,16 +990,25 @@ function Dashboard({ onLogout }) {
                         <button onClick={() => setView('content')} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: 1 }}>VIEW ALL </button>
                       </div>
                       {dashStats.recentPosts.map(post => (
-                        <div key={post.id} style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '11px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div key={post.id} className="admin-recent-row" style={{ background: 'var(--bg3)', border: '1px solid var(--border)', padding: '11px 14px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 12 }}>
                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '2px 6px', border: '1px solid', borderColor: post.published ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'var(--border)', color: post.published ? 'var(--green)' : 'var(--muted)', background: post.published ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'transparent', flexShrink: 0 }}>
                             {post.published ? 'LIVE' : 'DRAFT'}
                           </span>
-                          <div style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</div>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{post.views || 0} views</span>
+                          <div className="admin-row-title" style={{ flex: 1, fontFamily: 'var(--font-display)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.title}</div>
+                          <span className="admin-hide-sm" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>{post.views || 0} views</span>
                           <button onClick={() => { setEditingPost(post); setView('editor') }} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', background: 'none', border: '1px solid var(--border)', padding: '4px 10px', cursor: 'pointer', flexShrink: 0 }}>EDIT</button>
                         </div>
                       ))}
                     </div>
+                  )}
+                  {/* D3 — home empty state: no posts at all yet */}
+                  {dashStats.totalPosts === 0 && (
+                    <EmptyState
+                      icon="📝"
+                      title="No posts yet"
+                      hint="Publish your first post to see it here."
+                      action={<button onClick={() => goView('editor')} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 16px', borderRadius: 6 }}>+ NEW POST</button>}
+                    />
                   )}
                 </>
               )}
@@ -1029,14 +1075,16 @@ function Dashboard({ onLogout }) {
                 </div>
               )}
 
-              {loading ? <div className="loader" /> : filteredPosts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
-                  {postSearch || postFilter !== 'all' ? (
-                    <>No posts match that filter. <button onClick={() => { setPostSearch(''); setPostFilter('all') }} style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>Clear filters </button></>
+              {loading ? <LoadingState label="Loading posts…" /> : filteredPosts.length === 0 ? (
+                <EmptyState
+                  icon="📝"
+                  title={postSearch || postFilter !== 'all' ? 'No posts match that filter' : 'No posts yet'}
+                  action={(postSearch || postFilter !== 'all') ? (
+                    <button onClick={() => { setPostSearch(''); setPostFilter('all') }} style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>Clear filters →</button>
                   ) : (
-                    <>No posts yet. <button onClick={() => setView('editor')} style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>Create one </button></>
+                    <button onClick={() => setView('editor')} style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>Create one →</button>
                   )}
-                </div>
+                />
               ) : filteredPosts.map(post => (
                 <div key={post.id} className="admin-post-row" style={{ ...S.card, borderColor: selectedPosts.has(post.id) ? 'color-mix(in srgb, var(--green) 40%, transparent)' : undefined }}
                 >
@@ -1062,7 +1110,7 @@ function Dashboard({ onLogout }) {
                           const maxViews = Math.max(...posts.map(p => p.views || 0), 1)
                           const pct = Math.round((post.views / maxViews) * 100)
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                            <div className="admin-hide-sm" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                               <div style={{ flex: 1, maxWidth: 120, height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2 }}>
                                 <div style={{ height: '100%', width: `${pct}%`, background: 'var(--green)', borderRadius: 2 }} />
                               </div>
@@ -1137,12 +1185,14 @@ function Dashboard({ onLogout }) {
                   }}>{l}</button>
                 ))}
               </div>
-              {contactsLoading ? <div className="loader" /> : filteredContacts.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
-                  {contactFilter !== 'all' ? (
-                    <>No {contactFilter} messages. <button onClick={() => setContactFilter('all')} style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>Show all </button></>
-                  ) : 'No messages yet.'}
-                </div>
+              {contactsLoading ? <LoadingState label="Loading messages…" /> : filteredContacts.length === 0 ? (
+                <EmptyState
+                  icon="📧"
+                  title={contactFilter !== 'all' ? `No ${contactFilter} messages` : 'No messages yet'}
+                  action={contactFilter !== 'all' ? (
+                    <button onClick={() => setContactFilter('all')} style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}>Show all →</button>
+                  ) : undefined}
+                />
               ) : filteredContacts.map(c => (
                 <div key={c.id} style={{ ...S.card, borderColor: selectedContacts.has(c.id) ? 'color-mix(in srgb, var(--green) 40%, transparent)' : undefined }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
@@ -1305,7 +1355,7 @@ function Dashboard({ onLogout }) {
                 ))}
               </div>
 
-              {loading ? <div className="loader" />
+              {loading ? <LoadingState label="Loading staff…" />
                 : staff.length === 0 ? <EmptyState icon="👥" title="No staff yet" hint="Add your first moderator or editor to grant panel access." />
                 : staff.map(s => (
                 <div key={s._id} style={{ ...S.card, display: 'flex', alignItems: 'center', gap: 12, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
@@ -1492,8 +1542,9 @@ function Dashboard({ onLogout }) {
                 </div>
               ))}
             </div>
-            <div style={{ padding: '10px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Shortcuts are disabled when typing in input fields.</span>
+            <div style={{ padding: '10px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Shortcuts stay out of the way while typing or focused on buttons, selects, dialogs and checkboxes.</span>
+              <Checkbox checked={!shortcutsOff} onChange={v => setShortcutsEnabled(v)} label={shortcutsOff ? 'Shortcuts off' : 'Shortcuts on'} />
             </div>
         </Modal>
       )}

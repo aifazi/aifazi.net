@@ -1102,3 +1102,36 @@ Backend: PASETO purpose/`token_type` separation at every boundary; HMAC-signed T
 3. **P1 (one PR): R7-10, R7-11, R7-13, R7-14** — frontend logic batch (Navigate effect, PASETO-aware session warning, img escaping, tel: allowlist).
 4. **P1: R7-20 + R7-21 + R7-24** — delete dumps + rotate (owner), add authentik_id migration, env-example inventory sync.
 5. **P2:** mobile R7-15…R7-19, infra R7-22/R7-23/R7-25, all Mediums. R7-23 pairs with standing C3 (R2).
+### Round-7 fix batch — close-outs (2026-10-05)
+
+Docs/config only in this section — code fixes live in the workstreams above (`authentik_id` migration shipped via the backend workstream).
+
+### R7-22 — dependency-review wired (CLOSED)
+
+- `ci.yml` now passes `config-file: .github/dependency-review-config.yml` to `actions/dependency-review-action` (external configs are never auto-loaded — R6-1's "auto-loading" claim corrected on both sides of the wire).
+- Invalid `max-vulnerabilities: 50` removed from the config (not in the action's schema — R6-2). No valid count-cap equivalent exists; behavior stays at least as strict via `fail-on-severity: high` (fails on ANY introduced high-or-worse vuln) + the `allow-licenses` allowlist, which is now actually enforced. `deny-licenses` deliberately NOT added (mutually exclusive with `allow-licenses`, deprecated upstream).
+
+### R7-24 — `.env.example` inventory synced (CLOSED)
+
+Every added key verified code-read via `os.getenv` grep before documenting; placeholders only, Leadership-only secrets marked, no real values:
+
+- Backend `.env.example`: `AUTHENTIK_API_TOKEN` (admin-API sync), `REDIS_URL` + `UPSTASH_REDIS_REST_URL`/`_TOKEN` (rate limiting), `LLDAP_URL`/`_BASE_DN`/`_USERS_OU`/`_BIND_DN`/`_BIND_PASSWORD`/`_TIMEOUT`, `ADMIN_PASSWORD_HASH`, `COOKIE_DOMAIN`, `MAIL_FROM`, `MOBILE_AUTH_URL`, `GITHUB_CLIENT_ID`/`_SECRET`/`_REDIRECT_URI`, `STEAM_API_KEY`.
+- Root `.env.example`: same classes in its placeholder style (`COOKIE_DOMAIN`, `MAIL_FROM`, `AUTHENTIK_*` incl. `AUTHENTIK_API_TOKEN`, `ADMIN_PASSWORD_HASH`, Redis/Upstash pair, `LLDAP_*`, OAuth client keys). (Correction 2026-10-05: no `.env.docker.production.example` exists in the tree — the audit draft named one in error; nothing to sync there.)
+- Mobile `.env.example`: documents that `EXPO_PUBLIC_API_URL` is the ONLY `EXPO_PUBLIC_*` key app code reads (`src/lib/getApiBase.ts`; `updates.ts` derives from it). `EXPO_PUBLIC_RELEASE_URL` is NOT read (named only in the superseded plan) — flagged, not added.
+
+### R7-25 — mobile release docs synced (CLOSED)
+
+- `apps/mobile/EAS-REBUILD.md` + `apps/mobile/PLAN-ROADMAP.md`: stale `1.0.39 / 1000039` → current `app.json` values `1.0.70 / 1000070` (numbers synced only, no version bump). `eas.json` untouched (read-only; no fix needed).
+- Automerge/push-trigger gap noted as a known caveat in `EAS-REBUILD.md` (GITHUB_TOKEN pushes don't fire push-triggered `mobile-auto-release`/`prune-deployments`; manual `gh workflow run` workaround). Workflow triggers deliberately unchanged — owner decision.
+
+### R7-20 — local env-dump deletion + rotation runbook (OWNER ACTION, docs only)
+
+Deletion + rotation must run on the owner's machine (dumps still on disk at audit time: backend `.env.prod-pull`/`.env.pulled`/`.env.pull`, `aifazi.net-frontend-next/.env.local`, `apps/mobile/.env.local` — all correctly gitignored). **Rotate FIRST, delete SECOND.** Wipe script: `scripts/wipe-local-env-dumps.ps1` (zero-overwrite + delete, also covers `aifazi.net-frontend-next/.env.prod-pull`/`.pulled`/`.pull` and root `.env.local`/`.env.prod-pull`/`.pulled`/`.pull` should they ever appear). Full per-secret checklist: `docs/SECRETS-ROTATION.md`.
+
+1. Delete (paths only, after rotation): `aifazi.net-backend-fastapi/.env.prod-pull`, `aifazi.net-backend-fastapi/.env.pulled`, `aifazi.net-backend-fastapi/.env.pull`, `aifazi.net-frontend-next/.env.local`, `apps/mobile/.env.local` — or run the wipe script with `-Force` only in automation.
+2. Rotate each exposed class (where + implication): Supabase `service_role` (dashboard → rotate; full RLS bypass until rotated; update Coolify immediately); `PASETO_SECRET` (new 32+ byte random in Coolify + Vercel; **all sessions + HMAC internal tokens die — forced logout everywhere**, restart backend + redeploy frontend); `INTERNAL_API_SECRET`/`ADMIN_GATE_SECRET`/`CRON_SECRET` (must-match pairs updated together); Stripe secret + webhook secret (roll + re-send test webhook); GitHub/Discord OAuth client secrets, `STEAM_API_KEY`, FiveM/txAdmin secrets, `ADMIN_PASSWORD`/`ADMIN_PASSWORD_HASH` (bcrypt via `reset_password.py`); `VERCEL_OIDC_TOKEN` (regenerate, local-only, do not store).
+3. Verify: no `*.prod-pull`/`*.pulled`/`*.pull`/`apps/mobile/.env.local` remain on disk; login (password + each OAuth provider), admin gate, one upload, Stripe test checkout + webhook delivery, mobile login, FiveM bridge auth; Vercel/Coolify env UIs contain no values matching the old dumps; record the rotation date in `SECURITY.md` "Past History" (owner edit).
+
+### Round-7 progress note (2026-10-05)
+
+Closed this batch: R7-22, R7-24, R7-25 (+ R7-20 runbook written, execution pending owner). STATUS.md flipped accordingly. Deliberately left for owner: secret rotation + dump deletion (needs their machine/credentials), workflow-trigger changes (owner decision), `docs/SECURITY.md` line-ref fixes, R6-3/R6-4 code fixes (routers/`main.py` — out of scope for this batch), mobile release verification (needs EAS/Play), `authentik_id` migration (other workstream).

@@ -23,10 +23,12 @@ import {
 } from 'react-native'
 import { useIsFocused, useLocalSearchParams, useRouter, type Href } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
+import * as Crypto from 'expo-crypto'
 import { WebView } from 'react-native-webview'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/src/theme'
 import { withAlpha } from '@/src/lib/color'
+import { TALK_URL } from '@/src/lib/url'
 import { Header } from '@/src/components/Header'
 import { Icon } from '@/src/components/icon'
 import { chatReducer, initialChatState, visibleMessages } from '@/src/lib/chatStore'
@@ -47,7 +49,30 @@ const POLL_MS = 15_000
 const PAGE_LIMIT = 100
 
 function newLocalId(): string {
-  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
+  // Client-chosen referenceId echoed back by the server for outbox matching
+  // (not a security token) — expo-crypto CSPRNG v4 UUID, no Math.random.
+  return Crypto.randomUUID()
+}
+
+/**
+ * R7-17 — scope the call WebView to the configured Nextcloud host instead of
+ * `['*']`. The host is user-configured (Nextcloud Setup → ncSession
+ * serverUrl, carried in the call URL); TALK_URL is only the fallback when the
+ * call URL hasn't loaded yet — never a different hardcoded host. Mic/cam keep
+ * working: `mediaCapturePermissionGrantType="grant"` +
+ * `allowsInlineMediaPlayback` below are untouched (iOS WKWebView auto-grants
+ * capture for the loaded host).
+ */
+function callAllowedOrigins(callUrl: string): string[] {
+  const origins: string[] = []
+  for (const candidate of [callUrl, TALK_URL]) {
+    try {
+      if (candidate) origins.push(new URL(candidate).origin)
+    } catch {
+      // Ignore unparseable candidates; TALK_URL always parses.
+    }
+  }
+  return [...new Set(origins)]
 }
 
 type RoomError = 'bad-token' | 'not-configured' | 'auth' | 'network' | 'api'
@@ -375,7 +400,7 @@ export default function TalkRoomScreen() {
             mediaCapturePermissionGrantType="grant"
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
-            originWhitelist={['*']}
+            originWhitelist={callAllowedOrigins(callUrl)}
             style={{ flex: 1 }}
           />
           <View

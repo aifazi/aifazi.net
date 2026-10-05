@@ -1,6 +1,13 @@
 /**
  * src/lib/biometricLock.ts — app-level biometric gate (roadmap C7).
  *
+ * CONVENIENCE UNLOCK ONLY — not a security boundary. This gate merely hides
+ * a screen from casual viewing until the device biometric prompt succeeds. It
+ * does NOT encrypt data, does NOT add authentication to any API call (every
+ * request still uses the normal server session), and anyone with an unlocked
+ * device / the account password is unaffected by it. Never describe it to
+ * users as protection, encryption, or a security feature.
+ *
  * Gates a whole screen (used by the VPN dashboard): when device biometrics
  * are available AND enrolled, the screen starts locked and shows a lock
  * view until `unlock()` succeeds. Users without biometrics are never

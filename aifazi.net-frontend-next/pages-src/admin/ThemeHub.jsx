@@ -1,8 +1,9 @@
 'use client'
 import React, { useState } from 'react'
 import dynamic from 'next/dynamic'
+import { LoadingState } from '../../core/States.jsx'
 
-const ThemeLibrary = dynamic(() => import('./ThemeLibrary'), { ssr: false })
+const ThemeLibrary = dynamic(() => import('./ThemeLibrary'), { ssr: false, loading: () => <LoadingState label="Loading library…" /> })
 import { AnnouncementsPanel } from './AdminPanels'
 import { SiteSettings } from './SiteSettings'
 

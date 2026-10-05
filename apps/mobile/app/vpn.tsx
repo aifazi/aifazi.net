@@ -47,6 +47,7 @@ import {
   detectDeviceOs,
   openWireGuardApp,
   deriveConnectionState,
+  vpnErrorStatus,
   type VpnPeer,
   type VpnStatus,
   type VpnSession,
@@ -64,6 +65,7 @@ export default function VpnScreen() {
   const { user } = useAuth()
   // M3.1 — the whole route sits behind the biometric app-lock gate when the
   // device has enrolled biometrics (never blocks users without biometrics).
+  // Convenience hiding only (see biometricLock.ts) — not a security boundary.
   const lock = useBiometricLock()
 
   const [status, setStatus] = useState<VpnStatus | null>(null)
@@ -105,7 +107,8 @@ export default function VpnScreen() {
       if (sessionsRes.status === 'fulfilled') setSessions(sessionsRes.value.sessions ?? [])
       if (ipRes.status === 'fulfilled') setPublicIp(ipRes.value.ip)
     } catch (err) {
-      console.error('Failed to load VPN data:', err)
+      // Status-only: the error object carries request config (headers/URLs).
+      console.warn('[vpn] load failed:', vpnErrorStatus(err))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -236,7 +239,8 @@ export default function VpnScreen() {
           </View>
           <Text style={{ color: c.text, fontSize: 17, fontWeight: '700', marginTop: 16 }}>VPN is locked</Text>
           <Text style={{ color: c.text2, fontSize: 13, textAlign: 'center', lineHeight: 19, marginTop: 8 }}>
-            Unlock with your biometrics to view VPN devices, sessions and keys.
+            Convenience lock only — it hides this screen from casual viewing and does not encrypt or
+            otherwise protect your data. Unlock with your biometrics to view VPN devices, sessions and keys.
           </Text>
           <TouchableOpacity
             onPress={() => { void lock.unlock() }}

@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import { LoadingState } from '../core/States.jsx'
 import { Link, useLocation } from '@/lib/router-compat'
 import { useEdit } from '../context/EditContext'
 import { STORE_URL, FIVEM_URL } from '@/lib/config'
 // Lazy-load the ~113KB theme drawer — it only renders when opened.
-const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false })
+const ThemePicker = dynamic(() => import('./ThemePicker'), { ssr: false, loading: () => <LoadingState label="Loading…" /> })
 import { canEdit } from '@/lib/api'
 
 const NAV_ITEMS = [

@@ -49,6 +49,10 @@ async def get(_: dict = Depends(require_staff)):
 @router.put("")
 async def update(body: dict, _: dict = Depends(require_staff)):
     body.pop("id", None); body.pop("key", None); body.pop("settings", None)
+    # R7-2 — never persist the masked sentinel: a client echoing the GET view
+    # back would otherwise clobber real secrets with "••••••••".
+    for k in [k for k in body if k in _SECRET_FIELDS and body[k] == "••••••••"]:
+        body.pop(k, None)
     row = _get_row()
     if row is None:
         res = supabase.table("cdn_config").insert({"key": "global", "settings": body}).execute()
@@ -57,7 +61,8 @@ async def update(body: dict, _: dict = Depends(require_staff)):
         res = supabase.table("cdn_config").update({"settings": merged}).eq("key", "global").execute()
     if not res.data:
         raise HTTPException(500, "Failed to save CDN settings")
-    return res.data[0].get("settings") or {}
+    # R7-2 — return the masked view exactly like GET, never plaintext secrets.
+    return _mask_secrets(res.data[0].get("settings") or {})
 
 @router.get("/proxy-config")
 async def proxy_config():

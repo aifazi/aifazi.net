@@ -223,8 +223,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     // Stop push fan-out to this device first — the backend must forget the
     // Expo token on every logout path, not just when the layout unmounts.
+    // Pass the user id so a post-restart logout (memory-only currentPush is
+    // gone) still unregisters the SecureStore-persisted token (R7-16).
+    const uid = userRef.current?.id ?? userRef.current?._id
     try {
-      await unregisterCurrentPushToken()
+      await unregisterCurrentPushToken(uid)
     } catch {}
     try {
       await api.post('/auth/logout')
@@ -263,8 +266,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const deleteAccount = useCallback(async (password: string) => {
     // Like logout: the backend must forget this device's Expo token, otherwise
     // the push_tokens row outlives the deleted user and fan-out keeps targeting it.
+    // User-scoped (R7-16) so only this user's persisted token is cleared.
+    const uid = userRef.current?.id ?? userRef.current?._id
     try {
-      await unregisterCurrentPushToken()
+      await unregisterCurrentPushToken(uid)
     } catch {}
     await api.delete('/auth/account', { data: { password } })
     await clearAuthTokens()
