@@ -93,7 +93,11 @@ GITHUB_API       = "https://api.github.com"
 from paseto_token import create_token as _paseto_create_token, decode_token as _paseto_decode_token
 
 def _make_github_link_token(user_id: str) -> str:
-    return _paseto_create_token({"id": user_id, "purpose": "github_link"}, expires_in=10 * 60, purpose="auth")
+    # `token_type`, not a payload `purpose`: paseto_token.create_token clobbers
+    # any payload-level `purpose` claim with the outer PASETO purpose, so a
+    # payload `purpose` can never survive the round-trip (same convention as
+    # access/refresh/mobile OAuth codes).
+    return _paseto_create_token({"id": user_id, "token_type": "github_link"}, expires_in=10 * 60, purpose="auth")
 
 
 def _decode_github_link_token(token: str | None) -> dict | None:
@@ -103,7 +107,7 @@ def _decode_github_link_token(token: str | None) -> dict | None:
         payload = _paseto_decode_token(token, purpose="auth")
         if not payload:
             return None
-        return payload if payload.get("purpose") == "github_link" else None
+        return payload if payload.get("token_type") == "github_link" else None
     except Exception:
         return None
 

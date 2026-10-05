@@ -116,6 +116,22 @@ def role_permissions(role: str | None) -> dict[str, list[str]]:
     return normalize_permissions(ROLE_PERMISSION_PRESETS.get(str(role or "").lower(), {}))
 
 
+def admin_ids(exclude_id: str | None = None) -> list[str]:
+    """IDs of admin-role users, optionally excluding one.
+
+    Used by last-admin guards. Fail closed: on directory error returns []
+    so callers block the demotion instead of risking a lockout.
+    """
+    try:
+        res = _supabase().table("users").select("id").eq("role", "admin").execute()
+    except Exception:
+        return []
+    ids = [str(r.get("id")) for r in (res.data or []) if r.get("id")]
+    if exclude_id is not None:
+        ids = [i for i in ids if i != str(exclude_id)]
+    return ids
+
+
 def _supabase():
     from database import supabase
     return supabase

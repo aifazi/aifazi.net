@@ -22,9 +22,17 @@ from utils.oauth_state import (
 router = APIRouter()
 log = logging.getLogger("auth.discord")
 
+API_URL = (os.getenv("API_URL") or "https://api.aifazi.net").rstrip("/")
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID", "")
 DISCORD_CLIENT_SECRET = os.getenv("DISCORD_CLIENT_SECRET", "")
-DISCORD_REDIRECT_URI = os.getenv("DISCORD_REDIRECT_URI", "")
+# Default matches the redirect registered in the site Discord app
+# (Developer Portal → OAuth2 → Redirects). It MUST match exactly when the
+# flow starts — an empty/mismatched value makes Discord reject the login
+# with a redirect_uri error before any callback ever happens.
+DISCORD_REDIRECT_URI = (
+    os.getenv("DISCORD_REDIRECT_URI", "").strip()
+    or f"{API_URL}/api/auth/discord/callback"
+)
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 # H2/C6 — deep-link base for mobile OAuth completion. Server-controlled; the
 # app only accepts redirects under this exact prefix (matches MOBILE_AUTH_URL
@@ -145,6 +153,13 @@ async def discord_callback(request: Request):
     if not discord_id:
         raise HTTPException(400, "Invalid Discord user data")
 
+    # Web destination comes from the signed state (falls back to /profile).
+    # The frontend finisher lives at /auth/discord-callback — NOT bare
+    # /auth/callback, which never existed (that 404s). The page restores the
+    # session from the HttpOnly cookie (or the #token fragment), then follows
+    # #dest, mirroring the github/steam callback targets.
+    dest = _safe_relative_path((login_payload or {}).get("dest") or "/profile")
+
     # H2/C6 — mobile flows (started with mobile=1) never receive tokens in the
     # redirect: they get a one-time exchange code deep link instead.
     is_mobile = bool((login_payload or {}).get("mobile"))
@@ -168,7 +183,10 @@ async def discord_callback(request: Request):
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", user["id"]).execute()
-        resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
+        resp = RedirectResponse(
+            url=f"{FRONTEND_URL}/auth/discord-callback#dest=" + urllib.parse.quote(dest, safe="/"),
+            status_code=302,
+        )
         _set_auth_cookies(resp, token, refresh)
         return resp
     else:
@@ -194,7 +212,10 @@ async def discord_callback(request: Request):
             supabase.table("users").update({
                 "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", new_id).execute()
-        resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
+        resp = RedirectResponse(
+            url=f"{FRONTEND_URL}/auth/discord-callback#dest=" + urllib.parse.quote(dest, safe="/"),
+            status_code=302,
+        )
         _set_auth_cookies(resp, token, refresh)
         return resp
 

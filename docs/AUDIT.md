@@ -972,3 +972,80 @@ Until then, mobile OAuth sign-in fails closed with `Sign-in did not complete.` (
 ---
 
 *Round-6 audit, static + source-verified + action-docs cross-check. Every MEDIUM claim manually confirmed. No production traffic tested.*
+
+## 18. PASETO link-token fix + Authentik admin toggle + login-animation findings (2026-10-04)
+
+### 18.1 Closes §17 "New finding filed" — GitHub/Steam account-link tokens
+
+**Root cause.** `paseto_token.create_token` builds `data = {**payload, "iat", "exp", "purpose": purpose}` — the outer PASETO purpose **clobbers** any payload-level `purpose` claim. The link tokens were minted as `{"id": …, "purpose": "github_link"|"steam_link"}` under `purpose="auth"`, so the stored claim was always `purpose: "auth"` and the decoders' `payload.get("purpose") == "<provider>_link"` check **never matched** → every account-link (connect) flow failed with `github_error=link` / `steam_error=link`.
+
+**Fix** (matches the `mobile_oauth_code` / access-token convention): the marker moved from `purpose` to `token_type`.
+
+| File | Change |
+|------|--------|
+| `routers/github_auth.py` | `_make_github_link_token` → payload `{"id": …, "token_type": "github_link"}` (+ comment documenting the clobber); `_decode_github_link_token` now checks `payload.get("token_type") == "github_link"`. |
+| `routers/steam_auth.py` | Same pair with `steam_link` (`_make_steam_link_token` / `_decode_steam_link_token`). |
+
+Verified safe, untouched: `fivem_connect` (HS256 via `jwt_compat`, payload `purpose` preserved), `email_verify` (JWT path), `admin_gate` (outer purpose coincidentally equals the marker), all `token_type`-based tokens.
+
+**Regression test.** New `tests/test_oauth_link_tokens.py` (14 tests): maker→decoder round-trip for both providers (asserts `id` + `token_type`), rejection of a real `token_type: "access"` forum token, cross-provider foreign `token_type` rejection, garbage/None/empty rejection, plus one assertion documenting the clobber itself (`create_token({"purpose": "x"}, purpose="auth")` decodes to `purpose: "auth"`).
+
+### 18.2 Authentik enable/disable — 501 stub replaced
+
+`POST /api/admin/identity/users/{user_id}/disable|enable` (`routers/admin_actions.py`) was a stub that audited + raised 501. It is now a real flow (`_identity_toggle`):
+
+1. `confirm: true` still required (400 otherwise); local user row loaded (`id,username,banned,authentik_id`) → 404 if unknown.
+2. **Local enforcement first** — `users.banned = not enable`. `dependencies.get_current_user` rejects banned users site-wide (403 "Account suspended"), so the block holds even if Authentik is unreachable or the token is unset.
+3. **Authentik sync** (best-effort) when the row carries `authentik_id` (the user UUID `sub` written by the OIDC callback in `routers/authentik_oidc.py`):
+   - `AUTHENTIK_API_TOKEN` set → `PATCH {issuer}/api/v3/core/users/{uuid}/` `{"disabled": not enable}` with `Authorization: Bearer …`, 10 s timeout. (v3 is the current Authentik API — the first draft used v1, which 404s on the 2025.10 deployment; caught during live verification on the VPS.) Failure → **502** "Local change applied; Authentik sync failed: …" (local change stands; audited as `sync_failed`).
+   - token unset → **200** with `warning: "Authentik not synced (AUTHENTIK_API_TOKEN not set)"` (audited as `local_only`).
+   - no `authentik_id` → local-only, no warning.
+4. Success audited as before (`identity_user_enable` / `identity_user_disable`) with the outcome.
+
+Issuer comes from the same config source as the OIDC router — `AUTHENTIK_ISSUER` (default `https://auth.aifazi.net`) via `routers/authentik_oidc._ak`, exposed here as `_authentik_admin_url()`. **No DB migration**: uses the existing `users` table + the `AUTHENTIK_API_TOKEN` env var (operator must add the token to enable the Authentik half; until then the panel keeps working in local-only mode with the warning). No frontend change needed — `OAuthSettings.jsx` already posts `{confirm: true}` and surfaces any `warning`/error text.
+
+**Test.** New `tests/test_authentik_identity_toggle.py` (9 tests, TestClient on the real router with `database`/`dependencies` stubbed + fake `httpx.AsyncClient`): confirm guard 400, unknown user 404, local ban/clear writes, linked-user-no-token → 200+warning, linked+token → correct PATCH URL/payload/headers (default issuer **and** `AUTHENTIK_ISSUER` override), sync failure → 502 while the local write stands.
+
+### 18.3 Login page "static" — verified findings
+
+Reported: the login page lost its animations. Verified:
+
+- **Deployed build is current.** `aifazi.net/login` CSS hashes (`559debdad8aca924.css`, `58f042b1223b42ce.css`) match the latest Vercel production deployment (single prod deployment at check time = the C6 merge); `vercel ls aifazi.net` cross-checked.
+- **All animation assets ship in the build.** Fresh `next build --webpack` in this worktree: `/login` 200; the login CSS carries all keyframes (`authBorderFlow`, `authShieldGlow`, … — 55 `@keyframes`/`prefers-reduced-motion` references in `a939f57f05c1a180.css`) and the GSAP bundle ships in shared chunk `1705-*.js`. The **production `1705` chunk is the same size as the local build's (72,031 bytes, 19 `gsap` references)** — i.e. `loadGsap()`'s dynamic `import('gsap')` resolves to a real chunk on both; no chunk-load failure at build level.
+- **SSR HTML has no login markup — expected.** `app/login/page.tsx` wraps the client in `<Suspense fallback={null}>` and `useSearchParams` suspends on the server; the page is client-rendered after hydration.
+- **Most likely explanation: `prefers-reduced-motion`.** Every effect is gated: the GSAP effects early-return via `reducedMotion()`, and the CSS has `@media (prefers-reduced-motion: reduce)` blocks (present in the shipped CSS, 2 blocks). If the viewing OS has "animation effects" off (Windows: Settings → Accessibility → Visual effects → "Animation effects"; also many accessibility/privacy browser profiles), the page is **intentionally a static frame**. Check on the affected machine: `window.matchMedia('(prefers-reduced-motion: reduce)').matches` in devtools — `true` means this is the cause, not a regression.
+- Caveat: live pixel-compare in a real browser was not possible from this session (integrated browser unavailable here); the build-level checks above cover everything short of a rendered frame.
+
+### 18.4 Authentik `invalid_client` on the login page — root cause + resolution (2026-10-04)
+
+**Symptom.** Clicking "Authentik" on `aifazi.net/login` bounced to `login?authentik_error=2` — the code→token exchange (`POST {issuer}/application/o/token/`) failed with 400 `invalid_client`.
+
+**Root cause (verified live on the VPS):** the stored client secret and the backend env `AUTHENTIK_CLIENT_SECRET` were out of sync at the time.
+- Authentik server log (2026-10-03 22:41–22:42, one per attempt): `"event": "Invalid client secret"` from `authentik.providers.oauth2.views.token` — the authorization-code check in `token.py` `__post_init`: `client_type == CONFIDENTIAL and provider.client_secret != client_secret` → `invalid_client`.
+- It was **not** a redirect-URI mismatch: the registered strict URI `https://api.aifazi.net/api/auth/authentik/callback` matches what the backend sends. Also not an auth-method mismatch: on 2025.10.3 the `OAuth2Provider` has no `client_authentication_method` column — `extract_client_auth` accepts HTTP Basic **or** POST-body `client_id`/`client_secret`, so our `client_secret_post` usage is supported.
+- The 2025.10.3 API detail/provider endpoints 404 (only collection endpoints work), so the secret could not be read via API; it was compared in the `authentik` Postgres DB (`authentik_providers_oauth2_oauth2provider.client_secret`, stored plaintext): **now matches the env secret (43 chars, exact)**.
+
+**Resolution.** The DB secret was synced to the backend env value. Verified end-to-end on 2026-10-04: four token exchanges returned 200 (14:37:03 / :14 / :20 / :28), and both `admin` and `aifazi` (tanvir) completed sign-in — `users.authentik_id` set, `last_seen` updated.
+
+**Ops notes (2025.10.3 deployment specifics).**
+- psql: socket peer-auth fails for the `authentik` user; use `psql -h 127.0.0.1 -U postgres` inside the `supabase-db-*` container (its env already carries `PGPASSWORD`).
+- Tables use Django full names: `authentik_providers_oauth2_oauth2provider` (`client_id`, `client_secret`, `_redirect_uris` jsonb), `authentik_core_application` (`name`, `provider_id`), `authentik_core_provider` (no `enabled` / `client_authentication_method` columns in this version).
+- This codebase's token endpoint raises `invalid_client` for two distinct causes: secret mismatch (`"Invalid client secret"` warning) vs redirect-URI strict-match failure (`"Invalid redirect URI used by provider"` configuration-error event) — the server log tells them apart.
+
+### 18.5 Identity & OAuth panel redesign — zero-manual-ops workflows (2026-10-04)
+
+**Goal.** Every identity/OAuth procedure that previously needed VPS psql or Coolify env edits now runs from Admin → Identity & OAuth (tabbed: Overview / Directory / Upstream IdP / Social / Clients / Users / Activity).
+
+**Backend (all `require_admin`, all mutations audited, secrets never returned — masked only).**
+- `GET /admin/oauth/health` — one-call doctor: staged LLDAP probe (DNS → TCP → bind → search, each with fix hints), Authentik discovery/JWKS/authorize smoke, concurrent Discord (`client_credentials` grant) / GitHub (basic-auth `rate_limit`) / Steam (`GetServerInfo`) credential checks.
+- `POST /admin/oauth/test-ldap` — now accepts inline `{lldap}` draft config and **never persists** (the old flow saved first, then tested).
+- Upstream IdP: `GET/PUT /admin/oauth/upstream` (portal-over-env store in `site_config.settings.oauth.authentik`, `__CLEAR__` sentinel supported), `POST /upstream/verify`, `GET /upstream/signals` (last successful login + linked count + recent `authentik_login` rows — the secret itself is unreadable on 2025.10.3, so fresh success is the proof and a stall is the alarm).
+- `POST /admin/oauth/providers/{id}/test`, `POST /admin/oauth/clients/{id}/rotate` (server-generated secret, returned once, old secret dies immediately — confirm dialog states this).
+- Portal-over-env merge (`get_authentik_config()` in `routers/oauth_admin.py`): the OIDC router (`_ak()`) and the admin-API token check now prefer portal values, env fallback. Per-field `sources` (portal|env|default) are exposed so the panel shows which source is live.
+- OIDC callback failure paths now write `auth_logs` rows (`record_auth`, never raises) with `reason=authentik_error=<code>` — the panel's Activity feed maps each code to a cause + fix tab. Redirect URLs are byte-identical to before.
+
+**Panel.** Overview (doctor + site-wide OAuth kill-switch with danger confirm + recent-failures preview), Directory (draft-safe staged test, copy buttons), Upstream IdP (source badges, verify, signals, callback copy box, link to Authentik admin), Social (source badges, per-provider Test, store-env-in-portal), Clients (inline edit via existing `PUT`, rotate, one-time secret box), Users (linkage filter, token setup deep-links to Upstream tab), Activity (failures/all from `/admin/audit/auth-log` with the error-code map). Also fixed: LDAP form state bug (`p.ldap` → `p.lldap` was dropping fields locally).
+
+**Tests.** `tests/test_oauth_admin_health.py` (17 tests, hermetic: stubbed DB/deps/audit, fake httpx/ldap3/socket) — masking, portal-over-env precedence, CLEAR sentinel, staged LDAP layers incl. no-persist guarantee, provider tests, rotate-once, health skips. Full backend suite: 297 passed.
+
+**Follow-up 2026-10-04 — float `receive_timeout` killed every LLDAP bind.** The doctor's `bind — error: required argument is not an integer` was not a server fault: ldap3 packs `receive_timeout` via `struct` (integers only) on POSIX, and the backend passed `5.0`. Fix: dropped the kwarg from all four `Connection()` calls (`utils/ldap_client.py` ×3, staged probe ×1) — the socket keeps `connect_timeout` for recv. Probe step details now use qualified exception names. Regression: the ldap3 test fake replicates the real `pack` semantics (raises on float). Login page: GSAP chunk failing/hanging killed all ambient motion silently (no `.catch` anywhere) — `loadGsap()` now warns + sets `html.auth-gsap`, and pure-CSS fallback keyframes (mirroring the GSAP timelines, per-particle duration/delay already in JSX) animate by default, standing down when GSAP takes over; reduced-motion handling unchanged.
