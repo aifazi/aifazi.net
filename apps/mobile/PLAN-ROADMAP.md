@@ -80,10 +80,9 @@ Security:
   `auth_discord.py` gained the mobile branch the app actually uses (mobile
   Discord sign-in was broken before — web-only). The app's one-time `state`
   is now carried through the signed backend state and echoed in the fragment
-  (strict check since 8a8b1ff now works end-to-end). **Operator step
-  before ship:** run the `mobile_oauth_claims` CREATE TABLE in the Supabase
-  SQL editor (SQL in `docs/AUDIT.md` §17) — until then mobile OAuth fails
-  closed with a clean error.
+  (strict check since 8a8b1ff now works end-to-end). Table is tracked as
+  `supabase/migrations/20261005000000_mobile_oauth_claims.sql` — apply it
+  with `psql -f` (no more SQL-editor paste).
 - ~~VPN screen reachable without an app-level biometric lock gate~~ —
   **C7 closed 2026-10-03** (`src/lib/biometricLock.ts`, whole-route gate
   on `app/vpn.tsx`; re-locks on foreground after 60s background)

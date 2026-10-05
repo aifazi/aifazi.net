@@ -29,11 +29,12 @@ router = APIRouter()
 
 class ExchangeIn(BaseModel):
     code: str = Field(min_length=8, max_length=4096)
+    state: str | None = None
 
 
 @router.post("/mobile/exchange")
 async def mobile_exchange(body: ExchangeIn):
-    payload = exchange_code(body.code)
+    payload = exchange_code(body.code, body.state)
     if not payload:
         raise HTTPException(400, "Sign-in code is invalid, expired, or already used")
 

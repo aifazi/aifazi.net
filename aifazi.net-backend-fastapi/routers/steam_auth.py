@@ -45,7 +45,7 @@ except ImportError:
 from database import _escape_ilike, supabase
 from dependencies import CookieHTTPBearer
 from jwt_compat import JWTError, jwt
-from utils.mobile_oauth_codes import issue_code, mobile_fragment, state_echo
+from utils.mobile_oauth_codes import app_state_from, issue_code, mobile_fragment, state_echo
 from utils.oauth_state import (
     _safe_relative_path,
     make_oauth_state,
@@ -426,7 +426,8 @@ async def steam_callback(request: Request, dest: str = "/forum/profile",
     if _st.get("mobile"):
         safe_dest = _safe_relative_path(dest)
         try:
-            code = issue_code("steam", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest)
+            code = issue_code("steam", user["id"], user.get("username") or "", user.get("role", "user"), safe_dest,
+                              app_state=app_state_from(_st.get("extra")))
         except Exception:
             logging.getLogger("steam_auth").error("steam_callback mobile code issue failed", exc_info=True)
             return RedirectResponse(f"{front}?steam_error=db")

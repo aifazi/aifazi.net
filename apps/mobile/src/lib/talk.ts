@@ -135,10 +135,12 @@ function talkOcsPath(subpath: string): string {
   return `ocs/v2.php/apps/spreed/api/v${TALK_API_VERSION}/${subpath.replace(/^\/+/, '')}`
 }
 
-/** List the user's rooms (room list for the Talk screen). */
+/** List the user's rooms (room list for the Talk screen). Talk v4 returns the
+ *  room array directly as the OCS data payload (not wrapped in an object). */
 export async function getRooms(): Promise<TalkRoom[]> {
-  const data = await ocs<{ rooms?: unknown[] }>('GET', talkOcsPath('room'))
-  const rooms = Array.isArray(data.rooms) ? data.rooms : []
+  const data = await ocs<unknown>('GET', talkOcsPath('room'))
+  const raw: unknown = Array.isArray(data) ? data : (data as { rooms?: unknown })?.rooms
+  const rooms = Array.isArray(raw) ? raw : []
   return rooms.map((r) => normalizeRoom(r as Record<string, unknown>))
 }
 
@@ -173,13 +175,15 @@ function normalizeMessage(raw: Record<string, unknown>): TalkMessage {
   }
 }
 
-/** Fetch the last `limit` chat messages of a room (oldest → newest). */
+/** Fetch the last `limit` chat messages of a room (oldest → newest). Talk v4
+ *  returns the message array directly as the OCS data payload. */
 export async function getRoomMessages(roomToken: string, limit = 100): Promise<TalkMessage[]> {
-  const data = await ocs<{ messages?: unknown[] }>(
+  const data = await ocs<unknown>(
     'GET',
     talkOcsPath(`room/${encodeURIComponent(roomToken)}/chat?lookIntoFuture=0&limit=${limit}`),
   )
-  const messages = Array.isArray(data.messages) ? data.messages : []
+  const raw: unknown = Array.isArray(data) ? data : (data as { messages?: unknown })?.messages
+  const messages = Array.isArray(raw) ? raw : []
   return messages
     .map((m) => normalizeMessage(m as Record<string, unknown>))
     .filter((m) => m.id > 0)
@@ -226,14 +230,20 @@ export async function sendRoomMessage(
 
 interface CapabilitiesShape {
   capabilities?: {
-    spreed?: Record<string, unknown>[]
+    spreed?: {
+      features?: unknown
+      [key: string]: unknown
+    }
   }
 }
 
-/** Capability probe: Talk enabled? v4 conversation? signaling-v3 + TURN? */
+/** Capability probe: Talk enabled? v4 conversation? signaling-v3 + TURN?
+ *  Note: `spreed` is an OBJECT ({features, ...}) under `capabilities` —
+ *  indexing [0] always missed and reported Talk as unavailable. */
 export async function getTalkCapabilities(): Promise<TalkCapabilities> {
-  const data = await ocs<CapabilitiesShape['capabilities']>('GET', 'ocs/v2.php/cloud/capabilities')
-  const spreed = data?.spreed?.[0]
+  const data = await ocs<CapabilitiesShape>('GET', 'ocs/v2.php/cloud/capabilities')
+  const spreedRaw = data?.capabilities?.spreed
+  const spreed = spreedRaw && typeof spreedRaw === 'object' ? (spreedRaw as Record<string, unknown>) : null
   if (!spreed) {
     return { talkEnabled: false, conversationV4: false, signalingV3: false, turnServers: [] }
   }
