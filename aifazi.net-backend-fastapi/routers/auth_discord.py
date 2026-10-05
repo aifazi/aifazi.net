@@ -153,6 +153,13 @@ async def discord_callback(request: Request):
     if not discord_id:
         raise HTTPException(400, "Invalid Discord user data")
 
+    # Web destination comes from the signed state (falls back to /profile).
+    # The frontend finisher lives at /auth/discord-callback — NOT bare
+    # /auth/callback, which never existed (that 404s). The page restores the
+    # session from the HttpOnly cookie (or the #token fragment), then follows
+    # #dest, mirroring the github/steam callback targets.
+    dest = _safe_relative_path((login_payload or {}).get("dest") or "/profile")
+
     # H2/C6 — mobile flows (started with mobile=1) never receive tokens in the
     # redirect: they get a one-time exchange code deep link instead.
     is_mobile = bool((login_payload or {}).get("mobile"))
@@ -176,7 +183,10 @@ async def discord_callback(request: Request):
         supabase.table("users").update({
             "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", user["id"]).execute()
-        resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
+        resp = RedirectResponse(
+            url=f"{FRONTEND_URL}/auth/discord-callback#dest=" + urllib.parse.quote(dest, safe="/"),
+            status_code=302,
+        )
         _set_auth_cookies(resp, token, refresh)
         return resp
     else:
@@ -202,7 +212,10 @@ async def discord_callback(request: Request):
             supabase.table("users").update({
                 "refresh_token": refresh, "refresh_rotated_at": datetime.now(timezone.utc).isoformat(),
             }).eq("id", new_id).execute()
-        resp = RedirectResponse(url=f"{FRONTEND_URL}/auth/callback", status_code=302)
+        resp = RedirectResponse(
+            url=f"{FRONTEND_URL}/auth/discord-callback#dest=" + urllib.parse.quote(dest, safe="/"),
+            status_code=302,
+        )
         _set_auth_cookies(resp, token, refresh)
         return resp
 
