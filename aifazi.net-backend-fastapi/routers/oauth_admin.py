@@ -435,8 +435,10 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
         return {"ok": False, "steps": steps}
     try:
         search_base = base_dn or users_ou
+        # NOTE: request "*" — "dn" is not a real attribute type and strict
+        # servers (Authentik LDAP outpost) reject it with LDAPAttributeError.
         conn.search(search_base=search_base, search_filter="(objectClass=*)",
-                    search_scope="BASE", attributes=["dn"], size_limit=1)
+                    search_scope="BASE", attributes=["*"], size_limit=1)
         ok = bool(conn.entries)
         conn.unbind()
         if not ok:
