@@ -165,6 +165,11 @@ class _FakeBindError(Exception):
     pass
 
 
+class LDAPAttributeError(Exception):
+    """Mirrors ldap3.core.exceptions.LDAPAttributeError raised by strict
+    servers (Authentik LDAP outpost) for invalid attribute types."""
+
+
 def _ldap3_module(bind_password_ok: str):
     mod = types.ModuleType("ldap3")
     mod.Server = lambda url, **k: types.SimpleNamespace(url=url)
@@ -182,6 +187,10 @@ def _ldap3_module(bind_password_ok: str):
             self.entries = [types.SimpleNamespace(entry_dn="dc=x")]
 
         def search(self, **k):
+            # Mirror Authentik LDAP outpost strictness: "dn" is not a real
+            # attribute type and is rejected; "*" is accepted everywhere.
+            if list(k.get("attributes") or []) == ["dn"]:
+                raise LDAPAttributeError("invalid attribute type dn")
             self.entries = [types.SimpleNamespace(entry_dn="dc=x")]
             return True
 
