@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
 import HybridInfraBody from '@/components/HybridInfraBody'
 import EditSiteFab from '@/components/blocks/EditSiteFab'
+import { jsonLdScript } from '@/lib/seo'
 
 const SITE = 'https://aifazi.net'
+
+// F1 share images: zero-dep SVG OG route (app/api/og). Diagram pages point
+// scrapers at it with node/flow counts; defaults describe the Plan A study.
+const OG_DEFAULT = `${SITE}/api/og?title=${encodeURIComponent('Plan A — Hybrid Infrastructure')}&nodes=24&flows=18`
 
 export const metadata: Metadata = {
   title: 'Hybrid Infrastructure — Interactive Case Study',
@@ -16,12 +21,14 @@ export const metadata: Metadata = {
     title: 'Hybrid Infrastructure — Interactive Case Study | aifazi.net',
     description:
       'Explore an interactive enterprise data center: HA edge, Proxmox cluster, Entra ID sync, and immutable backup.',
+    images: [{ url: OG_DEFAULT, width: 1200, height: 630, alt: 'Plan A — Hybrid Infrastructure diagram' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Hybrid Infrastructure — Interactive Case Study | aifazi.net',
     description:
       'On-premises core + Microsoft 365 / Entra ID / Defender / Purview, presented as an interactive diagram.',
+    images: [OG_DEFAULT],
   },
 }
 
@@ -45,9 +52,11 @@ export default async function HybridInfraPage({
   const activeSlug = hasDiagram ? (params.diagram as string) : 'plan-a'
   return (
     <>
+      {/* F2: escaped JSON-LD (lib/seo jsonLdScript neutralizes `<` so the
+          payload can never break out of this script tag). */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(JSON_LD) }}
       />
     <main
       style={{

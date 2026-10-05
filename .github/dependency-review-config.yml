@@ -31,9 +31,17 @@ pip:
   #   - GHSA-xxxx-xxxx-xxxx: "Reason for ignoring"
 
 # Maximum number of vulnerabilities to report (default: 100)
-max-vulnerabilities: 50
+# NOTE: `max-vulnerabilities` is NOT a key in the action's config schema
+# (removed 2026-10-05, R6-2 — it was silently ignored). No valid equivalent
+# is needed: `fail-on-severity: high` above already fails the PR on ANY
+# introduced high-or-worse vulnerability (strictly stricter than tolerating
+# up to N), and the `allow-licenses` allowlist below is enforced now that
+# `ci.yml` passes this file via the `config-file` input (R6-1). Do NOT add
+# `deny-licenses` alongside `allow-licenses` — the action treats them as
+# mutually exclusive (and `deny-licenses` is deprecated upstream).
 
 # Round-5 audit (A5-3): `severity-threshold` and `allowed-registries` were
 # removed — the action's schema does not know these keys and silently ignored
-# them. `fail-on-severity` above is the real severity control; the file is
-# auto-loaded by actions/dependency-review-action (no workflow wiring needed).
+# them. `fail-on-severity` above is the real severity control. This file is
+# loaded only via the `config-file` input in `.github/workflows/ci.yml`
+# (R6-1 — the action never auto-loads it).

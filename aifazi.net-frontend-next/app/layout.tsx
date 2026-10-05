@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import { Outfit, Inter, JetBrains_Mono } from 'next/font/google'
 
 import { Providers } from './providers'
 import { getSiteConfigServer } from '@/lib/siteSettingsServer'
@@ -15,6 +16,32 @@ import './globals.css'
 // cascade. A late @import inside globals.css is invalid CSS (imports must precede
 // other rules) and browsers drop it — which silently disables every theme's look.
 import './theme-library.css'
+
+// D2 perf: the always-on UI faces (Outfit + Inter + JetBrains Mono) are
+// self-hosted via next/font (no render-blocking Google Fonts stylesheet).
+// next/font emits one CSS var per family; the inline <html> style below maps
+// the app's canonical --font-* vars onto them so globals.css keeps working
+// untouched. Per-theme display fonts (themeFontUrl) stay remote by design.
+const outfitSelf = Outfit({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-outfit-self',
+})
+const interSelf = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter-self',
+})
+const monoSelf = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-mono-self',
+})
+const selfFontClass = `${outfitSelf.variable} ${interSelf.variable} ${monoSelf.variable}`
 
 /** Escape JSON so it can never break out of an inline <script> (`</script>`). */
 function escapeJsonForInline(value: unknown): string {
@@ -122,8 +149,43 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   if (isFiveMDomain) htmlAttrs['data-fivem'] = 'true'
 
   return (
-    <html lang="en" suppressHydrationWarning {...htmlAttrs}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      {...htmlAttrs}
+      className={`${selfFontClass}${htmlAttrs.className ? ` ${htmlAttrs.className}` : ''}`}
+      style={{
+        '--font-display': 'var(--font-outfit-self), var(--font-inter-self), sans-serif',
+        '--font-mono': "var(--font-mono-self), 'Courier New', monospace",
+        '--font-code': 'var(--font-mono-self), monospace',
+      } as import('react').CSSProperties}
+    >
       <head>
+        {/* D4 responsive: overflow/action-reachability fixes for login, store,
+            forum and blog thread views at 360-768px. Inline <style> (same
+            pattern as theme-custom-css above) so no extra stylesheet request
+            and no manual <link> (next lint no-css-tags). CSS-only, no
+            restyle — see selector notes inline. */}
+        <style
+          nonce={nonce}
+          id="public-responsive-css"
+          dangerouslySetInnerHTML={{
+            __html: [
+              '@media (max-width:768px){',
+              '.page-container,.community-page,.community-shell,.blog-content-area,.blogpost-content-wrap,.auth-card{min-width:0;max-width:100%;overflow-x:hidden}',
+              '.community-card,.community-banner-text,.blog-content-area,.blogpost-content-wrap{overflow-wrap:anywhere;word-break:break-word}',
+              '.page-container img,.page-container video,.community-card img,.blog-cover-wrapper img,.blogpost-cover-wrap img{max-width:100%;height:auto}',
+              '.page-container iframe{max-width:100%;aspect-ratio:16/9;height:auto}',
+              '.reply-box-actions,.community-pagination-btns,.community-pagination,.blog-filter-bar,.blog-share-btn,.auth-tabs{flex-wrap:wrap;min-width:0}',
+              '.blog-filter-bar,.community-pagination{overflow-x:auto;-webkit-overflow-scrolling:touch}',
+              '.blog-code-block,.blog-content-area pre{overflow-x:auto;max-width:100%}',
+              '.blog-grid,.store-grid{grid-template-columns:1fr}',
+              '.form-group input,.form-group textarea,.form-group select,.community-search-input,.blog-search-input,.auth-card input{max-width:100%}',
+              '.auth-card{margin-left:12px;margin-right:12px}',
+              '}',
+            ].join(''),
+          }}
+        />
         {/* Global site config for the client (providers.tsx reads this on mount) */}
         <script
           id="site-config-data"
@@ -151,13 +213,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {process.env.NEXT_PUBLIC_API_URL && (
           <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL} />
         )}
+        {/* Preconnects stay: per-theme display fonts (themeFontUrl below) are
+            still served from Google Fonts by design. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        {/* Always-on UI font (covers cyber-dark / system-font themes) */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap"
-          rel="stylesheet"
-        />
         {/* The admin's global theme's display font is injected server-side so the
             first paint already uses the right typeface (no FOUT on page load).
             themeFontUrl() returns '' for system-font themes, so nothing extra

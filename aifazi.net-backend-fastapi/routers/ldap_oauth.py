@@ -330,12 +330,26 @@ async def oauth_authorize(
         except Exception:
             payload = {}
         if payload.get("id") and not payload.get("tfa_pending"):
+            # R7-6 — the cookie alone is not enough to mint an authorization
+            # code: re-validate the user against the directory (ban/role
+            # recheck, mirroring dependencies._enrich_user). Fail closed on
+            # unknown users, banned users, or directory outages.
+            try:
+                row = supabase.table("users").select("id,username,role,banned,ban_reason") \
+                    .eq("id", str(payload["id"])).limit(1).execute()
+            except Exception:
+                raise HTTPException(503, "User directory unavailable")
+            if not row.data:
+                raise HTTPException(401, "Invalid session")
+            db_user = row.data[0]
+            if db_user.get("banned"):
+                raise HTTPException(403, f"Account suspended: {db_user.get('ban_reason', '')}")
             code = secrets.token_urlsafe(32)
             _store_put_code(code, {
                 "client_id": client_id,
-                "user_id": str(payload["id"]),
-                "username": payload.get("username") or "",
-                "role": payload.get("role") or "user",
+                "user_id": str(db_user["id"]),
+                "username": db_user.get("username") or payload.get("username") or "",
+                "role": db_user.get("role") or "user",
                 "redirect_uri": redirect_uri,
                 "scope": scope,
                 "code_challenge": code_challenge,
@@ -464,7 +478,22 @@ async def oauth_token(request: Request):
     client_secret = data.get("client_secret") or ""
 
     if grant_type == "password":
-        # Resource-owner password: any public/confidential client, or no client for first-party
+        # R7-3 — the password grant exchanges arbitrary LLDAP credentials for
+        # a token, so it requires a valid CONFIDENTIAL client (client_id +
+        # secret from site_config oauth.clients, via _load_clients which reads
+        # the portal config first and OAUTH_CLIENTS env as fallback — the same
+        # lazy-import path as utils/ldap_client.py, so no import cycle).
+        # Public clients, unknown ids, and missing/wrong secrets fail closed.
+        client = _load_clients().get(client_id) if client_id else None
+        if (
+            not client
+            or client.get("public")
+            or not client.get("secret")
+            or not client_secret
+            or not secrets.compare_digest(str(client.get("secret")), client_secret)
+        ):
+            raise HTTPException(401, "invalid_client")
+        # Resource-owner password grant for the authenticated confidential client
         uname = data.get("username") or ""
         pw = data.get("password") or ""
         if not uname or not pw:

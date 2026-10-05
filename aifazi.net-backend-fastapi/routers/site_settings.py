@@ -20,6 +20,13 @@ from utils.audit import record as _audit
 
 router = APIRouter()
 
+# R7-1 — top-level keys that share site_config.global.settings with the
+# OAuth/LLDAP/Authentik credentials (routers/oauth_admin.py stores them under
+# settings.oauth, incl. settings.oauth.lldap / .authentik). Only admins may
+# touch them; non-admin staff merging arbitrary keys here could overwrite auth
+# configuration (client secrets, IdP URLs, directory bind DNs).
+_AUTH_CONFIG_KEYS = frozenset({"oauth", "lldap", "authentik"})
+
 def _get_row():
     res = supabase.table("site_config").select("settings").eq("key", "global").execute()
     return res.data[0] if res.data else None
@@ -80,6 +87,17 @@ async def update_settings(body: dict, request: Request, staff: dict = Depends(re
     # Reject corrupted payloads before they reach the DB
     if _is_corrupted(body):
         raise HTTPException(400, "Invalid settings payload — character-indexed dict detected")
+
+    # R7-1 — non-admin staff may edit generic site settings but must not touch
+    # auth configuration keys (they share this same settings blob).
+    if staff.get("role") != "admin" and any(
+        str(k).lower() in _AUTH_CONFIG_KEYS for k in body
+    ):
+        actor = staff.get("username", "staff")
+        ip = request.client.host if request.client else ""
+        _audit(actor, "settings_update_denied", target="site_config",
+               details={"denied_keys": [k for k in body if str(k).lower() in _AUTH_CONFIG_KEYS]}, ip=ip)
+        raise HTTPException(403, "Only admins may modify auth configuration")
 
     row = _get_row()
     if row is None:

@@ -75,7 +75,9 @@ STEAM_PROF_API = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/
 from paseto_token import create_token as _paseto_create_token, decode_token as _paseto_decode_token
 
 # PASETO token settings
-PASETO_EXPIRE = 60 * 24 * 7   # 7 days in minutes
+# R7-7 — 24h access (was 7d), matching utils/auth_tokens.make_forum_token:
+# longevity comes from the 7-day refresh cookie, not the access token.
+PASETO_EXPIRE = 60 * 24   # 24 hours in minutes
 
 bearer = CookieHTTPBearer(auto_error=False)
 ACTIVE_IDENTITY_MESSAGE = "Your player identity is active. Contact an admin or open a ticket to change Discord or Steam."

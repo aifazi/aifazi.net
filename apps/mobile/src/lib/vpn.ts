@@ -249,3 +249,12 @@ export function detectDeviceOs(): string {
       return 'unknown'
   }
 }
+
+/**
+ * Status-only error summary for logs. Axios errors carry the request config
+ * (headers/URLs/tokens) — never log the whole object, only the HTTP status.
+ */
+export function vpnErrorStatus(err: unknown): string {
+  const status = (err as { response?: { status?: unknown } })?.response?.status
+  return typeof status === 'number' ? `HTTP ${status}` : 'network/unreachable'
+}

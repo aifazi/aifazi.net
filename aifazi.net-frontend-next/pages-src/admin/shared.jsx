@@ -155,6 +155,15 @@ function PageHeader({ eyebrow, title, subtitle, actions }) {
 }
 
 // --- Slash Command Menu -------------------------------------------------------
+// R7-13 — attribute-escape for URLs/labels interpolated into inserted HTML.
+// A pasted URL containing `"` (or <>) would break out of the attribute and
+// allow markup injection in the editor document. Mirrors the esc() helper in
+// PostEditor's media-select path.
+const escAttr = (s) => String(s ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/"/g, '&quot;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
 const SLASH_COMMANDS = [
   { group: 'FORMAT', items: [
     { icon: 'H', label: 'Heading 1', desc: 'Big section heading',      action: e => e.exec('formatBlock', '<h1>') },
@@ -186,8 +195,8 @@ const SLASH_COMMANDS = [
     { icon: '○', label: 'Progress Bar',   desc: 'Insert a progress bar snippet', action: e => e.insert('<div style="margin:8px 0"><div style="font-size:12px;margin-bottom:4px">Progress</div><div style="height:6px;background:rgba(255,255,255,0.1);border-radius:3px"><div style="height:100%;width:75%;background:linear-gradient(to right,#00ff88,#00d4ff);border-radius:3px"></div></div></div>') },
   ]},
   { group: 'MEDIA', items: [
-    { icon: '○', label: 'Media', desc: 'Insert image by URL', action: async e => { const u = await dialog.prompt({ title: 'Insert Image', placeholder: 'https://...', variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<img src="${u}" style="max-width:100%;border-radius:4px"/>`) } },
-    { icon: '○', label: 'Link',  desc: 'Insert a hyperlink',  action: async e => { const u = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://...', variant: 'info', confirmLabel: 'NEXT' }); if(!u) return; const lbl = await dialog.prompt({ title: 'Link Label', placeholder: u, variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<a href="${u}" target="_blank" style="color:var(--cyan)">${lbl || u}</a>`) } },
+    { icon: '○', label: 'Media', desc: 'Insert image by URL', action: async e => { const u = await dialog.prompt({ title: 'Insert Image', placeholder: 'https://...', variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<img src="${escAttr(u)}" style="max-width:100%;border-radius:4px"/>`) } },
+    { icon: '○', label: 'Link',  desc: 'Insert a hyperlink',  action: async e => { const u = await dialog.prompt({ title: 'Insert Link', placeholder: 'https://...', variant: 'info', confirmLabel: 'NEXT' }); if(!u) return; const lbl = await dialog.prompt({ title: 'Link Label', placeholder: u, variant: 'info', confirmLabel: 'INSERT' }); if(u) e.insert(`<a href="${escAttr(u)}" target="_blank" style="color:var(--cyan)">${escAttr(lbl || u)}</a>`) } },
   ]},
 ]
 

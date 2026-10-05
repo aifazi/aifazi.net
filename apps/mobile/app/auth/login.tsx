@@ -26,9 +26,11 @@ export default function LoginScreen() {
   const [biometric, setBiometric] = useState(false)
   const passwordRef = useRef<TextInput>(null)
 
-  // Biometric unlock: offered only when a stored session (refresh token) plus
-  // enrolled biometrics both exist. Authenticates locally, then rehydrates the
-  // session via the normal refresh path.
+  // Biometric unlock: convenience shortcut only, NOT a security boundary. It is
+  // offered only when a stored session (refresh token) plus enrolled biometrics
+  // both exist. The device prompt merely gates the password form locally, then
+  // rehydrates the session via the normal server-validated refresh path — it
+  // adds no authentication strength and protects no data.
   useEffect(() => {
     let live = true
     ;(async () => {
@@ -171,6 +173,11 @@ export default function LoginScreen() {
                 >
                   <Text style={{ color: c.accent2, fontSize: FONT.base, fontWeight: '700' }}>Unlock with biometrics</Text>
                 </TouchableOpacity>
+              ) : null}
+              {biometric ? (
+                <Muted style={{ textAlign: 'center', marginTop: SPACE.sm }}>
+                  Convenience shortcut only — your password and 2FA remain your account&apos;s real protection.
+                </Muted>
               ) : null}
             </View>
             </Reveal>

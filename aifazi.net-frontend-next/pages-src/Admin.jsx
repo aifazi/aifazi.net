@@ -1,11 +1,12 @@
 ﻿'use client'
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { LoadingState } from '../core/States.jsx'
 import { useNavigate } from '@/lib/router-compat'
 import api, { getRole, getUsername, clearAuthTokens, setEffectiveAccess, hasStaffAccess, isStaffVerified, markStaffVerified } from '@/lib/api'
 
 // The dashboard shell (and all its sub-panels) only loads once staff access is verified.
-const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false })
+const Dashboard = dynamic(() => import('./admin/Dashboard').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading admin…" /> })
 
 // Read server-rendered user data synchronously for initial state. Only used as
 // a fallback — AdminPage passes `serverUser` as a prop so the server render and

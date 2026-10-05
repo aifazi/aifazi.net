@@ -16,8 +16,8 @@ true as of 2026-10-03).
 - **Tooling**: CI `mobile-lint` job (lint + route typegen + typecheck +
   vitest), **83 passing tests** (was 18 pre-revamp; 66 after M2/M3, 83 after
   C6 — `src/lib/oauth.test.ts` added); ESLint + tsc scripts.
-- **Release**: EAS local versioning — `app.json` 1.0.39 / versionCode
-  1000039, package `net.aifazi.mobile`, 4 build profiles
+- **Release**: EAS local versioning — `app.json` 1.0.70 / versionCode
+  1000070, package `net.aifazi.mobile`, 4 build profiles
   (development/preview/production/production-apk), OTA channel
   `production` (`checkAutomatically: NEVER`, foreground checks in
   `_layout.tsx`, expo-updates wired).
@@ -51,8 +51,8 @@ Feature gaps vs web:
 - Tools: none (web has network / file / SEO / DB GUI surfaces)
 
 Release:
-- **O1 (P0)**: release/OTA pipeline unverified — `app.json` frozen at
-  1.0.39, no OTA since 2026-08-29; the Actions create-PR setting applied
+- **O1 (P0)**: release/OTA pipeline unverified — `app.json` at
+  1.0.70, no OTA since 2026-08-29; the Actions create-PR setting applied
   2026-10-03 must be exercised end-to-end on a real release
 - **EAS-REBUILD.md handoff**: `with-android-manifest` native fixes
   (P0-3 `allowBackup` off, P1-6 dev-scheme removal) only reach installed

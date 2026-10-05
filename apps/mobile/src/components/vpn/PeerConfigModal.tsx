@@ -14,7 +14,7 @@ import {
 } from 'react-native'
 import { useTheme } from '@/src/theme'
 import { useOverlay } from '@/src/components/overlay'
-import { getPeer, rotatePeerKeys } from '@/src/lib/vpn'
+import { getPeer, rotatePeerKeys, vpnErrorStatus } from '@/src/lib/vpn'
 
 interface Props {
   visible: boolean
@@ -34,11 +34,10 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
   const [loading, setLoading] = useState(true)
   // Clipboard holds secret key material after copy — auto-clear after 60s so
   // keys don't linger for the next paste. Never log or persist the config.
+  // The timer intentionally survives modal unmount (no cleanup clearing it):
+  // the callback only touches the Clipboard module (no setState), so firing
+  // after unmount is safe and the secrets are still wiped.
   const clipboardTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => {
-    if (clipboardTimer.current) clearTimeout(clipboardTimer.current)
-  }, [])
 
   useEffect(() => {
     if (!visible || !peerId) return
@@ -55,7 +54,8 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
           setConfig(confRes as string)
         }
       } catch (err) {
-        console.error('Failed to load peer config:', err)
+        // Status-only: the error object carries request config (headers/URLs).
+        console.warn('[vpn] peer config load failed:', vpnErrorStatus(err))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -71,10 +71,12 @@ export function PeerConfigModal({ visible, peerId, peerName, peerIp, onClose, on
       overlay.toast('Config copied — clipboard clears in 60s', 'success')
       if (clipboardTimer.current) clearTimeout(clipboardTimer.current)
       clipboardTimer.current = setTimeout(() => {
+        clipboardTimer.current = null
         Clipboard.setStringAsync('').catch(() => {})
       }, 60_000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+    } catch {
+      // No error object: nothing sensitive to report, toast covers the UI.
+      console.warn('[vpn] copy failed')
       overlay.toast('Failed to copy config', 'error')
     }
   }

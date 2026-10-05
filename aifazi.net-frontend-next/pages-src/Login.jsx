@@ -73,7 +73,7 @@ export default function Login() {
   }, [])
   const rawTab = searchParams?.get('tab') || 'signin'
   const validTab = ['signin','register','forgot'].includes(rawTab) ? rawTab : 'signin'
-  const [tab, setTab] = useState(searchParams?.get('discord_error') ? 'signin' : validTab)
+  const [tab, setTab] = useState((searchParams?.get('discord_error') || searchParams?.get('authentik_error')) ? 'signin' : validTab)
   const [twoFAChallenge, setTwoFAChallenge] = useState(() => {
     if (typeof window === 'undefined') return null
     const hash = new URLSearchParams((window.location.hash || '').replace(/^#/, ''))
@@ -91,8 +91,33 @@ export default function Login() {
     ? { tag: 'TWO-FACTOR AUTH', title: 'Verify identity', sub: 'One more step to sign in' }
     : TAB_META[tab]
 
-  // ── Show Discord OAuth errors passed via query param ──────────────────────
+  // ── Show OAuth errors passed via query param ──────────────────────────────
+  // D6 — authentik_error codes come from routers/authentik_oidc.py _ak_fail
+  // (1 = provider-side error/cancel, state = bad session, 2 = token exchange,
+  // 3 = userinfo fetch, db, banned, email_unverified; link/missing belong to
+  // the profile connect flow). Copy is user-facing: code 2 is a server-side
+  // config fault (see §18.4 invalid_client), so it must NOT promise a retry
+  // will fix it — and no wording leaks secrets or URLs. Reuses the existing
+  // sign-in error event so the flow structure is unchanged.
   useEffect(() => {
+    const authentikError = searchParams?.get('authentik_error')
+    if (authentikError) {
+      const msgs = {
+        '1': 'Authentik sign-in was cancelled. Please try again.',
+        'state': 'Your sign-in session expired. Please try again.',
+        '2': 'Authentik sign-in failed (server configuration issue). Please try again later or contact support.',
+        '3': 'Could not fetch your Authentik profile. Please try again.',
+        'db': 'Database error during sign-in. Please try again later.',
+        'banned': 'Your account has been disabled. Contact support if you believe this is a mistake.',
+        'email_unverified': 'Please verify your email before signing in with Authentik. Check your inbox.',
+        'link': 'Account linking expired. Please restart linking from your profile.',
+        'missing': 'Account linking failed. Please restart linking from your profile.',
+      }
+      window.dispatchEvent(new CustomEvent('discord-login-error', {
+        detail: msgs[authentikError] || 'Authentik sign-in failed. Please try again.'
+      }))
+      return
+    }
     const discordError = searchParams?.get('discord_error')
     if (!discordError) return
     const msgs = {

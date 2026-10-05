@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import PageBlocks from '@/lib/blocks/PageBlocks'
 import type { PageBlock } from '@/lib/blocks/types'
 import { SITE_URL } from '@/lib/config'
+import { jsonLdScript } from '@/lib/seo'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -79,8 +80,22 @@ export default async function Page({ params }: Props) {
   const { slug } = await params
   const layout = await getLayout(slug)
   if (!layout) notFound()
+  // F2: canonical comes from generateMetadata above; JSON-LD (escaped so it
+  // can never break out of the script tag) aids rich results for /p pages.
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: layout.seoTitle?.trim() || layout.title,
+    description: layout.seoDescription?.trim() || layout.title,
+    url: `${SITE_URL}/p/${slug}`,
+    isPartOf: { '@type': 'WebSite', name: 'aifazi.net', url: SITE_URL },
+  }
   return (
     <main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(ld) }}
+      />
       <PageBlocks blocks={layout.blocks} />
     </main>
   )

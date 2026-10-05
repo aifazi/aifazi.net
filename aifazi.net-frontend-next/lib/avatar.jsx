@@ -95,6 +95,15 @@ export function UserAvatar({ avatar, name = '', size = 40, style, imgStyle, imgC
   if (!src) return null
   // Render a real image in both branches: Clickable's default as='div' would
   // swallow src/alt and show an empty circle (Round-4 audit HIGH).
+  // D2 perf decision (2026-10-05): `unoptimized` stays ON purpose.
+  // avatarUrl() accepts ARBITRARY https:// URLs (user-supplied avatars), so
+  // the existing remotePatterns allowlist (supabase/dicebear/cloudinary/CDN/
+  // site subdomains in next.config.js) cannot cover every src. Covering them
+  // would need a wildcard remotePattern, which turns the image optimizer into
+  // an open fetch proxy (cache/CPU abuse) — worse than skipping optimization
+  // for small avatar files. Re-enable per-host optimization only once avatars
+  // are constrained to allowlisted hosts. (git history not consulted: git use
+  // is out of scope for this workstream; reason inferred from avatarUrl.)
   return (
     <Image
       unoptimized

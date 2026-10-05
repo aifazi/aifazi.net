@@ -70,6 +70,16 @@ DISCORD_API = "https://discord.com/api/v10"
 
 bearer = CookieHTTPBearer(auto_error=False)
 
+# R7-4 — the player JWT shares the HttpOnly `auth_token` cookie name with the
+# forum PASETO session (CookieHTTPBearer reads that cookie everywhere), so the
+# token must be unmistakable: a purpose marker plus audience, enforced on every
+# decode. Cookie name is intentionally unchanged — ForumContext cookie-restore,
+# DiscordAuthCallback, and the whitelist-status flows all depend on it.
+# TTL stays 7d: apps/mobile has zero consumers of the player endpoints and the
+# web whitelist flows poll status across days; purpose/aud binding (not a
+# shorter TTL) is the fix for cross-context confusion.
+_DISCORD_PLAYER_AUD = "discord-player"
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def _make_player_token(user: dict) -> str:
     payload = {
@@ -78,15 +88,23 @@ def _make_player_token(user: dict) -> str:
         "username":     user["username"],
         "avatar":       user.get("avatar") or "",
         "role":         "player",
+        "purpose":      "discord_player",
+        "aud":          _DISCORD_PLAYER_AUD,
         "exp":          datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRE),
     }
     return jwt.encode(payload, PASETO_SIGNING_KEY, algorithm=JWT_ALGO)
 
 def _decode_player_token(token: str) -> dict:
     try:
-        return jwt.decode(token, PASETO_SIGNING_KEY, algorithms=[JWT_ALGO])
+        payload = jwt.decode(token, PASETO_SIGNING_KEY, algorithms=[JWT_ALGO])
     except JWTError:
         raise HTTPException(401, "Invalid or expired Discord session")
+    # R7-4 — jwt_compat.decode ignores `audience` (PASETO backend), so enforce
+    # both claims manually: a forum access token (purpose "auth") or any other
+    # JWT sharing this cookie must never pass as a player session.
+    if payload.get("purpose") != "discord_player" or payload.get("aud") != _DISCORD_PLAYER_AUD:
+        raise HTTPException(401, "Invalid or expired Discord session")
+    return payload
 
 def _get_player(creds: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
     if not creds:

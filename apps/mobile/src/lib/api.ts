@@ -4,13 +4,15 @@ import { API_BASE } from './getApiBase'
 
 export { API_BASE }
 
-// TODO(transport-pinning): certificate pinning is NOT implemented. Plain TLS
-// only — JS cannot truly pin (no access to the native TLS handshake), and no
-// pinning mechanism exists in this project (no expo-network-security-config,
-// OkHttp networkSecurityConfig, or TrustKit). A real fix needs a native
-// config-plugin-provided pin set (prefer long-lived ISRG CA pins over leaf).
-// The placeholder-pin stub (src/lib/cert-pinning.ts) was deleted; do not
-// reintroduce placeholder pins.
+// TODO(transport-pinning, R7-15): certificate pinning is NOT implemented.
+// Plain TLS only (plus the iOS ATS constraints in app.json) — JS cannot truly
+// pin (no access to the native TLS handshake), and no pinning mechanism exists
+// in this project (no networkSecurityConfig, no TrustKit). A real fix needs a
+// native config-plugin-provided pin set (prefer long-lived ISRG CA pins over
+// leaf) + an EAS native rebuild, which OTA cannot deliver. Config-only
+// groundwork + exact remaining steps: apps/mobile/EAS-REBUILD.md § "Cert
+// pinning (R7-15)". The placeholder-pin stub (src/lib/cert-pinning.ts) was
+// deleted; do not reintroduce placeholder pins.
 
 // H4 — access token lives in MEMORY ONLY. On app restart it is gone; the refresh
 // token (stored in SecureStore) reissues it automatically on the first 401.

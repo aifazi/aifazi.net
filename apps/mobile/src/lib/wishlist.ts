@@ -10,6 +10,13 @@ let _cache: string[] = []
 let _cacheRaw = '[]'
 let _listeners = new Set<() => void>()
 let _hydrated = false
+// R7-18 — offline-divergence guard. Toggles whose server sync failed stay
+// recorded here (sid -> wishlisted?) until a sync succeeds. The server list
+// only ever OVERWRITES local state when this map is empty; otherwise the
+// server list is MERGED with the pending local decisions so an offline toggle
+// is never clobbered by a later fetch. Deliberately minimal (dirty flag, not
+// a full sync queue).
+let _unsynced = new Map<string, boolean>()
 
 function read(): string[] {
   return _cache
@@ -30,7 +37,19 @@ async function loadFromServer() {
   try {
     const res = await api.get('/store/wishlist')
     if (res.data?.ids) {
-      write(res.data.ids)
+      const serverIds = res.data.ids as string[]
+      if (_unsynced.size === 0) {
+        write(serverIds)
+      } else {
+        // A sync failed earlier — re-apply the still-pending local decisions
+        // on top of the fresh server list instead of overwriting them.
+        const merged = new Set(serverIds)
+        for (const [sid, wishlisted] of _unsynced) {
+          if (wishlisted) merged.add(sid)
+          else merged.delete(sid)
+        }
+        write([...merged])
+      }
     }
   } catch {}
 }
@@ -57,6 +76,9 @@ export async function toggleWishlist(id: string | number): Promise<boolean> {
   const sid = String(id)
   const ids = read()
   const next = ids.includes(sid) ? ids.filter(x => x !== sid) : [...ids, sid]
+  const wishlisted = next.includes(sid)
+  // Local state (persisted to AsyncStorage in write()) wins immediately and
+  // survives until the server confirms — an offline toggle is never reverted.
   write(next)
   // Fire-and-forget sync to backend
   try {
@@ -65,11 +87,14 @@ export async function toggleWishlist(id: string | number): Promise<boolean> {
     } else {
       await api.post('/store/wishlist', { product_id: sid })
     }
-  } catch {}
-  return next.includes(sid)
+    _unsynced.delete(sid)
+  } catch {
+    _unsynced.set(sid, wishlisted)
+  }
+  return wishlisted
 }
 
-export function clearWishlist() { write([]) }
+export function clearWishlist() { _unsynced.clear(); write([]) }
 
 export function useWishlist() {
   const [ready, setReady] = useState(false)

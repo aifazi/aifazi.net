@@ -2,6 +2,7 @@ import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import Constants from 'expo-constants'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as SecureStore from 'expo-secure-store'
 import { api } from './api'
 
 /**
@@ -52,10 +53,24 @@ export async function configurePushNotifications() {
 /**
  * Current push registration, keyed by user id so a token registered for user
  * A is never unregistered as (or leaked to) user B after account switching.
- * The AuthProvider logout flow calls unregisterCurrentPushToken() so the
+ * The AuthProvider logout flow calls unregisterCurrentPushToken(userId) so the
  * backend fan-out stops targeting this device on every logout path.
+ *
+ * R7-16 — the registration is ALSO persisted in SecureStore (per-user key,
+ * same AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY convention as the refresh token
+ * in api.ts). `currentPush` is memory-only and gone after a restart, so a
+ * post-restart logout would otherwise never unregister the backend row.
+ * The push token addresses this install for fan-out, so it follows the
+ * SecureStore convention — never AsyncStorage (which holds only the
+ * non-secret opt-out/denied flags below).
  */
 let currentPush: { userId: string; token: string } | null = null
+
+const PUSH_SECURE_OPTIONS = {
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+} as const
+
+const pushTokenKey = (userId: string) => `aifazi_push_token:${userId}`
 
 /** Acquire the Expo push token for this install and register it with the
  * backend so notifications can reach this device.
@@ -130,7 +145,7 @@ export async function setPushEnabled(userId: string, enabled: boolean): Promise<
     // Storage failure - fall through; the in-memory token state still changes.
   }
   if (enabled) await registerPushToken(userId)
-  else await unregisterCurrentPushToken()
+  else await unregisterCurrentPushToken(userId)
   return enabled
 }
 
@@ -162,7 +177,16 @@ export async function registerPushToken(userId?: string) {
     const token = await Notifications.getExpoPushTokenAsync({ projectId })
     if (!token?.data) return null
     await api.post('/push/register', { token: token.data })
-    if (userId) currentPush = { userId, token: token.data }
+    if (userId) {
+      currentPush = { userId, token: token.data }
+      // R7-16 — persist so a post-restart logout can still unregister.
+      // Per-user key: registering for user B never touches user A's entry.
+      try {
+        await SecureStore.setItemAsync(pushTokenKey(userId), token.data, PUSH_SECURE_OPTIONS)
+      } catch {
+        // Storage failure — the in-memory entry still covers this session.
+      }
+    }
     return token.data
   } catch {
     return null // Best-effort — never break boot/auth over push.
@@ -180,9 +204,34 @@ export async function unregisterPushToken(token: string | null) {
   }
 }
 
-/** Unregister whichever token is currently held (logout flow). Never throws. */
-export async function unregisterCurrentPushToken() {
+/** Unregister whichever token is held for `userId` (logout flow). Never throws.
+ *
+ * R7-16 — post-restart logout: `currentPush` is memory-only and gone after a
+ * restart, so fall back to the SecureStore entry for THIS user id and
+ * unregister that too. Only this user's key is ever read or deleted — user B
+ * logging out never clears user A's persisted token.
+ */
+export async function unregisterCurrentPushToken(userId?: string) {
   const held = currentPush
-  currentPush = null
-  if (held) await unregisterPushToken(held.token)
+  const targetUserId = userId ?? held?.userId
+  if (held && (!targetUserId || held.userId === targetUserId)) {
+    currentPush = null
+    await unregisterPushToken(held.token)
+  }
+  if (!targetUserId) return
+  let stored: string | null = null
+  try {
+    stored = await SecureStore.getItemAsync(pushTokenKey(targetUserId))
+  } catch {
+    stored = null
+  }
+  if (stored && stored !== held?.token) {
+    // Different (stale) token for the same user — the backend must forget it too.
+    await unregisterPushToken(stored)
+  }
+  try {
+    await SecureStore.deleteItemAsync(pushTokenKey(targetUserId))
+  } catch {
+    // Non-fatal — a leftover entry only causes one extra unregister next time.
+  }
 }

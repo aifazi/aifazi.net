@@ -9,7 +9,7 @@
 'use client'
 
 import NextLink from 'next/link'
-import React, { useCallback, useSyncExternalStore } from 'react'
+import React, { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { useRouter, usePathname, useParams as _useParams } from 'next/navigation'
 
 export { usePathname, useSearchParams } from 'next/navigation'
@@ -93,9 +93,13 @@ export function useParams<T extends Record<string, string>>(): T {
 /** Replaces react-router Navigate component */
 export function Navigate({ to, replace }: { to: string; replace?: boolean }) {
   const router = useRouter()
-  if (typeof window !== 'undefined') {
+  // R7-10 — never navigate during render (React forbids side effects there and
+  // StrictMode double-render would push twice). The effect is client-only, so
+  // the old `typeof window` guard is preserved implicitly; `replace`
+  // semantics are unchanged.
+  useEffect(() => {
     if (replace) router.replace(to)
     else router.push(to)
-  }
+  }, [router, to, replace])
   return null
 }

@@ -224,13 +224,16 @@ async def github_callback(code: str | None = None, state: str | None = None, err
             return RedirectResponse(f"{front}/profile?github_error=link")
         mode = "connect"
         link_payload = _decode_github_link_token(parts[1])
-        dest = _safe_relative_path(parts[2], default="/forum/profile")
-        # Verify the HMAC-signed state
+        # R7-9 — dest comes from the VERIFIED signed state (parts[3]), never
+        # the raw parts[2] segment: that segment is attacker-controlled text
+        # inside the state string and is not covered by the HMAC.
         signed_state = parts[3]
         try:
-            verify_oauth_state_full(signed_state, "github")
+            _verified = verify_oauth_state_full(signed_state, "github")
         except ValueError:
             return RedirectResponse(f"{front}/profile?github_error=state")
+        dest = _safe_relative_path(str(_verified.get("dest") or "/forum/profile"),
+                                   default="/forum/profile")
         if not link_payload:
             return RedirectResponse(f"{front}/profile?github_error=link")
     else:
@@ -408,8 +411,10 @@ async def github_callback(code: str | None = None, state: str | None = None, err
         _set_auth_cookies(resp, token, refresh)
         return resp
     except Exception:
-        safe_dest = _urlparse.quote(_safe_relative_path(dest), safe="/")
-        return RedirectResponse(front + "/auth/github-callback#token=" + token + "&dest=" + safe_dest)
+        # R7-5 — dest-only redirect (no #token= fragment), exactly like
+        # steam_auth.py: the cookies above are the delivery mechanism and the
+        # fragment fallback must never carry the token.
+        return RedirectResponse(front + "/auth/github-callback#dest=" + _urlparse.quote(_safe_relative_path(dest), safe='/'))
 
 
 @router.delete("/disconnect")
