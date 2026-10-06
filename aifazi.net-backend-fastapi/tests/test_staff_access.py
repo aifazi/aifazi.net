@@ -158,6 +158,10 @@ def _load(monkeypatch, name, store, actor, writes):
     monkeypatch.setitem(sys.modules, "database", _db_stub(store))
     monkeypatch.setitem(sys.modules, "dependencies", _deps_stub(actor))
     monkeypatch.setitem(sys.modules, "utils.audit", _audit_stub(writes))
+    # Evict transitive modules that bind `supabase` at import, or later
+    # tests silently reuse the first test's store.
+    for m in ("routers.auth_shared",):
+        monkeypatch.delitem(sys.modules, m, raising=False)
     spec = importlib.util.spec_from_file_location(
         f"{name}_under_test", os.path.join(BACKEND_DIR, "routers", f"{name}.py"))
     assert spec is not None and spec.loader is not None

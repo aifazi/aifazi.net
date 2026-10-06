@@ -17,7 +17,7 @@ import sys
 import types
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("PASETO_SECRET", "test-secret-for-unit-tests-only")
@@ -544,4 +544,22 @@ def test_health_survives_crashing_provider_probe(monkeypatch):
     assert body["providers"]["discord"]["status"] == "error"
     assert "probe exploded" in body["providers"]["discord"]["detail"]
     assert body["providers"]["github"]["status"] == "unconfigured"
+
+
+def test_ldap_url_rejects_mapped_private_addresses(monkeypatch):
+    # R6-3: IPv4-mapped IPv6 must test as its embedded v4 address —
+    # ::ffff:127.0.0.1 etc. previously slipped past the literal checks.
+    mod, _, _, _ = _load(monkeypatch)
+    for url in ("ldap://[::ffff:127.0.0.1]/", "ldap://[::ffff:169.254.169.254]/",
+                "ldap://[::ffff:224.0.0.1]/", "ldap://[::ffff:0.0.0.0]/"):
+        try:
+            mod._validate_ldap_url(url)
+            raise AssertionError(f"accepted {url}")
+        except HTTPException as exc:
+            assert exc.status_code == 400
+    # Controls: legit internal hostname, public IP, and mapped RFC1918
+    # (private space is permitted, mapped or not) still pass.
+    assert mod._validate_ldap_url("ldap://lldap:3890") == "ldap://lldap:3890"
+    assert "8.8.8.8" in mod._validate_ldap_url("ldap://8.8.8.8/")
+    assert "10.0.0.1" in mod._validate_ldap_url("ldap://[::ffff:10.0.0.1]/")
 

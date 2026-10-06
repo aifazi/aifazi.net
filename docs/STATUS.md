@@ -1,6 +1,6 @@
 # aifazi.net — Project Status
 
-> **What we're doing right now, and what's left to do.** Updated 2026-10-05.
+> **What we're doing right now, and what's left to do.** Updated 2026-10-06.
 > Audit history: [AUDIT.md](AUDIT.md) (latest §19: Round 7 + fix batch #447 landed — P0/P1, D1–D6, F1–F3, mobile P2, infra-docs) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
 
 ## Where we are (what we're doing)
@@ -31,7 +31,7 @@ Verification gate — every PR:
 | Mobile | `npm run typecheck` · `npm run lint` · `npm test` |
 | e2e (feature PRs) | start server → `npx playwright test` |
 
-Current counts: frontend **151 passed** (+1 skip) · backend **343** · mobile **87** · npm audit **7 (0 critical)**.
+Current counts: frontend **161 passed** (+1 skip) · backend **351** · mobile **87** · npm audit **7 (0 critical)**.
 
 ## What remains
 
@@ -63,7 +63,7 @@ Current counts: frontend **151 passed** (+1 skip) · backend **343** · mobile *
 ### P3 — structure / product
 
 - [x] God-file split: `auth.py` — done in #408: 2145 → 29-line assembly module; shared helpers in `routers/auth_shared.py`; `/config-check` in its own `routers/config_check.py`; remaining routes moved to the domain sub-routers (auth_sessions/auth_register/auth_profile/auth_staff); ~1300 lines of shadowed dead implementations removed; route surface verified identical (61 /api/auth routes before/after, pytest 244 green).
-- [ ] God-file splits remaining: `ThemeLibrary.jsx` (4240), `HybridInfraEditor.tsx` (3241), `HybridInfraCanvas.tsx` (2502) — new top-3 since round 6, `ServerRackAnimation.jsx` (2494), `AdminPanels.jsx` (1891); backend `fivem.py` (2003, largest backend file, newly tracked in §16.4).
+- [ ] God-file splits remaining: `ThemeLibrary.jsx` (4240), `HybridInfraEditor.tsx` (3301), `HybridInfraCanvas.tsx` (2502) — new top-3 since round 6, `ServerRackAnimation.jsx` (2494), `AdminPanels.jsx` (1891); backend `fivem.py` (2003, largest backend file, newly tracked in §16.4).
 - [x] Canonicals + JSON-LD for `/p/[slug]`, store, forum; og:image for diagram share links — done in #447 (zero-dep `/api/og` SVG route + share-panel wiring, hybrid-infra JSON-LD escaping fixed).
 - [ ] Round-7 Mediums/Lows still open (full list in AUDIT §19): PKCE `plain` + optional challenge, `file_tools` CPU caps, check-username oracle, CDN audit trail, callback RL suffix-match, WG L3-IP trust, dashboard 5-API abort, forum double-refresh, login stale `next`, Discord-error coupling, abuse undo in sessionStorage, contacts N-fanout, Google fonts (kept: remote theme fonts by design), avatars `unoptimized` (kept: wildcard remotePatterns = open fetch proxy), mobile cold-start offline, chat outbox persistence, `partial_token` in deeplink, iOS mic strings, background polling guards, OTA channel pin, arm64-only, NC scrape fragility, RLS parity, audit-table bootstrap, `check_migrations.py` refresh, mypy `utils/` scope, `pytest -x`, preview-build hosts, E2E-on-prod gating, notify echo-only, dead LiveKit refs, images-by-tag, header skew, L1 token hashing, `db/check` gating, flash-timer overlap, username-check timer, tab long-press a11y, EXPO_PUBLIC dev-defaults, Talk `hasMore` pagination.
 - [ ] **ROADMAP.md reconciliation**: header says 2026-09-04 (~4 weeks stale), 32 unchecked items — triage each: execute, park, or close.

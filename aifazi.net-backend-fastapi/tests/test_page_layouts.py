@@ -180,6 +180,20 @@ def test_publish_makes_public(client):  # type: ignore[no-untyped-def]
     assert client.get("/layouts").json()["layouts"][0]["blockCount"] == 1
 
 
+def test_update_refreshes_stored_block_count(client):  # type: ignore[no-untyped-def]
+    # List endpoints read the stored block_count (not the body), so updates
+    # must maintain it — mirrors the infra node_count/flow_count pattern.
+    created = client.post("/layouts", json=_layout(published=True)).json()["layout"]
+    assert client.get("/layouts").json()["layouts"][0]["blockCount"] == 1
+    body = _layout(published=True, blocks=[
+        {"id": "b1", "type": "hero", "props": {"title": "Hi"}},
+        {"id": "b2", "type": "hero", "props": {"title": "Bye"}},
+    ])
+    r = client.put(f"/layouts/{created['id']}", json=body)
+    assert r.status_code == 200, r.text
+    assert client.get("/layouts").json()["layouts"][0]["blockCount"] == 2
+
+
 def test_bad_type_rejected(client):  # type: ignore[no-untyped-def]
     bad = _layout(blocks=[{"id": "b1", "type": "../evil", "props": {}}])
     assert client.post("/layouts", json=bad).status_code == 400

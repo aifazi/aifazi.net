@@ -47,7 +47,7 @@ async def get(_: dict = Depends(require_staff)):
     return _mask_secrets(row.get("settings") or {})
 
 @router.put("")
-async def update(body: dict, _: dict = Depends(require_staff)):
+async def update(body: dict, _: dict = Depends(require_admin)):
     body.pop("id", None); body.pop("key", None); body.pop("settings", None)
     # R7-2 — never persist the masked sentinel: a client echoing the GET view
     # back would otherwise clobber real secrets with "••••••••".

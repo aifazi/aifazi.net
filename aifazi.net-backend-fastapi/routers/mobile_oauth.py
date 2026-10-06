@@ -58,6 +58,17 @@ async def mobile_exchange(body: ExchangeIn):
             raise HTTPException(503, "User directory unavailable")
         if not prow.data:
             raise HTTPException(400, "Sign-in code is invalid, expired, or already used")
+        # Ban recheck: a suspension issued after the code was minted must
+        # still deny. Linked forum accounts carry `banned`; unlinked players
+        # have no row to suspend.
+        try:
+            linked = supabase.table("users").select("id,banned") \
+                .eq("discord_id", user_id).limit(1).execute()
+        except Exception:
+            raise HTTPException(503, "User directory unavailable")
+        linked_row = (linked.data or [None])[0]
+        if linked_row and linked_row.get("banned"):
+            raise HTTPException(403, "Account suspended")
         from routers.discord_auth import _make_player_token
         token = _make_player_token({"discord_id": user_id, "username": username, "avatar": ""})
         log.info("mobile oauth exchange: provider=%s kind=discord_player", provider)
@@ -75,8 +86,14 @@ async def mobile_exchange(body: ExchangeIn):
             .eq("id", user_id).execute()
     except Exception:
         raise HTTPException(503, "User directory unavailable")
+    # Fail closed on a missing row: every legitimate flow creates the user row
+    # just before issuing the code (same database, read-your-writes), so a
+    # code with no row is forged, stale, or raced with a deletion — minting
+    # from bare code claims would hand tokens to a non-account.
     db_user = (urow.data or [None])[0]
-    if db_user and db_user.get("banned"):
+    if not db_user:
+        raise HTTPException(400, "Sign-in code is invalid, expired, or already used")
+    if db_user.get("banned"):
         raise HTTPException(403, "Account suspended")
     if db_user:
         username = db_user.get("username") or username

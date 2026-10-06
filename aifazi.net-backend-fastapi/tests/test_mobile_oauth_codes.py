@@ -1,7 +1,7 @@
-"""H2/C6 â€” one-time exchange codes for mobile OAuth deep links.
+"""H2/C6 Ã¢â‚¬â€ one-time exchange codes for mobile OAuth deep links.
 
 Covers:
-- utils.mobile_oauth_codes: issueâ†’exchange round-trip, single-use
+- utils.mobile_oauth_codes: issueÃ¢â€ â€™exchange round-trip, single-use
   enforcement, unknown / wrong-purpose / garbage / expired codes rejected,
   fragment builder shape (code + state echo, never a token).
 - POST /api/auth/mobile/exchange: success (token + refreshToken + dest),
@@ -34,7 +34,7 @@ def _load(name: str, path: str):
     return module
 
 
-# â”€â”€ In-memory Supabase stand-in (mobile_oauth_claims + users) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ã¢â€â‚¬Ã¢â€â‚¬ In-memory Supabase stand-in (mobile_oauth_claims + users) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 class _Resp:
     def __init__(self, data):
         self.data = data
@@ -97,12 +97,21 @@ class _Table:
                 return _Resp(out)
             self._db.user_updates.append((self._name, dict(self._update), dict(self._filters)))
             return _Resp([{**self._update}])
+        if self._name == "users":
+            rows = list(self._db.users.values())
+            for k, v in self._filters.items():
+                if v == "__null__":
+                    rows = [r for r in rows if r.get(k) is None]
+                else:
+                    rows = [r for r in rows if r.get(k) == v]
+            return _Resp(rows)
         return _Resp([])
 
 
 class _ClaimsDB:
     def __init__(self):
         self.claims: dict = {}
+        self.users: dict = {}
         self.user_updates: list = []
 
     def table(self, name):
@@ -130,7 +139,7 @@ def codes(monkeypatch):
     return mod, db
 
 
-# â”€â”€ utils.mobile_oauth_codes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ã¢â€â‚¬Ã¢â€â‚¬ utils.mobile_oauth_codes Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 class TestIssueExchange:
     def test_roundtrip(self, codes):
         mod, db = codes
@@ -207,7 +216,7 @@ class TestFragmentShape:
         assert mod.state_echo(None) == ""
 
 
-# â”€â”€ POST /api/auth/mobile/exchange â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# Ã¢â€â‚¬Ã¢â€â‚¬ POST /api/auth/mobile/exchange Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 class TestExchangeEndpoint:
     @pytest.fixture()
     def client(self, monkeypatch):
@@ -233,6 +242,7 @@ class TestExchangeEndpoint:
 
     def test_exchange_success_and_single_use(self, client):
         c, db, codes_mod = client
+        db.users["u9"] = {"id": "u9", "username": "dave", "role": "user", "banned": False}
         code = codes_mod.issue_code("github", "u9", "dave", "user", "/forum/profile")
         r = c.post("/mobile/exchange", json={"code": code})
         assert r.status_code == 200, r.text
@@ -283,7 +293,8 @@ class TestAppStateBinding:
         return TestClient(app, raise_server_exceptions=False), db, codes_mod
 
     def test_bound_code_exchanges_with_state(self, bound_client):
-        c, _, codes_mod = bound_client
+        c, db, codes_mod = bound_client
+        db.users["u10"] = {"id": "u10", "username": "erin", "role": "user", "banned": False}
         code = codes_mod.issue_code(
             "github", "u10", "erin", "user", "/profile", app_state="s3cr3t-state")
         r = c.post("/mobile/exchange", json={"code": code, "state": "s3cr3t-state"})
@@ -305,7 +316,8 @@ class TestAppStateBinding:
         assert r.status_code == 400
 
     def test_unbound_legacy_code_still_exchanges(self, bound_client):
-        c, _, codes_mod = bound_client
+        c, db, codes_mod = bound_client
+        db.users["u13"] = {"id": "u13", "username": "hal", "role": "user", "banned": False}
         code = codes_mod.issue_code("github", "u13", "hal", "user", "/profile")
         r = c.post("/mobile/exchange", json={"code": code})
         assert r.status_code == 200, r.text
