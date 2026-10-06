@@ -154,10 +154,12 @@ async def stalwart_queue_action(body: QueueActionBody, request: Request, user: d
             calls = [["x:QueuedMessage/destroy", {"accountId": "admin", "ids": [qid]}, "a"]]
         responses = await _jmap(calls)
     except HTTPException as e:
-        return _fail(str(e.detail))
+        logger.warning("stalwart_queue_action %s %s upstream error: %s", action, qid, e.detail)
+        return _fail("upstream request failed (see server logs)")
     except Exception as e:
         logger.warning("stalwart_queue_action %s %s failed: %s", action, qid, e)
-        return _fail(f"{type(e).__name__}: {e}")
+        # CodeQL #73: return the exception type only — never the message.
+        return _fail(f"{type(e).__name__} (see server logs)")
     err = _jmap_error(responses, "a")
     if err:
         return _fail(f"Stalwart rejected {action}: {err}")

@@ -8,6 +8,7 @@ Migration (run once in Supabase SQL editor):
         VALUES ('global', '{}')
         ON CONFLICT (key) DO NOTHING;
 """
+import logging
 import re
 
 import httpx
@@ -19,6 +20,8 @@ from routers.cdn_upload import get_cdn_config as _get_cdn_config
 from utils.audit import record as _audit
 
 router = APIRouter()
+
+logger = logging.getLogger("cdn_settings")
 
 def _get_row():
     res = supabase.table("cdn_config").select("settings").eq("key", "global").execute()
@@ -293,14 +296,19 @@ async def delete_orphans(body: dict, request: Request, user: dict = Depends(requ
             # recording a phantom success.
             del_res = await delete_file(mid, user)
             if isinstance(del_res, dict) and del_res.get("ok") is False:
+                logger.warning("cdn orphan delete %s provider error: %s", key, del_res.get("error"))
                 results.append({"key": key, "ok": False,
-                                "error": str(del_res.get("error") or "provider delete failed")[:200]})
+                                "error": "provider delete failed (see server logs)"})
             else:
                 results.append({"key": key, "ok": True})
         except HTTPException as exc:
-            results.append({"key": key, "ok": False, "error": str(exc.detail)[:200]})
+            # CodeQL #74: per-key failures stay identifiable by key; exception
+            # text lives only in the server log, never in the response/audit.
+            logger.warning("cdn orphan delete %s failed: %s", key, exc.detail)
+            results.append({"key": key, "ok": False, "error": "provider delete failed (see server logs)"})
         except Exception as exc:
-            results.append({"key": key, "ok": False, "error": str(exc)[:200]})
+            logger.warning("cdn orphan delete %s failed", key, exc_info=True)
+            results.append({"key": key, "ok": False, "error": "provider delete failed (see server logs)"})
 
     actor = str(user.get("username") or user.get("id") or "admin")
     _audit(actor, "cdn_orphan_delete", target="cdn_orphans",

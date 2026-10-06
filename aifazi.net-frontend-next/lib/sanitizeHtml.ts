@@ -230,8 +230,10 @@ function scrubServer(dirty: string, config?: Record<string, any>): string {
   let prevComment = ''
   while (prevComment !== out) {
     prevComment = out
-    out = out.replace(/<!--[\s\S]*?-->/g, '')
-    out = out.replace(/-->/g, '')
+    // CodeQL #94/#95: treat `--!>` as a comment end alongside `-->`
+    // (bogus-comment form) so neither opener nor closer can survive.
+    out = out.replace(/<!--[\s\S]*?(-->|--!>)/g, '')
+    out = out.replace(/--!?>/g, '')
   }
   out = out.replace(/<!--[\s\S]*$/g, '')
   return tokenize(out)

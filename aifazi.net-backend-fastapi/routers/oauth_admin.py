@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import ipaddress
+import logging
 import os
 import re
 import secrets
@@ -31,6 +32,8 @@ except ImportError:
     _httpx = None  # type: ignore[assignment]  # optional dep; guarded at use sites
 
 router = APIRouter()
+
+logger = logging.getLogger("oauth_admin")
 
 # Cloud metadata DNS names that never appear as literal IPs but still grant
 # instance credentials when fetched server-side.
@@ -396,15 +399,17 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
         host, port = u.hostname or "", u.port or 389
         if u.scheme not in ("ldap", "ldaps") or not host:
             raise ValueError("URL must be ldap(s)://host")
-    except Exception as exc:
-        return {"ok": False, "steps": [_step("parse", False, str(exc)[:150],
+    except Exception:
+        # CodeQL #99: the raised message is our own static string — repeat it
+        # literally instead of echoing str(exc).
+        return {"ok": False, "steps": [_step("parse", False, "URL must be ldap(s)://host",
                                               "Use the form ldap://host:port")]}
     try:
         infos = socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
         steps.append(_step("dns", True, f"{host} → {infos[0][4][0]}"))
-    except Exception as exc:
+    except Exception:
         return {"ok": False, "steps": [_step(
-            "dns", False, f"Cannot resolve {host}: {str(exc)[:120]}",
+            "dns", False, f"Cannot resolve {host}",
             f"'{host}' is not reachable from the backend container — use the actual "
             "directory service hostname/IP on the backend Docker network (Coolify "
             "service name), or turn the directory off if unused")]}
@@ -413,7 +418,7 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
         sock.close()
         steps.append(_step("tcp", True, f"{host}:{port} accepts connections"))
     except Exception as exc:
-        steps.append(_step("tcp", False, f"{type(exc).__name__}: {str(exc)[:120]}",
+        steps.append(_step("tcp", False, f"{type(exc).__name__}: connection failed",
                             "The directory is down or unreachable from the backend network"))
         return {"ok": False, "steps": steps}
     if not bind_dn or not bind_pw:
@@ -434,7 +439,7 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
             steps.append(_step("bind", False, f"{kind}: credentials rejected",
                                 "Check the bind DN and password (not a user password)"))
         else:
-            steps.append(_step("bind", False, f"{kind}: {str(exc)[:200]}",
+            steps.append(_step("bind", False, f"{kind}: LDAP handshake failed",
                                 "The server accepted TCP but the LDAP handshake failed"))
         return {"ok": False, "steps": steps}
     try:
@@ -457,7 +462,7 @@ def _probe_lldap_staged(url: str, bind_dn: str, bind_pw: str, base_dn: str,
             conn.unbind()
         except Exception:
             pass
-        steps.append(_step("search", False, f"{_exc_name(exc)}: {str(exc)[:200]}",
+        steps.append(_step("search", False, f"{_exc_name(exc)}: Base DN search failed",
                             "The bind worked but the Base DN search failed — fix Base DN"))
         return {"ok": False, "steps": steps}
 
@@ -536,7 +541,7 @@ async def _test_provider_creds(pid: str, creds: dict) -> dict:
                         "detail": f"Steam rejected the key (HTTP {r.status_code})",
                         "hint": "Check the key at steamcommunity.com/dev/apikey"}
     except Exception as exc:
-        return {"ok": False, "detail": f"{type(exc).__name__}: {str(exc)[:150]}",
+        return {"ok": False, "detail": f"{type(exc).__name__}: network request failed",
                 "hint": "Network/proxy issue from the backend — retry"}
     return {"ok": False, "detail": f"Unknown provider {pid}", "hint": ""}
 
@@ -625,8 +630,9 @@ async def health(request: Request, staff: dict = Depends(require_admin)):
             return pid, {"status": "ok" if r["ok"] else "error",
                          "detail": r.get("detail", ""), "hint": r.get("hint", "")}
         except Exception as exc:
+            logger.warning("doctor probe %s crashed", pid, exc_info=True)
             return pid, {"status": "error",
-                         "detail": f"Probe crashed ({type(exc).__name__}): {str(exc)[:150]}",
+                         "detail": f"Probe crashed ({type(exc).__name__})",
                          "hint": "Check backend logs — other checks still ran"}
 
     providers = dict(zip(_SOCIAL_PROVIDERS,
@@ -911,7 +917,7 @@ async def _probe_authentik(cfg: dict) -> list[dict]:
                             break
                 except Exception as exc:
                     tried.append(f"{disco_url} → {type(exc).__name__}")
-                    return [_step("discovery", False, f"Unreachable: {type(exc).__name__}: {str(exc)[:120]}",
+                    return [_step("discovery", False, f"Unreachable: {type(exc).__name__}",
                                    "Check the issuer URL and that Authentik is running")]
             if not doc:
                 hint = ("Set the Authentik application slug in the Upstream IdP tab — "
@@ -970,7 +976,7 @@ async def _probe_authentik(cfg: dict) -> list[dict]:
                 steps.append(_step("authorize", False, f"HTTP {ar.status_code} — client_id likely not registered under this issuer",
                                    "Create the OAuth2 provider + application in Authentik with this client ID"))
     except Exception as exc:
-        steps.append(_step("probe", False, f"{type(exc).__name__}: {str(exc)[:150]}", "Retry; check backend egress"))
+        steps.append(_step("probe", False, f"{type(exc).__name__}: probe failed", "Retry; check backend egress"))
     return steps
 
 
@@ -996,8 +1002,9 @@ async def upstream_signals(staff: dict = Depends(require_admin)):
         if fresh:
             out["last_success_at"] = fresh[0].get("last_seen")
             out["last_success_user"] = fresh[0].get("username")
-    except Exception as exc:
-        out["users_error"] = str(exc)[:150]
+    except Exception:
+        logger.warning("upstream signals users query failed", exc_info=True)
+        out["users_error"] = "user stats unavailable (see server logs)"
     try:
         res = supabase.table("audit_logs").select("actor,action,created_at") \
             .in_("action", ["authentik_login", "authentik_connect"]) \
@@ -1006,6 +1013,7 @@ async def upstream_signals(staff: dict = Depends(require_admin)):
             {"at": r.get("created_at"), "user": r.get("actor"), "action": r.get("action")}
             for r in (res.data or [])
         ]
-    except Exception as exc:
-        out["audit_error"] = str(exc)[:150]
+    except Exception:
+        logger.warning("upstream signals audit query failed", exc_info=True)
+        out["audit_error"] = "login stats unavailable (see server logs)"
     return out
