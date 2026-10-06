@@ -7,6 +7,10 @@ on:
     branches: [main]
   schedule:
     - cron: '0 6 * * 1'
+  # Manual rescan (2026-10-06): auto-merge pushes made by the Actions app do
+  # not fire push workflows, so a security fix can land without the
+  # default-branch rescan that closes its alerts. Dispatch on main to close.
+  workflow_dispatch:
 
 jobs:
   analyze:
