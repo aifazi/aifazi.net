@@ -38,7 +38,7 @@ Current counts: frontend **161 passed** (+1 skip) · backend **351** · mobile *
 ### P0 — next action
 
 - [x] **Run the `mobile_oauth_claims` migration** (Supabase SQL editor, SQL in AUDIT §17) — **done + verified live 2026-10-04** (`mobile_oauth_claims` table present in prod Supabase; `users.authentik_id` column confirmed).
-- [ ] **Apply the `users.authentik_id` migration to prod** (`supabase/migrations/20261005000001_users_authentik_id.sql`, shipped in #447 — file merged, NOT yet applied): same psql route as previous migrations, then verify column present.
+- [x] **Apply the `users.authentik_id` migration to prod** (`supabase/migrations/20261005000001_users_authentik_id.sql`) — **applied + verified live 2026-10-06** (column + index already present; `page_layouts.block_count` migration `20261006000000` likewise applied, 0 rows needed backfill).
 - [ ] **Post-#447 live verification round** (needs Coolify redeploy first): re-run Identity Doctor (LLDAP bind fix), enter Authentik provider slug → Verify → one live login → check signals/Activity, hard-refresh `/login` for ambient motion.
 - [ ] **Verify the mobile release pipeline end-to-end**: dispatch `mobile-release-build.yml` — the version-bump PR must now be created (`app.json` 1.0.70 → current release), APK attaches, run goes green → `mobile-ota-update` unblocks. **Owner decision:** shipping the OTA also releases ~3 weeks of pending mobile changes to production users.
 
