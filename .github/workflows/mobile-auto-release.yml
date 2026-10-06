@@ -94,8 +94,15 @@ jobs:
       # release created above won't re-key mobile-release-build.yml on its own.
       # Dispatch it explicitly with the new tag so the APK/AAB get built and
       # attached to this release.
+      # CHAIN CAVEAT: a build dispatched with GITHUB_TOKEN completes fine,
+      # but its completion does NOT fire mobile-ota-update.yml (same rule,
+      # one hop further). Dispatch with a PAT so the full chain
+      # release → build → OTA stays live. Falls back to GITHUB_TOKEN when
+      # WORKFLOW_PAT is unset (build still runs; OTA then needs a manual
+      # `gh workflow run mobile-ota-update.yml`). Owner setup: classic PAT
+      # with `repo` + `workflow` scopes stored as the WORKFLOW_PAT secret.
       - name: Dispatch release build
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.WORKFLOW_PAT || github.token }}
         run: |
           gh workflow run "Mobile Release Build" --ref main -f "tag=v${{ steps.version.outputs.next }}"
