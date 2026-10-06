@@ -549,14 +549,14 @@ def test_r78_banned_forum_user_exchange_denied(monkeypatch):
     assert r.status_code == 403, r.text
 
 
-def test_r78_missing_forum_row_proceeds_with_code_claims(monkeypatch):
-    # Provisioning parity: the OAuth callbacks create the user row just before
-    # issuing the code, so a missing row at exchange time is tolerated (the
-    # enforced invariant is banned=True → 403, covered above).
+def test_r78_missing_forum_row_denied(monkeypatch):
+    # Fail closed: every legitimate flow creates the user row just before
+    # issuing the code (same database, read-your-writes), so a code with no
+    # row is forged or raced with a deletion — no tokens from bare claims.
     _, client, _, _ = _load_mobile_oauth(monkeypatch, _forum_payload())
     r = client.post("/mobile/exchange", json={"code": "code123456"})
-    assert r.status_code == 200, r.text
-    assert r.json()["token"]
+    assert r.status_code == 400, r.text
+    assert "token" not in r.json()
 
 
 def test_r78_forum_success_uses_db_identity(monkeypatch):
@@ -585,3 +585,17 @@ def test_r78_known_discord_player_ok(monkeypatch):
     r = client.post("/mobile/exchange", json={"code": "code123456"})
     assert r.status_code == 200, r.text
     assert r.json()["token"] == "PLAYERTOK"
+
+
+def test_r78_banned_discord_player_denied(monkeypatch):
+    # A suspension issued after the code was minted must still deny, even
+    # though unlinked players have no users row to check.
+    payload = {"user_id": "d123", "username": "p", "role": "player",
+               "dest": "/x", "provider": "discord", "kind": "discord_player"}
+    store = {"users": [{"id": "u9", "username": "p", "discord_id": "d123",
+                        "role": "user", "banned": True}],
+             "discord_users": [{"discord_id": "d123"}]}
+    _, client, _, _ = _load_mobile_oauth(monkeypatch, payload, store=store)
+    r = client.post("/mobile/exchange", json={"code": "code123456"})
+    assert r.status_code == 403, r.text
+    assert "token" not in r.json()

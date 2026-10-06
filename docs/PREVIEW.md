@@ -21,9 +21,10 @@ Branch naming: `fix/*`, `feat/*`, `chore/*` (dependabot uses its own).
 
 * Vercel posts a **Preview Comments** check on the PR — the deployment
   URL looks like `https://aifazi-net-<hash>-<team>.vercel.app`.
-* The 6 required checks must pass before merge: Frontend Lint &
-  Typecheck, Backend Lint & Typecheck, Mobile Lint & Typecheck,
-  Backend Security Scan, Secret Scan, Frontend Build.
+* The required checks must pass before merge: Frontend Lint & Typecheck,
+  Frontend Build, Frontend E2E (Playwright), Backend Lint & Typecheck,
+  Backend Security Scan, Mobile Lint & Typecheck, Secret Scan, Dependency
+  Review (plus informational Notify on Failure + Vercel Preview Comments).
 
 ## 3. Know which backend your preview talks to
 

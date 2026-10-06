@@ -417,6 +417,21 @@ async def oauth_authorize_post(
         raise HTTPException(503, "Directory unavailable")
 
     user = _ensure_forum_user(ldap_user)
+    if user.get("banned"):
+        # Banned users fail closed here like the GET cookie path (R7-6) and
+        # the first-party login above — no code, no tokens.
+        html_page = _LOGIN_PAGE.format(
+            app_name=html.escape(str(client.get("name") or client_id)),
+            action=html.escape(f"{API_URL}/api/auth/oauth/authorize", quote=True),
+            client_id=html.escape(client_id, quote=True),
+            redirect_uri=html.escape(redirect_uri, quote=True),
+            state=html.escape(state, quote=True),
+            scope=html.escape(scope, quote=True),
+            code_challenge=html.escape(code_challenge, quote=True),
+            code_challenge_method=html.escape(code_challenge_method or "S256", quote=True),
+            error_html='<div class="err">Account suspended</div>',
+        )
+        return HTMLResponse(html_page, status_code=403)
     code = secrets.token_urlsafe(32)
     _store_put_code(code, {
         "client_id": client_id,

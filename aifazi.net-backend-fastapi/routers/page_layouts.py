@@ -116,8 +116,14 @@ def _row_to_layout(row: dict, include_body: bool = True) -> dict:
     if include_body:
         out["blocks"] = row.get("blocks", []) or []
     else:
-        blocks = row.get("blocks", []) or []
-        out["blockCount"] = len(blocks) if isinstance(blocks, list) else 0
+        # Prefer the stored count (list queries no longer select `blocks`);
+        # fall back to the body for legacy rows that only carry `blocks`.
+        bc = row.get("block_count")
+        if isinstance(bc, int):
+            out["blockCount"] = bc
+        else:
+            blocks = row.get("blocks", []) or []
+            out["blockCount"] = len(blocks) if isinstance(blocks, list) else 0
     return out
 
 
@@ -175,7 +181,7 @@ def _snapshot_revision(row: dict) -> None:
 def list_layouts(offset: int = Query(0, ge=0, le=10000)):
     """Public: published layout metas (newest first, 100 per page)."""
     res = supabase.table("page_layouts").select(
-        "id,slug,title,updated_at,published,blocks"
+        "id,slug,title,updated_at,published,block_count"
     ).eq("published", True).order("updated_at", desc=True).range(offset, offset + 99).execute()
     return {"layouts": [_row_to_layout(r, include_body=False) for r in (res.data or [])], "offset": offset}
 
@@ -184,7 +190,7 @@ def list_layouts(offset: int = Query(0, ge=0, le=10000)):
 def admin_list_all(offset: int = Query(0, ge=0, le=10000), _: dict = Depends(require_admin)):
     """Staff: every layout incl. drafts (metas only, 200 per page)."""
     res = supabase.table("page_layouts").select(
-        "id,slug,title,updated_at,published,blocks"
+        "id,slug,title,updated_at,published,block_count"
     ).order("updated_at", desc=True).range(offset, offset + 199).execute()
     return {"layouts": [_row_to_layout(r, include_body=False) for r in (res.data or [])], "offset": offset}
 
@@ -216,6 +222,7 @@ def create_layout(body: LayoutIn, _: dict = Depends(require_admin)):
             "seo_title": body.seo_title.strip(),
             "seo_description": body.seo_description.strip(),
             "blocks": blocks,
+            "block_count": len(blocks),
             "created_at": now,
             "updated_at": now,
         }).execute()
@@ -248,6 +255,7 @@ def update_layout(layout_id: str, body: LayoutIn, _: dict = Depends(require_admi
             "seo_title": body.seo_title.strip(),
             "seo_description": body.seo_description.strip(),
             "blocks": blocks,
+            "block_count": len(blocks),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", layout_id[:64]).execute()
     except Exception as e:
@@ -336,6 +344,7 @@ def restore_revision(layout_id: str, revision_id: str, _: dict = Depends(require
             "seo_title": rev.get("seo_title") or "",
             "seo_description": rev.get("seo_description") or "",
             "blocks": blocks,
+            "block_count": len(blocks),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }).eq("id", layout_id[:64]).execute()
     except Exception as exc:

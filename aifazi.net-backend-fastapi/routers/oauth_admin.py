@@ -83,6 +83,10 @@ def _validate_ldap_url(url: str) -> str:
         raise HTTPException(400, f"LDAP host not allowed: {host}")
     try:
         ip = ipaddress.ip_address(host)
+        # Unwrap IPv4-mapped IPv6 first (::ffff:10.0.0.0 must test as its
+        # embedded v4 address) — same gap class as utils/ssrf.py (R6-3).
+        if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+            ip = ip.ipv4_mapped
         if ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
             raise HTTPException(400, f"LDAP host not allowed: {host}")
         if str(ip) == "169.254.169.254":

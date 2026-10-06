@@ -1,5 +1,8 @@
 # aifazi.net Mobile — Full App Coverage + Redesign & Revamp Plan
 
+> **Superseded (2026-10-06):** the live plan is now [`PLAN-ROADMAP.md`](PLAN-ROADMAP.md)
+> (+ `docs/STATUS.md` for cross-project status). This file is kept for history only.
+
 Status of `apps/mobile` (Expo SDK 57, expo-router, React Native 0.86) vs the web app at the time of writing.
 Goal: reach **full feature parity** with the web app and pay down the structural debt so the app is maintainable, themeable, and shippable.
 

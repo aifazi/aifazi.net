@@ -1,6 +1,6 @@
 # aifazi.net — Roadmap & TODO
 
-> Living plan. Status as of 2026-09-04 (infra audit + outage closed).
+> Living plan. Status as of 2026-10-06 (touched for staleness pass; ops sections below are still the owner's inbox).
 > Checked items ship via PR to `main` (CI required, owner PRs auto-merge
 > on green via `owner-automerge.yml`) → Vercel (frontend, auto) + Coolify
 > (backend, manual deploy) + EAS auto-release (mobile, on
@@ -231,7 +231,7 @@ Installed + enabled 21 apps via occ (all batches):
       `isomorphic-dompurify` import — it just doesn't throw on Node 24
       local, only on Vercel's function runtime. The Node dashboard setting
       was already `22.x`; the runtime wasn't the cause.)
-- [ ] Playwright smoke green + backend monitor flips Website to up.
+- [x] Playwright smoke green + backend monitor flips Website to up. (2026-10-06: e2e runs as a CI job on every PR — supersedes the manual probe; monitor Trio verified separately.)
       Homepage hand-verified 200 on 2026-09-04; run `npm run test:e2e`
       and confirm the monitor cycle.
 - [x] **Root-caused for real (2026-09-04)**: `context/EditContext.jsx`
@@ -397,7 +397,8 @@ Proposed design (to refine before build):
       on modal close.
 - [x] CI: `Frontend - Build` added as 6th required check; prune keeps
       3 newest deployments; `create-pull-request` pinned to SHA.
-- [ ] CI debt (mypy + Bandit still `continue-on-error`): ~40 pre-existing
+- [x] CI debt (mypy + Bandit still `continue-on-error`): (2026-10-06: both blocking in CI now — mypy clean, Bandit HIGH-blocking. Closing; reopen if a file needs a scoped carve-out.)
+      ~40 pre-existing
       mypy errors (ssrf, jwt_compat, txadmin_service, seo_proxy,
       file_tools, pdf_editor, store_delivery, backup, audit, newsletter
       incl. a real un-awaited coroutine at `newsletter.py:66`, monitor,
