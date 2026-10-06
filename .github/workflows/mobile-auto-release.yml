@@ -28,7 +28,7 @@ jobs:
     # cascade. The bump message is stable, so gate on it. This replaces the
     # old "[skip ci]" trick on bump commits, which also suppressed CI on the
     # bump PRs and left them unmergeable (see #453).
-    if: ${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message || '', 'chore(mobile): bump app version') }}
+    if: "${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message || '', 'chore(mobile): bump app version') }}"
     permissions:
       contents: write
       actions: write
