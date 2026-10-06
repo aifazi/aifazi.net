@@ -83,6 +83,28 @@ jobs:
               CURSOR=$(echo "$RESP" | jq -r '.pagination.next // empty')
               [ -z "$CURSOR" ] && break
             done
+            # Owner request 2026-10-06: delete ALL finished non-production
+            # (Preview) deployments — keep production only. In-flight builds
+            # (BUILDING/QUEUED/INITIALIZING) are left alone so a running
+            # deploy is never cancelled by the prune.
+            CURSOR=""
+            while :; do
+              URL="https://api.vercel.com/v6/deployments?projectId=${PROJ}&limit=100&teamId=${TEAM_ID}"
+              [ -n "$CURSOR" ] && URL="${URL}&until=${CURSOR}"
+              RESP=$(curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "$URL")
+              COUNT=$(echo "$RESP" | jq '[.deployments[]?.uid] | length' 2>/dev/null || echo 0)
+              IDS=$(echo "$RESP" | jq -r '[.deployments[]? | select(.target != "production" and (.state == "READY" or .state == "ERROR" or .state == "CANCELED")) | .uid] | .[]' 2>/dev/null || true)
+              [ "${COUNT:-0}" -eq 0 ] && break
+              for ID in $IDS; do
+                curl -fsS -X DELETE \
+                  -H "Authorization: Bearer $VERCEL_TOKEN" \
+                  "https://api.vercel.com/v13/deployments/${ID}?teamId=${TEAM_ID}" >/dev/null || \
+                  echo "::warning::Vercel preview delete failed: $ID"
+                echo "[$NAME] deleted preview $ID"
+              done
+              CURSOR=$(echo "$RESP" | jq -r '.pagination.next // empty')
+              [ -z "$CURSOR" ] && break
+            done
           done <<< "$PROJECTS"
 
       # NOTE (2026-09-05 incident): this workflow used to trigger a Coolify
