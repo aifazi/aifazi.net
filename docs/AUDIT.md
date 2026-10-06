@@ -1135,3 +1135,27 @@ Deletion + rotation must run on the owner's machine (dumps still on disk at audi
 ### Round-7 progress note (2026-10-05)
 
 Closed this batch: R7-22, R7-24, R7-25 (+ R7-20 runbook written, execution pending owner). STATUS.md flipped accordingly. Deliberately left for owner: secret rotation + dump deletion (needs their machine/credentials), workflow-trigger changes (owner decision), `docs/SECURITY.md` line-ref fixes, R6-3/R6-4 code fixes (routers/`main.py` — out of scope for this batch), mobile release verification (needs EAS/Play), `authentik_id` migration (other workstream).
+
+---
+
+## 20. Full Audit Round 8 — 2026-10-06 (range `ced5666..2c6e202`) + remediation close-out
+
+**Method.** Full-scope re-audit after Round 7's fix batch (#447) and status ledger (#448). Suites green at audit time: backend **352 passed** (was 343) with ruff + mypy clean; frontend **161 passed + 1 skip**, lint 0 err / 58 warn, tsc + build green; mobile **87 passed**, lint + tsc clean. **R7 verification: 18 fixed / 4 partial / 3 open.** New findings H1–H10 were reported live in the audit session; the itemized list was not persisted at source, so this section records what is verifiable from the remediation trail plus the still-open items (condensed by design — future rounds should write straight into this file).
+
+### Remediation shipped this round
+
+- **#449 — Round-8 remainder batch** (backend + docs): POST `/oauth/authorize` now denies banned sessions (LDAP); mobile exchange fails closed on a missing user row + discord_player ban recheck; CDN `PUT` requires admin; R6-3 ipv4-mapped addresses rejected in `_validate_ldap_url`; R6-4 duplicate `config_check` mount removed; `page_layouts` gains list `meta-only` + `block_count` (create/update/restore) with migration `supabase/migrations/20261006000000_page_layout_counts_index.sql`; docs refresh (STATUS counts, ROADMAP, PREVIEW job names, SECURITY line refs); tests **352 (+23)** incl. new `test_cdn_staff_scope.py`, `test_ldap_authorize_ban.py`, harness eviction guards.
+- **Migrations applied to prod + verified live:** `20261005000000_mobile_oauth_claims.sql`, `20261005000001_users_authentik_id.sql` (R7-21), `20261006000000_page_layout_counts_index.sql` (0 rows backfill). Live checks: `/api/blocks/layouts` 200, `/api/infra/diagrams` 200. **#450** ticked STATUS.
+- **Mobile release-chain fixes:** **#452** — release→build dispatch now prefers `WORKFLOW_PAT` (fallback `github.token`): GITHUB_TOKEN-fired events don't trigger downstream workflows, which is why OTA never fired after 2026-08-29 despite successful builds. **#453** — dropped `[skip ci]` from bump commits (it suppressed ALL CI on bump PRs, leaving them BLOCKED forever; #405/#410/#414 needed manual merges). **#457** — cascade guard: with `[skip ci]` gone, every bump merge re-triggered auto-release (v1.0.72 → v1.0.73 in an hour); the release job now skips commits titled `chore(mobile): bump app version*`, keeping CI green on bump PRs without an infinite version loop. **#454** repaired indentation #453 briefly broke in `mobile-release-build.yml` (jobless failure runs).
+
+### Dependabot wave (2026-10-06)
+
+Merged (12): #423, #424, #425, #426, #429, #431, #433, #434, #435, #436, #437, #438 — the 9-PR final wave needed repeated rebase-all cycles (up-to-date branch rule), and #429 additionally needed a manual conflict resolution over `requirements-dev.txt` lockfile contention. **Parked majors (deliberate, auto-merge off — each needs a dedicated migration PR):** #430 eslint 9→10 (fails `vitest.config.ts` TS2769), #428 frontend vitest 3→5, #427 stripe 15→16, #432 expo-ecosystem group (react-native 0.86→0.87 — native-rebuild risk, park until EAS verification).
+
+### Open / owner decisions
+
+1. **OTA dispatch (H8)** — never shipped since 2026-08-29; ~4 weeks of mobile changes await. Ready now (app.json 1.0.73 == latest tag v1.0.73) but ships to all production users — owner call.
+2. **`WORKFLOW_PAT` secret** — classic PAT (`repo` + `workflow` scopes) as repo secret makes release→build→OTA fully automatic; without it, OTA needs a manual `gh workflow run mobile-ota-update.yml` per release.
+3. **Coolify backend redeploy** — #447/#449 backend changes are not live until the owner redeploys.
+4. **H3** password-grant client auth + rate-limit rule (window open between LDAP maintenance); **H4** github dest-fallback frontend contract; **H5** Talk WebView device QA; **H7** e2e-on-prod gating + visual-qa quarantine (flakes block CI intermittently — `page.screenshot: Unable to capture screenshot`); **H10** frontend `.env.local` rotation/deletion (pairs with R7-20 runbook).
+5. **CI incidents this round:** runner starvation (checks queue >10 min), Vercel deploy **rate limit** (free tier exhausted by wave rebases — previews blocked ~24h; not merge-blocking), transient Google-Fonts fetch crash in `next build` (`@next/font` null-match — rerun passes; self-hosting via `next/font` local remains the durable fix, carried from Round-7 Mediums).
