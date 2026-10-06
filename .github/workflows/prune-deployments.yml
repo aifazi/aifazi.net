@@ -1,8 +1,10 @@
-name: Prune Old Deployments (keep newest 3)
+name: Prune Old Deployments (keep current production)
 
 # Runs after every push to main (which triggers Vercel + Coolify auto-deploys)
-# and removes old deployment builds, keeping the 3 newest READY production
-# deployments as an instant-rollback buffer. Manual trigger also supported.
+# and removes old deployment builds, keeping only the current READY production
+# deployment on Vercel (owner decision 2026-10-06 — no multi-deep rollback
+# buffer; rollbacks go through git revert + redeploy). Manual trigger also
+# supported.
 
 on:
   push:
@@ -21,7 +23,7 @@ concurrency:
 
 jobs:
   prune:
-    name: Keep newest 3 deployments
+    name: Keep current production deployment
     runs-on: ubuntu-latest
     permissions:
       deployments: write
@@ -62,7 +64,7 @@ jobs:
               exit 1
             }
             KEEP_UIDS=$(echo "$LIST_JSON" | \
-              jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0:3] | .[].uid' 2>/dev/null || true)
+              jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0:1] | .[].uid' 2>/dev/null || true)
             if [ -z "$KEEP_UIDS" ]; then
               echo "::warning::[$NAME] no READY production deployment yet — skipping prune to protect the live deployment and in-flight build."
               continue
