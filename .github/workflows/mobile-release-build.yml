@@ -105,7 +105,7 @@ jobs:
         # gh api repos/peter-evans/create-pull-request/commits/v7 --jq .sha
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1
         with:
-                              commit-message: "chore(mobile): bump app version to ${{ steps.tag.outputs.tag }}"
+          commit-message: "chore(mobile): bump app version to ${{ steps.tag.outputs.tag }}"
           branch: chore/mobile-version-${{ steps.tag.outputs.tag }}
           title: "chore(mobile): bump app version to ${{ steps.tag.outputs.tag }}"
           body: "Automated app.json version bump from release ${{ steps.tag.outputs.tag }} — keeps EAS Update in sync."
