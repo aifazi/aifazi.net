@@ -542,7 +542,10 @@ def test_health_survives_crashing_provider_probe(monkeypatch):
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["providers"]["discord"]["status"] == "error"
-    assert "probe exploded" in body["providers"]["discord"]["detail"]
+    # CodeQL #100: the crash is reported with the exception TYPE only —
+    # the message ("probe exploded") must never reach the response.
+    assert body["providers"]["discord"]["detail"] == "Probe crashed (RuntimeError)"
+    assert "probe exploded" not in body["providers"]["discord"]["detail"]
     assert body["providers"]["github"]["status"] == "unconfigured"
 
 

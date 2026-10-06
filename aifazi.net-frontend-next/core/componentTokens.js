@@ -396,6 +396,9 @@ const THEME_OVERRIDES = {
 function mergeInto(target, source) {
   if (!source || typeof source !== 'object') return target
   for (const key of Object.keys(source)) {
+    // CodeQL #93: never copy prototype-polluting keys, even though all
+    // current sources are hardcoded theme constants.
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue
     const value = source[key]
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) target[key] = {}

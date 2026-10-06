@@ -760,7 +760,9 @@ async def delete_file(media_id: str, _: dict = Depends(require_staff)):
             provider_error = f"Unknown provider: {provider}"
     except Exception as _del_exc:
         provider_ok = False
-        provider_error = f"CDN delete failed: {str(_del_exc)[:150]}"
+        # CodeQL #92: full detail stays in the server log above (exc_info);
+        # callers only learn that the provider delete failed.
+        provider_error = "CDN delete failed (see server logs)"
         log.warning("CDN delete failed for %s: %s", provider, _del_exc, exc_info=True)
 
     if not provider_ok:

@@ -304,8 +304,9 @@ async def _link_discord_account(link_payload: dict, discord_id, username: str, e
         "discord_username": username,
         "last_seen": datetime.now(timezone.utc).isoformat(),
     }).eq("id", str(uid)).execute()
-    email_note = f" ({email})" if email else ""
-    log.info("discord linked for user %s%s", uid, email_note)
+    # CodeQL #97: log the uid only — the Discord email is PII with no
+    # operational need in this line.
+    log.info("discord linked for user %s", uid)
     return RedirectResponse(url=f"{FRONTEND_URL}/profile?tab=fivem&linked=discord", status_code=302)
 
 

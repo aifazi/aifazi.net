@@ -162,3 +162,30 @@ describe('sanitizeHtml — client DOMPurify path', () => {
     expect(out).not.toContain('<script')
   })
 })
+
+// CodeQL #94/#95: comment-based injection must not survive sanitization.
+describe('sanitizeHtml — comment stripping (bogus ends, fixpoint, fail-closed)', () => {
+  it('strips paired comments', () => {
+    const out = server('hello <!-- <img src=x onerror=y> --> world')
+    expect(out).not.toContain('onerror')
+    expect(out).toContain('hello')
+  })
+
+  it('strips bogus --!> comment ends', () => {
+    const out = server('safe <!-- <svg onload=z> --!> tail')
+    expect(out).not.toContain('onload')
+    expect(out).not.toContain('<!--')
+    expect(out).not.toContain('--!>')
+  })
+
+  it('fail-closes unterminated comments', () => {
+    const out = server('keep <!-- <script>alert(1)</script>')
+    expect(out).not.toContain('<!--')
+    expect(out).not.toContain('<script>')
+    expect(out).toContain('keep')
+  })
+
+  it('strips nested/overlapping openers to a fixpoint', () => {
+    expect(server('a <!-- <!-- x --> --> b')).not.toContain('<!--')
+  })
+})
