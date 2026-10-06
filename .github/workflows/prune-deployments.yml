@@ -55,10 +55,14 @@ jobs:
 
           while IFS='|' read -r NAME PROJ; do
             [ -z "$NAME" ] && continue
-            KEEP_UIDS=$(curl -fsS \
+            LIST_JSON=$(curl -fsS \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
-              "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" \
-              | jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0:3] | .[].uid' 2>/dev/null || true)
+              "https://api.vercel.com/v6/deployments?projectId=${PROJ}&target=production&limit=100&teamId=${TEAM_ID}" 2>/tmp/vercel_err.txt) || {
+              echo "::error::[$NAME] Vercel API list call failed — VERCEL_TOKEN is expired, revoked, or lacks scope. Regenerate it at Vercel Dashboard > Account > Tokens and update the VERCEL_TOKEN repo secret, then re-run this workflow. curl said: $(cat /tmp/vercel_err.txt 2>/dev/null)"
+              exit 1
+            }
+            KEEP_UIDS=$(echo "$LIST_JSON" | \
+              jq -r '[.deployments[]? | select(.target == "production" and .state == "READY")] | sort_by(.created) | reverse | .[0:3] | .[].uid' 2>/dev/null || true)
             if [ -z "$KEEP_UIDS" ]; then
               echo "::warning::[$NAME] no READY production deployment yet — skipping prune to protect the live deployment and in-flight build."
               continue
