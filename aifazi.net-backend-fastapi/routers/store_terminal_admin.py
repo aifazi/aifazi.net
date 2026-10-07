@@ -386,7 +386,9 @@ async def create_pos_payment_intent(body: PosPaymentBody, _: dict = Depends(POS)
         pi = _stripe().PaymentIntent.create(
             amount=amount,
             currency=order.get("currency") or "usd",
-            payment_method_types=["card_present"],
+            # stripe-python 16 removed `payment_method_types` (400s on write).
+            # Documented Terminal replacement: allowlist card_present.
+            allowed_payment_method_types=["card_present"],
             capture_method=body.capture_method,
             description=f"POS {order.get('order_number')}",
             metadata={"kind": "pos", "order_id": body.order_id, "order_number": order.get("order_number") or ""},
