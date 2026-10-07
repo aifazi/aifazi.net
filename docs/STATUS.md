@@ -1,7 +1,7 @@
 # aifazi.net — Project Status
 
-> **What we're doing right now, and what's left to do.** Updated 2026-10-06.
-> Audit history: [AUDIT.md](AUDIT.md) (latest §19: Round 7 + fix batch #447 landed — P0/P1, D1–D6, F1–F3, mobile P2, infra-docs) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
+> **What we're doing right now, and what's left to do.** Updated 2026-10-07.
+> Audit history: [AUDIT.md](AUDIT.md) (latest §20: Round 8 + remediation close-outs) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
 
 ## Where we are (what we're doing)
 
@@ -9,9 +9,11 @@
 |-------------|--------|--------|
 | **Hybrid-infra diagram editor** | Feature complete + hardened | Audit batches #375–#377, fullscreen #378/#388, doc-driven decorations #389, library 26→62 items + sidebar redesign #390/#391 |
 | **Core UI migration** | ~90% done | Native inputs/dialogs/buttons → `core/forms`, core dialog+notify, `Clickable` (#379–#384); leftovers remain (P2 below) |
-| **Audit-driven hardening** | Round 7 fix batch **landed #447** 2026-10-05 | P0 (R7-1/R7-2) + P1-backend (R7-3…R7-9) + P1-frontend (R7-10/11/13/14) + D1–D6 + D2/F1–F3 + mobile P2 (pinning: groundwork only) + infra-docs (R7-22/24/25, R7-12) all merged, CI green; R6-3/R6-4 still open (code, queued) |
+| **Audit-driven hardening** | Round 8 fix batch **landed #449** 2026-10-06, CodeQL batch **#462** 2026-10-07 — **code scanning 0 open** | R7-1/R7-2 + P1s in #447; R8 remainder (LDAP authorize ban, mobile exchange fail-closed, CDN admin scope, page_layout counts) in #449; 10 code-scanning alerts fixed in #462 (exception-text exposure, sanitizer hardening), 6 dismissed as false positive with justification |
+| **Mail + LDAP identity infra** | Rebuilt 2026-10-06/07, **working** | Stalwart LDAP bind went stale (rc=49 on every login) → per-app service accounts (`ldapbind-stalwart/nextcloud/backend`, type service_account) + `LDAP bind accounts` group + `LDAP directory searchers` role (`search_full_directory` on the provider) + app access bindings; Nextcloud + portal (`site_config`) + Stalwart all on service binds; backend username lookup fixed to `cn` (#464); zombie LDAP outpost removed; noreply re-passworded + added to `mail` group; backend SMTP + NC mail verified end-to-end (Gmail delivery ~1s) |
 | **Repo hygiene** | Mostly done | Branches/stashes/caches/artifacts cleaned; Playwright artifact untracked (#393). Leftover (Round 5, AUDIT §15): 3 local branches (`bevel-sandwich`, `unique-blade`, `chore/batch3-local-sync`) + 3 worktrees, all at `main`'s commit, no unmerged work, stash empty; remote has `main` only |
-| **Mobile release pipeline** | Fix applied, **unverified** | Actions create-PR setting enabled 2026-10-03 (was broken 6 weeks); no OTA shipped since 2026-08-29 |
+| **Mobile release pipeline** | Verified end-to-end 2026-10-06 | Bump PRs auto-merge since #453 ([skip ci] dropped); v1.0.71→1.0.73 released with EAS builds green; **OTA v1.0.73 published** (first since 2026-08-29); cascade guard #457; fully automatic chain still needs owner `WORKFLOW_PAT` secret |
+| **Talk + realtime infra** | Deployed 2026-10-07, pending call test | Standalone signaling (`24e899d`) + NATS on private net, `spreed.aifazi.net` + LE, registered with verify; coturn TURN wired in; `notify_push` 1.4.1 at `cloud.aifazi.net/push`, setup 6/6 green; HPB shows version-skew notice (`changed-users` not in any published image yet — calls unaffected); needs a real multi-party call test |
 | **Mobile revamp (Talk + VPN)** | M2/M3 + C6 implemented, pending device QA | 2026-10-04: **C6/H2 done** — mobile OAuth deep links carry one-time exchange codes (never tokens): `POST /api/auth/mobile/exchange` + `mobile_oauth_claims` claim table, all four provider callbacks converted, mobile Discord login (previously broken/web-only) now works, app state echoed end-to-end; backend 244→257 tests, mobile 66→83. Before ship: `mobile_oauth_claims` migration **run + verified live 2026-10-04** (incl. `users.authentik_id` column in prod), then M0.1 Android media spike, NC app password (owner), M1/EAS — ledger in `apps/mobile/PLAN-ROADMAP.md` |
 | **Docs consolidation** | In progress | This file + AUDIT.md §14; ROADMAP.md still stale (see P3) |
 
@@ -31,7 +33,7 @@ Verification gate — every PR:
 | Mobile | `npm run typecheck` · `npm run lint` · `npm test` |
 | e2e (feature PRs) | start server → `npx playwright test` |
 
-Current counts: frontend **161 passed** (+1 skip) · backend **351** · mobile **87** · npm audit **7 (0 critical)**.
+Current counts: frontend **167** (166 passed +1 skip) · backend **356** · mobile **87** · code scanning **0 open** · dependabot queue **empty** (13 merged 2026-10-06, 4 majors migrated separately).
 
 ## What remains
 
@@ -39,15 +41,19 @@ Current counts: frontend **161 passed** (+1 skip) · backend **351** · mobile *
 
 - [x] **Run the `mobile_oauth_claims` migration** (Supabase SQL editor, SQL in AUDIT §17) — **done + verified live 2026-10-04** (`mobile_oauth_claims` table present in prod Supabase; `users.authentik_id` column confirmed).
 - [x] **Apply the `users.authentik_id` migration to prod** (`supabase/migrations/20261005000001_users_authentik_id.sql`) — **applied + verified live 2026-10-06** (column + index already present; `page_layouts.block_count` migration `20261006000000` likewise applied, 0 rows needed backfill).
-- [ ] **Post-#447 live verification round** (needs Coolify redeploy first): re-run Identity Doctor (LLDAP bind fix), enter Authentik provider slug → Verify → one live login → check signals/Activity, hard-refresh `/login` for ambient motion.
-- [ ] **Verify the mobile release pipeline end-to-end**: dispatch `mobile-release-build.yml` — the version-bump PR must now be created (`app.json` 1.0.70 → current release), APK attaches, run goes green → `mobile-ota-update` unblocks. **Owner decision:** shipping the OTA also releases ~3 weeks of pending mobile changes to production users.
+- [ ] **Coolify backend redeploy** (activates #447 + #449 + #464 LDAP fix): re-run Identity Doctor, one live LDAP login, hard-refresh `/login`. Then verify prod `bind_user` end-to-end (unit + staging proofs in #464).
+- [x] **Mobile pipeline verified + OTA shipped** (was P0): bump PRs auto-merge (#453), v1.0.71→1.0.73 released, **OTA v1.0.73 published** 2026-10-06. Fully automatic chain still needs owner `WORKFLOW_PAT` (classic PAT, `repo`+`workflow`).
+- [ ] **Mail/user verification round**: Talk multi-party call test; Nextcloud "Send email" test button; confirm inbound (Google reports) flowing.
+- [ ] **Owner secrets**: `VERCEL_TOKEN` refresh (repo secret; prune automation 403s without it), `WORKFLOW_PAT` (above), admin mailbox password for the health monitor (`imap-login` still checks stale `admin123`).
+- [ ] **Coolify Stalwart compose**: image tag aligned to `v0.16.21` in DB 2026-10-07 — redeploy from Coolify whenever convenient (no urgency; live container already on .21).
 
 ### P1 — this sprint
 
 - [ ] **CI runner starvation (2026-10-05)**: GitHub-hosted jobs repeatedly failed acquisition ("not acquired by Runner even after multiple attempts") across 3 consecutive runs — green only after manual `gh run rerun --failed` ×3. Code was clean every time (verified locally). Consider longer `timeout-minutes` + documented rerun procedure, or a fallback runner pool — every merge currently risks a 30+ min stall.
 - [x] **Close CI gaps** (audit O3): `dependency-review-config.yml` IS auto-loaded (round-5 correction — "inert" was wrong) but 2 of its keys were invalid/ignored — removed (#400); mobile `npm test` + `lint:hooks` now in CI, Playwright e2e runs as its own job (read-only GETs against production), mobile vitest include now covers `*.test.tsx` (this PR). 2026-10-05 correction (AUDIT §19, R6-1): the action does NOT auto-load the file — `ci.yml` now passes it explicitly via the `config-file` input, so the round-5 "auto-loaded" claim is superseded.
 - [x] **Fix theme hydration flake** (U1): `app/providers.tsx:394` first-theme-sync can drop `data-theme` (e2e flake + real flash to default) — resolved by A5-8: first sync adopts the FOUC-stamped value instead of clobbering it, and never writes stale state to storage (decision in `core/themeSync.ts` + tests).
-- [x] **Dependency majors** (audit E1): Sentry 10 → 11 done (this PR): `@sentry/nextjs` ^11.4.0, `withSentryConfig` from `@sentry/nextjs/config`, `onRequestError` hook in `instrumentation.ts`. **ESLint 10 blocked** — eslint-config-next's nested plugins (react 7.37.5 / jsx-a11y 6.10.2 / import 2.32.0) crash on eslint 10's removed `getFilename` API; no compatible releases exist (verified 2026-10-03, AUDIT.md §15.8); staying on the maintenance line (9.39.5) until they ship. Decide vitest 3 → 5 separately.
+- [x] **Dependency majors — all 4 landed 2026-10-07**: stripe 15→16 (#427 + Terminal `payment_method_types`→`allowed_payment_method_types` migration); frontend vitest 3→5 (#428 — dropped obsolete esbuild-jsx override, Vite 8/Oxc handles it); eslint 9→10 (#430 — preset 16.4.0 for the Babel-parser crash + pinned react version for the `getFilename` removal); expo/RN 0.86→0.87 (#432 — `ElementRef` host refs, `undefined` list components, npm-10 lockfile regen). Native-build validation rides the normal mobile release pipeline.
+- [x] **Dependabot queue: empty.** Parked set fully drained; no open PRs.
 - [x] **Pin hygiene** (O4): `PyJWT` requirements 2.15 vs lock 2.14; pin `pydantic`; fix `requirements.lock` reproducibility claim — closed in #406: PyJWT lock aligned 2.15, pydantic pinned 2.13.5, CI tooling pinned via `requirements-dev.txt` (ruff/mypy/bandit/pip-audit no longer float), lock's "pip-compile reproducible" claim corrected.
 
 ### P2 — backlog fixes (details in AUDIT.md §14)
@@ -57,7 +63,7 @@ Current counts: frontend **161 passed** (+1 skip) · backend **351** · mobile *
 - [ ] Core-ui leftovers (U2): Dashboard/shared migrated to core forms + States in #447; remain: 58 bespoke `S.btn` in Dashboard, PostEditor toolbar/action buttons, 1 hidden file input (needs ref-click), Changelog/StorePanel/ThemeLibrary/ScanCam natives (color/file inputs); `Select`/`Checkbox` drop caller `onClick`; keyboard-activate bubbles MouseEvent (video seek bar jumps to 0); lightbox upscale/distort.
 - [ ] Decorations parity (U3): backend coord clamps; decoration/annotation id dedupe (node-id dedupe landed in #406 F19; dup annotation ids still render locally but 400 on save).
 - [ ] Docs/env (U4): missing backend keys in `.env.example` (`AUTHENTIK_*`, `UPSTASH_*`, `DISCORD_*`, `ADMIN_PASSWORD_HASH`, `LLDAP_*`…) — inventory synced 2026-10-05 (AUDIT §19, placeholders only); still open: README `docker compose up` needs `.env.local` setup; SECURITY.md line refs (7 of 13 stale per §16.4); `PLAN-REDESIGN-REVAMP.md` still on disk with no deprecation banner despite #409's roadmap superseding it.
-- [ ] Round-6 additions: **R6-1** (dep-review policy file inert — add `config-file` input to `ci.yml` + owner policy call), R6-2 (drop invalid `max-vulnerabilities` key) — **both done 2026-10-05** (AUDIT §19); R6-3 (`_validate_ldap_url` mapped-IPv6 bypass), R6-4 (drop duplicate `/api/auth/config-check` include at `main.py:761`) — still open (need code changes, other workstream).
+- [x] Round-6 additions: R6-1/R6-2 dep-review wiring **done 2026-10-05**; R6-3 (mapped-IPv6 bypass) + R6-4 (duplicate config-check mount) **done in #449**.
 - [ ] LOW items: dependabot `docker/frontend` entry; `infra_diagrams` migration REVOKE parity; audit.py actor attribution; Safari fullscreen prefix + menu portal; DateTimePicker time-only edits; Escape for forum admin modals. (fonts.py redirect revalidation — done, round 5 A5-2.)
 
 ### P3 — structure / product
@@ -77,14 +83,14 @@ Current counts: frontend **161 passed** (+1 skip) · backend **351** · mobile *
 - [x] **Authentik** enable/disable implemented (AUDIT §18): local `banned` enforcement first, then best-effort admin-API sync when `AUTHENTIK_API_TOKEN` is set (`PATCH {issuer}/api/v3/core/users/{uuid}/`); without the token the local change stands with a `warning` instead of the old 501. Login `invalid_client` (2026-10-03) was a DB↔env client-secret desync — synced + verified end-to-end 2026-10-04 (AUDIT §18.4).
 - [ ] **EAS rebuild** handoff (`apps/mobile/EAS-REBUILD.md`) once the pipeline is verified.
 - [ ] Mobile npm advisories (31, 0 critical) — only clearable via Expo SDK bumps; build-chain only.
-- [ ] **Dependabot queue (17 open, 2026-10-05)**: safe minors (boto3, dotenv, ruff, mypy, stripe→careful, sentry 2.71, supabase-js, tsdav); majors needing calls — **#430 eslint 10.11.0 ✅ approved (E1)**, #427 stripe 16, #428 vitest 5, #432 expo-ecosystem group. Recommend: merge minors in one pass, majors one-by-one with their suites.
+- [x] **Dependabot queue: drained 2026-10-06/07** — was 17 open; 13 safe minors merged as-is, 4 majors migrated in dedicated PRs (see P1 majors item). Zero open.
 - [ ] **Net-new features need taste call (from design+features plan)**: **F5** passkeys/WebAuthn (kills password-attack classes; Authentik supports upstream) · **F6** web notification center (failed-login spikes invisible to users today) · **F7** store order-tracking + stock/price alerts · **F8** full-text site search. Proposed order after P0: D1/D3 foundation are done; next highest-ROI bundle is D2-perf + F1–F3 (shipped) — then owner picks D4/D5 vs F5/F6 vs P1-security balance. Do NOT start F-track on unpatched P0s (done — R7-1/R7-2 closed in #447).
 
 ## Quick pointers
 
 | Question | Where |
 |----------|-------|
-| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §19 Round 7 (2026-10-05) |
+| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §20 Round 8 + close-outs (2026-10-06) |
 | Server/ops/inbox backlog? | [ROADMAP.md](ROADMAP.md) |
 | How to test a PR before merge? | [PREVIEW.md](PREVIEW.md) |
 | Infra/VPS hardening state? | [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) |
