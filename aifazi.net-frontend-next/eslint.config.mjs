@@ -39,6 +39,15 @@ const eslintConfig = [
       '@next/next/no-page-custom-font': 'off',
     },
   },
+  // eslint-plugin-react detects the React version via
+  // context.getFilename(), which ESLint 10 removed (rules crash at load).
+  // Pinning an explicit version skips detection entirely — must come after
+  // eslint-config-next (it sets 'detect'). Keep in sync with package.json.
+  {
+    settings: {
+      react: { version: '19.3.0' },
+    },
+  },
 ]
 
 export default eslintConfig
