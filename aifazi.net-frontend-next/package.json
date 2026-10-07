@@ -34,7 +34,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@babel/parser": "^7.29.8",
+    "@babel/parser": "^8.0.6",
     "@babel/plugin-syntax-jsx": "^7.28.6",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.4",
