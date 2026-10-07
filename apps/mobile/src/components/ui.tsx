@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useState, type Ref } from 'react'
+import { ReactNode, useRef, useState, type Ref, type ElementRef } from 'react'
 import { Text, TextInput, View, TouchableOpacity, StyleSheet, ViewStyle, TextStyle, ScrollView, DimensionValue, ActivityIndicator, Animated } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { useTheme } from '@/src/theme'
@@ -288,7 +288,7 @@ export function Field({
   returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send'
   onSubmitEditing?: () => void
   blurOnSubmit?: boolean
-  inputRef?: Ref<TextInput>
+  inputRef?: Ref<ElementRef<typeof TextInput>>
 }) {
   const { theme, framework } = useTheme()
   const c = theme.colors

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, type ElementRef } from 'react'
 import { FONT, SPACE } from '@/src/design'
 import { View, Text, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, Platform, AppState } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
@@ -57,7 +57,7 @@ export default function TicketDetailScreen() {
   const [sending, setSending] = useState(false)
   const [text, setText] = useState('')
   const [err, setErr] = useState('')
-  const scrollRef = useRef<ScrollView>(null)
+  const scrollRef = useRef<ElementRef<typeof ScrollView>>(null)
 
   const fetchTicket = useCallback(async () => {
     if (!id) return

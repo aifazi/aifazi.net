@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode, type ElementRef } from 'react'
 import { FONT, SPACE } from '@/src/design'
 import { Modal, View, Text, TextInput, TouchableOpacity, FlatList, Pressable, Animated, Easing, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -77,7 +77,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const anim = useRef(new Animated.Value(0)).current
-  const inputRef = useRef<TextInput>(null)
+  const inputRef = useRef<ElementRef<typeof TextInput>>(null)
 
   const doOpen = useCallback(() => { setOpen(true); setQuery('') }, [])
   const doClose = useCallback(() => { setOpen(false); setQuery(''); setResults([]) }, [])
