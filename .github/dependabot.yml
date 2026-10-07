@@ -124,11 +124,22 @@ updates:
     # Expo SDK 57 pairs with react-native 0.86.3 / safe-area-context ~5.7.0 /
     # svg 15.15.4 (expo bundledNativeModules). RN 0.87's AGP requires Gradle
     # 9.4.1+, which expo-gradle-plugin's Kotlin 2.1.20 cannot compile against
-    # (expo/expo#49550) - Android release builds fail. Revisit at SDK 58.
+    # (expo/expo#49550) - Android release builds fail (#469 pins the pairing).
+    # expo >=58 = deliberate SDK migration (a partial group bump ERESOLVEs,
+    # see #474). eslint >=10: eslint-plugin-react via eslint-config-expo still
+    # calls context.getFilename() (removed in eslint 10) and peers ^9.7
+    # (see #475). In-range patch/minor updates stay allowed for all of these.
     ignore:
       - dependency-name: "react-native"
+        versions: [">=0.87.0"]
       - dependency-name: "react-native-safe-area-context"
+        versions: [">=5.8.0"]
       - dependency-name: "react-native-svg"
+        versions: [">=15.15.5"]
+      - dependency-name: "expo*"
+        versions: [">=58.0.0"]
+      - dependency-name: "eslint"
+        versions: [">=10.0.0"]
     commit-message:
       prefix: "chore(mobile)"
       prefix-development: "chore(mobile)"
