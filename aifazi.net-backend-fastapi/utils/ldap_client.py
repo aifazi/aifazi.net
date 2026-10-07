@@ -17,8 +17,8 @@ except ImportError:  # ldap3 not installed (e.g. lightweight test env)
 # and fall back to env vars.
 LLDAP_URL = os.getenv("LLDAP_URL", "ldap://lldap:3890")
 LLDAP_BASE_DN = os.getenv("LLDAP_BASE_DN", "dc=aifazi,dc=net")
-LLDAP_USERS_OU = os.getenv("LLDAP_USERS_OU", f"ou=people,{LLDAP_BASE_DN}")
-LLDAP_BIND_DN = os.getenv("LLDAP_BIND_DN", f"uid=admin,ou=people,{LLDAP_BASE_DN}")
+LLDAP_USERS_OU = os.getenv("LLDAP_USERS_OU", f"ou=users,{LLDAP_BASE_DN}")
+LLDAP_BIND_DN = os.getenv("LLDAP_BIND_DN", f"cn=admin,ou=users,{LLDAP_BASE_DN}")
 LLDAP_BIND_PASSWORD = os.getenv("LLDAP_BIND_PASSWORD", "")
 
 
@@ -58,9 +58,11 @@ def _runtime_config() -> tuple[str, str, str, str, str]:
             base_dn = ldap.get("base_dn") or base_dn
             bind_dn = ldap.get("bind_dn") or bind_dn
             bind_pw = ldap.get("bind_password") or bind_pw
-            users_ou = ldap.get("users_ou") or f"ou=people,{base_dn}"
+            # Portal wins when set; otherwise keep env/module defaults
+            # (never silently fall back to a hardcoded OU).
+            users_ou = ldap.get("users_ou") or users_ou
     except Exception:
-        users_ou = f"ou=people,{base_dn}"
+        pass
     return url, base_dn, bind_dn, bind_pw, users_ou
 
 
@@ -116,7 +118,9 @@ def _normalize_identifier(identifier: str) -> tuple[str, str]:
         safe = _ldap_escape(ident)
     if "@" in ident:
         return ident, f"(&(objectClass=person)(mail={safe}))"
-    return ident, f"(&(objectClass=person)(uid={safe}))"
+    # Authentik LDAP exposes the login name as `cn` (verified live
+    # 2026-10-07: `uid` holds an opaque UUID, so `(uid=<name>)` never matches).
+    return ident, f"(&(objectClass=person)(cn={safe}))"
 
 
 def bind_user(identifier: str, password: str) -> LdapUser:
