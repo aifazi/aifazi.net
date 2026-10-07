@@ -292,7 +292,7 @@ export default function ForumScreen() {
             </View>
           ) : page >= pages && threads.length > 0 ? (
             <Muted style={{ textAlign: 'center', paddingVertical: SPACE.xxl }}>· · ·</Muted>
-          ) : null
+          ) : undefined
         }
       />
     </Screen>

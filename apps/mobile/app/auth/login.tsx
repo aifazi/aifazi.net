@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ElementRef } from 'react'
 import { FONT, SPACE } from '@/src/design'
 import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, TextInput } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -24,7 +24,8 @@ export default function LoginScreen() {
   const [pending2FA, setPending2FA] = useState<{ partialToken: string; username?: string } | null>(null)
   const [code, setCode] = useState('')
   const [biometric, setBiometric] = useState(false)
-  const passwordRef = useRef<TextInput>(null)
+  // RN 0.87: host refs resolve to instance types — ElementRef keeps .focus() typed.
+  const passwordRef = useRef<ElementRef<typeof TextInput>>(null)
 
   // Biometric unlock: convenience shortcut only, NOT a security boundary. It is
   // offered only when a stored session (refresh token) plus enrolled biometrics

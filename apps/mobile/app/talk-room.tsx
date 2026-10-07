@@ -333,7 +333,7 @@ export default function TalkRoomScreen() {
         contentContainerStyle={{ padding: 12, paddingBottom: 12 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={sending && items.length === 0 ? <ActivityIndicator size="small" color={c.accent} style={{ margin: 16 }} /> : null}
+        ListHeaderComponent={sending && items.length === 0 ? <ActivityIndicator size="small" color={c.accent} style={{ margin: 16 }} /> : undefined}
       />
 
       {/* Composer */}
