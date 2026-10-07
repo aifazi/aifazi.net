@@ -112,6 +112,7 @@
       ],
       "./plugins/with-release-signing",
       "./plugins/with-gradle-memory",
+      "./plugins/with-gradle-wrapper",
       "./plugins/with-android-manifest"
     ],
     "experiments": {
