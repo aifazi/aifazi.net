@@ -4,8 +4,14 @@
 # Run after deployments or as a cron job to survive container restarts.
 set -euo pipefail
 
-# Dynamically find the backend container ( Coolify-generated name starts with the service hash)
-BACKEND_CONTAINER=$(docker ps --filter "label=coolify.managed=true" --format '{{.Names}}' | grep -i backend | head -n 1 || true)
+# Dynamically find the backend container. Match on Coolify's resource type —
+# the app name is NOT "backend" anymore (serviceName aifazinetmain), so a
+# name grep misses it; exactly one production application exists.
+BACKEND_CONTAINER=$(docker ps \
+  --filter "label=coolify.type=application" \
+  --filter "label=coolify.projectName=aifazinet" \
+  --filter "label=coolify.environmentName=production" \
+  --format '{{.Names}}' | head -n 1 || true)
 STALWART_NETWORK="mbkueai1hukfyan8mei8sdbc"
 
 # Check if already connected
