@@ -48,6 +48,34 @@
       network). Backend `REDIS_URL` repointed (env ID 319), redeployed,
       `is_redis_available() == True`, manual `redis-aifazi` + volume
       removed.
+- [x] **Supabase Studio (self-host) upgraded — 2026-10-09**:
+      `supabase/studio` 2026.03.16 → 2026.10.05 in the service compose
+      (`/data/coolify/services/a9qbsvgkdrpdxovfn9apzgoe/`, backup
+      `docker-compose.yml.bak-20261009`). Missing sidebar items are by
+      design, not bugs: `generateAuthMenu` (AuthLayout.utils.ts) gates
+      everything except Users/Policies on `IS_PLATFORM` for self-host, and
+      GoTrue v2.186.0 has no `/auth/v1/admin/oauth/clients` (404 — the
+      OAuth-server admin API is cloud-only; self-host OAuth config lives in
+      `GOTRUE_*` env vars). Dashboard login = `SERVICE_USER_ADMIN` /
+      `SERVICE_PASSWORD_ADMIN` from the service `.env` (realm served by
+      Kong, verified).
+- [x] **GoTrue SMTP wired to Stalwart — 2026-10-09**: self-hosted GoTrue
+      shipped with the **Noop mail client** (all `SMTP_*` empty), so every
+      recover/verify call 500'd. Now `GOTRUE_SMTP_*` ← `SMTP_*`
+      (`system@aifazi.net` → `mail.aifazi.net:587`, backups
+      `.env.bak-20261009`); `system` (Authentik pk 20) added to the `mail`
+      group + password set (SMTP+IMAP auth verified). E2E green:
+      `/auth/v1/recover` → 200 → IMAP delivery → test user cleaned up.
+      **Incident + fix:** the compose recreate dropped `supabase-db`'s
+      manual attachment to the `mbkueai1…` glue network (Authentik
+      resolves the db there) → Authentik DB outage → every LDAP/Stalwart
+      auth failed. Fixed: the compose file now declares that external
+      network on `supabase-db` (survives future recreates) and the
+      per-minute cron `connect-stalwart-network.sh` also re-attaches the
+      db (safety net if a Coolify UI edit reverts the compose). Also
+      restored the LDAP outpost instance with `service_connection_id =
+      NULL` after removing the docker-managed duplicate (zombie) — the
+      standalone outpost's token is bound to that instance record.
 
 ## 0b. Security & infra hardening (2026-09-04 audit — all applied)
 
