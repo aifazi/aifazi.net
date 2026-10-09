@@ -120,5 +120,7 @@ async def update_settings(body: dict, request: Request, staff: dict = Depends(re
     _audit(actor, "settings_update", target="site_config",
            details={"changed_keys": list(body.keys())}, ip=ip)
 
-    return saved
+    # Never return stored secrets: the writer just proved write access, not a
+    # need to read every credential (R8-2 — PUT used to return them raw).
+    return _redact_sensitive(saved)
 

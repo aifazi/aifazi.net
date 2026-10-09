@@ -29,19 +29,18 @@ const { withAndroidManifest } = require('@expo/config-plugins');
 // - LiveKit leftovers (audit batch B): the in-house voice/video path was
 //   removed (calls live in Nextcloud Talk) and no livekit dep remains in
 //   package.json/lock, but stale prebuilds still carry its manifest entries.
-//   Strip the mic/voip/screen-share permissions it injected (RECORD_AUDIO,
-//   MODIFY_AUDIO_SETTINGS, FOREGROUND_SERVICE_MICROPHONE,
-//   FOREGROUND_SERVICE_MEDIA_PROJECTION), any livekit service, and the
+//   Strip the screen-share permission it injected
+//   (FOREGROUND_SERVICE_MEDIA_PROJECTION), any livekit service, and the
 //   io.livekit.* meta-data so the next prebuild comes out clean. NOTE: this
 //   only takes effect after a fresh `expo prebuild` (android/ is generated).
+//   Microphone permissions (RECORD_AUDIO, MODIFY_AUDIO_SETTINGS,
+//   FOREGROUND_SERVICE_MICROPHONE) are intentionally NOT stripped: Nextcloud
+//   Talk calls need them (R8-4).
 
-// Stale LiveKit-injected permissions (voice/video removed; calls live in
-// Nextcloud Talk). CAMERA is intentionally NOT listed — expo-image-picker
+// Stale LiveKit-injected permissions, minus microphone: Nextcloud Talk calls
+// need mic capture (R8-4). CAMERA is intentionally NOT listed — expo-image-picker
 // still needs it for photo capture.
 const LIVEKIT_PERMISSIONS = new Set([
-  'android.permission.RECORD_AUDIO',
-  'android.permission.MODIFY_AUDIO_SETTINGS',
-  'android.permission.FOREGROUND_SERVICE_MICROPHONE',
   'android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION',
 ]);
 

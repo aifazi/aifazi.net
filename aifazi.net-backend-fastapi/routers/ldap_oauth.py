@@ -520,6 +520,12 @@ async def oauth_token(request: Request):
         except LdapUnavailable:
             raise HTTPException(503, "Directory unavailable")
         user = _ensure_forum_user(ldap_user)
+        if user.get("banned"):
+            _auth_log(user["username"], success=False,
+                      ip=request.client.host if request.client else "",
+                      user_agent=request.headers.get("user-agent", ""),
+                      role=user.get("role", ""), reason="account_suspended")
+            raise HTTPException(403, f"Account suspended: {user.get('ban_reason', '')}")
         access = secrets.token_urlsafe(32)
         _store_put_token(access, {
             "user_id": str(user["id"]),
