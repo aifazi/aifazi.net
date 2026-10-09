@@ -13,6 +13,7 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "aifazi uses the camera so you can take photos to upload.",
+        "NSMicrophoneUsageDescription": "aifazi uses the microphone for voice and video calls.",
         "UIBackgroundModes": [
           "remote-notification"
         ],

@@ -1159,3 +1159,17 @@ Merged (12): #423, #424, #425, #426, #429, #431, #433, #434, #435, #436, #437, #
 3. **Coolify backend redeploy** — #447/#449 backend changes are not live until the owner redeploys.
 4. **H3** password-grant client auth + rate-limit rule (window open between LDAP maintenance); **H4** github dest-fallback frontend contract; **H5** Talk WebView device QA; **H7** e2e-on-prod gating + visual-qa quarantine (flakes block CI intermittently — `page.screenshot: Unable to capture screenshot`); **H10** frontend `.env.local` rotation/deletion (pairs with R7-20 runbook).
 5. **CI incidents this round:** runner starvation (checks queue >10 min), Vercel deploy **rate limit** (free tier exhausted by wave rebases — previews blocked ~24h; not merge-blocking), transient Google-Fonts fetch crash in `next build` (`@next/font` null-match — rerun passes; self-hosting via `next/font` local remains the durable fix, carried from Round-7 Mediums).
+
+### Round-8 addendum — independent re-audit + fixes (2026-10-10)
+
+A second independent pass (4 parallel audits + full suites: backend **361 passed** / ruff + mypy clean; frontend lint 0/58 + tsc; mobile lint/tsc + 87 tests) re-verified **zero regressions** in any Round-7 fix and confirmed §20's remediation claims (dep-review enforcing, R6-3/R6-4 via #449, migrations well-formed). Deltas found and handled:
+
+**Fixed this session (tests included):**
+- **R8-A — `PUT site_settings` returned unmasked secrets.** R7-1 gated *writes* but `return saved` (`routers/site_settings.py:123`) still served IdP secrets to any staff PUT. Now returns `_redact_sensitive(saved)` + test (`tests/test_round8_fixes.py`).
+- **R8-B — Stripe subscription checkout accepted off-site success/cancel URLs** (`routers/store.py:261-262` — trusted-domain open redirect). Same `FRONTEND_URL` prefix guard as `store_ecommerce.py:696-699` + tests.
+- **R8-C — password grant minted tokens for banned users** (`routers/ldap_oauth.py:524`) — 403 `account_suspended` mirroring first-party login + test. (`/oauth/userinfo` still never checks `banned` — queued.)
+- **R8-D — Talk mic permission path restored (mobile).** `NSMicrophoneUsageDescription` added (`app.json`); Android no longer strips `RECORD_AUDIO`/`MODIFY_AUDIO_SETTINGS`/`FOREGROUND_SERVICE_MICROPHONE` (LiveKit leftovers Talk still needs). Takes effect on next EAS rebuild + device QA.
+
+**Re-confirmed still open:** R7-20 env dumps present on disk today (all 5 paths) + rotation unknown; backup same-host, no R2, restore untested; pinning groundwork-only; release docs re-drifted *again* (EAS-REBUILD/PLAN-ROADMAP say 1.0.70, `app.json` is 1.0.74 — bot bumps keep outrunning doc syncs, needs an owner not a sync); LDAP `cn`/`ou=users` change is correct for the live Authentik LDAP but breaks stock-LLDAP deployments (portability note only).
+
+**New mediums queued:** shortcut guard still hijacks links/clickables (`Dashboard.jsx:739-752` — gate on `closest('a,[role=button]')`); `Select`/`Checkbox` drop caller `onClick` (`core/forms.jsx:183-187,287-293`); `useLocation()` render-phase sessionStorage consumption (`router-compat.tsx:76-83`); `partial_token` in deeplink fragment; cold-start offline look; chat outbox memory-only; Talk `hasMore:false`; OAuth query-code acceptance; second-account push residue; glue-network repair script hardcodes network IDs and fails the same silent way it was written to fix; GoTrue/compose prod state UNCONFIRMED from repo; SECURITY.md required-checks list stale; pytest `-x` / mypy-scope / E2E-on-prod / notify-echo leftovers stand.
