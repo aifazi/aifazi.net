@@ -1,5 +1,5 @@
 # ── Backend Dev Dockerfile — hot-reload FastAPI server ────────────────────────
-FROM python:3.12.9-slim
+FROM python:3.15.0rc3-slim
 
 WORKDIR /app
 
