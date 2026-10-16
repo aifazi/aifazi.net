@@ -100,18 +100,27 @@ function ServiceCard({ svc, i }) {
   )
 }
 
-export default function Services() {
+export default function Services({ embedded = false }) {
   const headerRef = useReveal()
   const titleRef  = useSplitTextReveal({ staggerMs: 45, fromY: 28 })
 
   return (
-    <section id="services" style={{ padding: '120px 60px', position: 'relative', zIndex: 1 }} className="services-section">
+    <section id="services"
+      style={embedded ? undefined : { padding: '120px 60px', position: 'relative', zIndex: 1 }}
+      className={embedded ? 'sub-section' : 'services-section'}>
       <AnimatableWrapper animKey="services.header" label="Services Section Header" currentAnim="fadeUp 0.8s both">
-        <div ref={headerRef} className="fade-up section-header">
-          <span className="section-tag">04 /</span>
-          <h2 ref={titleRef} className="section-title">Services</h2>
-          <div className="section-line" />
-        </div>
+        {embedded ? (
+          <div ref={headerRef} className="fade-up sub-header">
+            <h3 className="sub-title">Services</h3>
+            <div className="sub-line" />
+          </div>
+        ) : (
+          <div ref={headerRef} className="fade-up section-header">
+            <span className="section-tag">04 /</span>
+            <h2 ref={titleRef} className="section-title">Services</h2>
+            <div className="section-line" />
+          </div>
+        )}
       </AnimatableWrapper>
 
       <div className="services-grid">

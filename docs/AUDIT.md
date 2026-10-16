@@ -1578,3 +1578,36 @@ Gates: `tsc` 0 · `eslint` 0 · **vitest 175 passed + 1 skip** · `next build` �
 ---
 
 *Theme curation (D4), 2026-10-17. Curated default + full-catalog toggle on `fix/round-10-design`.*
+
+---
+
+## 28. D3 — homepage length & rhythm: four movements, not eight sections (2026-10-17)
+
+Owner decision: merge + drop.
+
+**Problem.** The homepage was eight visible sections in one 8157px scroll — `Explore` was already a no-op returning `null`, so the ninth "section" was dead code. Every section used the same shape (`NN /` tag, 52px title, 120px padding), so the scroll had no rhythm, and the numbering was already broken: 01, 02, 03, 04, **06**, 07, 08 — `05` was the removed Explore.
+
+**Change.** Home is now four numbered movements:
+
+| # | Section | Contains |
+|---|---------|----------|
+| — | Hero | unchanged |
+| 01 | About | bio + quick info + terminal, **with Skills merged in as a sub-section** |
+| 02 | Experience | unchanged |
+| 03 | Projects | project grid, **with Services merged in as a sub-section** |
+| 04 | Contact | unchanged |
+
+- `components/Skills.jsx` / `components/Services.jsx` take an `embedded` prop. Embedded they keep their anchor id (`#skills`, `#services` — FloatingNav, the footer and the command palette all link to them) and swap the numbered header for a `.sub-header` divider label; standalone they render exactly as before.
+- `components/About.jsx` / `components/Projects.jsx` render `{children}` (inside a `Suspense` boundary) after their own content, so a merged pair lives inside one `<section>` — and therefore one background band.
+- `pages-src/Home.jsx` composes the pairs, drops the `Newsletter` section (the footer already carries `MiniNewsletter`) and stops mounting the dead `Explore`.
+- `app/globals.css` gains `.sub-section` / `.sub-header` / `.sub-title` / `.sub-line`.
+
+**The specificity trap.** `globals.css` pads `#skills` / `#services` by id — `#about, #experience, #skills, … { padding: var(--page-py) var(--page-px) !important }` plus media-query overrides. An embedded sub-section must have **zero** horizontal padding, because the host band supplies it. So `.sub-section` is neutralised at `#skills.sub-section, #services.sub-section { padding: 0 !important; padding-top: … !important }`, which out-specifies the id-only rules (0,1,1 vs 0,1,0). Verified in the DOM: the embedded sections compute `padding-left/right: 0`, `padding-top: 40px`, `margin-top: 70px`, `border-top: 1px`.
+
+**Verified.** The SSR HTML places the React streaming placeholder that receives Skills (`<template id="B:0">`) *inside* `#about`, and the one that receives Services (`<template id="B:2">`) *inside* `#projects` — so the `$RC` segment move lands them in the host band. `.section-tag` now reads `01 / 02 / 03 / 04`, `.sub-title` reads `Skills` and `Services`, and `#newsletter` is gone.
+
+Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Homepage length & rhythm (D3), 2026-10-17. Merge + drop on `fix/round-10-design`.*

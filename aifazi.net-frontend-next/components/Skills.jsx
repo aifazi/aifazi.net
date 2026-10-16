@@ -333,7 +333,7 @@ function CatEditModal({ cat, onSave, onClose }) {
 }
 
 // ── Main Skills section ───────────────────────────────────────────────────────
-export default function Skills() {
+export default function Skills({ embedded = false }) {
   const headerRef = useReveal()
   const titleRef  = useSplitTextReveal({ staggerMs: 40, fromY: 28 })
   const ctx       = useEdit()
@@ -375,15 +375,24 @@ export default function Skills() {
   }
 
   return (
-    <section id="skills" style={{ padding: '120px 60px', position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)' }} className="skills-section">
+    <section id="skills"
+      style={embedded ? undefined : { padding: '120px 60px', position: 'relative', zIndex: 1, borderTop: '1px solid var(--border)' }}
+      className={embedded ? 'sub-section' : 'skills-section'}>
 
       {/* Section header — AnimatableWrapper lets admin pick entrance animation */}
       <AnimatableWrapper animKey="skills.header" label="Skills Section Header" currentAnim="fadeUp 0.8s both">
-        <div ref={headerRef} className="fade-up section-header">
-          <span className="section-tag">03 /</span>
-          <h2 ref={titleRef} className="section-title">Skills</h2>
-          <div className="section-line" />
-        </div>
+        {embedded ? (
+          <div ref={headerRef} className="fade-up sub-header">
+            <h3 className="sub-title">Skills</h3>
+            <div className="sub-line" />
+          </div>
+        ) : (
+          <div ref={headerRef} className="fade-up section-header">
+            <span className="section-tag">03 /</span>
+            <h2 ref={titleRef} className="section-title">Skills</h2>
+            <div className="section-line" />
+          </div>
+        )}
       </AnimatableWrapper>
 
       {/*

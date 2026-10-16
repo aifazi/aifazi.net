@@ -58,7 +58,7 @@ export default function Contact() {
   return (
     <section id="contact" style={{ padding: '120px 60px', position: 'relative', zIndex: 1 }}>
       <div ref={headerRef} className="fade-up section-header">
-        <span className="section-tag">08 /</span>
+        <span className="section-tag">04 /</span>
         <h2 className="section-title">Contact</h2>
         <div className="section-line" />
       </div>

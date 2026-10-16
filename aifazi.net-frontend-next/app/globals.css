@@ -339,6 +339,22 @@ p, li, blockquote { text-wrap: pretty; }
 .section-line { flex:1; height:1px; background:linear-gradient(to right,var(--border),transparent); max-width:200px; position:relative; overflow:hidden; }
 .section-line::after { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:linear-gradient(to right,transparent,var(--green),transparent); animation:shimmer-line 3s ease-in-out infinite; }
 
+/* Sub-section — a section merged into its host band (see AUDIT §28).
+   It keeps its own anchor id but drops the numbered section header, so a
+   merged pair reads as one movement with two sub-blocks. The host band
+   supplies the horizontal padding, so the id-level section padding that
+   globals applies to #skills / #services is neutralised at a higher
+   specificity. */
+.sub-section { position:relative; z-index:1; border-top:1px solid var(--border); }
+#skills.sub-section, #services.sub-section {
+  padding: 0 !important;
+  padding-top: clamp(40px, 4vw, 64px) !important;
+  margin-top: clamp(64px, 7vw, 104px);
+}
+.sub-header { display:flex; align-items:center; gap:16px; margin-bottom:clamp(28px, 3vw, 48px); }
+.sub-title { font-family:var(--font-mono); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--green); margin:0; white-space:nowrap; }
+.sub-line { flex:1; height:1px; background:linear-gradient(to right,var(--border),transparent); max-width:200px; }
+
 .btn-primary {
   font-family:var(--font-code); font-size:12px; letter-spacing:3px; text-transform:uppercase;
   padding:16px 36px; background:var(--comp-btn-bg,var(--green)); color:var(--comp-btn-text,#000); border:var(--comp-btn-border,none); font-weight:700;
