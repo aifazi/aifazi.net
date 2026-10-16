@@ -63,26 +63,53 @@ export function useNavigate() {
   }, [router])
 }
 
-/** Replaces react-router useLocation — hydration-safe via mounted pattern */
-export function useLocation() {
-  const pathname = usePathname()
-  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false)
+// Replaces react-router useLocation — hydration-safe. The client snapshot is
+// read from window/sessionStorage through useSyncExternalStore (an external
+// store), not by calling setState inside an effect: a render must stay pure,
+// and the one-shot nav-state must not be drained during render or twice under
+// StrictMode's double render.
+type LocSnapshot = { search: string; hash: string; state: any }
+const EMPTY_SNAPSHOT: LocSnapshot = { search: '', hash: '', state: null }
+let _snapKey = ''
+let _snap: LocSnapshot = EMPTY_SNAPSHOT
 
-  // SSR-safe defaults (always empty)
-  let search = ''
-  let hash = ''
+function _clientSnapshot(pathname: string): LocSnapshot {
+  if (typeof window === 'undefined') return EMPTY_SNAPSHOT
+  const search = window.location.search
+  const hash = window.location.hash
+  let raw = ''
+  try {
+    raw = sessionStorage.getItem('nav-state:' + pathname) || ''
+  } catch {}
+  const key = `${pathname}\u0000${search}\u0000${hash}\u0000${raw}`
+  if (key === _snapKey) return _snap // cached → referentially stable per read
   let state: any = null
-
-  if (mounted) {
-    search = window.location.search
-    hash = window.location.hash
+  if (raw) {
     try {
-      const raw = sessionStorage.getItem('nav-state:' + pathname)
-      if (raw) { state = JSON.parse(raw); sessionStorage.removeItem('nav-state:' + pathname) }
+      state = JSON.parse(raw)
     } catch {}
   }
+  _snapKey = key
+  _snap = { search, hash, state }
+  return _snap
+}
 
-  return { pathname, search, hash, state }
+const _subscribe = () => () => {}
+
+export function useLocation() {
+  const pathname = usePathname()
+  const getSnapshot = useCallback(() => _clientSnapshot(pathname), [pathname])
+  const snapshot = useSyncExternalStore(_subscribe, getSnapshot, () => EMPTY_SNAPSHOT)
+
+  // Consume the one-shot nav-state after it has been read (idempotent — the
+  // removal is a side effect, so it belongs in an effect, not in render).
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('nav-state:' + pathname)
+    } catch {}
+  }, [pathname])
+
+  return { pathname, search: snapshot.search, hash: snapshot.hash, state: snapshot.state }
 }
 
 /** Replaces react-router useParams */

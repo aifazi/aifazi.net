@@ -63,6 +63,10 @@ function VideoPlayer({ src, title = '' }) {
 
   const handleSeek = e => {
     const v = videoRef.current; if (!v) return
+    // e.detail === 0 means a keyboard-synthesized click (Clickable activates
+    // with Enter/Space via .click()) — it carries no pointer position, so the
+    // seek math would resolve to 0 and jump the video to the start. Ignore it.
+    if (!e.detail) return
     const rect = e.currentTarget.getBoundingClientRect()
     v.currentTime = ((e.clientX - rect.left) / rect.width) * v.duration
   }

@@ -1293,3 +1293,156 @@ All actionable Round-9 findings were fixed in one batch on top of `ed15832`.
 ---
 
 *Round-9 audit, static + source-verified. Every CRITICAL/HIGH claim manually confirmed against source at `ed15832`; the R9-1/R9-2/R9-3/R9-4 and LOW/MED batch was fixed on `fix/round-9-batch` with regression tests.*
+
+---
+
+## 22. Round-9 follow-up batch — Part-B cleanups + C3 runbook (2026-10-16)
+
+Branch `fix/round-9-followup`, based on `c9e25d0` (Round-9 fix batch #501 merged). This closes the code-actionable items §21.4 left "re-confirmed still open" and drafts the C3 runbook. No new security findings; this is backlog burn-down.
+
+### 22.1 Fixes
+
+| ID | Area | Fix |
+|----|------|-----|
+| F-1 | Frontend | **`Select`/`Checkbox` dropped a caller `onClick`.** `core/forms.jsx` spread `{...props}` (which carried `onClick`) *before* its own `onClick`, clobbering it. Now `onClick` is destructured and composed (caller runs, then the toggle). |
+| F-2 | Frontend | **`useLocation()` mutated sessionStorage during render.** `lib/router-compat.tsx` read *and removed* `nav-state:<path>` while rendering (impure; StrictMode's double render drained the one-shot key twice). Rewritten to read through `useSyncExternalStore` (cached, referentially-stable snapshot) and remove the key in an effect. React-Compiler `react-hooks/set-state-in-effect` forbids the obvious "setState in an effect" fix, so the external-store pattern is also the lint-clean one. |
+| F-3 | Frontend | **Dashboard shortcut guard.** `Dashboard.jsx` single-letter jumps now skip when focus is inside `a[href]` or `[role="button"]` — a letter no longer both activates a card and jumps the view. |
+| F-4 | Frontend | **Video seek jumped to 0 on keyboard activation.** `Clickable` activates via `.click()`, whose synthetic MouseEvent has `clientX=0`/`detail=0`; the seek bars (`VideoPlayer.jsx:169`, `blogPostParts.jsx:65`) now bail on `e.detail === 0` (real pointer clicks keep working; ⏪/⏩ cover keyboard seeking). |
+| F-5 | Infra | **`infra_diagrams` privilege parity.** Migration `supabase/migrations/20261016000000_infra_diagrams_privilege_parity.sql` re-asserts `REVOKE ALL` + `GRANT SELECT` (anon/authenticated) + `GRANT ALL` (service_role) and the `TO anon, authenticated` policy, matching `page_layouts`. |
+| F-6 | CI/deps | `dependabot.yml` gains the missing `docker/frontend` ecosystem (the base image was drifting unmonitored). |
+| F-7 | CI | `ci.yml` pytest step drops `-x` so all failures report in one run; `dependency-review-config.yml` already wired via `config-file` (R6-1 — no change needed). |
+| F-8 | Docs | New `docs/BACKUP-RESTORE.md` (C3 runbook: offsite target #2, fail-loud, end-to-end restore drill) + `docs/README.md` index row. |
+
+### 22.2 Tests
+
+- `core/forms.test.tsx`: +2 cases — `Select` runs a caller `onClick` and still toggles the listbox; `Checkbox` runs a caller `onClick` and still toggles. (The `useLocation` rewrite is covered by `tsc` + the existing component suite; a dedicated jsdom test would need `next/navigation` mocking.)
+
+### 22.3 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held) · **vitest 175 passed + 1 skip** (173 + 2 new).
+- Backend/mobile unchanged this batch (no source touched) → 373 / 87 hold.
+
+### 22.4 Still open after §22
+
+Owner/ops (unchanged): **C3 bucket + creds → run the restore drill** (runbook now exists) · **R7-20** delete + rotate the 5 on-disk env dumps · Coolify backend redeploy · `WORKFLOW_PAT` · EAS rebuild + device QA · 20 dependabot PRs.
+
+Code (unchanged): god-file splits · `mypy utils/` scope · e2e-on-prod · `notify-failure` echo-only · CI runner starvation · Round-7 Mediums/Lows (§19 list) · `ROADMAP.md` reconciliation · dead `scripts/*` codemods · component-test depth.
+
+---
+
+*Round-9 follow-up, verified live 2026-10-16. Part-B backlog closed on `fix/round-9-followup`; C3 documented, still owner-gated.*
+
+---
+
+## 23. God-file split — `AdminPanels.jsx` + whole-backend `mypy` (2026-10-16)
+
+Branch `fix/round-9-godfile-split` (stacked on `fix/round-9-followup`). Structure/quality work — **no new security findings**. Two backlog items closed: the `mypy utils/` scope gap (widened past `utils/` to the whole backend) and one god file (`AdminPanels.jsx`).
+
+### 23.1 `mypy` scope widened to the whole backend
+
+Gate was `mypy routers/ --ignore-missing-imports` (76 files) — `utils/`, `scripts/` and the top-level modules (`main.py`, `database.py`, `dependencies.py`, `permissions.py`, `paseto_token.py`, `jwt_compat.py`, `txadmin_service.py`) were untyped-checked.
+
+Widening was previously blocked by a module-resolution collision, not by real type errors: `utils/` and `scripts/` have no `__init__.py`, so `utils/audit.py` and `routers/audit.py` both mapped to module name `audit` (`error: Source file found twice under different module names`). Fixed by adding to `pyproject.toml`:
+
+```toml
+[tool.mypy]
+explicit_package_bases = true
+```
+
+Module names now derive from the run directory (`utils.audit` vs `routers.audit`). The gate is now **`mypy . --ignore-missing-imports --exclude '(^|/)tests/'`** — **114 source files, 0 errors**. Nothing needed fixing; the gap was purely configuration. (`tests/` stays excluded — dynamic imports, not shipped surface.)
+
+### 23.2 `AdminPanels.jsx` split (1891 → 13-line barrel)
+
+`pages-src/admin/AdminPanels.jsx` is now a barrel; the eight panels moved to `pages-src/admin/panels/`:
+
+| File | Lines | Contents |
+|------|-------|----------|
+| `AdminPanels.jsx` (barrel) | 13 | re-exports all panels |
+| `PageContentPanel.jsx` | 109 | `PAGE_CONFIG_KEYS`, `emptyPageConfig` |
+| `ActiveSessionsPanel.jsx` | 130 | **new module**; composed into `AdminProfilePanel` |
+| `AdminProfilePanel.jsx` | 374 | imports `ActiveSessionsPanel` |
+| `AnnouncementsPanel.jsx` | 674 | `BANNER_STYLES` + banner date helpers + `BannerRow` |
+| `NewsletterPanel.jsx` | 175 | |
+| `StatsPanel.jsx` | 133 | |
+| `AuditPanel.jsx` | 261 | preserved — **currently unwired** (see below) |
+| `BackupPanel.jsx` | 85 | |
+
+- **Public import surface unchanged.** `Dashboard.jsx` (dynamic `NewsletterPanel`/`StatsPanel`/`PageContentPanel`) and `ThemeHub.jsx` (`AnnouncementsPanel`) still import from `./AdminPanels`; `ActiveSessionsPanel`/`AuditPanel` are now also exported.
+- **Dead code removed:** `MAINT_STATUSES` / `MAINT_BG_STYLES` / `STATUS_ACCENT` in this file were byte-duplicates of the live constants in `SiteSettings.jsx:410-412` and were unreferenced anywhere — dropped.
+- **`AuditPanel` preserved, not wired:** it is unreferenced repo-wide; the Dashboard "Audit Log" view is served by `DBMonitor` with `initialTab="audit"` (`Dashboard.jsx:1511-1512`). It was moved to its own (exported) file rather than deleted so the Changelog-documented component stays recoverable.
+
+### 23.3 `fivem.py` — scoped for a follow-up (not split here)
+
+`routers/fivem.py` is **2003 lines but declares only 8 live routes** (`/discord/member/{id}`, `/txadmin-event`, `/txadmin/status`, `/txadmin/action`, `/connect/token`, `/connect/session-check`, `/connect/verify` POST + GET). The whitelist / status / player handlers in it (lines ~361-1387, e.g. `my_whitelist_application`, `apply_whitelist`, `pending_sync`, `update_players`, `record_player_join`) are **undecorated dead copies** — their live counterparts are in `routers/fivem_whitelist_api.py`, `routers/fivem_status_api.py` and `routers/fivem_bans_api.py`.
+
+This is the same shape as the `auth.py` split (#408): the real work is **delete ~1000 lines of shadowed dead code, then move the 8 live routes + their shared helpers into domain submodules** (`connect`, `txadmin`, `discord`), verifying the route surface is identical before/after. Deferred to its own batch — it is a dead-code removal, not a mechanical move, and fivem route coverage in `tests/` is thin.
+
+> **Correction (§24.3):** the "undecorated dead copies" claim above is **wrong**. Those handlers are live implementations — the thin wrapper modules import them lazily from inside their route bodies, so they cannot be deleted. mypy proved it (20 `attr-defined` errors when they were removed). See §24.3.
+
+### 23.4 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held; the two `exhaustive-deps` warnings moved with their code) · **vitest 175 passed + 1 skip** · `next build` ✅.
+- Backend: `ruff` 0 · **`mypy .` 0 (114 files, was 76)** · **pytest 374 passed** (docs previously said 373 — corrected here).
+- Mobile: untouched (87 hold).
+
+---
+
+*God-file batch, verified live 2026-10-16. `AdminPanels.jsx` split + `mypy` scope on `fix/round-9-godfile-split`; `fivem.py` scoped here, executed in §24 (the §23.3 "dead copies" claim is corrected there).*
+
+---
+
+## 24. God-file splits, cont. — `ServerRackAnimation.jsx`, `ThemeLibrary.jsx`, `fivem.py` → package (2026-10-16)
+
+Same branch (`fix/round-9-godfile-split`). Structure/quality work — **no new security findings**. Continues §23.
+
+### 24.1 `ServerRackAnimation.jsx` (2494 → 122) — full split
+
+The globe section moved to `components/server-rack/` (alongside the existing per-mode files):
+
+| File | Lines | Contents |
+|------|-------|----------|
+| `ServerRackAnimation.jsx` | 122 | `MODES` + the mode shell (default export unchanged) |
+| `server-rack/globeUtils.js` | 200 | pure helpers/constants: `cssVar`, `readGlobeTheme`, `GLOBE_CITIES`/`GLOBE_CONNECTIONS`, `cityToAngles`, the zoom/dpr/fit helpers, `hasWebGL`, `firstGeoValue`, `maskIp`, `rgbToArr` |
+| `server-rack/VisitorHud.jsx` | 233 | visitor telemetry HUD |
+| `server-rack/GlobeMode.jsx` | 1951 | COBE globe mode (imports `VisitorHud`) |
+
+`Hero.jsx`'s dynamic `import('./ServerRackAnimation')` is unaffected (default export kept). Imports no longer used in the shell (`Clickable`, `createGlobe`) pruned.
+
+### 24.2 `ThemeLibrary.jsx` (4240 → 3471) — parts extraction
+
+The ~750 lines of top-level parts/helpers moved to `pages-src/admin/themeLibraryParts.jsx` (759): `ThemePackageCard`, `FwStyleCard`, `FwCategorySection`, `FwNavRail`, `ColorRow`, `FontPicker`, `ColorEdit`, `PreviewTarget`, the WCAG contrast helpers, `ContrastBadge`, `CustomizePreviewModal`, `TabBtn`, and the draft helpers (`makeId`/`nowISO`/`applyTemplateToDraft`/`seedCustomDraft`/`customHistReducer`/`themeColorDefaults`/`isLightSurface`/`LIGHT_PACKAGE_THEMES`). The main component stays in `ThemeLibrary.jsx` and imports only the parts it uses. The mid-file `./themeLibraryData` import is hoisted to the parts file's header (a duplicate would be a redeclaration error). `ThemeHub.jsx`'s dynamic import is unaffected.
+
+Not a full split: the remaining `ThemeLibrary` component is still ~3450 lines of one cohesive editor. It only yields further splitting via a redesign (extract the tabs/preview as sub-components), not a mechanical move.
+
+### 24.3 `fivem.py` → `routers/fivem/` package (2003 → 7 modules)
+
+**Correction to §23.3.** The claim there — that the whitelist/status/player handlers are "undecorated dead copies" — is **wrong**. They are live implementations: the thin wrapper modules (`fivem_whitelist_api.py`, `fivem_status_api.py`, `fivem_bans_api.py`) import them lazily *inside their route bodies* (`from routers.fivem import update_server_status as _mono`), so they cannot be deleted. mypy proved it (20 `attr-defined` errors when they were removed). The first analysis pass missed this because it only followed references *within* `fivem.py`.
+
+`routers/fivem.py` (2003) is now a package:
+
+| File | Lines | Contents |
+|------|-------|----------|
+| `fivem/__init__.py` | 111 | assembles the router (bans + whitelist + status + discord + txadmin + connect) and re-exports the handler names for back-compat |
+| `fivem/shared.py` | 270 | aliases, heartbeat stamping, WL field lists, discord role sync, `_sync_to_txadmin`, player-record helpers, `_parse_dt` |
+| `fivem/whitelist.py` | 512 | the 12 whitelist handlers |
+| `fivem/status.py` | 265 | status / player handlers |
+| `fivem/discord.py` | 67 | `get_discord_member` |
+| `fivem/txadmin.py` | 313 | `txadmin-event` + `txadmin/status` + `txadmin/action` |
+| `fivem/connect.py` | 438 | connect token / session-check / verify + helpers |
+
+Domain dependencies are acyclic (every submodule → `shared` only). `from routers.fivem import <handler>` still resolves (re-exports), so the wrapper modules and `main.py` are unchanged. Also removed the genuinely dead `_e` / `FRONTEND_URL` / `FRONTEND_HOST` and 29 unused imports left over from an earlier email/ban extraction.
+
+**Verified:** the assembled route surface is **identical** to the pre-split module — 48 method+path pairs, compared side-by-side by loading the old `routers/fivem.py` from git and mounting both onto a `FastAPI()`.
+
+### 24.4 Not split: `HybridInfraEditor.tsx` / `HybridInfraCanvas.tsx`
+
+Both are **single monolithic components** (`HybridInfraEditor` 3301 lines; `HybridInfraCanvas` 2502 lines is one `forwardRef`), each with ~65-70 closures nested inside the component body (the `draw*`/`on*`/`handle*` handlers). There is no mechanical extraction — a real split means rewriting them into hooks/context sub-modules, which changes structure and behaviour. Left intact; deferred to a redesign rather than a refactor batch.
+
+### 24.5 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held) · **vitest 175 passed + 1 skip** · `next build` ✅.
+- Backend: `ruff` 0 · **`mypy .` 0 (120 files, was 114 — the fivem package adds 6 modules)** · **pytest 374 passed**.
+
+---
+
+*God-file batch, verified live 2026-10-16. `ServerRackAnimation.jsx` + `ThemeLibrary.jsx` splits and `fivem.py` → package on `fix/round-9-godfile-split`. `HybridInfraEditor.tsx` / `HybridInfraCanvas.tsx` left intact (monolithic; need a redesign).*

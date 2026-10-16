@@ -10,5 +10,6 @@
 | [ROADMAP.md](ROADMAP.md) | Ops backlog + past work log | Planning server/ops work |
 | [SECURITY.md](SECURITY.md) | Threat model, security conventions, vulnerability reporting | Security work / reporting a vulnerability |
 | [SECRETS-ROTATION.md](SECRETS-ROTATION.md) | Checklist for rotating leaked/rotated secrets | After a secret rotation |
+| [BACKUP-RESTORE.md](BACKUP-RESTORE.md) | Backup targets + the end-to-end restore drill (C3) | Before touching backups, or during a DR drill |
 
 Root-level files that stay at the repo root on purpose: `README.md` (GitHub landing page), `docker-compose.yml` + `Dockerfile.backend` (compose paths/`env_file` are relative to the repo root), and the dotfiles (`.gitignore`, `.env.example`, `.env.local.example`, `.gitattributes`, `.dockerignore`, `.easignore`).

@@ -166,7 +166,7 @@ function VideoPlayer({ url }) {
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, opacity: showControls ? 1 : 0, transition: 'opacity 0.3s', background: 'linear-gradient(transparent, rgba(0,0,0,0.88))', padding: '20px 12px 10px' }}>
           {/* Progress bar */}
           <Clickable label="Seek" style={{ position: 'relative', height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2, marginBottom: 10, cursor: 'pointer' }}
-            onClick={e => { const r = e.currentTarget.getBoundingClientRect(); onSeek((e.clientX - r.left) / r.width) }}>
+            onClick={e => { if (!e.detail) return; const r = e.currentTarget.getBoundingClientRect(); onSeek((e.clientX - r.left) / r.width) }}>
             <div style={{ height: '100%', width: `${progress * 100}%`, background: 'linear-gradient(90deg, var(--green), var(--cyan))', borderRadius: 2, position: 'relative', transition: 'width 0.1s' }}>
               <div style={{ position: 'absolute', right: -5, top: '50%', transform: 'translateY(-50%)', width: 12, height: 12, background: '#fff', borderRadius: '50%', boxShadow: '0 0 6px color-mix(in srgb, var(--green) 80%, transparent)' }} />
             </div>
