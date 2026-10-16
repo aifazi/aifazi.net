@@ -1331,3 +1331,58 @@ Code (unchanged): god-file splits · `mypy utils/` scope · e2e-on-prod · `noti
 ---
 
 *Round-9 follow-up, verified live 2026-10-16. Part-B backlog closed on `fix/round-9-followup`; C3 documented, still owner-gated.*
+
+---
+
+## 23. God-file split — `AdminPanels.jsx` + whole-backend `mypy` (2026-10-16)
+
+Branch `fix/round-9-godfile-split` (stacked on `fix/round-9-followup`). Structure/quality work — **no new security findings**. Two backlog items closed: the `mypy utils/` scope gap (widened past `utils/` to the whole backend) and one god file (`AdminPanels.jsx`).
+
+### 23.1 `mypy` scope widened to the whole backend
+
+Gate was `mypy routers/ --ignore-missing-imports` (76 files) — `utils/`, `scripts/` and the top-level modules (`main.py`, `database.py`, `dependencies.py`, `permissions.py`, `paseto_token.py`, `jwt_compat.py`, `txadmin_service.py`) were untyped-checked.
+
+Widening was previously blocked by a module-resolution collision, not by real type errors: `utils/` and `scripts/` have no `__init__.py`, so `utils/audit.py` and `routers/audit.py` both mapped to module name `audit` (`error: Source file found twice under different module names`). Fixed by adding to `pyproject.toml`:
+
+```toml
+[tool.mypy]
+explicit_package_bases = true
+```
+
+Module names now derive from the run directory (`utils.audit` vs `routers.audit`). The gate is now **`mypy . --ignore-missing-imports --exclude '(^|/)tests/'`** — **114 source files, 0 errors**. Nothing needed fixing; the gap was purely configuration. (`tests/` stays excluded — dynamic imports, not shipped surface.)
+
+### 23.2 `AdminPanels.jsx` split (1891 → 13-line barrel)
+
+`pages-src/admin/AdminPanels.jsx` is now a barrel; the eight panels moved to `pages-src/admin/panels/`:
+
+| File | Lines | Contents |
+|------|-------|----------|
+| `AdminPanels.jsx` (barrel) | 13 | re-exports all panels |
+| `PageContentPanel.jsx` | 109 | `PAGE_CONFIG_KEYS`, `emptyPageConfig` |
+| `ActiveSessionsPanel.jsx` | 130 | **new module**; composed into `AdminProfilePanel` |
+| `AdminProfilePanel.jsx` | 374 | imports `ActiveSessionsPanel` |
+| `AnnouncementsPanel.jsx` | 674 | `BANNER_STYLES` + banner date helpers + `BannerRow` |
+| `NewsletterPanel.jsx` | 175 | |
+| `StatsPanel.jsx` | 133 | |
+| `AuditPanel.jsx` | 261 | preserved — **currently unwired** (see below) |
+| `BackupPanel.jsx` | 85 | |
+
+- **Public import surface unchanged.** `Dashboard.jsx` (dynamic `NewsletterPanel`/`StatsPanel`/`PageContentPanel`) and `ThemeHub.jsx` (`AnnouncementsPanel`) still import from `./AdminPanels`; `ActiveSessionsPanel`/`AuditPanel` are now also exported.
+- **Dead code removed:** `MAINT_STATUSES` / `MAINT_BG_STYLES` / `STATUS_ACCENT` in this file were byte-duplicates of the live constants in `SiteSettings.jsx:410-412` and were unreferenced anywhere — dropped.
+- **`AuditPanel` preserved, not wired:** it is unreferenced repo-wide; the Dashboard "Audit Log" view is served by `DBMonitor` with `initialTab="audit"` (`Dashboard.jsx:1511-1512`). It was moved to its own (exported) file rather than deleted so the Changelog-documented component stays recoverable.
+
+### 23.3 `fivem.py` — scoped for a follow-up (not split here)
+
+`routers/fivem.py` is **2003 lines but declares only 8 live routes** (`/discord/member/{id}`, `/txadmin-event`, `/txadmin/status`, `/txadmin/action`, `/connect/token`, `/connect/session-check`, `/connect/verify` POST + GET). The whitelist / status / player handlers in it (lines ~361-1387, e.g. `my_whitelist_application`, `apply_whitelist`, `pending_sync`, `update_players`, `record_player_join`) are **undecorated dead copies** — their live counterparts are in `routers/fivem_whitelist_api.py`, `routers/fivem_status_api.py` and `routers/fivem_bans_api.py`.
+
+This is the same shape as the `auth.py` split (#408): the real work is **delete ~1000 lines of shadowed dead code, then move the 8 live routes + their shared helpers into domain submodules** (`connect`, `txadmin`, `discord`), verifying the route surface is identical before/after. Deferred to its own batch — it is a dead-code removal, not a mechanical move, and fivem route coverage in `tests/` is thin.
+
+### 23.4 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held; the two `exhaustive-deps` warnings moved with their code) · **vitest 175 passed + 1 skip** · `next build` ✅.
+- Backend: `ruff` 0 · **`mypy .` 0 (114 files, was 76)** · **pytest 374 passed** (docs previously said 373 — corrected here).
+- Mobile: untouched (87 hold).
+
+---
+
+*God-file batch, verified live 2026-10-16. `AdminPanels.jsx` split + `mypy` scope on `fix/round-9-godfile-split`; `fivem.py` scoped, not yet executed.*

@@ -42,3 +42,11 @@ lint.ignore = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.mypy]
+# mypy maps file paths to module names from the filesystem; directories without
+# an __init__.py (utils/, and scripts/ at the repo root) otherwise collide with
+# same-named modules elsewhere (e.g. utils/audit.py vs routers/audit.py). Setting
+# explicit_package_bases makes the module name come from the cwd base instead,
+# so `mypy .` / `mypy utils/` resolve cleanly. CI runs mypy from this directory.
+explicit_package_bases = true
