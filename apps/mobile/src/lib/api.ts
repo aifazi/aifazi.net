@@ -29,6 +29,11 @@ const SECURE_STORE_OPTIONS = {
 
 let accessToken: string | null = null
 let refreshPromise: Promise<string> | null = null
+// R9-13 — session epoch. Bumped whenever the token store is deliberately
+// cleared or replaced, so an in-flight refresh started under the previous
+// session can't write its rotated refresh token back into SecureStore after a
+// logout (which would resurrect the session the user just ended).
+let authEpoch = 0
 
 /** Typed refresh failure: callers must distinguish revoked from network. */
 export class RefreshFailedError extends Error {
@@ -68,6 +73,7 @@ interface RetriableConfig extends InternalAxiosRequestConfig {
 async function refreshAccessToken(): Promise<string> {
   if (refreshPromise) return refreshPromise
   refreshPromise = (async () => {
+    const epoch = authEpoch
     let refresh: string | null
     try {
       refresh = await SecureStore.getItemAsync(REFRESH_KEY)
@@ -82,6 +88,9 @@ async function refreshAccessToken(): Promise<string> {
       const res = await api.post('/auth/refresh', { refreshToken: refresh })
       const { token, refreshToken } = res.data ?? {}
       if (!token) throw new RefreshFailedError('revoked', 'Refresh rejected by server')
+      // R9-13 — if the store was cleared/replaced while this request was in
+      // flight, discard the result instead of re-persisting a dead session.
+      if (epoch !== authEpoch) throw new RefreshFailedError('revoked', 'Session ended during refresh')
       accessToken = token // memory only (H4)
       if (refreshToken) await SecureStore.setItemAsync(REFRESH_KEY, refreshToken, SECURE_STORE_OPTIONS)
       return token
@@ -128,6 +137,8 @@ api.interceptors.response.use(
 )
 
 export async function setAuthTokens(access: string, refresh: string) {
+  // New session — invalidate any refresh started under the old one (R9-13).
+  authEpoch += 1
   // Access token stays in memory only — never written to disk (H4).
   accessToken = access
   if (refresh) await SecureStore.setItemAsync(REFRESH_KEY, refresh, SECURE_STORE_OPTIONS)
@@ -136,6 +147,7 @@ export async function setAuthTokens(access: string, refresh: string) {
 }
 
 export async function clearAuthTokens() {
+  authEpoch += 1 // R9-13 — cancel any in-flight refresh
   accessToken = null
   await SecureStore.deleteItemAsync(REFRESH_KEY)
   await SecureStore.deleteItemAsync(TOKEN_KEY)

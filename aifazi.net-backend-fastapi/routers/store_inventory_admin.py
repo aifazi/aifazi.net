@@ -64,7 +64,7 @@ async def create_location(body: LocationBody, _: dict = Depends(CATALOG)):
     if not body.name.strip():
         raise HTTPException(400, "Name is required")
     try:
-        res = supabase.table("store_locations").insert(body.dict()).execute()
+        res = supabase.table("store_locations").insert(body.model_dump()).execute()
     except Exception as exc:
         raise HTTPException(400, f"Location not created: {exc}")
     return res.data[0] if res.data else {"id": None}
@@ -72,7 +72,7 @@ async def create_location(body: LocationBody, _: dict = Depends(CATALOG)):
 
 @router.patch("/inventory/locations/{loc_id}")
 async def update_location(loc_id: str, body: LocationBody, _: dict = Depends(CATALOG)):
-    patch = {**body.dict(), "updated_at": _now()}
+    patch = {**body.model_dump(), "updated_at": _now()}
     res = supabase.table("store_locations").update(patch).eq("id", loc_id).execute()
     if not res.data:
         raise HTTPException(404, "Location not found")

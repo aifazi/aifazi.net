@@ -594,7 +594,10 @@ async def oauth_userinfo(request: Request):
         "sub": rec["user_id"],
         "preferred_username": rec.get("username"),
     }
-    if "email" in (rec.get("scope") or "") or True:
+    # R9-10 — only emit the email claim when the token was actually granted the
+    # `email` scope (the previous `or True` made the condition a no-op and
+    # leaked the address on every token, even ones that never asked for it).
+    if "email" in (rec.get("scope") or "").split():
         if rec.get("email"):
             claims["email"] = rec["email"]
             claims["email_verified"] = True

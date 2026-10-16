@@ -98,6 +98,9 @@ FORBIDDEN_FIELDS = frozenset({
     # account row lets them sign in as that user (github_auth callback matches on
     # github_id). The same applies to any other provider link columns.
     "github_id", "github_username", "github_avatar",
+    # R9-8 — authentik_id is the OIDC login key (callback matches on it), so it
+    # is exactly as exploitable as github_id/steam_id/discord_id above.
+    "authentik_id",
     "fivem_id", "fivem_license", "license_hex", "license2_hex",
     "forum_user_id", "admin_2fa",
     # Role / privilege columns — any of these lets a staffer self-promote or

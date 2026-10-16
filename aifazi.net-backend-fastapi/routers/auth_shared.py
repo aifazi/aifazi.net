@@ -368,7 +368,16 @@ def _get_forum_user(creds: HTTPAuthorizationCredentials | None) -> dict | None:
         payload = _paseto_decode_token(creds.credentials, purpose="auth")
         if not payload:
             return None
-        if payload.get("purpose") not in ("auth",) or payload.get("tfa_pending"):
+        # R9-2 — only fully-authenticated ACCESS tokens may act as an identity
+        # bearer. The partial 2FA token (tfa_pending) was already rejected;
+        # refresh tokens (token_type="refresh") were not, and they stay valid
+        # for 7 days even after logout/rotation — enough to re-link identities
+        # on the open connect-url endpoints.
+        if (
+            payload.get("purpose") not in ("auth",)
+            or payload.get("tfa_pending")
+            or payload.get("token_type") != "access"
+        ):
             return None
         return payload
     except Exception:

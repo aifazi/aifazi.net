@@ -71,7 +71,7 @@ class VariantBody(BaseModel):
 @router.post("/variants")
 async def create_variant(body: VariantBody, _: dict = Depends(PRODUCTS)):
     try:
-        res = supabase.table("store_product_variants").insert(body.dict()).execute()
+        res = supabase.table("store_product_variants").insert(body.model_dump()).execute()
     except Exception as exc:
         raise HTTPException(400, f"Variant not created: {exc}")
     v = res.data[0] if res.data else {"id": None}
@@ -84,7 +84,7 @@ async def create_variant(body: VariantBody, _: dict = Depends(PRODUCTS)):
 
 @router.patch("/variants/{variant_id}")
 async def update_variant(variant_id: str, body: VariantBody, _: dict = Depends(PRODUCTS)):
-    patch = {**body.dict(), "updated_at": _now()}
+    patch = {**body.model_dump(), "updated_at": _now()}
     old = supabase.table("store_product_variants").select("stock_qty,active").eq("id", variant_id).limit(1).execute()
     res = supabase.table("store_product_variants").update(patch).eq("id", variant_id).execute()
     if not res.data:

@@ -75,6 +75,20 @@ function callAllowedOrigins(callUrl: string): string[] {
   return [...new Set(origins)]
 }
 
+// R9-6 — react-native-webview compiles each originWhitelist entry to a
+// `^<escaped-origin>` regex with NO end anchor, so `https://host.evil.tld`
+// matched an allowlisted `https://host`. Enforce an exact-origin check for
+// http(s) navigations; non-http schemes (about:/blob:/data:) pass through.
+function isAllowedCallNavigation(url: string, allowed: string[]): boolean {
+  try {
+    const u = new URL(url)
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return true
+    return allowed.includes(u.origin)
+  } catch {
+    return true // unparseable → don't break the call UI over it
+  }
+}
+
 type RoomError = 'bad-token' | 'not-configured' | 'auth' | 'network' | 'api'
 
 export default function TalkRoomScreen() {
@@ -221,6 +235,13 @@ export default function TalkRoomScreen() {
   const mediaHint = describeMediaPath(vpnConnected, turnServers)
 
   const items = useMemo(() => [...visibleMessages(state)].reverse(), [state])
+
+  // R9-6 — exact-origin guard for the in-app call WebView (see helper above).
+  const callOrigins = useMemo(() => callAllowedOrigins(callUrl), [callUrl])
+  const onShouldStartLoad = useCallback(
+    (req: { url: string }) => isAllowedCallNavigation(req.url, callOrigins),
+    [callOrigins],
+  )
 
   if (!validToken) {
     return (
@@ -401,6 +422,7 @@ export default function TalkRoomScreen() {
             allowsInlineMediaPlayback
             mediaPlaybackRequiresUserAction={false}
             originWhitelist={callAllowedOrigins(callUrl)}
+            onShouldStartLoadWithRequest={onShouldStartLoad}
             style={{ flex: 1 }}
           />
           <View

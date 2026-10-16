@@ -397,7 +397,7 @@ async def create_testimonial(body: TestimonialBody, request: Request, staff: dic
     if not body.content.strip():
         raise HTTPException(400, "Content is required")
     try:
-        res = supabase.table("store_testimonials").insert(body.dict()).execute()
+        res = supabase.table("store_testimonials").insert(body.model_dump()).execute()
     except Exception as exc:
         log.warning("testimonial create failed: %s", exc)
         raise HTTPException(400, "Testimonial not created")
@@ -407,7 +407,7 @@ async def create_testimonial(body: TestimonialBody, request: Request, staff: dic
 
 @router.patch("/testimonials/{tid}")
 async def update_testimonial(tid: str, body: TestimonialBody, request: Request, staff: dict = Depends(REVIEWS_MOD)):
-    res = supabase.table("store_testimonials").update({**body.dict(), "updated_at": _now()}).eq("id", tid).execute()
+    res = supabase.table("store_testimonials").update({**body.model_dump(), "updated_at": _now()}).eq("id", tid).execute()
     if not res.data:
         raise HTTPException(404, "Testimonial not found")
     _audit(_actor(staff), "crm_testimonial_update", target=f"testimonials:{tid}", ip=_ip(request))

@@ -136,6 +136,15 @@ def _get_forum_user(creds: HTTPAuthorizationCredentials | None) -> dict | None:
         payload = _paseto_decode_token(creds.credentials, purpose="auth")
         if not payload:
             return None
+        # R9-1 — a bearer on the account-linking routes must be a fully
+        # authenticated ACCESS token. Reject:
+        #   * the partial 2FA token (minted by auth_login as token_type="access"
+        #     with tfa_pending=True) — otherwise anyone with the password only
+        #     could link their own Steam and log in past the 2FA challenge;
+        #   * refresh tokens (token_type="refresh") — long-lived and valid even
+        #     after logout/rotation, so they must never authorize linking.
+        if payload.get("tfa_pending") or payload.get("token_type") != "access":
+            return None
         return payload
     except Exception:
         return None

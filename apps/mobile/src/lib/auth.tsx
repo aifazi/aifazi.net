@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useCallback, useState, useRef, Re
 import { api, setAuthTokens, clearAuthTokens, ensureSession, onAuthCleared, RefreshFailedError } from './api'
 import { loginWithOAuth as oauthLogin, OAuthProvider } from './oauth'
 import { unregisterCurrentPushToken, registerPushToken } from './push'
+import { clearCalDAVCredentials } from './caldav'
 
 export interface AuthUser {
   id?: string
@@ -233,6 +234,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/logout')
     } catch {}
     await clearAuthTokens()
+    // R9-5 — Nextcloud CalDAV app-password lives in its own SecureStore keys;
+    // clear it on every logout so a shared device can't silently reconnect.
+    try {
+      await clearCalDAVCredentials()
+    } catch {}
     setAuthUser(null)
   }, [setAuthUser])
 
@@ -273,6 +279,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {}
     await api.delete('/auth/account', { data: { password } })
     await clearAuthTokens()
+    try {
+      await clearCalDAVCredentials()
+    } catch {}
     setAuthUser(null)
   }, [setAuthUser])
 

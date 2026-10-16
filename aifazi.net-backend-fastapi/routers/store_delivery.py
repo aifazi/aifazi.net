@@ -374,7 +374,7 @@ async def order_delivery_tracking(order_no: str):
     if not order.data:
         raise HTTPException(404, "Order not found")
 
-    o = order.data
+    o = order.data[0]  # R9-3 — order.data is a list; take the (single) row
     agent_info = None
     assignment_info = None
     scan_events: list[dict[str, Any]] = []

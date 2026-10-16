@@ -1,7 +1,7 @@
 # aifazi.net — Project Status
 
-> **What we're doing right now, and what's left to do.** Updated 2026-10-09.
-> Audit history: [AUDIT.md](AUDIT.md) (latest §20: Round 8 + remediation close-outs) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
+> **What we're doing right now, and what's left to do.** Updated 2026-10-16.
+> Audit history: [AUDIT.md](AUDIT.md) (latest §21: Round 9 — 2FA-bypass chain + store/oauth/mobile findings) · Ops backlog: [ROADMAP.md](ROADMAP.md) · PR flow: [PREVIEW.md](PREVIEW.md)
 
 ## Where we are (what we're doing)
 
@@ -9,7 +9,7 @@
 |-------------|--------|--------|
 | **Hybrid-infra diagram editor** | Feature complete + hardened | Audit batches #375–#377, fullscreen #378/#388, doc-driven decorations #389, library 26→62 items + sidebar redesign #390/#391 |
 | **Core UI migration** | ~90% done | Native inputs/dialogs/buttons → `core/forms`, core dialog+notify, `Clickable` (#379–#384); leftovers remain (P2 below) |
-| **Audit-driven hardening** | Round 8 fix batch **landed #449** 2026-10-06, CodeQL batch **#462** 2026-10-07 — **code scanning 0 open** | R7-1/R7-2 + P1s in #447; R8 remainder (LDAP authorize ban, mobile exchange fail-closed, CDN admin scope, page_layout counts) in #449; 10 code-scanning alerts fixed in #462 (exception-text exposure, sanitizer hardening), 6 dismissed as false positive with justification |
+| **Audit-driven hardening** | Round 8 fix batch **landed #449** 2026-10-06, CodeQL batch **#462** 2026-10-07 — **code scanning 0 open**; **Round 9 (2026-10-16)** filed 2 HIGH-class auth findings — **fixed on `fix/round-9-batch`** | R7-1/R7-2 + P1s in #447; R8 remainder (LDAP authorize ban, mobile exchange fail-closed, CDN admin scope, page_layout counts) in #449; 10 code-scanning alerts fixed in #462 (exception-text exposure, sanitizer hardening), 6 dismissed as false positive with justification. **Round 9 (§21)** re-verified all R7/R8 fixes intact and found — and fixed — **R9-1 CRITICAL** (partial-2FA token accepted by `steam_auth._get_forum_user` → Steam-link 2FA bypass), **R9-2 HIGH** (refresh token accepted by `auth_shared._get_forum_user` on open connect endpoints), **R9-3/R9-4 MEDIUM** (store tracking always 500s; OAuth code TOCTOU), plus mobile (CalDAV creds survive logout, WebView prefix-match whitelist) and LOW/INFO items |
 | **Mail + LDAP identity infra** | Rebuilt 2026-10-06/07, **working** | Stalwart LDAP bind went stale (rc=49 on every login) → per-app service accounts (`ldapbind-stalwart/nextcloud/backend`, type service_account) + `LDAP bind accounts` group + `LDAP directory searchers` role (`search_full_directory` on the provider) + app access bindings; Nextcloud + portal (`site_config`) + Stalwart all on service binds; backend username lookup fixed to `cn` (#464); zombie LDAP outpost removed; noreply re-passworded + added to `mail` group; backend SMTP + NC mail verified end-to-end (Gmail delivery ~1s) |
 | **Supabase (self-host) auth emails** | Wired + E2E-verified 2026-10-09 | GoTrue was on the **Noop mail client** (all `SMTP_*` empty, `ENABLE_EMAIL_AUTOCONFIRM=false` → every recover/verify call 500'd). Now: `GOTRUE_SMTP_*` ← `SMTP_*` (`system@aifazi.net` → Stalwart :587, backups `.env.bak-20261009` / `docker-compose.yml.bak-20261009`); `system` (Authentik pk 20) added to `mail` group + password set. E2E green: `/auth/v1/recover` 200 → IMAP delivery verified → test user cleaned up. Incident same day: a compose recreate of `supabase-db` **dropped its manual glue-network attach** (Authentik resolves the db there) → Authentik DB outage → all LDAP/Stalwart auth failed; fixed by declaring the network in the compose file + a per-minute cron repair (`connect-stalwart-network.sh` now also covers the db) |
 | **Supabase Studio (self-host)** | Upgraded 2026-10-09 | `supabase/studio` 2026.03.16 → 2026.10.05 (`docker-compose.yml.bak-20261009`), healthy (Next.js 16.3.6). OAuth Apps + other sidebar gaps explained, not bugs: `generateAuthMenu` gates everything but Users/Policies on `IS_PLATFORM` (self-host), and GoTrue v2.186.0 has **no** `/auth/v1/admin/oauth/clients` (404 — OAuth-server admin API is cloud-only; self-host config = `GOTRUE_*` env vars). Dashboard login = `SERVICE_USER_ADMIN`/`SERVICE_PASSWORD_ADMIN` in the service `.env` (verified via Kong) |
@@ -36,12 +36,13 @@ Verification gate — every PR:
 | Mobile | `npm run typecheck` · `npm run lint` · `npm test` |
 | e2e (feature PRs) | start server → `npx playwright test` |
 
-Current counts: frontend **167** (166 passed +1 skip) · backend **356** · mobile **87** · code scanning **0 open** · dependabot queue **empty** (wave of 2026-10-07: #470/#471/#472/#473 merged, #474/#475 closed as parked-blocked, #476 ignore hygiene; earlier wave 13 minors + 4 majors).
+Current counts: frontend **174** (173 passed +1 skip) · backend **373** · mobile **87** · code scanning **0 open** · dependabot queue **20 open** (Python 3.15.0rc3 base-image bumps + minors; not drained since the 2026-10-07 wave). Backend `pip-audit`: no known vulns; frontend `npm audit` 7 high (all non-breaking-fixable); mobile 30 (Expo/Metro build-chain only).
 
 ## What remains
 
 ### P0 — next action
 
+- [x] **🔴 Round-9 security fixes (AUDIT §21 — R9-1/R9-2)** — **fixed on `fix/round-9-batch` (2026-10-16)**: `steam_auth._get_forum_user` now rejects `tfa_pending` + non-access `token_type`; `auth_shared._get_forum_user` rejects refresh tokens. A partial-2FA token or a 7-day refresh token can no longer act as a full bearer on the open connect endpoints. Regression tests: `tests/test_round9_fixes.py` (partial + refresh both rejected).
 - [x] **Run the `mobile_oauth_claims` migration** (Supabase SQL editor, SQL in AUDIT §17) — **done + verified live 2026-10-04** (`mobile_oauth_claims` table present in prod Supabase; `users.authentik_id` column confirmed).
 - [x] **Apply the `users.authentik_id` migration to prod** (`supabase/migrations/20261005000001_users_authentik_id.sql`) — **applied + verified live 2026-10-06** (column + index already present; `page_layouts.block_count` migration `20261006000000` likewise applied, 0 rows needed backfill).
 - [ ] **Coolify backend redeploy** (activates #447 + #449 + #464 LDAP fix): re-run Identity Doctor, one live LDAP login, hard-refresh `/login`. Then verify prod `bind_user` end-to-end (unit + staging proofs in #464).
@@ -54,6 +55,7 @@ Current counts: frontend **167** (166 passed +1 skip) · backend **356** · mobi
 
 ### P1 — this sprint
 
+- [x] **Round-9 correctness/security (AUDIT §21)** — **fixed on `fix/round-9-batch`**: **R9-3** — `GET /api/store/delivery/tracking/{order_no}` (`store_delivery.py` now indexes `order.data[0]`, was 500ing). **R9-4** — `utils/oauth_store.pop_auth_code` now consumes atomically (`GETDEL` + Lua fallback), closing the double-redemption TOCTOU. Tests in `tests/test_round9_fixes.py`.
 - [ ] **CI runner starvation (2026-10-05)**: GitHub-hosted jobs repeatedly failed acquisition ("not acquired by Runner even after multiple attempts") across 3 consecutive runs — green only after manual `gh run rerun --failed` ×3. Code was clean every time (verified locally). Consider longer `timeout-minutes` + documented rerun procedure, or a fallback runner pool — every merge currently risks a 30+ min stall.
 - [x] **Close CI gaps** (audit O3): `dependency-review-config.yml` IS auto-loaded (round-5 correction — "inert" was wrong) but 2 of its keys were invalid/ignored — removed (#400); mobile `npm test` + `lint:hooks` now in CI, Playwright e2e runs as its own job (read-only GETs against production), mobile vitest include now covers `*.test.tsx` (this PR). 2026-10-05 correction (AUDIT §19, R6-1): the action does NOT auto-load the file — `ci.yml` now passes it explicitly via the `config-file` input, so the round-5 "auto-loaded" claim is superseded.
 - [x] **Fix theme hydration flake** (U1): `app/providers.tsx:394` first-theme-sync can drop `data-theme` (e2e flake + real flash to default) — resolved by A5-8: first sync adopts the FOUC-stamped value instead of clobbering it, and never writes stale state to storage (decision in `core/themeSync.ts` + tests).
@@ -69,7 +71,7 @@ Current counts: frontend **167** (166 passed +1 skip) · backend **356** · mobi
 - [ ] Decorations parity (U3): backend coord clamps; decoration/annotation id dedupe (node-id dedupe landed in #406 F19; dup annotation ids still render locally but 400 on save).
 - [ ] Docs/env (U4): missing backend keys in `.env.example` (`AUTHENTIK_*`, `UPSTASH_*`, `DISCORD_*`, `ADMIN_PASSWORD_HASH`, `LLDAP_*`…) — inventory synced 2026-10-05 (AUDIT §19, placeholders only); still open: README `docker compose up` needs `.env.local` setup; SECURITY.md line refs (7 of 13 stale per §16.4); `PLAN-REDESIGN-REVAMP.md` still on disk with no deprecation banner despite #409's roadmap superseding it.
 - [x] Round-6 additions: R6-1/R6-2 dep-review wiring **done 2026-10-05**; R6-3 (mapped-IPv6 bypass) + R6-4 (duplicate config-check mount) **done in #449**.
-- [ ] LOW items: dependabot `docker/frontend` entry; `infra_diagrams` migration REVOKE parity; audit.py actor attribution; Safari fullscreen prefix + menu portal; DateTimePicker time-only edits; Escape for forum admin modals. (fonts.py redirect revalidation — done, round 5 A5-2.)
+- [x] LOW items: dependabot `docker/frontend` entry; `infra_diagrams` migration REVOKE parity; audit.py actor attribution; Safari fullscreen prefix + menu portal; DateTimePicker time-only edits; Escape for forum admin modals. (fonts.py redirect revalidation — done, round 5 A5-2.) **Round-9 additions (AUDIT §21) — all fixed on `fix/round-9-batch`:** R9-5 CalDAV creds cleared on logout/delete; R9-6 Talk WebView exact-origin `onShouldStartLoadWithRequest` guard; R9-7 authentik connect enforces `_ensure_identity_available`; R9-8 `authentik_id` added to `FORBIDDEN_FIELDS`; R9-9 `/api/admin/deploy/event` added to `_OPEN_EXACT`; R9-10 `/oauth/userinfo` email claim scope-gated; R9-11 Dialog overlay ARIA fixed; R9-12 font `@font-face` preserved by the CSS sanitizer; R9-13 mobile refresh `authEpoch` guard; R9-14 awaited `logout()`+`refresh()`; R9-16 Pydantic `.model_dump()`; R9-17 SECURITY.md line refs. **R9-15 (PKCE)** assessed — not applicable to the server-mediated flow (single-use, state-bound code already covers it).
 
 ### P3 — structure / product
 
@@ -95,7 +97,7 @@ Current counts: frontend **167** (166 passed +1 skip) · backend **356** · mobi
 
 | Question | Where |
 |----------|-------|
-| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §20 Round 8 + close-outs (2026-10-06) |
+| What did the audits find, and what's fixed? | [AUDIT.md](AUDIT.md) — §21 Round 9 (2026-10-16): 2FA-bypass chain R9-1/R9-2 + store/oauth/mobile findings |
 | Server/ops/inbox backlog? | [ROADMAP.md](ROADMAP.md) |
 | How to test a PR before merge? | [PREVIEW.md](PREVIEW.md) |
 | Infra/VPS hardening state? | [VPS-INFRA-AUDIT.md](VPS-INFRA-AUDIT.md) |

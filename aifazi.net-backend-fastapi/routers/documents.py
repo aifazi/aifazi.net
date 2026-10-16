@@ -133,7 +133,7 @@ class DocumentPatchBody(BaseModel):
 @router.patch("/{doc_id}")
 async def update_document(doc_id: str, body: DocumentPatchBody, user: dict = Depends(get_current_user)):
     uid = _user_id(user)
-    patch = {k: v for k, v in body.dict().items() if v is not None}
+    patch = {k: v for k, v in body.model_dump().items() if v is not None}
     if not patch:
         raise HTTPException(400, "Nothing to update")
     res = supabase.table("user_documents").update(patch).eq("id", doc_id).eq("user_id", uid).execute()
