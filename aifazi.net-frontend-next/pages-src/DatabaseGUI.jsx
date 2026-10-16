@@ -169,14 +169,14 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               boxShadow:`0 0 ${pulse?"10px":"4px"} ${loading?"var(--orange,var(--orange))":error?"var(--red,var(--red))":"var(--green,var(--green))"}`,
               transition:"all 0.3s",
             }} />
-            <span style={{ fontSize: 11, color:"var(--border)" }}>
+            <span style={{ fontSize: 11, color:"var(--muted)" }}>
               {loading?"SYNCING...":error?"ERROR":lastUpdate?`SYNCED ${ago(lastUpdate)}`:"IDLE"}
             </span>
           </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           <Checkbox checked={autoRefresh} onChange={setAutoRefresh} label="AUTO 30s"
-            style={{ fontSize: 11, color:"var(--border)", padding:"5px 8px" }} />
+            style={{ fontSize: 11, color:"var(--muted)", padding:"5px 8px" }} />
           <button onClick={()=>fetchStats()} disabled={loading}
             style={{ padding:"5px 12px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:loading?"not-allowed":"pointer", fontSize: 11, letterSpacing:2 }}>REFRESH</button>
           <button onClick={()=>{setToken("");setStats(null);}}
@@ -196,7 +196,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
           </div>
           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
             <Checkbox checked={autoRefresh} onChange={setAutoRefresh} label="AUTO"
-              style={{ fontSize: 11, color:"var(--border)", padding:"4px 7px" }} />
+              style={{ fontSize: 11, color:"var(--muted)", padding:"4px 7px" }} />
             <button onClick={()=>fetchStats()} disabled={loading} style={{ padding:"3px 10px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:loading?"not-allowed":"pointer", fontSize: 11, letterSpacing:1, fontFamily:"var(--font-mono,monospace)" }}>REFRESH</button>
           </div>
         </div>
@@ -235,14 +235,14 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
 
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:20 }}>
-                <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>TOP POSTS BY VIEWS</div>
+                <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:14 }}>TOP POSTS BY VIEWS</div>
                 {(s.topPosts||[]).length===0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No posts yet</div>
+                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>No posts yet</div>
                   : (s.topPosts||[]).map((p,i) => (
                     <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:"1px solid #0a1016", gap:12 }}>
                       <div style={{ flex:1, overflow:"hidden" }}>
                         <div style={{ color:"var(--muted)", fontSize:12, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
-                        <div style={{ color:"var(--border)", fontSize: 11, marginTop:2 }}>{p.category}</div>
+                        <div style={{ color:"var(--muted)", fontSize: 11, marginTop:2 }}>{p.category}</div>
                       </div>
                       <span style={{ color:"var(--green,var(--green))", fontSize:11, flexShrink:0 }}>{fmt(p.views)}v</span>
                     </div>
@@ -250,9 +250,9 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
                 }
               </div>
               <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:20 }}>
-                <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>FORUM CATEGORIES</div>
+                <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:14 }}>FORUM CATEGORIES</div>
                 {(s.categories||[]).length===0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No categories yet</div>
+                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>No categories yet</div>
                   : (s.categories||[]).map((c,i) => (
                     <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:"1px solid #0a1016" }}>
                       <span style={{ color:"var(--muted)", fontSize:12 }}>{c.icon} {c.name}</span>
@@ -283,9 +283,9 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
                render:s=><FeedRow icon="[N]" title={s.email} sub={s.active?"YES Active":"NO Unsubscribed"} time={ago(s.createdAt)} color="var(--green,var(--green))" />},
             ].map(({title, key, render}) => (
               <div key={key} style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:"18px 16px" }}>
-                <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:12 }}>{title}</div>
+                <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>{title}</div>
                 {(s.recent?.[key]||[]).length===0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", padding:"12px 0" }}>NO DATA YET</div>
+                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", padding:"12px 0" }}>NO DATA YET</div>
                   : (s.recent?.[key]||[]).map((item, i) => <div key={i}>{render(item)}</div>)
                 }
               </div>
@@ -309,7 +309,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               <MiniChart data={s.charts?.dailyUsers||[]} color="var(--cyan,var(--cyan))" label="NEW USERS - LAST 30 DAYS" />
             </div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24, gridColumn:"1/-1" }}>
-              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>THIS WEEK</div>
+              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>THIS WEEK</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12 }}>
                 {[
                   {label:"POSTS",    value:s.week?.posts,    color:"var(--green,var(--green))"},
@@ -319,7 +319,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
                 ].map(({label,value,color}) => (
                   <div key={label} style={{ textAlign:"center", padding:"20px 12px", background:"var(--bg)", border:`1px solid ${color}18` }}>
                     <div style={{ fontSize:32, fontWeight:900, color, marginBottom:6 }}>{fmt(value)}</div>
-                    <div style={{ fontSize: 11, color:"var(--border)", letterSpacing:2 }}>{label}</div>
+                    <div style={{ fontSize: 11, color:"var(--muted)", letterSpacing:2 }}>{label}</div>
                   </div>
                 ))}
               </div>
@@ -361,7 +361,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         {activeTab==="system" && (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>CONNECTION</div>
+              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>CONNECTION</div>
               {[
                 ["API URL",       API_URL||"(same origin)"],
                 ["Auto Refresh",  autoRefresh?"Every 30s":"Disabled"],
@@ -375,7 +375,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               ))}
             </div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>DATABASE TOTALS</div>
+              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>DATABASE TOTALS</div>
               {s && Object.entries({
                 "Forum Users":   s.counts?.users?.total||0,
                 "Posts":         s.counts?.posts?.total||0,
@@ -394,7 +394,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
               ))}
             </div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24, gridColumn:"1/-1" }}>
-              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>QUICK ACTIONS</div>
+              <div style={{ fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>QUICK ACTIONS</div>
               <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
                 <Btn label="[R] REFRESH STATS"  color="var(--cyan,var(--cyan))" onClick={()=>fetchStats()} disabled={loading} />
                 <Btn label={autoRefresh?"LIVE PAUSE AUTO-REFRESH":"[>] ENABLE AUTO-REFRESH"} color="var(--yellow,#ffd700)" onClick={()=>setAutoRefresh(p=>!p)} />
@@ -405,7 +405,7 @@ export default function DatabaseGUI({ _preloadToken = "", readOnly: readOnlyProp
         )}
 
         {!s && !loading && !error && (
-          <div style={{ textAlign:"center", padding:80, color:"var(--border)", fontSize:11, letterSpacing:3 }}>LOADING DATA...</div>
+          <div style={{ textAlign:"center", padding:80, color:"var(--muted)", fontSize:11, letterSpacing:3 }}>LOADING DATA...</div>
         )}
 
         {/* -- AUDIT LOG -- */}

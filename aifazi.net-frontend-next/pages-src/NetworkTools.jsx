@@ -134,7 +134,7 @@ function SubnetCalc() {
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginBottom: 8 }}>BINARY BREAKDOWN</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1 }}>
               IP:  {result.ipBin.split('.').map((b, i) => (
-                <span key={i}>{i > 0 && <span style={{ color: 'var(--border)' }}>.</span>}
+                <span key={i}>{i > 0 && <span style={{ color: 'var(--muted)' }}>.</span>}
                   <span style={{ color: 'var(--green)' }}>{b.slice(0, Math.max(0, result.cidr - i * 8))}</span>
                   <span style={{ color: 'var(--muted)' }}>{b.slice(Math.max(0, result.cidr - i * 8))}</span>
                 </span>

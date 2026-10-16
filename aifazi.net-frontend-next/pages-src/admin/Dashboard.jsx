@@ -1380,9 +1380,9 @@ function Dashboard({ onLogout }) {
                           {(() => { const mins = (Date.now() - new Date(s.lastSeen)) / 60000; return mins < 1 ? ' online now' : mins < 60 ? ` ${Math.floor(mins)}m ago` : mins < 1440 ? ` ${Math.floor(mins/60)}h ago` : ` ${Math.floor(mins/1440)}d ago` })()}
                         </span>
                       ) : (
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)' }}> never seen</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}> never seen</span>
                       )}
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)' }}>joined {formatDate(s.createdAt)}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>joined {formatDate(s.createdAt)}</span>
                     </div>
                   )}
                   <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>

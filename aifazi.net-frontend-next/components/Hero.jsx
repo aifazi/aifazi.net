@@ -372,12 +372,10 @@ export default function Hero() {
           display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
           position: 'relative', zIndex: 6,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'glow-pulse 2s ease-in-out infinite', flexShrink: 0 }} />
-            <span style={{ color: 'var(--cyan)' }}>&gt; </span>
-            <EditableText contentKey="hero.status" defaultValue="AVAILABLE FOR NEW PROJECTS" />
-          </div>
-          {/* Live status badge */}
+          {/* Terminal prompt + live status badge — the badge label is
+              admin-editable (status.<key>.label), so no separate duplicate
+              availability line is rendered here. */}
+          <span style={{ color: 'var(--cyan)' }}>&gt; </span>
           <StatusBadge size="lg" />
         </div>
         </AnimatableWrapper>

@@ -627,7 +627,7 @@ function AnnouncementsPanel() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 color: 'var(--muted)', letterSpacing: 2 }}>NO BANNERS YET</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
-                color: 'var(--border)', marginTop: 6 }}>
+                color: 'var(--muted)', marginTop: 6 }}>
                 Publish one to show a site-wide announcement
               </div>
             </div>

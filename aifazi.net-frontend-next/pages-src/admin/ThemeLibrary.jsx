@@ -1462,7 +1462,7 @@ function ThemeLibrary() {
                 active={typeFilter === f && tagFilter === 'ALL'} activeColor="#c084fc"
                 onClick={() => { setTypeFilter(f); setTagFilter('ALL') }} />
             ))}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)', marginInline: 4 }}></span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginInline: 4 }}></span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginRight: 4 }}>TAG:</span>
             {['DARK','LIGHT','STYLE'].map(f => (
               <FilterBtn key={f} value={f} label={f}
@@ -3136,7 +3136,7 @@ function ThemeLibrary() {
                       {r.kind === 'color' && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {r.saved ? <><span style={{ width: 12, height: 12, borderRadius: 3, background: r.saved, border: '1px solid var(--border)' }} /><span style={{ color: 'var(--muted)' }}>saved</span></> : <span style={{ color: 'var(--muted)' }}>default</span>}
-                          <span style={{ color: 'var(--border)' }}>→</span>
+                          <span style={{ color: 'var(--muted)' }}>→</span>
                           <span style={{ width: 12, height: 12, borderRadius: 3, background: r.current, border: '1px solid var(--border)' }} />
                           <span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)' }}>{r.current}</span>
                         </span>

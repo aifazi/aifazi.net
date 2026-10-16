@@ -1446,3 +1446,44 @@ Both are **single monolithic components** (`HybridInfraEditor` 3301 lines; `Hybr
 ---
 
 *God-file batch, verified live 2026-10-16. `ServerRackAnimation.jsx` + `ThemeLibrary.jsx` splits and `fivem.py` → package on `fix/round-9-godfile-split`. `HybridInfraEditor.tsx` / `HybridInfraCanvas.tsx` left intact (monolithic; need a redesign).*
+
+---
+
+## 25. Design review + first consistency batch — `fix/round-10-design` (2026-10-17)
+
+Product/design pass — **no new security findings**. Reviewed live against the deployed site (Home, Login, Blog, Store, Forum, Status) plus a local `next dev` build. Verdict: **the identity is strong; the debt is consistency + information architecture, not taste.**
+
+### 25.1 What the review found (live)
+
+| # | Finding | Evidence |
+|---|---------|----------|
+| D1 | **Three brand marks in one product** — main nav `TANVIR.DEV`, Login `AIFAZI · SECURE GATEWAY`, Store `AIFAZI.` | Home / Login / Store |
+| D2 | **Navbar overflow** — 10 flat top-level links pushed the right-side controls off-screen; at a 1296px viewport the bar needed ~1443px and clipped `SIGN IN` (right edge 1319px) | measured `scrollWidth > clientWidth` |
+| D3 | **Homepage is one 8157px scroll** (viewport 886) with a flat "NN / Section" rhythm ×7 | live |
+| D4 | **72 theme ids, only 3 certified** (`terminal`/`light`/`paper`) — QA/maintenance cost | `core/themeCatalog.js`, `docs/CERTIFIED-THEMES.md` |
+| D5 | **58 hardcoded neon `rgba()`** in `pages-src`/`components` — bypass the token layer | grep |
+| D6 | **Button language differs per shell** — Login submit = green→cyan gradient, hero primary = angular clip, store = solid pill | live |
+| D7 | **Text coloured with a border token** — `color: var(--border)` (`rgba(0,212,255,0.15)`) | grep: 91 usages |
+| D8 | Dual surfaces real: `/store` → `store.aifazi.net`; `/whitelist` + `/fivem/whitelist`, `/store` + `/fivem/store` both exist | route table |
+| D9 | Type floor largely fixed — only **3** sub-10px `font-size` hits remain (the old HIGH is mostly resolved) | grep |
+
+**Correction to an earlier live-capture read.** The "blank first paint" seen on Home/Login/Store/Forum in screenshots was a **capture-timing artifact**, not JS-gated content. `Login.jsx` uses `gsap.fromTo(card, { opacity: 0 }, { opacity: 1 })`, which leaves the element at its natural (visible) opacity until GSAP loads; if GSAP never loads the `.then()` never runs, so nothing is ever set to `0`. Content is never permanently hidden — **no fix warranted.**
+
+### 25.2 This batch (D2 + D7 + the hero duplicate)
+
+- **Navbar IA (D2).** The four home-page scroll anchors (`About`/`Experience`/`Services`/`Projects`) are grouped into a single **"Work"** dropdown, sharing the existing `Tools` menu's visual language (extracted to `dropdownPanelStyle` / `dropdownRowStyle` / `dropdownTriggerStyle` constants). Desktop top-level links drop **10 → 6 + 2 dropdowns**; the mobile menu renders the full list inline, unchanged. Gaps and container padding become fluid (`clamp()`), and both right-side control groups get `flexShrink: 0` so the search / Sign In / theme controls can never be clipped. **Verified:** with the desktop bar forced at a 1000px viewport the intrinsic requirement is ~1016px; at 1296px the new bar needs **~1044px** (≈250px spare) vs. the old ~1443px.
+- **Hero duplicate (D3-adjacent).** The hero rendered availability twice — an `EditableText hero.status` ("AVAILABLE FOR NEW PROJECTS") **and** the live `StatusBadge`. The badge's own label is already admin-editable (`status.<key>.label`), so the separate line was pure duplication; removed, keeping the terminal `> ` prompt + the live badge.
+- **Text-token consistency (D7).** All **91** `color: var(--border)` text usages → `var(--muted)` across 9 files (`DBMonitor`, `DatabaseGUI`, `dbGuiParts`, `dbGuiTabs`, `admin/Dashboard`, `admin/ThemeLibrary`, `admin/panels/AnnouncementsPanel`, `NetworkTools`, `app/helpdesk/error.tsx`). Rule: **text never uses a border token.** `border:`/`borderColor:` usages are untouched (the Navbar's 9 `borderColor: 'var(--border)'` remain).
+
+### 25.3 Deferred — need an owner decision
+
+D1 brand-lockup unification · D3 homepage length/rhythm · D4 theme curation · D5 `rgba()`→token sweep · D6 cross-shell button language · D8 surface consolidation · living style guide + illustrated empty states · project case studies. These change product direction or are multi-file redesigns, so they are deliberately **not** in this batch.
+
+### 25.4 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held) · **vitest 175 passed + 1 skip** · `next build` ✅.
+- No backend change.
+
+---
+
+*Design batch, verified live 2026-10-17 (`next dev`, LAN-reachable build). Navbar IA + hero duplicate + text-token consistency on `fix/round-10-design`.*
