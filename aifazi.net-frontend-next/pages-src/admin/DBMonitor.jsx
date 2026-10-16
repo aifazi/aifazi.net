@@ -5,6 +5,7 @@ import { useDialog } from '../../core/dialog.jsx'
 import { Checkbox, TextArea } from '@/core/forms'
 import { CollectionBrowser, MaintenancePanel, ExportPanel, QueryPanel, MiniChart, FeedRow } from '../dbGuiParts'
 import { AuditLogTab, DbHealthTab, SessionsTab } from '../dbGuiTabs'
+import { EmptyState } from './ui'
 
 const ago = (d) => {
   if (!d) return ''
@@ -53,7 +54,7 @@ function AuthLogTab() {
         <button onClick={() => load(page)} disabled={loading} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'5px 12px', background:'transparent', color:'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:loading?'not-allowed':'pointer' }}>{loading ? '..' : 'REFRESH'}</button>
       </div>
       {loading && !logs.length ? <div style={{ textAlign:'center', padding:40, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
-      : !logs.length ? <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>No auth log entries yet</div>
+      : !logs.length ? <EmptyState icon="🔐" title="No auth log entries yet" hint="Sign-in activity will be listed here." />
       : <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
           {logs.map((entry, i) => {
             const reason = (entry.reason || '').toLowerCase()
@@ -146,7 +147,7 @@ function SqlConsoleTab() {
         {error && <div style={{ padding:'10px 14px', background:'color-mix(in srgb, var(--red) 6%, transparent)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
         {results !== null && (
           <div style={{ borderTop:'1px solid #0f1a26', padding:14, maxHeight:500, overflow:'auto' }}>
-            {Array.isArray(results) && results.length === 0 ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', textAlign:'center', padding:20 }}>0 rows returned</div>
+            {Array.isArray(results) && results.length === 0 ? <EmptyState icon="🔍" title="0 rows returned" hint="The query ran successfully but matched nothing." />
             : Array.isArray(results) ? (
               <div>
                 <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
@@ -207,7 +208,7 @@ function DbOverview() {
   }, [])
 
   if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
-  if (!stats) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>No data available</div>
+  if (!stats) return <EmptyState icon="📊" title="No data available" hint="Stats will appear once the API reports them." />
 
   const cards = [
     { label:'USERS', value:stats.counts?.users?.total, sub:`${stats.counts?.users?.verified||0} verified`, color:'var(--cyan,#00d4ff)' },
@@ -236,7 +237,7 @@ function DbOverview() {
         <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:20 }}>
           <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:14 }}>TOP POSTS BY VIEWS</div>
           {(stats.topPosts||[]).length===0
-            ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>No posts yet</div>
+            ? <EmptyState icon="📝" title="No posts yet" hint="Published blog posts will be listed here." />
             : (stats.topPosts||[]).map((p,i) => (
               <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #0a1016', gap:12 }}>
                 <div style={{ flex:1, overflow:'hidden' }}>
@@ -251,7 +252,7 @@ function DbOverview() {
         <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:20 }}>
           <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:14 }}>FORUM CATEGORIES</div>
           {(stats.categories||[]).length===0
-            ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>No categories yet</div>
+            ? <EmptyState icon="🗂" title="No categories yet" hint="Blog categories will be listed here." />
             : (stats.categories||[]).map((c,i) => (
               <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #0a1016' }}>
                 <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:12, color:'var(--muted)' }}>{c.icon} {c.name}</span>
@@ -550,7 +551,7 @@ function ActivityTab() {
   const { stats: s, loading } = useAdminStats()
 
   if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
-  if (!s) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>No data available</div>
+  if (!s) return <EmptyState icon="📊" title="No data available" hint="This panel has nothing to show yet." />
 
   return (
     <div>
@@ -567,7 +568,7 @@ function ActivityTab() {
           <div key={key} style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:'18px 16px' }}>
             <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>{title}</div>
             {(s.recent?.[key]||[]).length===0
-              ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', padding:'12px 0' }}>NO DATA YET</div>
+              ? <EmptyState icon="📭" title="No data yet" hint="Nothing to display for this collection." />
               : (s.recent?.[key]||[]).map((item, i) => <div key={i}>{render(item)}</div>)
             }
           </div>
@@ -581,7 +582,7 @@ function ChartsTab() {
   const { stats: s, loading } = useAdminStats()
 
   if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
-  if (!s) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>No data available</div>
+  if (!s) return <EmptyState icon="📊" title="No data available" hint="This panel has nothing to show yet." />
 
   return (
     <div>

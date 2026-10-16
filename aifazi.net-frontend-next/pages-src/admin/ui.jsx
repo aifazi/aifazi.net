@@ -140,12 +140,13 @@ export function StatCard({ label, value, color = 'var(--green)', sub, onClick, s
 }
 
 /* ── Empty state ────────────────────────────────────────────────────────── */
-export function EmptyState({ icon = '📭', title = 'Nothing here yet', hint }) {
+export function EmptyState({ icon = '📭', title = 'Nothing here yet', hint, action }) {
   return (
     <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--muted)', fontFamily: MONO }}>
       <div style={{ fontSize: 34, marginBottom: 12 }}>{icon}</div>
       <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' }}>{title}</div>
       {hint && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8, opacity: 0.8 }}>{hint}</div>}
+      {action && <div style={{ marginTop: 16 }}>{action}</div>}
     </div>
   )
 }

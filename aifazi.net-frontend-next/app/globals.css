@@ -2948,6 +2948,11 @@ img, video, svg { max-width: 100%; height: auto; }
   margin-bottom: 6px;
 }
 .community-empty-text { color: var(--muted); font-size: 13px; max-width: 380px; margin: 0 auto; }
+/* Compact variant — inline spots (sidebars, modal lists, profile cards) */
+.community-empty.compact { padding: 24px 16px; }
+.community-empty.compact .community-empty-icon { font-size: 26px; margin-bottom: 8px; }
+.community-empty.compact .community-empty-title { font-size: 13px; }
+.community-empty.compact .community-empty-text { font-size: 11px; max-width: 300px; }
 
 /* Skeletons */
 .community-skel {

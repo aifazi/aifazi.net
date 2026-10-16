@@ -1611,3 +1611,32 @@ Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip*
 ---
 
 *Homepage length & rhythm (D3), 2026-10-17. Merge + drop on `fix/round-10-design`.*
+
+---
+
+## 29. Empty states — stop rendering a bare zero (2026-10-17)
+
+Review finding: surfaces that had no rows rendered a bare one-line zero — `No orders yet.`, `NO DATA YET`, `0 rows returned` — with no icon and no next step, while the public Blog / Forum / Store already used the illustrated `EmptyState` from `components/community.jsx`. The inconsistency was the tell: an empty panel read like a failed load.
+
+**Two shared components grew the one thing their call sites were missing** — no fifth implementation was added:
+
+- `components/community.jsx` — `EmptyState` gains a **`compact`** variant (24px padding, 26px icon, 13px title) for inline spots (sidebars, modal lists, profile cards) where the 70px default would swamp the surrounding row. `app/globals.css` carries the `.community-empty.compact` rules.
+- `pages-src/admin/ui.jsx` — `EmptyState` gains an optional **`action`** slot, so an admin empty can carry a CTA without a second component.
+
+**Illustrated, ~30 call sites:**
+
+| Surface | Files | What changed |
+|---|---|---|
+| Forum | `ForumHome.jsx` (category sidebar), `forumProfileTabs.jsx` (ticket discussion, threads, replies, tickets), `ForumProfile.jsx` (orders — with a *Browse the store* CTA — and the order status timeline), `forumAdminModals.jsx` (recent threads / replies), `helpDeskParts.jsx` (ticket messages) | community `EmptyState`, `compact` |
+| Store | `admin/StorePanel.jsx` (products, orders, invoices, quotes, plans, subscriptions), `store/AccountDashboard.jsx` (orders, downloads) | admin kit / community |
+| DB | `admin/DBMonitor.jsx` (auth log, query result, stats, posts, categories, feed), `dbGuiTabs.jsx` (sizes, slow queries, audit, sessions, IP bans), `dbGuiParts.jsx` (collection browser) | admin kit `EmptyState` |
+
+Every replacement **names what will appear there** (`"They auto-create when paid orders complete."`, `"Signed-in sessions will be listed here."`), so an empty panel explains itself instead of reading as a failure.
+
+Deliberately left alone: `filetools/index.jsx` and the public store/blog/forum lists already carry an icon; `AppPage.jsx`'s `NO RELEASE YET` is a status chip, not an empty state; `admin/StorePanel`'s *"All stock levels healthy"* is a positive state, not an empty one.
+
+Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Empty states (Forum / Store / DB), 2026-10-17. Illustrated on `fix/round-10-design`.*

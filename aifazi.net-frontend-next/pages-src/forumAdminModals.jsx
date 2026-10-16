@@ -6,6 +6,7 @@ import api, { getAuthToken, getRole, getUsername, clearAuthTokens, setEffectiveA
 import { notify } from '../core/notify.jsx'
 import { UserAvatar } from '@/lib/avatar'
 import { Checkbox, Input, Select, TextArea } from '../core/ui.jsx'
+import { EmptyState } from '../components/community'
 
 const S = {
   input: {
@@ -277,7 +278,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 RECENT THREADS ({data?.recentThreads?.length || 0})
               </div>
               {(data?.recentThreads?.length === 0) && (
-                <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 24 }}>No threads yet.</div>
+                <EmptyState compact icon="🧵" title="No threads yet" text="Recent forum threads will show up here." />
               )}
               {data?.recentThreads?.map(t => (
                 <div key={t._id} style={{ ...S.card, marginBottom: 6, padding: '12px 16px' }}>
@@ -295,7 +296,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                 RECENT REPLIES ({data?.recentReplies?.length || 0})
               </div>
               {(data?.recentReplies?.length === 0) && (
-                <div style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>No replies yet.</div>
+                <EmptyState compact icon="↩" title="No replies yet" text="Recent forum replies will show up here." />
               )}
               {data?.recentReplies?.map(r => (
                 <div key={r._id} style={{ ...S.card, marginBottom: 6, padding: '12px 16px' }}>

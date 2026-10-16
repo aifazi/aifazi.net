@@ -7,6 +7,7 @@ import { Checkbox, Select } from '../core/ui.jsx'
 import { Input, TextArea } from '@/core/forms'
 import Clickable from '../core/Clickable.jsx'
 import api from '../lib/api'
+import { EmptyState } from './admin/ui'
 
 const ago = (d) => {
   const s = Math.floor((Date.now() - new Date(d)) / 1000);
@@ -108,7 +109,7 @@ function StatCard({ label, value, sub, color="var(--green,var(--green))", icon, 
 }
 
 function MiniChart({ data=[], color="var(--green,var(--green))", label="" }) {
-  if (!data.length) return <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", padding:"20px 0", textAlign:"center" }}>NO DATA YET</div>;
+  if (!data.length) return <EmptyState icon="📭" title="No data yet" hint="This collection is empty." />;
   const max = Math.max(...data.map(d => d.count), 1);
   return (
     <div>

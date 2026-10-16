@@ -9,6 +9,7 @@ import Clickable from '@/core/Clickable.jsx'
 import { SkeletonList } from '@/core/Feedback'
 import { useForum } from '../context/ForumContext'
 import { getSupabase } from '@/lib/supabase'
+import { EmptyState } from '../components/community'
 
 // Shared style primitives (were stranded in HelpDesk.jsx after extraction,
 // crashing this module at import with `ReferenceError: mono is not defined`).
@@ -246,7 +247,7 @@ const sendReply = async () => {
             setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 60)
           }} style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 4, userSelect: 'text' }}>
             {messages.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 24, ...mono, fontSize: 11, color: 'var(--muted)' }}>No messages yet</div>
+              <EmptyState compact icon="💬" title="No messages yet" text="Your conversation with support will appear here." />
             ) : (
               messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)
             )}

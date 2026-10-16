@@ -11,7 +11,7 @@ import Clickable from '@/core/Clickable'
 import { useToast } from '../../components/Toast'
 import { useDialog } from '../../components/Dialog'
 import { PageHeader } from './shared'
-import { Btn as KitBtn, Badge as KitBadge, RelTime as KitRelTime, MONO } from './ui'
+import { Btn as KitBtn, Badge as KitBadge, RelTime as KitRelTime, EmptyState as KitEmptyState, MONO } from './ui'
 
 const G   = '#00FF88'
 const C   = '#00D4FF'
@@ -319,7 +319,7 @@ export function ProductsTab({ categories, onOpenVariants }) {
       )}
 
       {loading ? <div className="loader" /> : products.length === 0 ? (
-        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No products yet. Create your first one.</div>
+        <KitEmptyState icon="📦" title="No products yet" hint="Create your first one to start selling." />
       ) : (
         products.map(p => (
           <div key={p.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -527,7 +527,7 @@ export function OrdersTab() {
       </div>
 
       {loading ? <div className="loader" /> : orders.length === 0 ? (
-        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No orders{filter ? ` with status "${filter}"` : ''}.</div>
+        <KitEmptyState icon="🧾" title={filter ? `No orders with status "${filter}"` : 'No orders yet'} hint="Orders appear here as customers check out." />
       ) : orders.map(o => (
         <div key={o.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <Clickable style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [o.id]: !e[o.id] }))}>
@@ -628,7 +628,7 @@ export function InvoicesTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {loading ? <div className="loader" /> : invoices.length === 0 ? (
-        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No invoices yet. They auto-create when paid orders complete.</div>
+        <KitEmptyState icon="🧾" title="No invoices yet" hint="They auto-create when paid orders complete." />
       ) : invoices.map(inv => (
         <div key={inv.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontFamily: MONO, fontSize: 12, color: C, fontWeight: 700 }}>{inv.invoice_number}</span>
@@ -666,7 +666,7 @@ export function QuotesTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {loading ? <div className="loader" /> : quotes.length === 0 ? (
-        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No quote requests yet.</div>
+        <KitEmptyState icon="📝" title="No quote requests yet" hint="Requests submitted from the store will appear here." />
       ) : quotes.map(q => (
         <div key={q.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <Clickable style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(e => ({ ...e, [q.id]: !e[q.id] }))}>
@@ -834,7 +834,7 @@ export function PlansTab({ categories }) {
       )}
 
       {loading ? <div className="loader" /> : plans.length === 0 ? (
-        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No plans yet.</div>
+        <KitEmptyState icon="🗂" title="No plans yet" hint="Create a plan to sell subscriptions." />
       ) : plans.map(p => (
         <div key={p.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--bg3)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>👑</div>
@@ -884,7 +884,7 @@ export function SubscriptionsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {loading ? <div className="loader" /> : subs.length === 0 ? (
-        <div style={{ color: 'var(--muted)', fontFamily: MONO, fontSize: 12, padding: 30, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>No subscriptions yet.</div>
+        <KitEmptyState icon="🔁" title="No subscriptions yet" hint="Active subscriptions will appear here." />
       ) : subs.map(s => (
         <div key={s.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: 160 }}>

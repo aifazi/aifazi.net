@@ -5,6 +5,7 @@ import { useDialog } from '../core/dialog.jsx'
 import api from '../lib/api'
 import { Input } from '@/core/forms'
 import { Btn, StatCard, MiniChart, FeedRow, ap, authCfg, ago, fmt, adminAction, roleColor } from './dbGuiParts'
+import { EmptyState } from './admin/ui'
 
 function DbHealthTab({ token, toast }) {
   const [data, setData]       = useState(null);
@@ -77,7 +78,7 @@ function DbHealthTab({ token, toast }) {
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>TABLE SIZES · TOP 20</div>
               {data.sizes.length === 0
-                ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No size data.</div>
+                ? <EmptyState icon="💾" title="No size data" hint="Table sizes appear once stats are collected." />
                 : <div style={{ overflowX:"auto" }}>
                     <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"var(--font-mono,monospace)", fontSize:11 }}>
                       <thead>
@@ -106,7 +107,7 @@ function DbHealthTab({ token, toast }) {
               {!data.pgss
                 ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>pg_stat_statements not installed — sizes above still work.</div>
                 : !data.slowQueriesNew || data.slowQueriesNew.length === 0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No slow-query data.</div>
+                  ? <EmptyState icon="🐢" title="No slow-query data" hint="Slow queries will be listed here." />
                   : data.slowQueriesNew.map((q, i) => (
                       <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 90px 80px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize: 11 }}>
                         <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={q.query}>{q.query}</span>
@@ -429,7 +430,7 @@ function AuditLogTab({ token, toast }) {
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
             {logs.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>No audit events found</div>
+              <EmptyState icon="🧾" title="No audit events found" hint="Admin actions will be logged here." />
             ) : logs.map((log, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"22px 160px 130px 1fr auto", gap:12, padding:"10px 14px", background:"var(--bg2)", border:"1px solid #0a1016", alignItems:"center" }}>
                 <span style={{ fontSize:13 }}>{getIcon(log.event)}</span>
@@ -533,7 +534,7 @@ function SessionsTab({ token, toast }) {
           <div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginBottom:14, letterSpacing:2 }}>{sessions.length} ACTIVE SESSION{sessions.length !== 1 ? "S" : ""}</div>
             {sessions.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>No active sessions data available</div>
+              <EmptyState icon="🔑" title="No active sessions" hint="Signed-in sessions will be listed here." />
             ) : sessions.map((s, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr auto auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
                 <div>
@@ -568,7 +569,7 @@ function SessionsTab({ token, toast }) {
             </div>
             <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginBottom:10, letterSpacing:2 }}>{ipBans.length} BANNED IP{ipBans.length !== 1 ? "S" : ""}</div>
             {ipBans.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>No IP bans configured</div>
+              <EmptyState icon="🚫" title="No IP bans configured" hint="Banned addresses will be listed here." />
             ) : ipBans.map((ban, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:12, color:"var(--red,var(--red))" }}>{ban.ip}</span>
