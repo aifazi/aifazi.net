@@ -92,7 +92,7 @@ function SkillBar({ pct }) {
     ? '0 0 10px color-mix(in srgb, var(--green) 55%, transparent)'
     : pct >= 70
       ? '0 0 10px color-mix(in srgb, var(--cyan) 45%, transparent)'
-      : '0 0 10px rgba(255,107,53,0.45)'
+      : '0 0 10px color-mix(in srgb, var(--orange) 45%, transparent)'
 
   return (
     <div

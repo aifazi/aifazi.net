@@ -67,9 +67,9 @@ export default function ForumNewThread() {
               {catsLoading ? (
                 <div style={{ padding: '12px 16px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>Loading categories...</div>
               ) : catsError ? (
-                <div style={{ padding: '12px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>Failed to load categories. Please refresh.</div>
+                <div style={{ padding: '12px 16px', background: 'color-mix(in srgb, var(--red) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 20%, transparent)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)' }}>Failed to load categories. Please refresh.</div>
               ) : cats.filter(c => !c.locked).length === 0 ? (
-                <div style={{ padding: '14px 16px', background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.3)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35', lineHeight: 1.7 }}>
+                <div style={{ padding: '14px 16px', background: 'color-mix(in srgb, var(--orange) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', borderRadius: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35', lineHeight: 1.7 }}>
                   ⚠️ No categories exist yet.{' '}
                   <Link href="/admin" style={{ color: 'var(--green)', textDecoration: 'none' }}>Go to Admin Panel → Forum Admin</Link>
                   {' '}to create forum categories first.
@@ -121,7 +121,7 @@ export default function ForumNewThread() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', textAlign: 'right', marginTop: 4 }}>{form.tags.length}/100</div>
             </div>
 
-            {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10 }}>{error}</div>}
+            {error && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'color-mix(in srgb, var(--red) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 20%, transparent)', borderRadius: 10 }}>{error}</div>}
 
             <div style={{ display: 'flex', gap: 12, paddingTop: 8, flexWrap: 'wrap' }} className="forum-submit-row">
               <NeonButton variant="primary" size="lg" onClick={handleSubmit} disabled={submitting}>

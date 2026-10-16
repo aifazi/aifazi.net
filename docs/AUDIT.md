@@ -1487,3 +1487,70 @@ D1 brand-lockup unification · D3 homepage length/rhythm · D4 theme curation ·
 ---
 
 *Design batch, verified live 2026-10-17 (`next dev`, LAN-reachable build). Navbar IA + hero duplicate + text-token consistency on `fix/round-10-design`.*
+
+---
+
+## 26. Design batches 2–4 — brand lockup, button language, neon-tint tokens (2026-10-17)
+
+Same branch (`fix/round-10-design`), one commit per concern. Continues §25.
+
+### 26.1 D1 — brand lockup unified to AIFAZI
+
+Owner decision: **AIFAZI everywhere** — the product brand is AIFAZI, and Tanvir stays as the person in the hero and copy. The review had found three marks in one product: nav `TANVIR.DEV`, Login `AIFAZI · SECURE GATEWAY`, Store `AIFAZI.`.
+
+Wordmark swap `TANVIR` → `AIFAZI` (and the `.DEV` suffix → `.NET`) across every persistent brand surface:
+
+| File | What changed |
+|------|--------------|
+| `components/Navbar.jsx` | default + minimal lockups; editorial initial badge `T` → `A` |
+| `components/LoadingScreen.jsx` | all 17 wordmark variants (incl. the stylized `T.TANVIR` → `A.AIFAZI`) |
+| `components/Footer.jsx`, `components/footerStyles.jsx` | all 7 footer styles — 2 already said AIFAZI, so the footers were themselves inconsistent |
+| `components/themePickerPreviews.jsx` | theme preview mockups |
+| `pages-src/admin/SiteSettings.jsx` | the favicon/logo SVG generator, which drew `TANVIR` into every variant |
+| `pages-src/admin/ThemeLibrary.jsx` | preview `split()` + one copy string |
+
+Login and Store already read AIFAZI, so their name marks are now consistent; their contextual taglines (`SECURE GATEWAY` / the accent dot) are unchanged.
+
+**Deliberately not changed:** the person's name in copy, page metadata titles, `tanvir@aifazi.net` addresses, and the personal "TANVIR SYSTEMS" terminal easter eggs (`Terminal.jsx` / `AboutTerminal.jsx`).
+
+### 26.2 D6 — one primary-button language
+
+The review found three button languages. The hero's `.btn-primary` turned out to be already fully token-driven (`--comp-btn-*`), so the outliers were the Login submit (a fixed green→cyan gradient) and the community/store `NeonButton` (hardcoded neon).
+
+- `pages-src/Login.jsx` `.auth-submit` → `--comp-btn-bg` / `-text` / `-border` / `-radius` / `-shadow` / `-clip`. Hover keeps the lift; the gradient-position animation is gone. `--comp-btn-text` also resolves light-mode button text, which the gradient + `var(--text)` did not.
+- `app/globals.css` `.neon-btn-primary` → the same six tokens, so the community/store CTA follows the active theme. `border-radius` still comes from the theme `--radius` via the size classes; `clip-path` supplies the family shape.
+
+Verified by injecting `--comp-btn-*` on `document.documentElement` and reading the computed style: `.neon-btn-primary` resolves bg / color / clip-path / border / box-shadow from the tokens; with no tokens set, both fall back exactly like `.btn-primary` does today.
+
+### 26.3 D5 — neon tints tokenised (theme-aware)
+
+The review's "hardcoded neon `rgba()`" is real and larger than first estimated: **200 occurrences across 51 files**. They are almost entirely red/orange **alert tints** (`rgba(255,71,87,·)`, `rgba(255,107,53,·)`) plus green/cyan accents. `--red` / `--orange` / `--green` / `--cyan` are redefined per theme in `theme-library.css`, so the fixed `rgba()` forms stayed neon in every theme — including the light ones. `CERTIFIED-THEMES.md` states the contract plainly: `var(--*)` + `color-mix`, never fixed neon rgba.
+
+Converted mechanically, alpha → percent:
+
+| From | To |
+|------|-----|
+| `rgba(0,255,136,A)` | `color-mix(in srgb, var(--green) A×100%, transparent)` |
+| `rgba(0,212,255,A)` | `color-mix(in srgb, var(--cyan) A×100%, transparent)` |
+| `rgba(255,71,87,A)` | `color-mix(in srgb, var(--red) A×100%, transparent)` |
+| `rgba(255,107,53,A)` | `color-mix(in srgb, var(--orange) A×100%, transparent)` |
+| `rgba(124,92,191,A)` | `color-mix(in srgb, var(--purple) A×100%, transparent)` |
+
+**Canvas exception.** `components/server-rack/GlobeMode.jsx` carries neon colours as JS strings for WebGL (`addColorStop`, the globe's fallback theme object) where `var()` cannot resolve. Those 3 lines keep `rgba()`; its 2 CSS lines were converted by hand. After the sweep **0** neon `rgba()` remain outside those canvas strings.
+
+Theme-definition files were excluded (`themePickerData.js`, `themePickerPreviews.jsx`, `themeLibraryPreviews.jsx`) — their palettes are data, not chrome.
+
+**Sibling issue, not in this batch.** ~429 standalone neon **hex** literals (`#00ff88` / `#00d4ff` / `#ff4757` / `#ff6b35` / `#7c5cbf`) remain across 66 component files (plus 66 that are already `var()` fallbacks, which are fine). Same off-contract problem, much larger sweep — tracked as a follow-up.
+
+### 26.4 Gates (all green)
+
+- Frontend, after each batch: `tsc` 0 · `eslint` **0 errors / 58 warnings** · **vitest 175 passed + 1 skip** · `next build` ✅.
+- No backend change.
+
+### 26.5 Still open (need an owner call)
+
+D3 homepage length/rhythm (9 sections, one 8157px scroll) · D4 theme curation (70 `VALID_THEMES`, 39 in the picker, 3 certified) · D8 surface consolidation · living style guide + illustrated empty states · project case studies.
+
+---
+
+*Design batches 2–4, verified 2026-10-17 (`next dev` plus injected-token checks). Brand lockup (D1), button language (D6), neon-tint tokens (D5) on `fix/round-10-design`.*

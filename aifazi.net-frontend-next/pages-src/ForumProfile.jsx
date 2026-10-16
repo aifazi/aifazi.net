@@ -342,7 +342,7 @@ function FiveMTab({ user }) {
       <SectionCard title="Whitelist Application" tag="FIVEM">
         {error && (
           <div style={{ ...M, fontSize: 11, color: CLRS.red, padding: '10px 14px',
-            background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)', borderRadius: 6, marginBottom: 14 }}>
+            background: 'color-mix(in srgb, var(--red) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 25%, transparent)', borderRadius: 6, marginBottom: 14 }}>
             ⚠  {error}
           </div>
         )}

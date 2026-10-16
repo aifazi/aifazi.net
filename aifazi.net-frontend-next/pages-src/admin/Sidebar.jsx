@@ -21,7 +21,7 @@ const C = {
 const ROLE_META = {
   admin:     { dot:'var(--green)',  bg:'color-mix(in srgb, var(--green) 10%, transparent)',     border:'color-mix(in srgb, var(--green) 28%, transparent)',    label:'Admin'     },
   moderator: { dot:'var(--cyan)',   bg:'color-mix(in srgb, var(--cyan) 10%, transparent)',     border:'color-mix(in srgb, var(--cyan) 28%, transparent)',    label:'Moderator' },
-  editor:    { dot:'var(--orange)', bg:'rgba(255,107,53,0.10)',    border:'rgba(255,107,53,0.28)',   label:'Editor'    },
+  editor:    { dot:'var(--orange)', bg:'color-mix(in srgb, var(--orange) 10%, transparent)',    border:'color-mix(in srgb, var(--orange) 28%, transparent)',   label:'Editor'    },
   chat:      { dot:'#facc15',       bg:'rgba(250,204,21,0.10)',    border:'rgba(250,204,21,0.28)',   label:'Chat'      },
 }
 

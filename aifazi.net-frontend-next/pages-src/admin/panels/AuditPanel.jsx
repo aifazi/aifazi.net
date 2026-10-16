@@ -96,7 +96,7 @@ function AuditPanel() {
             } catch { toast.error('Migration request failed') }
             finally { setMigrating(false) }
           }} disabled={migrating} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', cursor: 'pointer', opacity: migrating ? 0.5 : 1 }}>{migrating ? '⏳ MIGRATING' : '🛠 MIGRATE DB'}</button>
-          <button onClick={purge} disabled={purging} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', opacity: purging ? 0.5 : 1 }}>{purging ? 'PURGING' : '🗑️ PURGE OLD'}</button>
+          <button onClick={purge} disabled={purging} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '8px 14px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', color: '#ff4757', cursor: 'pointer', opacity: purging ? 0.5 : 1 }}>{purging ? 'PURGING' : '🗑️ PURGE OLD'}</button>
         </div>
       </div>
 
@@ -213,8 +213,8 @@ function AuditPanel() {
                         {entry.username || '—'}
                       </span>
                       <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '1px 7px',
-                        background: success ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'rgba(255,71,87,0.1)',
-                        border: `1px solid ${success ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'rgba(255,71,87,0.35)'}`,
+                        background: success ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'color-mix(in srgb, var(--red) 10%, transparent)',
+                        border: `1px solid ${success ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'color-mix(in srgb, var(--red) 35%, transparent)'}`,
                         color: success ? 'var(--green)' : '#ff4757',
                         borderRadius: 3,
                       }}>

@@ -119,7 +119,7 @@ export default function Contact() {
                   <Input name="name" value={form.name}
                     onChange={v => { setForm(f => ({...f, name: v})); if (errors.name) setErrors(p => ({...p, name: ''})) }}
                     placeholder="John Doe"
-                    style={errors.name ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(255,71,87,0.1)' } : {}} />
+                    style={errors.name ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px color-mix(in srgb, var(--red) 10%, transparent)' } : {}} />
                   {errors.name && <FieldError msg={errors.name} />}
                 </div>
                 <div className="form-group">
@@ -127,7 +127,7 @@ export default function Contact() {
                   <Input name="email" type="email" value={form.email}
                     onChange={v => { setForm(f => ({...f, email: v})); if (errors.email) setErrors(p => ({...p, email: ''})) }}
                     placeholder="john@company.com"
-                    style={errors.email ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(255,71,87,0.1)' } : {}} />
+                    style={errors.email ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px color-mix(in srgb, var(--red) 10%, transparent)' } : {}} />
                   {errors.email && <FieldError msg={errors.email} />}
                 </div>
               </div>
@@ -141,11 +141,11 @@ export default function Contact() {
                         fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
                         padding: '6px 14px', cursor: 'pointer', transition: 'all 0.2s',
                         background: form.subject === s ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'transparent',
-                        border: form.subject === s ? '1px solid var(--green)' : errors.subject ? '1px solid rgba(255,71,87,0.5)' : '1px solid var(--border)',
+                        border: form.subject === s ? '1px solid var(--green)' : errors.subject ? '1px solid color-mix(in srgb, var(--red) 50%, transparent)' : '1px solid var(--border)',
                         color: form.subject === s ? 'var(--green)' : 'var(--muted)',
                       }}
                       onMouseEnter={e => { if (form.subject !== s) { e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)'; e.currentTarget.style.color = 'var(--text)' } }}
-                      onMouseLeave={e => { if (form.subject !== s) { e.currentTarget.style.borderColor = errors.subject ? 'rgba(255,71,87,0.5)' : 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' } }}
+                      onMouseLeave={e => { if (form.subject !== s) { e.currentTarget.style.borderColor = errors.subject ? 'color-mix(in srgb, var(--red) 50%, transparent)' : 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' } }}
                     >{s}</button>
                   ))}
                 </div>
@@ -157,12 +157,12 @@ export default function Contact() {
                 <TextArea name="message" value={form.message}
                   onChange={v => { setForm(f => ({...f, message: v})); if (errors.message) setErrors(p => ({...p, message: ''})) }}
                   rows={6} placeholder="Describe your project or inquiry..."
-                  style={errors.message ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px rgba(255,71,87,0.1)' } : {}} />
+                  style={errors.message ? { borderColor: 'var(--red)', boxShadow: '0 0 0 2px color-mix(in srgb, var(--red) 10%, transparent)' } : {}} />
                 {errors.message && <FieldError msg={errors.message} />}
               </div>
 
               {status?.type === 'error' && (
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: '12px 16px', color: 'var(--orange)', border: '1px solid rgba(255,107,53,0.3)', background: 'rgba(255,107,53,0.05)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: '12px 16px', color: 'var(--orange)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', background: 'color-mix(in srgb, var(--orange) 5%, transparent)' }}>
                   {status.msg}
                 </div>
               )}

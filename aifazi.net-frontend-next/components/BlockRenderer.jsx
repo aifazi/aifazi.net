@@ -32,7 +32,7 @@ function BlockItem({ slug, item }) {
       )
     case 'quote':
       return (
-        <figure style={{ margin: '1.5rem 0', padding: '1.5rem 2rem', borderLeft: '3px solid var(--green)', background: 'rgba(0,255,136,0.05)' }}>
+        <figure style={{ margin: '1.5rem 0', padding: '1.5rem 2rem', borderLeft: '3px solid var(--green)', background: 'color-mix(in srgb, var(--green) 5%, transparent)' }}>
           <blockquote style={{ margin: 0, fontStyle: 'italic', color: 'var(--text)' }}>
             <EditableText contentKey={key(slug, item, 'text')} defaultValue={item.text ?? ''} />
           </blockquote>

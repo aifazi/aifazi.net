@@ -326,7 +326,7 @@ function NewsletterTab({ token, toast }) {
                     onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                     <td style={{ padding:"9px 12px", color:"var(--text)" }}>{s.email}</td>
                     <td style={{ padding:"9px 12px" }}>
-                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"rgba(255,71,87,0.07)", color:s.active?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
+                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"color-mix(in srgb, var(--red) 7%, transparent)", color:s.active?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"color-mix(in srgb, var(--red) 25%, transparent)"}` }}>
                         {s.active ? "YES ACTIVE" : "NO UNSUB"}
                       </span>
                     </td>
@@ -416,7 +416,7 @@ function AuditLogTab({ token, toast }) {
           style={{ flex:1, minWidth:220, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         {filter && <button onClick={() => { setFilter(""); setPage(1); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
         <button onClick={exportCsv}
-          style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid rgba(0,255,136,0.35)", cursor:"pointer" }}>
+          style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid color-mix(in srgb, var(--green) 35%, transparent)", cursor:"pointer" }}>
           ⬇ EXPORT CSV
         </button>
       </div>

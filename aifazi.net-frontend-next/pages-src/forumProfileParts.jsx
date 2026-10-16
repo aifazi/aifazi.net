@@ -139,8 +139,8 @@ function StatusMsg({ msg, type = 'success' }) {
   return (
     <div style={{ ...M, fontSize: 11, padding: '9px 13px', borderRadius: 10, marginTop: 10,
       color: ok ? CLRS.green : CLRS.red,
-      background: ok ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'rgba(255,71,87,0.06)',
-      border: `1px solid ${ok ? 'color-mix(in srgb, var(--green) 25%, transparent)' : 'rgba(255,71,87,0.25)'}` }}>
+      background: ok ? 'color-mix(in srgb, var(--green) 6%, transparent)' : 'color-mix(in srgb, var(--red) 6%, transparent)',
+      border: `1px solid ${ok ? 'color-mix(in srgb, var(--green) 25%, transparent)' : 'color-mix(in srgb, var(--red) 25%, transparent)'}` }}>
       {ok ? '✓  ' : '⚠  '}{msg}
     </div>
   )

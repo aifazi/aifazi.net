@@ -17,7 +17,7 @@ export const card = { background: 'var(--bg2)', border: '1px solid var(--border)
 
 function StatusBadge({ status }) {
   const map = {
-    open:        { color: '#ff6b35', bg: 'rgba(255,107,53,0.1)',  border: 'rgba(255,107,53,0.35)'  },
+    open:        { color: '#ff6b35', bg: 'color-mix(in srgb, var(--orange) 10%, transparent)',  border: 'color-mix(in srgb, var(--orange) 35%, transparent)'  },
     'in-progress':{ color: '#00d4ff', bg: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: 'color-mix(in srgb, var(--cyan) 35%, transparent)'  },
     resolved:    { color: '#00ff88', bg: 'color-mix(in srgb, var(--green) 10%, transparent)',  border: 'color-mix(in srgb, var(--green) 35%, transparent)'  },
     closed:      { color: '#5a7a95', bg: 'rgba(90,122,149,0.1)', border: 'rgba(90,122,149,0.35)'  },

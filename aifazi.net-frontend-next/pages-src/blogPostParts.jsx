@@ -488,7 +488,7 @@ function Comments({ slug, postId }) {
                   </div>
                   {canDelete && (
                     <button onClick={() => remove(comment)} style={{
-                      background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 8,
+                      background: 'none', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', borderRadius: 8,
                       color: 'var(--red)', fontFamily: 'var(--font-mono)', fontSize: 11,
                       letterSpacing: 1, padding: '6px 10px', cursor: 'pointer'
                     }}>DELETE</button>

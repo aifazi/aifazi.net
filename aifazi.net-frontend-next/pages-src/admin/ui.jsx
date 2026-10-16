@@ -70,7 +70,7 @@ export function Btn({ onClick, children, label, textColor, color = 'var(--green)
     base.color = danger ? '#ff4757' : color
   } else if (ghost || (buttonStyle === 'ghost' && noExplicitBg)) {
     base.background = 'transparent'
-    base.borderColor = danger ? 'rgba(255,71,87,0.4)' : 'var(--comp-input-border, var(--border))'
+    base.borderColor = danger ? 'color-mix(in srgb, var(--red) 40%, transparent)' : 'var(--comp-input-border, var(--border))'
     base.color = danger ? '#ff4757' : 'var(--muted)'
   } else if (buttonStyle === 'minimal' && variant === 'solid' && noExplicitBg) {
     base.background = 'transparent'

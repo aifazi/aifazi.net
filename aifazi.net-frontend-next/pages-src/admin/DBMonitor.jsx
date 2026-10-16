@@ -143,7 +143,7 @@ function SqlConsoleTab() {
           </button>
           <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>{'>'}</span>
         </div>
-        {error && <div style={{ padding:'10px 14px', background:'rgba(255,71,87,0.06)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
+        {error && <div style={{ padding:'10px 14px', background:'color-mix(in srgb, var(--red) 6%, transparent)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
         {results !== null && (
           <div style={{ borderTop:'1px solid #0f1a26', padding:14, maxHeight:500, overflow:'auto' }}>
             {Array.isArray(results) && results.length === 0 ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', textAlign:'center', padding:20 }}>0 rows returned</div>
@@ -507,8 +507,8 @@ function BackupTab() {
             <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
               <span style={{
                 padding:'2px 10px', borderRadius:99, fontWeight:700, letterSpacing:1,
-                background: rtResult.ok ? 'rgba(0,255,136,0.1)' : 'rgba(255,71,87,0.1)',
-                border: `1px solid ${rtResult.ok ? 'rgba(0,255,136,0.4)' : 'rgba(255,71,87,0.4)'}`,
+                background: rtResult.ok ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'color-mix(in srgb, var(--red) 10%, transparent)',
+                border: `1px solid ${rtResult.ok ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'color-mix(in srgb, var(--red) 40%, transparent)'}`,
                 color: rtResult.ok ? 'var(--green,#00ff88)' : 'var(--red,#ff4757)',
               }}>{rtResult.ok ? 'PASS' : 'FAIL'}</span>
               <span style={{ color:'var(--muted)' }}>{rtResult.tables} tables · {rtResult.duration_s}s</span>

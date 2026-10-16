@@ -171,7 +171,7 @@ export default function TerminalTab() {
   return (
     <div>
       {terminalErr && (
-        <div style={{ background: 'rgba(255,71,87,.07)', border: '1px solid rgba(255,71,87,.4)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <div style={{ background: 'color-mix(in srgb, var(--red) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
           <span style={{ fontSize: 18 }}>⚠️</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, color: R, marginBottom: 4 }}>STRIPE TERMINAL NOT READY</div>
@@ -246,7 +246,7 @@ export default function TerminalTab() {
                   <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>ACTIVE ORDER</div>
                   <div style={{ fontFamily: MONO, fontSize: 14, color: C, marginTop: 2 }}>{order.order_number} · {money(order.total_cents)}</div>
                 </div>
-                <button onClick={voidOrder} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>VOID</button>
+                <button onClick={voidOrder} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: R, borderRadius: 6, cursor: 'pointer' }}>VOID</button>
               </div>
 
               <div style={{ marginTop: 14, border: '1px dashed var(--border)', borderRadius: 10, padding: 20, textAlign: 'center' }}>

@@ -99,7 +99,7 @@ export default function CustomersTab() {
               <div style={{ flex: 1, minWidth: 140 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   {c.username}
-                  {c.banned && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.3)', color: R }}>BANNED</span>}
+                  {c.banned && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', color: R }}>BANNED</span>}
                   {c.role && c.role !== 'user' && <span style={{ fontFamily: MONO, fontSize: 11, padding: '1px 6px', borderRadius: 4, background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: C }}>{c.role.toUpperCase()}</span>}
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{c.email || 'no email'} · joined {fmt(c.created_at)}</div>

@@ -448,10 +448,10 @@ export default function ForumAdmin({ embedded = false }) {
                   <button onClick={() => { setCatForm({ name: cat.name, description: cat.description, icon: cat.icon, color: cat.color, order: cat.order, view_roles: cat.view_roles || [], post_roles: cat.post_roles || [], reply_roles: cat.reply_roles || [], attach_roles: cat.attach_roles || [], mod_roles: cat.mod_roles || ['moderator', 'admin'] }); setEditingCat(cat._id); window.scrollTo(0, 0) }}
                     style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)' }}>EDIT</button>
                   <button onClick={() => api.put(`/forum/categories/${cat._id}`, { locked: !cat.locked }).then(() => { loadCats(); notify(cat.locked ? 'Category unlocked' : 'Category locked') })}
-                    style={{ ...S.btn('transparent', cat.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${cat.locked ? 'rgba(255,71,87,0.3)' : 'var(--border)'}` }}>
+                    style={{ ...S.btn('transparent', cat.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${cat.locked ? 'color-mix(in srgb, var(--red) 30%, transparent)' : 'var(--border)'}` }}>
                     {cat.locked ? '🔓 UNLOCK' : '🔒 LOCK'}
                   </button>
-                  <button onClick={() => deleteCat(cat._id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)' }}>DEL</button>
+                  <button onClick={() => deleteCat(cat._id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)' }}>DEL</button>
                 </div>
               </div>
             </div>
@@ -469,7 +469,7 @@ export default function ForumAdmin({ embedded = false }) {
           {loading
             ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>Loading...</div>
             : users.map(u => (
-              <div key={u._id} style={{ ...S.card, borderColor: u.banned ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
+              <div key={u._id} style={{ ...S.card, borderColor: u.banned ? 'color-mix(in srgb, var(--red) 20%, transparent)' : 'var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                   <UserAvatar
                     avatar={u.avatar} name={u.username} size={44}
@@ -483,7 +483,7 @@ export default function ForumAdmin({ embedded = false }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: u.banned ? 'var(--red)' : 'var(--text)' }}>{u.username}</span>
-                      {u.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', border: '1px solid rgba(255,71,87,0.4)', padding: '2px 6px' }}>BANNED</span>}
+                      {u.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', padding: '2px 6px' }}>BANNED</span>}
                       {u.role === 'moderator' && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', padding: '2px 6px' }}>MOD</span>}
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>
@@ -503,11 +503,11 @@ export default function ForumAdmin({ embedded = false }) {
                         style={{ fontSize: 11 }} />
                     </div>
                     <button onClick={() => toggleUserBan(u)}
-                      style={{ ...S.btn('transparent', u.banned ? 'var(--green)' : 'var(--orange)'), border: `1px solid ${u.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,107,53,0.3)'}`, fontSize: 11 }}>
+                      style={{ ...S.btn('transparent', u.banned ? 'var(--green)' : 'var(--orange)'), border: `1px solid ${u.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--orange) 30%, transparent)'}`, fontSize: 11 }}>
                       {u.banned ? '✅ UNBAN' : '🚫 BAN'}
                     </button>
                     <button onClick={() => deleteUser(u)}
-                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11 }}>
+                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', fontSize: 11 }}>
                       🗑 DEL
                     </button>
                   </div>
@@ -529,7 +529,7 @@ export default function ForumAdmin({ embedded = false }) {
           {loading
             ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>Loading...</div>
             : threads.map(t => (
-              <div key={t._id} style={{ ...S.card, borderColor: t.locked ? 'rgba(255,71,87,0.15)' : t.pinned ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--border)' }}>
+              <div key={t._id} style={{ ...S.card, borderColor: t.locked ? 'color-mix(in srgb, var(--red) 15%, transparent)' : t.pinned ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Link to={`/forum/thread/${t._id}`} style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -553,11 +553,11 @@ export default function ForumAdmin({ embedded = false }) {
                       {t.pinned ? 'UNPIN' : '📌'}
                     </button>
                     <button onClick={() => toggleThread(t, 'locked')}
-                      style={{ ...S.btn('transparent', t.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${t.locked ? 'rgba(255,71,87,0.3)' : 'var(--border)'}`, fontSize: 11 }}>
+                      style={{ ...S.btn('transparent', t.locked ? 'var(--red)' : 'var(--muted)'), border: `1px solid ${t.locked ? 'color-mix(in srgb, var(--red) 30%, transparent)' : 'var(--border)'}`, fontSize: 11 }}>
                       {t.locked ? '🔓' : '🔒'}
                     </button>
                     <button onClick={() => deleteThread(t)}
-                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11 }}>
+                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', fontSize: 11 }}>
                       🗑
                     </button>
                   </div>
@@ -579,7 +579,7 @@ export default function ForumAdmin({ embedded = false }) {
           {loading
             ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>Loading...</div>
             : replies.map(r => (
-              <div key={r._id} style={{ ...S.card, borderColor: r.author?.banned ? 'rgba(255,71,87,0.15)' : 'var(--border)' }}>
+              <div key={r._id} style={{ ...S.card, borderColor: r.author?.banned ? 'color-mix(in srgb, var(--red) 15%, transparent)' : 'var(--border)' }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <UserAvatar avatar={r.author?.avatar} name={r.author?.username} size={36} imgStyle={{ border: '1px solid var(--border)' }}
                     fallback={`https://api.dicebear.com/7.x/initials/svg?seed=${r.author?.username}`} />
@@ -587,7 +587,7 @@ export default function ForumAdmin({ embedded = false }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600 }}>{r.author?.username}</span>
-                        {r.author?.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', border: '1px solid rgba(255,71,87,0.4)', padding: '1px 5px' }}>BANNED</span>}
+                        {r.author?.banned && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', padding: '1px 5px' }}>BANNED</span>}
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{timeAgo(r.createdAt)}</span>
                         {r.edited && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)' }}>EDITED</span>}
                       </div>
@@ -610,7 +610,7 @@ export default function ForumAdmin({ embedded = false }) {
                       👤 USER
                     </button>
                     <button onClick={() => deleteReply(r)}
-                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11 }}>
+                      style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', fontSize: 11 }}>
                       🗑 DEL
                     </button>
                   </div>

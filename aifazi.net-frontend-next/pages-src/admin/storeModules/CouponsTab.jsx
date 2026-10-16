@@ -188,7 +188,7 @@ export default function CouponsTab() {
             <div key={c.id} style={{ background: 'var(--bg2)', border: `1px solid ${active ? 'var(--border)' : 'rgba(255,255,255,.08)'}`, opacity: active ? 1 : 0.55, borderRadius: 10, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: C, minWidth: 90 }}>🎟 {c.code}</div>
               <span style={{ fontFamily: MONO, fontSize: 11, padding: '2px 10px', borderRadius: 12, background: c.type === 'percent' ? 'rgba(250,204,21,.08)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: `1px solid ${c.type === 'percent' ? 'rgba(250,204,21,.3)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)'}`, color: c.type === 'percent' ? Y : C }}>{val}</span>
-              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'rgba(255,71,87,.08)', border: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,.3)'}`, color: active ? G : R }}>{active ? 'ACTIVE' : 'PAUSED'}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'color-mix(in srgb, var(--red) 8%, transparent)', border: `1px solid ${active ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--red) 30%, transparent)'}`, color: active ? G : R }}>{active ? 'ACTIVE' : 'PAUSED'}</span>
               {c.min_subtotal_cents > 0 && <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>min {money(c.min_subtotal_cents)}</span>}
               <div style={{ flex: 1 }} />
               <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
@@ -197,7 +197,7 @@ export default function CouponsTab() {
               </div>
               <button onClick={() => toggleActive(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>{active ? 'PAUSE' : 'ACTIVATE'}</button>
               <button onClick={() => startEdit(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
-              <button onClick={() => remove(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
+              <button onClick={() => remove(c)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )
         })

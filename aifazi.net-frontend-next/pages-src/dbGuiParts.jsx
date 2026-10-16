@@ -212,7 +212,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, padding:"4px 10px", background:roleBg(u.role), color:roleColor(u.role), border:`1px solid ${roleColor(u.role)}33` }}>
               {(ROLE_META[u.role]?.label||"USER")}
             </span>
-            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"color-mix(in srgb, var(--red) 8%, transparent)", color:u.emailVerified?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
+            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"color-mix(in srgb, var(--red) 8%, transparent)", color:u.emailVerified?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"color-mix(in srgb, var(--red) 25%, transparent)"}` }}>
               {u.emailVerified?"YES VERIFIED":"NO UNVERIFIED"}
             </span>
             {u.banned && <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"4px 10px", background:"color-mix(in srgb, var(--red) 8%, transparent)", color:"var(--red,var(--red))", border:"1px solid color-mix(in srgb, var(--red) 25%, transparent)" }}>BAN BANNED</span>}
@@ -252,7 +252,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>BAN MANAGEMENT</div>
                 {u.banned ? (
                   <div>
-                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
+                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"color-mix(in srgb, var(--red) 3%, transparent)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
                       BAN Reason: {u.banReason||"No reason given"}
                     </div>
                     <Btn label={busy==="unban"?"WORKING...":"YES UNBAN USER"} color="var(--green,var(--green))" disabled={!!busy} onClick={() => run("unban",`users/${u._id}/unban`)} />
@@ -276,7 +276,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {tab==="password" && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>SET PASSWORD DIRECTLY</div>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"color-mix(in srgb, var(--red) 3%, transparent)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
                 WARN Immediately changes the password with no notification to the user.
               </div>
               <div style={{ position:"relative", marginBottom:10 }}>

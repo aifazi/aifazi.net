@@ -622,10 +622,10 @@ function SiteSettings() {
         const accentColor = STATUS_ACCENT[sget('maintenanceStatus') || 'MAINTENANCE'] || '#f59e0b'
 
         return (
-      <div style={{ ...T.card, border: `1px solid ${isActive ? 'rgba(255,71,87,0.4)' : 'var(--border)'}` }}>
-        <div style={{ ...T.sec, color: isActive ? '#ff4757' : 'var(--muted)', borderColor: isActive ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
+      <div style={{ ...T.card, border: `1px solid ${isActive ? 'color-mix(in srgb, var(--red) 40%, transparent)' : 'var(--border)'}` }}>
+        <div style={{ ...T.sec, color: isActive ? '#ff4757' : 'var(--muted)', borderColor: isActive ? 'color-mix(in srgb, var(--red) 20%, transparent)' : 'var(--border)' }}>
           MAINTENANCE PAGE
-          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 11, letterSpacing: 2 }}>ACTIVE</span>}
+          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'color-mix(in srgb, var(--red) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', color: '#ff4757', fontSize: 11, letterSpacing: 2 }}>ACTIVE</span>}
         </div>
 
         {/* Scope selector */}

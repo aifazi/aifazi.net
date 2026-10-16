@@ -1424,7 +1424,7 @@ function GlobeMode({ visibleRef }) {
           overflow: hidden;
           text-overflow: ellipsis;
           pointer-events: none;
-          text-shadow: 0 0 10px rgba(0,212,255,0.18);
+          text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 18%, transparent);
         }
         .globe-top-bar .globe-mode-chips {
           position: static;
@@ -1443,7 +1443,7 @@ function GlobeMode({ visibleRef }) {
           padding: 6px 10px;
           border-radius: 6px;
           background: rgba(0,0,0,0.08);
-          border: 1px solid rgba(0,212,255,0.08);
+          border: 1px solid color-mix(in srgb, var(--cyan) 8%, transparent);
           backdrop-filter: blur(6px);
           -webkit-backdrop-filter: blur(6px);
           pointer-events: none;

@@ -68,8 +68,8 @@ function useNotify() {
   const Toast = msg ? (
     <div style={{
       position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-      background: msg.ok ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,71,87,0.15)',
-      border: `1px solid ${msg.ok ? 'color-mix(in srgb, var(--green) 50%, transparent)' : 'rgba(255,71,87,0.5)'}`,
+      background: msg.ok ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'color-mix(in srgb, var(--red) 15%, transparent)',
+      border: `1px solid ${msg.ok ? 'color-mix(in srgb, var(--green) 50%, transparent)' : 'color-mix(in srgb, var(--red) 50%, transparent)'}`,
       color: msg.ok ? 'var(--green)' : 'var(--red)',
       fontFamily: 'var(--font-mono)', fontSize: 12, padding: '12px 20px', letterSpacing: 1,
       borderRadius: 10,
@@ -86,7 +86,7 @@ function ConfirmModal({ message, onOk, onCancel, danger = false }) {
         <p style={{ color: 'var(--muted)', marginBottom: 24, lineHeight: 1.6 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onOk}
-            style={{ ...S.btn(danger ? 'rgba(255,71,87,0.2)' : 'color-mix(in srgb, var(--green) 20%, transparent)', danger ? 'var(--red)' : 'var(--green)'), border: `1px solid ${danger ? 'rgba(255,71,87,0.4)' : 'color-mix(in srgb, var(--green) 40%, transparent)'}`, flex: 1 }}>
+            style={{ ...S.btn(danger ? 'color-mix(in srgb, var(--red) 20%, transparent)' : 'color-mix(in srgb, var(--green) 20%, transparent)', danger ? 'var(--red)' : 'var(--green)'), border: `1px solid ${danger ? 'color-mix(in srgb, var(--red) 40%, transparent)' : 'color-mix(in srgb, var(--green) 40%, transparent)'}`, flex: 1 }}>
             CONFIRM
           </button>
           <button onClick={onCancel}
@@ -263,7 +263,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                   {saving ? 'SAVING...' : '💾 SAVE CHANGES'}
                 </button>
                 <button onClick={handleDeleteConfirm}
-                  style={{ ...S.btn('rgba(255,71,87,0.1)', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', flex: 1 }}>
+                  style={{ ...S.btn('color-mix(in srgb, var(--red) 10%, transparent)', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', flex: 1 }}>
                   🗑 DELETE USER
                 </button>
               </div>
@@ -324,8 +324,8 @@ function UserEditModal({ userId, onClose, onSaved }) {
               </div>
 
               <div style={{
-                background: form.banned ? 'rgba(255,71,87,0.05)' : 'transparent',
-                border: `1px solid ${form.banned ? 'rgba(255,71,87,0.2)' : 'var(--border)'}`,
+                background: form.banned ? 'color-mix(in srgb, var(--red) 5%, transparent)' : 'transparent',
+                border: `1px solid ${form.banned ? 'color-mix(in srgb, var(--red) 20%, transparent)' : 'var(--border)'}`,
                 padding: 16
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: form.banned ? 14 : 0 }}>
@@ -340,7 +340,7 @@ function UserEditModal({ userId, onClose, onSaved }) {
                     )}
                   </div>
                   <button onClick={() => set('banned', !form.banned)}
-                    style={{ ...S.btn(form.banned ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'rgba(255,71,87,0.15)', form.banned ? 'var(--green)' : 'var(--red)'), border: `1px solid ${form.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'rgba(255,71,87,0.3)'}` }}>
+                    style={{ ...S.btn(form.banned ? 'color-mix(in srgb, var(--green) 15%, transparent)' : 'color-mix(in srgb, var(--red) 15%, transparent)', form.banned ? 'var(--green)' : 'var(--red)'), border: `1px solid ${form.banned ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--red) 30%, transparent)'}` }}>
                     {form.banned ? '✅ UNBAN USER' : '🚫 BAN USER'}
                   </button>
                 </div>
@@ -525,7 +525,7 @@ function ReplyEditModal({ reply, onClose, onSaved }) {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleSave} disabled={saving}
-            style={{ ...S.btn('rgba(255,107,53,0.15)', 'var(--orange)'), border: '1px solid rgba(255,107,53,0.4)', flex: 2, opacity: saving ? 0.7 : 1 }}>
+            style={{ ...S.btn('color-mix(in srgb, var(--orange) 15%, transparent)', 'var(--orange)'), border: '1px solid color-mix(in srgb, var(--orange) 40%, transparent)', flex: 2, opacity: saving ? 0.7 : 1 }}>
             {saving ? 'SAVING...' : '💾 SAVE REPLY'}
           </button>
           <button onClick={onClose}
@@ -562,7 +562,7 @@ function BanModal({ user, onClose, onSaved }) {
           placeholder="e.g. Spam, rule violation..." style={{ ...S.input, marginBottom: 20 }} />
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={handleBan} disabled={saving}
-            style={{ ...S.btn('rgba(255,71,87,0.15)', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', flex: 2, opacity: saving ? 0.7 : 1 }}>
+            style={{ ...S.btn('color-mix(in srgb, var(--red) 15%, transparent)', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', flex: 2, opacity: saving ? 0.7 : 1 }}>
             {saving ? 'BANNING...' : 'CONFIRM BAN'}
           </button>
           <button onClick={onClose}

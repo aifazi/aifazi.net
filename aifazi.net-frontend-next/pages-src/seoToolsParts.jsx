@@ -122,7 +122,7 @@ function MetaAnalyzer() {
       </div>
 
       {mode === 'url' && (
-        <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.3)', padding: '8px 14px', marginBottom: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35' }}>
+        <div style={{ background: 'color-mix(in srgb, var(--orange) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', padding: '8px 14px', marginBottom: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35' }}>
           ⚠ URL fetching uses a third-party CORS proxy (allorigins.win). If it fails, use Paste HTML mode.
         </div>
       )}
@@ -401,7 +401,7 @@ function BulkUrlChecker() {
         style={{ ...S.input, resize: 'vertical', marginBottom: 12 }} />
 
       {warning && (
-        <div style={{ background: 'rgba(255,107,53,0.08)', border: '1px solid rgba(255,107,53,0.3)', padding: '8px 14px', marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35' }}>
+        <div style={{ background: 'color-mix(in srgb, var(--orange) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', padding: '8px 14px', marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff6b35' }}>
           ⚠ {warning}
         </div>
       )}

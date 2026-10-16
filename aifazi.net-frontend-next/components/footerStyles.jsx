@@ -122,7 +122,7 @@ function MiniNewsletter() {
         onKeyDown={e => e.key === 'Enter' && submit()}
         placeholder="your@email.com"
         style={{
-          flex: 1, background: 'var(--comp-input-bg, var(--bg3))', border: `1px solid ${status === 'err' ? 'rgba(255,71,87,0.5)' : 'var(--comp-input-border, var(--border))'}`,
+          flex: 1, background: 'var(--comp-input-bg, var(--bg3))', border: `1px solid ${status === 'err' ? 'color-mix(in srgb, var(--red) 50%, transparent)' : 'var(--comp-input-border, var(--border))'}`,
           outline: 'none', padding: '7px 10px',
           fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)',
           borderRadius: 'var(--comp-input-radius, 4px)', minWidth: 0,

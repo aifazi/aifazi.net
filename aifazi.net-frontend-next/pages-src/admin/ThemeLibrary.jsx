@@ -2219,7 +2219,7 @@ function ThemeLibrary() {
                   {cat.id === 'notify' && (
                     <div style={{ marginBottom: 40 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-                        <div style={{ width:38, height:38, borderRadius:8, background:'rgba(255,107,53,0.12)', border:'1px solid rgba(255,107,53,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📍</div>
+                        <div style={{ width:38, height:38, borderRadius:8, background:'color-mix(in srgb, var(--orange) 12%, transparent)', border:'1px solid color-mix(in srgb, var(--orange) 30%, transparent)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📍</div>
                         <div>
                           <div style={{ fontFamily:_FD, fontSize:17, fontWeight:700, color:_TX }}>Toast Position</div>
                           <div style={{ fontFamily:_FM, fontSize: 11, color:_MT, marginTop:1 }}>Where notifications appear on screen</div>
@@ -2231,16 +2231,16 @@ function ThemeLibrary() {
                           return (
                             <button key={pos.id} onClick={() => handleFwSelectAndSave('notifyPosition', pos.id)} style={{
                               display:'flex', alignItems:'center', gap:7, padding:'9px 16px',
-                              background: isActive ? 'rgba(255,107,53,0.1)' : _BG2,
-                              border: `2px solid ${isActive ? 'rgba(255,107,53,0.6)' : _BD}`,
+                              background: isActive ? 'color-mix(in srgb, var(--orange) 10%, transparent)' : _BG2,
+                              border: `2px solid ${isActive ? 'color-mix(in srgb, var(--orange) 60%, transparent)' : _BD}`,
                               borderRadius:8, cursor:'pointer', transition:'all 0.15s',
-                              boxShadow: isActive ? '0 0 12px rgba(255,107,53,0.2)' : 'none',
+                              boxShadow: isActive ? '0 0 12px color-mix(in srgb, var(--orange) 20%, transparent)' : 'none',
                             }}>
                               <span style={{ fontSize:16 }}>{pos.icon}</span>
                               <div style={{ textAlign:'left' }}>
-                                <div style={{ fontFamily:_FM, fontSize: 11, fontWeight:700, color: isActive ? 'rgba(255,107,53,0.9)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
+                                <div style={{ fontFamily:_FM, fontSize: 11, fontWeight:700, color: isActive ? 'color-mix(in srgb, var(--orange) 90%, transparent)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
                               </div>
-                              {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize: 11, color:'rgba(255,107,53,0.9)' }}>✓</span>}
+                              {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize: 11, color:'color-mix(in srgb, var(--orange) 90%, transparent)' }}>✓</span>}
                             </button>
                           )
                         })}
@@ -2252,13 +2252,13 @@ function ThemeLibrary() {
 
               {/* Reset zone */}
               <div style={{ borderTop: `1px solid ${_BD}`, paddingTop: 24, marginTop: 8, marginBottom: 40 }}>
-                <div style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 3, color: 'rgba(255,71,87,0.7)', marginBottom: 12 }}>RESET</div>
+                <div style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 3, color: 'color-mix(in srgb, var(--red) 70%, transparent)', marginBottom: 12 }}>RESET</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                   <div>
                     <div style={{ fontFamily: _FD, fontSize: 14, fontWeight: 600, color: _TX, marginBottom: 2 }}>Reset to Factory Defaults</div>
                     <div style={{ fontFamily: _FM, fontSize: 11, color: _MT }}>Restore all framework styles to defaults: cyber menus, cyber dialogs, cyber inputs, cyber-grid surfaces, cyber buttons, cyber cards, cyber tables and pill badges.</div>
                   </div>
-                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
+                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
                 </div>
               </div>
             </div>

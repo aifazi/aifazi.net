@@ -81,7 +81,7 @@ export default function PaymentsTab() {
                 <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{o.customer_name || '—'}</span>
                 <div style={{ flex: 1 }} />
                 <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 700 }}>{money(o.total_cents)}</span>
-                <button onClick={() => refund(o)} disabled={refunding === o.id || o.status === 'refunded'} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: o.status === 'refunded' ? 'var(--muted)' : R, borderRadius: 6, cursor: o.status === 'refunded' ? 'not-allowed' : 'pointer', opacity: o.status === 'refunded' ? 0.5 : 1 }}>
+                <button onClick={() => refund(o)} disabled={refunding === o.id || o.status === 'refunded'} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '6px 12px', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: o.status === 'refunded' ? 'var(--muted)' : R, borderRadius: 6, cursor: o.status === 'refunded' ? 'not-allowed' : 'pointer', opacity: o.status === 'refunded' ? 0.5 : 1 }}>
                   {o.status === 'refunded' ? 'REFUNDED' : refunding === o.id ? '…' : 'REFUND'}
                 </button>
               </div>

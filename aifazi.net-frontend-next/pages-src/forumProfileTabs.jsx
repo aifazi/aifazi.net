@@ -992,7 +992,7 @@ function SecurityTab({ user }) {
             </div>
           ))}
         </div>
-        {identityLocked && <div style={{ ...M, fontSize: 11, color: CLRS.orange, padding: '8px 14px', background: 'rgba(255,107,53,0.07)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
+        {identityLocked && <div style={{ ...M, fontSize: 11, color: CLRS.orange, padding: '8px 14px', background: 'color-mix(in srgb, var(--orange) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 25%, transparent)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
         {oauthStatus && <StatusMsg msg={oauthStatus.msg} type={oauthStatus.type} />}
       </SectionCard>
 

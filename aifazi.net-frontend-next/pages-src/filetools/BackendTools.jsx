@@ -1141,7 +1141,7 @@ export function CompareTextB() {
           <pre style={{ fontFamily: 'monospace', fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             maxHeight: 500, overflowY: 'auto', margin: 0, lineHeight: 1.6 }}>
             {diff.diff?.map((line, i) => (
-              <span key={i} style={{ display: 'block', background: line.startsWith('+') ? 'color-mix(in srgb, var(--green) 7%, transparent)' : line.startsWith('-') ? 'rgba(255,71,87,.07)' : 'transparent', color: line.startsWith('+') ? 'var(--green)' : line.startsWith('-') ? '#ff4757' : 'var(--muted)' }}>
+              <span key={i} style={{ display: 'block', background: line.startsWith('+') ? 'color-mix(in srgb, var(--green) 7%, transparent)' : line.startsWith('-') ? 'color-mix(in srgb, var(--red) 7%, transparent)' : 'transparent', color: line.startsWith('+') ? 'var(--green)' : line.startsWith('-') ? '#ff4757' : 'var(--muted)' }}>
                 {line}
               </span>
             ))}

@@ -190,7 +190,7 @@ function AbuseBanModal({ target, onClose }) {
             <div><label style={S.label}>Explicit IP <span style={{ textTransform: 'none', letterSpacing: 0 }}>(optional — else last known IP is used)</span></label><Input value={ip} onChange={v => setIp(v)} placeholder="1.2.3.4" style={S.input} /></div>
             <Checkbox checked={understand} onChange={checked => setUnderstand(checked)} label="I understand this bans the user everywhere" />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={runBan} disabled={!canBan} style={{ ...S.btn('rgba(255,71,87,0.15)', '#ff4757'), border: '1px solid rgba(255,71,87,0.4)', flex: 2, opacity: canBan ? 1 : 0.5, cursor: canBan ? 'pointer' : 'not-allowed' }}>{busy ? 'BANNING...' : 'BAN'}</button>
+              <button type="button" onClick={runBan} disabled={!canBan} style={{ ...S.btn('color-mix(in srgb, var(--red) 15%, transparent)', '#ff4757'), border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', flex: 2, opacity: canBan ? 1 : 0.5, cursor: canBan ? 'pointer' : 'not-allowed' }}>{busy ? 'BANNING...' : 'BAN'}</button>
               <button type="button" onClick={onClose} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', flex: 1 }}>CANCEL</button>
             </div>
           </div>
@@ -775,7 +775,7 @@ function Dashboard({ onLogout }) {
   const ROLE_COLORS = {
     admin:     { bg: 'color-mix(in srgb, var(--green) 10%, transparent)',  border: 'color-mix(in srgb, var(--green) 40%, transparent)',  color: 'var(--green)' },
     moderator: { bg: 'color-mix(in srgb, var(--cyan) 10%, transparent)',  border: 'color-mix(in srgb, var(--cyan) 40%, transparent)',  color: 'var(--cyan)'  },
-    editor:    { bg: 'rgba(255,107,53,0.1)', border: 'rgba(255,107,53,0.4)', color: '#ff6b35'      },
+    editor:    { bg: 'color-mix(in srgb, var(--orange) 10%, transparent)', border: 'color-mix(in srgb, var(--orange) 40%, transparent)', color: '#ff6b35'      },
     chat:      { bg: 'rgba(255,215,0,0.1)',  border: 'rgba(255,215,0,0.4)',  color: '#ffd700'      },
   }
 
@@ -1031,7 +1031,7 @@ function Dashboard({ onLogout }) {
                     <>
                       <button onClick={() => bulkPublishPosts(true)} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}> PUBLISH ({selectedPosts.size})</button>
                       <button onClick={() => bulkPublishPosts(false)} style={{ ...S.btn('transparent', 'var(--muted)'), border: '1px solid var(--border)', fontSize: 11, padding: '8px 14px' }}> UNPUBLISH ({selectedPosts.size})</button>
-                      <button onClick={bulkDeletePosts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 11, padding: '8px 14px' }}> DELETE ({selectedPosts.size})</button>
+                      <button onClick={bulkDeletePosts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}> DELETE ({selectedPosts.size})</button>
                     </>
                   )}
                 </>}
@@ -1132,7 +1132,7 @@ function Dashboard({ onLogout }) {
                         {post.published ? 'UNPUBLISH' : 'PUBLISH'}
                       </button>
                       <button onClick={() => { setEditingPost(post); goView('editor') }} style={{ ...S.btn('var(--bg3)', 'var(--text)'), fontSize: 11, padding: '6px 10px', border: '1px solid var(--border)', flex: isMobile ? 1 : 'unset' }}>EDIT</button>
-                      <button onClick={() => handleDeletePost(post.id)} style={{ ...S.btn('transparent', 'var(--red)'), fontSize: 11, padding: '6px 10px', border: '1px solid rgba(255,71,87,0.3)', flex: isMobile ? 1 : 'unset' }}>DEL</button>
+                      <button onClick={() => handleDeletePost(post.id)} style={{ ...S.btn('transparent', 'var(--red)'), fontSize: 11, padding: '6px 10px', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', flex: isMobile ? 1 : 'unset' }}>DEL</button>
                     </div>
                   </div>
                 ))}
@@ -1168,7 +1168,7 @@ function Dashboard({ onLogout }) {
                         style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}>
                         📨 BULK REPLY ({selectedContacts.size})
                       </button>
-                      <button onClick={bulkDeleteContacts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.4)', fontSize: 11, padding: '8px 14px' }}> DELETE ({selectedContacts.size})</button>
+                      <button onClick={bulkDeleteContacts} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', fontSize: 11, padding: '8px 14px' }}> DELETE ({selectedContacts.size})</button>
                     </>
                   )}
                 </> }
@@ -1220,7 +1220,7 @@ function Dashboard({ onLogout }) {
                         style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '4px 10px' }}>
                          REPLY
                       </button>
-                      <button onClick={() => handleDeleteContact(c.id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11, padding: '4px 10px' }}>DEL</button>
+                      <button onClick={() => handleDeleteContact(c.id)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', fontSize: 11, padding: '4px 10px' }}>DEL</button>
                     </div>
                   </div>
                   {c.subject && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)', marginBottom: 6 }}>RE: {c.subject}</div>}
@@ -1387,7 +1387,7 @@ function Dashboard({ onLogout }) {
                   )}
                   <button onClick={() => { setEditingStaff(s); setEditStaffForm({ username: s.username, email: s.email, role: s.role, password: '', forum_user_id: s.forum_user_id || '', module_permissions: s.module_permissions || s.permissions || permissionForRole(s.role) }) }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>EDIT</button>
                   <button onClick={() => startImpersonate(s)} disabled={impersonateBusy} style={{ ...S.btn('transparent', '#fbbf24'), border: '1px solid rgba(251,191,36,0.3)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>VIEW AS</button>
-                  <button onClick={() => handleDeleteStaff(s._id, s.username)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.3)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>REMOVE</button>
+                  <button onClick={() => handleDeleteStaff(s._id, s.username)} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', fontSize: 11, padding: '6px 12px', flexShrink: 0 }}>REMOVE</button>
                 </div>
               ))}
 
@@ -1454,9 +1454,9 @@ function Dashboard({ onLogout }) {
                       <div><label style={S.label}>Email</label><Input type="email" value={editStaffForm.email} onChange={v => setEditStaffForm(p => ({ ...p, email: v }))} style={S.input} required /></div>
                       <div><label style={S.label}>New Password <span style={{ color: 'var(--muted)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(leave blank to keep current)</span></label><Input type="password" value={editStaffForm.password} onChange={v => setEditStaffForm(p => ({ ...p, password: v }))} placeholder="" style={S.input} minLength={8} /></div>
                       <PermissionEditor value={editStaffForm.module_permissions} onChange={module_permissions => setEditStaffForm(p => ({ ...p, module_permissions }))} />
-                      <div style={{ border: '1px solid rgba(255,71,87,0.35)', background: 'rgba(255,71,87,0.06)', borderRadius: 8, padding: 12 }}>
+                      <div style={{ border: '1px solid color-mix(in srgb, var(--red) 35%, transparent)', background: 'color-mix(in srgb, var(--red) 6%, transparent)', borderRadius: 8, padding: 12 }}>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: '#ff4757', marginBottom: 8 }}>DANGER ZONE</div>
-                        <button type="button" onClick={() => setAbuseTarget(editingStaff)} style={{ ...S.btn('rgba(255,71,87,0.15)', '#ff4757'), border: '1px solid rgba(255,71,87,0.4)', width: '100%' }}>🚫 BAN EVERYWHERE</button>
+                        <button type="button" onClick={() => setAbuseTarget(editingStaff)} style={{ ...S.btn('color-mix(in srgb, var(--red) 15%, transparent)', '#ff4757'), border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', width: '100%' }}>🚫 BAN EVERYWHERE</button>
                         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>Suspends chat, forum, VPN, FiveM + IP in one action. Undo available.</div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
