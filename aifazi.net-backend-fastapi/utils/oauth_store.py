@@ -56,15 +56,33 @@ def put_auth_code(code: str, payload: dict[str, Any], ttl: int) -> None:
     _mem_exp[_AUTH_CODE_PREFIX + code] = time.time() + ttl
 
 
+# R9-4 — atomic single-use consumption. Lua fallback for Redis servers older
+# than 6.2 that lack GETDEL; both paths read-and-delete in one round trip.
+_POP_CODE_LUA = (
+    "local v = redis.call('GET', KEYS[1]); "
+    "if v then redis.call('DEL', KEYS[1]) end; "
+    "return v"
+)
+
+
 def pop_auth_code(code: str) -> dict[str, Any] | None:
     """Consume a code (single-use). Returns payload or None."""
     key = _AUTH_CODE_PREFIX + code
     r = _redis()
     if r:
         try:
-            raw = r.get(key)
+            # R9-4 — a non-atomic GET+DELETE let two concurrent exchanges of the
+            # same code both read it before either delete landed (double
+            # redemption). Prefer GETDEL (Redis ≥6.2); if the command is absent
+            # on the server, fall back to an equivalent atomic Lua script.
+            if hasattr(r, "getdel"):
+                try:
+                    raw = r.getdel(key)
+                except Exception:
+                    raw = r.eval(_POP_CODE_LUA, 1, key)
+            else:
+                raw = r.eval(_POP_CODE_LUA, 1, key)
             if raw is not None:
-                r.delete(key)
                 return json.loads(raw)
             return None
         except Exception as exc:

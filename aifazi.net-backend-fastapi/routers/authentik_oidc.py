@@ -234,6 +234,16 @@ async def authentik_callback(
             if not row.data:
                 return _ak_fail(request, SITE_URL, "/profile", "missing")
             user = row.data[0]
+            # R9-7 — enforce identity uniqueness on the connect path too. Login
+            # already guards this (line ~255); without it a connect could steal
+            # an authentik_id already owned by another account, which the OIDC
+            # login's `eq(authentik_id, …)` lookup would then resolve to the
+            # victim row — i.e. sign in as them.
+            if str(user.get("authentik_id") or "") != ak_sub:
+                try:
+                    _ensure_identity_available("authentik_id", ak_sub, current_user_id, "Authentik account")
+                except HTTPException:
+                    return _ak_fail(request, SITE_URL, "/profile", "duplicate")
             supabase.table("users").update({
                 "authentik_id": ak_sub,
                 "last_seen": now,

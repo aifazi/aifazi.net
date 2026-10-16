@@ -1173,3 +1173,123 @@ A second independent pass (4 parallel audits + full suites: backend **361 passed
 **Re-confirmed still open:** R7-20 env dumps present on disk today (all 5 paths) + rotation unknown; backup same-host, no R2, restore untested; pinning groundwork-only; release docs re-drifted *again* (EAS-REBUILD/PLAN-ROADMAP say 1.0.70, `app.json` is 1.0.74 — bot bumps keep outrunning doc syncs, needs an owner not a sync); LDAP `cn`/`ou=users` change is correct for the live Authentik LDAP but breaks stock-LLDAP deployments (portability note only).
 
 **New mediums queued:** shortcut guard still hijacks links/clickables (`Dashboard.jsx:739-752` — gate on `closest('a,[role=button]')`); `Select`/`Checkbox` drop caller `onClick` (`core/forms.jsx:183-187,287-293`); `useLocation()` render-phase sessionStorage consumption (`router-compat.tsx:76-83`); `partial_token` in deeplink fragment; cold-start offline look; chat outbox memory-only; Talk `hasMore:false`; OAuth query-code acceptance; second-account push residue; glue-network repair script hardcodes network IDs and fails the same silent way it was written to fix; GoTrue/compose prod state UNCONFIRMED from repo; SECURITY.md required-checks list stale; pytest `-x` / mypy-scope / E2E-on-prod / notify-echo leftovers stand.
+
+---
+
+## 21. Full Audit Round 9 — 2026-10-16 (range `ed15832`, re-verification of §19–§20)
+
+**Scope.** Fresh full-monorepo audit at `HEAD ed15832` (`main`, working tree clean). Nothing landed in `main` between this round and the §20 addendum except bot doc bumps, so this is a **re-verification round plus an independent new-findings pass**, not a diff audit. Backend, frontend and mobile were each swept; every HIGH/CRITICAL claim below was source-verified by hand (no live penetration test).
+**Method.** Full local gate suites run live (results in §21.1) + dependency audits (`npm audit` ×2, `pip-audit`) + targeted source review of the auth/identity surface, the generic admin collection browser, public store endpoints, and the mobile secure-storage / WebView paths. Where a finding is subagent-reported but not personally line-verified it is marked as such.
+
+### 21.1 Verification (all live, 2026-10-16)
+
+| Suite | Result |
+|-------|--------|
+| Backend `ruff` / `mypy` / `pytest` | 0 · 0 (76 files) · **361 passed** |
+| Frontend `tsc` / `eslint` / `vitest` | 0 errors · 0 errors / 58 warnings · **166 passed + 1 skip (167)** |
+| Mobile `tsc` / `eslint` / `vitest` | 0 · 0 · **87 passed** |
+| `pip-audit` (backend) | **no known vulnerabilities** |
+| `npm audit` frontend | **7 high, 0 critical** — `sharp`/`librsvg` (GHSA-CVE-2026-96889, runtime via `next@16.3.8 → sharp@0.35.4`) + `source-map-js@1.2.1` (both non-breaking-fixable); `braces`/`micromatch` chain dev-only via `eslint-config-next` |
+| `npm audit` mobile | **30 (11 moderate / 19 high)** — all Expo/Metro build-chain |
+| Dependabot queue | **20 open PRs** on remote (incl. Python 3.15.0rc3 base-image bumps) — not drained since 2026-10-07 |
+
+> Note on the earlier "15 failing frontend tests" seen mid-session: traced to a stale checkout `node_modules` (known A5-5 class) and cleared by `npm ci`; **not a repo regression** — the clean install reproduces the counts above.
+
+### 21.2 Status of prior findings (source-verified against `ed15832`)
+
+**Verified still fixed / intact:** B6 `dependencies.py:111-121` require_admin TTL fail-closed · R7-1/R8-A `site_settings.py` (auth-key write gate + `_redact_sensitive` on PUT) · R7-3/R8-C `ldap_oauth.py` (confidential-client check + banned→403 on the password grant) · R7-10 `router-compat.tsx` Navigate→`useEffect` · R7-14 `safeHref.js` `tel:` handling · R8-B Stripe off-site return-URL guard.
+
+**Verified still open (unchanged):** `Select`/`Checkbox` drop caller `onClick` (`core/forms.jsx:183-189,287-293`, spread order) · `useLocation()` consumes sessionStorage during render (`router-compat.tsx:76-83`) · Dashboard keyboard shortcut guard lacks the `closest('a,[role=button]')` skip (`Dashboard.jsx:743-765`) · `Clickable` keyboard activation fires a synthetic `.click()` (`clientX=0`) so the video seek bar jumps to 0 (`core/Clickable.jsx:10-21`; new seat `VideoPlayer.jsx:168-169`) · R7-20 five live env dumps on disk (backend `.env.prod-pull`/`.env.pulled`/`.env.pull`, frontend `.env.local`, `apps/mobile/.env.local` — all gitignored) · C3 backup target #2 still same-host (`scripts/backup-db.sh:164` Nextcloud `cloud.aifazi.net`, `:203` silent-skip) · `infra_diagrams` migration still lacks GRANT/REVOKE parity with `page_layouts` · god-file sizes unchanged (ThemeLibrary 4038, HybridInfraEditor 3199, HybridInfraCanvas 2375, ServerRackAnimation 2379, AdminPanels 1773, backend `fivem.py` 1754, `globals.css` 3721) · SECURITY.md line refs still drifting (`Dashboard.jsx:98`, `api.ts:62` off-by-one) · `.env.example` residue (root example now documents most keys; body-level gaps remain) · CI leftovers (`pytest -x`, mypy scope `routers/` only, e2e against prod, `notify-failure` echo-only, `dependency-review-config.yml` unreferenced by `ci.yml` — R6-1 correction stands).
+
+### 21.3 New findings this round
+
+#### 🔴 CRITICAL
+
+**R9-1 — 2FA bypass / account takeover via the Steam connect endpoints (Partially-2FA'd token accepted as a full access token).**
+`routers/steam_auth.py:132-141` — `_get_forum_user()` decodes the bearer for `purpose="auth"` and returns the payload with **no `tfa_pending` check and no `token_type` check** (contrast `auth_shared._get_forum_user`, which at least rejects `tfa_pending`). The partial-2FA token minted at `routers/auth_login.py:191-194` is emitted by `make_token()`, so it carries `token_type:"access"` *and* `tfa_pending:True` (`utils/auth_tokens.py:16-22`) with the victim's `id` and a 5-minute TTL.
+Reachability: `/connect-init` (`steam_auth.py:487`) and `/connect-url` (`:514`) are mounted under `/api/forum/auth/steam` (`main.py:820`) and are open GETs — `/api/forum/auth/` (`main.py:317`) and `/api/forum/auth/steam/` (`main.py:319`) are in `_OPEN_GET_PREFIXES`, so no internal token is required.
+**Impact:** an attacker who has the victim's *password only* (no TOTP) calls `/auth/login`, receives `requires_2fa` + `partial_token`, then presents that partial token as a bearer to `GET /api/forum/auth/steam/connect-url`, links **their own** Steam account to the victim's row, and logs in via Steam OpenID. The 2FA challenge is never completed → full account takeover for every `totp_enabled` account.
+**Fix direction:** in `steam_auth._get_forum_user`, reject `payload.get("tfa_pending")` and require `payload.get("token_type") == "access"` (mirror `auth_shared`); add the `token_type` check to `auth_shared._get_forum_user` for R9-2.
+
+#### 🟠 HIGH
+
+**R9-2 — Refresh tokens accepted as full access bearers on open identity-link endpoints.**
+`routers/auth_shared.py:364-375` rejects `tfa_pending` but **not `token_type=="refresh"`**, so a 7-day refresh token (cryptographically valid even after logout or rotation) is accepted as an access token. Consumed by `github_auth.py:194` (`/api/forum/auth/github/connect-url`, open) and `authentik_oidc.py:133` (`/api/auth/authentik/connect-url`, in `_OPEN_EXACT`). A stolen/leaked refresh token therefore also grants identity re-linking. (`auth_sessions.py:204` `/session-migrate` shares the helper but is POST + internal-token gated, so it is not externally reachable — noted for completeness.)
+**Fix direction:** require `token_type == "access"` in `auth_shared._get_forum_user`; keep refresh tokens usable only at `/auth/refresh`.
+
+#### 🟡 MEDIUM
+
+**R9-3 — Public order-tracking endpoint always returns 500.**
+`routers/store_delivery.py:377` assigns `o = order.data` (a **list**), then `:382` calls `o.get("delivery_agent_id")` → `AttributeError` on every request. `GET /api/store/delivery/tracking/{order_no}` can never succeed, which also makes the H24 sanitisation block at `:390-403` dead code. (Should be `o = order.data[0]`.)
+**R9-4 — OAuth authorization-code double redemption (TOCTOU).** `utils/oauth_store.py:65-67`: the Redis path does `GET` then `DELETE` non-atomically, so two concurrent exchanges of the same `code` can both read it before either deletes. The in-memory fallback `:73` is `pop()`-based and safe. Use `GETDEL` (Redis ≥6.2) or a Lua/WATCH transaction.
+**R9-5 — CalDAV credentials survive logout (mobile).** `clearCalDAVCredentials()` exists (`src/lib/caldav.ts:84-88`) but is never called on logout (`src/lib/auth.tsx:223-237`) — Nextcloud app-password stays in SecureStore and reconnects silently on a shared device.
+**R9-6 — Talk WebView origin whitelist is prefix-only (mobile).** `app/talk-room.tsx:66-76,398-405` passes concrete origins to `originWhitelist`, which react-native-webview compiles as `^<escaped>` with **no `$`** (`node_modules/react-native-webview/src/WebViewShared.tsx:27-33`), so `https://cloud.aifazi.net.evil.tld` matches. Combined with `mediaCapturePermissionGrantType="grant"` (`:400`) that is an auto-granted camera/mic surface. Practical exploit needs control of the server-supplied call URL (or a redirect), so impact is bounded — but the whitelist is not doing what its name implies.
+
+#### 🔵 LOW / INFO
+
+- **R9-7** `authentik_oidc.py:237-240` — connect mode writes `authentik_id` without calling `_ensure_identity_available` (the login path does, at `:255`), so a connect can silently overwrite/steal an existing identity link.
+- **R9-8** `admin_actions.py:73-120` — `FORBIDDEN_FIELDS` omits `authentik_id` (it lists `github_id`, `steam_id`, `discord_id`). Only reachable via the **admin-only** `coll="users"` path (`collection_update` bypasses the collection allowlist for role `admin`, `:218-220`; no `COLL_FIELD_ALLOWLISTS["users"]` entry), so it is a defence-in-depth consistency gap, not a staff escalation.
+- **R9-9** `/api/admin/deploy/event` (`monitor.py:1213-1221`) is documented as an "unauthenticated webhook receiver — auth is the shared secret header", but it is **not** in `_OPEN_EXACT` and is POST, so the middleware internal-token gate (`main.py:573-607`) 403s it before the `hmac` check runs — the same failure mode the team already fixed for the mail/cron webhooks (`main.py:259-274`). No bypass (the secret check still runs if reached); the feature is simply broken.
+- **R9-10** `ldap_oauth.py:597` — `if "email" in (rec.get("scope") or "") or True:` unconditionally emits the `email` claim in `/oauth/userinfo` regardless of granted scope (dead condition; leaks email to a token that didn't request the `email` scope).
+- **R9-11** (frontend) `components/Dialog.jsx:55-56` — the modal overlay carries **both** `aria-hidden="true"` **and** `role="button" tabIndex={0}`; a focusable node inside `aria-hidden` is an ARIA violation (screen readers skip a tabbable target).
+- **R9-12** (frontend) `lib/css-sanitize.ts:13` strips `url(` from the **generated** `@font-face` (`core/themeCustom.js:171`, applied `app/layout.tsx:255`). Uploaded fonts still load via the separate `themeCustomFontUrl` `<link>` (`layout.tsx:261-264`), so this is redundancy/duplication rather than breakage — the inline `@font-face` is dead. Worth narrowing the sanitiser to exclude system-built rules.
+- **R9-13** (mobile) `src/lib/api.ts:85-86` — after a refresh, the rotated `refreshToken` is written to SecureStore with no epoch/"auth-cleared" guard, so a concurrent `clearAuthTokens()` (`:138-143`) can be re-populated and resurrect a session the user just logged out of.
+- **R9-14** (mobile) `src/screens/profile/Overview.tsx:45-50` — `logout()` (async) is not awaited before `refresh()`, so the profile refetch can run against half-torn-down state and flash a stale signed-in view.
+- **R9-15** (mobile) `src/lib/oauth.ts` — the deep-link code flow has **no PKCE** (`code_challenge`/`code_verifier` absent; exchange is `{code, state}` only, `:137-145`). State binding mitigates interception, but PKCE is the standard hardening.
+- **R9-16** (INFO) Pydantic `.dict()` is deprecated in v2 and still used at ~20 router sites — noisy migration, no behaviour change.
+- **R9-17** (INFO) Doc drift: SECURITY.md line references (`Dashboard.jsx:98`, `api.ts:62`) are off by one line; `.env.example` body-level gaps persist (R7-24 substantially satisfied at the root example).
+- **R9-18** (INFO) Talk outbox stale-closure — **subagent-reported, not personally line-verified this round**; carried from the §20 addendum queue.
+
+### 21.4 Re-confirmed open items (carried, no new evidence)
+
+R7-20 env dumps on disk (5 paths) + rotation unknown · C3 same-host backup, restore never tested · `infra_diagrams` migration REVOKE/GRANT parity · god files (list in §21.2) · `Select`/`Checkbox` `onClick` drop · `useLocation()` render-phase storage read · Dashboard shortcut-guard `closest()` skip · `Clickable`→video-seek `clientX=0` · SECURITY.md / `.env.example` drift · CI: `pytest -x`, mypy scope `routers/` only, e2e-on-prod, `notify-failure` echo-only, `dependency-review-config.yml` not referenced by `ci.yml` (R6-1) · `docker/frontend` missing from `dependabot.yml` · 20 open dependabot PRs (Python 3.15.0rc3 base-image bumps included).
+
+### 21.5 Grades & recommended action plan
+
+**Grades:** Security **5.5/10** (a genuine 2FA-bypass chain — R9-1/R9-2 — shipped in production on an *open* GET; the remaining surface is solid) · Maintainability **B−** (god files unchanged) · Tests **B** (backend 361 / frontend 167 / mobile 87, but none of R9-1…R9-4 are covered) · Ops **C+** (backup still same-host, dependabot queue re-opened).
+
+**Recommended action plan (P0 first):**
+
+1. **R9-1 + R9-2 (P0, security):** add `tfa_pending` **and** `token_type == "access"` checks to `steam_auth._get_forum_user` and a `token_type` check to `auth_shared._get_forum_user`; add regression tests asserting a partial-2FA token and a refresh token both 401 on `/api/forum/auth/steam/connect-url`, `/api/forum/auth/github/connect-url`, `/api/auth/authentik/connect-url`.
+2. **R9-3 (P1, correctness):** `o = order.data[0]` + a test that hits `/api/store/delivery/tracking/{order_no}` and asserts 200.
+3. **R9-4 (P1):** make `pop_auth_code` atomic (`GETDEL`/Lua); test concurrent double-redemption returns exactly one payload.
+4. **R9-5/R9-6 (P1, mobile):** call `clearCalDAVCredentials()` from `logout()`; anchor the Talk WebView whitelist to exact origins (append `$` via a stricter check or use `onShouldStartLoadWithRequest`).
+5. **R9-7…R9-15 (P2):** identity-link guard on connect, `authentik_id` in `FORBIDDEN_FIELDS`, add `/api/admin/deploy/event` to `_OPEN_EXACT`, scope-gate the `email` claim, Dialog ARIA fix, PKCE, awaited logout, refresh epoch guard.
+6. Drain the 20 dependabot PRs; delete + rotate the R7-20 env dumps; schedule the C3 backup bucket.
+
+---
+
+### 21.6 Fix batch — branch `fix/round-9-batch` (2026-10-16)
+
+All actionable Round-9 findings were fixed in one batch on top of `ed15832`.
+
+**Backend**
+- **R9-1 (CRITICAL)** — `routers/steam_auth.py:_get_forum_user` now rejects `tfa_pending` tokens and requires `token_type == "access"`; the partial-2FA token can no longer authorize `/connect-init` / `/connect-url` / `/disconnect`.
+- **R9-2 (HIGH)** — `routers/auth_shared.py:_get_forum_user` now requires `token_type == "access"` (refresh tokens rejected) for all callers (github/authentik connect, profile, session-migrate).
+- **R9-3 (MED)** — `store_delivery.py` tracking endpoint takes `order.data[0]` (was returning a list → 500).
+- **R9-4 (MED)** — `utils/oauth_store.pop_auth_code` consumes the code atomically (`GETDEL`, Lua fallback); no more double-redemption.
+- **R9-7 (LOW)** — `authentik_oidc` connect path now calls `_ensure_identity_available` (duplicate → graceful `duplicate` error) before writing `authentik_id`.
+- **R9-8 (LOW)** — `authentik_id` added to `admin_actions.FORBIDDEN_FIELDS`.
+- **R9-9 (LOW)** — `/api/admin/deploy/event` added to `main.py:_OPEN_EXACT` (its own secret-header check now actually runs).
+- **R9-10 (LOW)** — `ldap_oauth` `/oauth/userinfo` only emits the `email` claim when the token's scope grants `email`.
+- **R9-16 (INFO)** — Pydantic `.dict()` → `.model_dump()` at all 21 router sites.
+
+**Frontend**
+- **R9-11 (LOW)** — `components/Dialog.jsx` overlay no longer sets `role="button" tabIndex={0}` alongside `aria-hidden` (ARIA violation removed; overlay is decorative, Escape still closes).
+- **R9-12 (LOW)** — `lib/css-sanitize.ts` preserves system-generated `@font-face` rules whose `src: url(...)` is an https/localhost URL with an explicit `format()`; ordinary `url(` is still stripped.
+
+**Mobile**
+- **R9-5 (MED)** — `logout()` and `deleteAccount()` now clear Nextcloud CalDAV credentials (`clearCalDAVCredentials()`).
+- **R9-6 (MED)** — `app/talk-room.tsx` adds an exact-origin `onShouldStartLoadWithRequest` guard for the call WebView (react-native-webview's `originWhitelist` is an unanchored prefix regex; non-http schemes pass through).
+- **R9-13 (LOW)** — `src/lib/api.ts` adds an `authEpoch` guard so an in-flight refresh can't re-persist a token after logout.
+- **R9-14 (LOW)** — `src/screens/profile/Overview.tsx` awaits `logout()` before `refresh()`.
+
+**Docs** — `docs/SECURITY.md` line refs corrected (`lib/api.ts:63`, `admin/[[...slug]]/page.tsx:19`, Dashboard bullet de-numbered).
+
+**R9-15 (PKCE) — assessed, not applicable.** The mobile OAuth flow is *server-mediated*: the backend holds the provider client secret, and the app receives a single-use, 5-minute, HMAC-state-bound exchange code (`utils/mobile_oauth_codes.exchange_code` verifies the `app_state_hash` and consumes on first use). PKCE protects a *public client's* authorization-code leg at the provider, which does not exist here; the deep-link interception vector is already covered by the one-time state echo + single-use code. Recorded as a documented design decision rather than a fix.
+
+**Gates (all green after the batch):** backend ruff 0 · mypy 0 (76 files) · **pytest 373 passed** (361 + 12 new in `tests/test_round9_fixes.py`); frontend tsc 0 · eslint 0 err / 58 warn · **vitest 173 passed + 1 skip** (167 + 7 new in `lib/css-sanitize.test.ts`); mobile tsc 0 · eslint 0 · **vitest 87 passed**.
+
+---
+
+*Round-9 audit, static + source-verified. Every CRITICAL/HIGH claim manually confirmed against source at `ed15832`; the R9-1/R9-2/R9-3/R9-4 and LOW/MED batch was fixed on `fix/round-9-batch` with regression tests.*

@@ -269,6 +269,10 @@ _OPEN_EXACT: set[str] = {
     # C1: Vercel cron cleanup (daily) — auth via Authorization: Bearer CRON_SECRET inside cron.py.
     # Without this entry the middleware 403s the cron before cron.py's hmac check runs.
     "/api/cron/cleanup",
+    # R9-9 — Coolify deploy webhook. Its own handler authenticates via the
+    # x-deploy-secret HMAC header, but the middleware internal-token gate runs
+    # first, so without this entry the webhook was 403'd before its check.
+    "/api/admin/deploy/event",
     "/api/cron/monitor",
     "/api/monitor/status",
     "/api/monitor/ping",

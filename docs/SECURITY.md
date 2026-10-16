@@ -26,8 +26,8 @@ We aim to acknowledge within 48h and ship a fix within 7 days. We use coordinate
 
 This repo was private and is now public. Source alone does **not** give access to prod:
 
-- Auth is `PASETO v4` (XChaCha20-Poly1305) via HttpOnly `auth_token` cookie (`lib/api.ts:62` `withCredentials: true`, `dependencies.py:32` `CookieHTTPBearer`). No `localStorage` token to steal via XSS.
-- `app/admin/[[...slug]]/page.tsx:44` SSR gate enforces `role in ['admin','moderator','editor']`; client `Dashboard.jsx:98` is view-only.
+- Auth is `PASETO v4` (XChaCha20-Poly1305) via HttpOnly `auth_token` cookie (`lib/api.ts:63` `withCredentials = true`, `dependencies.py:32` `CookieHTTPBearer`). No `localStorage` token to steal via XSS.
+- `app/admin/[[...slug]]/page.tsx:19` SSR gate enforces `role in ['admin','moderator','editor','chat']`; the admin `Dashboard.jsx` UI is view-only for anything the role can't act on, and every mutation is re-authorized server-side (`require_admin` / `require_staff`).
 - `database.py:19` uses `SUPABASE_SERVICE_ROLE_KEY` server-side only; RLS is enforced via `supabase/migrations/202608*` (`REVOKE EXECUTE ON exec_sql`, `REVOKE ALL ON store_*`, column-level `encryption_key` revoke). Even with schema visible, anon `SELECT` is locked.
 - `auth_staff.py:76,248` user search inputs are sanitized via `database.py:112` `safe_search_term`; `pdf_editor.py:283` opens documents behind `Depends(get_current_user)`.
 - `proxy.ts:527` `X-Internal-Token` is an HMAC (`method:pathname:ts`, 300s TTL), not the raw `INTERNAL_API_SECRET`.

@@ -80,7 +80,7 @@ async def create_coupon(body: CouponBody, _: dict = Depends(COUPONS_MANAGE)):
     if body.type == "percent" and not (0 <= body.value_percent <= 100):
         raise HTTPException(400, "Percent must be 0-100")
     try:
-        res = supabase.table("store_coupons").insert({**body.dict(), "code": code}).execute()
+        res = supabase.table("store_coupons").insert({**body.model_dump(), "code": code}).execute()
     except Exception as exc:
         raise HTTPException(400, f"Coupon not created: {exc}")
     return _coupon_payload(res.data[0]) if res.data else {"id": None}
@@ -104,7 +104,7 @@ class CouponPatchBody(BaseModel):
 
 @router.patch("/coupons/{coupon_id}")
 async def update_coupon(coupon_id: str, body: CouponPatchBody, _: dict = Depends(COUPONS_MANAGE)):
-    patch = {k: v for k, v in body.dict().items() if v is not None}
+    patch = {k: v for k, v in body.model_dump().items() if v is not None}
     if patch.get("code") is not None:
         patch["code"] = str(patch["code"]).strip().upper()
     if patch.get("type") == "percent" and not (0 <= (patch.get("value_percent") or 0) <= 100):
@@ -168,7 +168,7 @@ async def create_deal(body: DealBody, _: dict = Depends(DEALS_MANAGE)):
     if not (0 <= body.discount_percent <= 100):
         raise HTTPException(400, "Discount must be 0-100")
     try:
-        res = supabase.table("store_deals").insert(body.dict()).execute()
+        res = supabase.table("store_deals").insert(body.model_dump()).execute()
     except Exception as exc:
         raise HTTPException(400, f"Deal not created: {exc}")
     return _deal_payload(res.data[0]) if res.data else {"id": None}
@@ -176,7 +176,7 @@ async def create_deal(body: DealBody, _: dict = Depends(DEALS_MANAGE)):
 
 @router.patch("/deals/{deal_id}")
 async def update_deal(deal_id: str, body: DealBody, _: dict = Depends(DEALS_MANAGE)):
-    patch = {**body.dict(), "updated_at": _now()}
+    patch = {**body.model_dump(), "updated_at": _now()}
     if not (0 <= patch["discount_percent"] <= 100):
         raise HTTPException(400, "Discount must be 0-100")
     res = supabase.table("store_deals").update(patch).eq("id", deal_id).execute()

@@ -45,8 +45,10 @@ export function OverviewTab({ goEdit }: { goEdit: () => void }) {
   const logOut = async () => {
     const ok = await confirm({ title: 'Log out', message: 'Sign out of your account?', confirmText: 'Log out', destructive: true })
     if (!ok) return
-    logout()
-    refresh()
+    // R9-14 — await the teardown before re-syncing, so the profile refetch
+    // can't run against half-cleared credentials and flash a stale user.
+    await logout()
+    await refresh()
   }
 
   return (

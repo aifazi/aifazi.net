@@ -206,7 +206,7 @@ class CategoryBody(BaseModel):
 @router.post("/categories")
 async def create_category(body: CategoryBody, request: Request, user: dict = Depends(CATEGORIES)):
     try:
-        res = supabase.table("store_categories").insert(body.dict()).execute()
+        res = supabase.table("store_categories").insert(body.model_dump()).execute()
     except Exception as exc:
         log.warning("category create failed: %s", exc)
         raise HTTPException(400, "Category not created")
@@ -216,7 +216,7 @@ async def create_category(body: CategoryBody, request: Request, user: dict = Dep
 
 @router.patch("/categories/{cat_id}")
 async def update_category(cat_id: str, body: CategoryBody, request: Request, user: dict = Depends(CATEGORIES)):
-    res = supabase.table("store_categories").update(body.dict()).eq("id", cat_id).execute()
+    res = supabase.table("store_categories").update(body.model_dump()).eq("id", cat_id).execute()
     if not res.data:
         raise HTTPException(404, "Category not found")
     _audit(_actor(user), "store_category_update", target=f"store_categories:{cat_id}", ip=_ip(request))
@@ -276,7 +276,7 @@ class ProductBody(BaseModel):
 @router.post("/products")
 async def create_product(body: ProductBody, request: Request, user: dict = Depends(CATALOG)):
     try:
-        res = supabase.table("store_products").insert(body.dict()).execute()
+        res = supabase.table("store_products").insert(body.model_dump()).execute()
     except Exception as exc:
         log.warning("product create failed: %s", exc)
         raise HTTPException(400, "Product not created")
@@ -286,7 +286,7 @@ async def create_product(body: ProductBody, request: Request, user: dict = Depen
 
 @router.patch("/products/{prod_id}")
 async def update_product(prod_id: str, body: ProductBody, request: Request, user: dict = Depends(CATALOG)):
-    res = supabase.table("store_products").update({**body.dict(), "updated_at": _now()}).eq("id", prod_id).execute()
+    res = supabase.table("store_products").update({**body.model_dump(), "updated_at": _now()}).eq("id", prod_id).execute()
     if not res.data:
         raise HTTPException(404, "Product not found")
     _audit(_actor(user), "store_product_update", target=f"store_products:{prod_id}", ip=_ip(request))
@@ -523,7 +523,7 @@ async def create_invoice(body: InvoiceBody, request: Request, user: dict = Depen
                                                 body.discount_cents, body.tax_cents)
     try:
         res = supabase.table("store_invoices").insert({
-            **body.dict(exclude={"subtotal_cents", "discount_cents", "tax_cents", "total_cents", "status"}),
+            **body.model_dump(exclude={"subtotal_cents", "discount_cents", "tax_cents", "total_cents", "status"}),
             "status": body.status,
             "subtotal_cents": subtotal,
             "discount_cents": discount,
@@ -550,7 +550,7 @@ class InvoicePatchBody(BaseModel):
 
 @router.patch("/invoices/{invoice_id}")
 async def update_invoice(invoice_id: str, body: InvoicePatchBody, request: Request, user: dict = Depends(INVOICES)):
-    patch = {k: v for k, v in body.dict().items() if v is not None and k != "reason"}
+    patch = {k: v for k, v in body.model_dump().items() if v is not None and k != "reason"}
     if patch.get("status") is not None and patch["status"] not in INVOICE_STATUSES:
         raise HTTPException(400, "Invalid invoice status")
     if body.status == "paid":
@@ -638,7 +638,7 @@ async def create_quote(body: QuoteBody, request: Request, user: dict = Depends(I
 
 @router.patch("/quotes/{quote_id}")
 async def update_quote(quote_id: str, body: QuoteBody, request: Request, user: dict = Depends(INVOICES)):
-    patch = {k: v for k, v in body.dict().items() if v is not None}
+    patch = {k: v for k, v in body.model_dump().items() if v is not None}
     if patch.get("status") is not None and patch["status"] not in QUOTE_STATUSES:
         raise HTTPException(400, "Invalid quote status")
     # Totals follow the line items, not the client: recompute whenever items
@@ -734,7 +734,7 @@ class PlanBody(BaseModel):
 @router.post("/plans")
 async def create_plan(body: PlanBody, request: Request, user: dict = Depends(SETTINGS)):
     try:
-        res = supabase.table("store_plans").insert(body.dict()).execute()
+        res = supabase.table("store_plans").insert(body.model_dump()).execute()
     except Exception as exc:
         log.warning("plan create failed: %s", exc)
         raise HTTPException(400, "Plan not created")
@@ -744,7 +744,7 @@ async def create_plan(body: PlanBody, request: Request, user: dict = Depends(SET
 
 @router.patch("/plans/{plan_id}")
 async def update_plan(plan_id: str, body: PlanBody, request: Request, user: dict = Depends(SETTINGS)):
-    res = supabase.table("store_plans").update({**body.dict(), "updated_at": _now()}).eq("id", plan_id).execute()
+    res = supabase.table("store_plans").update({**body.model_dump(), "updated_at": _now()}).eq("id", plan_id).execute()
     if not res.data:
         raise HTTPException(404, "Plan not found")
     _audit(_actor(user), "store_plan_update", target=f"store_plans:{plan_id}", ip=_ip(request))
@@ -787,7 +787,7 @@ class SubscriptionPatchBody(BaseModel):
 
 @router.patch("/subscriptions/{sub_id}")
 async def update_subscription(sub_id: str, body: SubscriptionPatchBody, request: Request, user: dict = Depends(SETTINGS)):
-    patch = {k: v for k, v in body.dict().items() if v is not None}
+    patch = {k: v for k, v in body.model_dump().items() if v is not None}
     if not patch:
         raise HTTPException(400, "Nothing to update")
     patch["updated_at"] = _now()
