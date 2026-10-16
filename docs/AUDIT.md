@@ -1377,6 +1377,8 @@ Module names now derive from the run directory (`utils.audit` vs `routers.audit`
 
 This is the same shape as the `auth.py` split (#408): the real work is **delete ~1000 lines of shadowed dead code, then move the 8 live routes + their shared helpers into domain submodules** (`connect`, `txadmin`, `discord`), verifying the route surface is identical before/after. Deferred to its own batch — it is a dead-code removal, not a mechanical move, and fivem route coverage in `tests/` is thin.
 
+> **Correction (§24.3):** the "undecorated dead copies" claim above is **wrong**. Those handlers are live implementations — the thin wrapper modules import them lazily from inside their route bodies, so they cannot be deleted. mypy proved it (20 `attr-defined` errors when they were removed). See §24.3.
+
 ### 23.4 Gates (all green)
 
 - Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held; the two `exhaustive-deps` warnings moved with their code) · **vitest 175 passed + 1 skip** · `next build` ✅.
@@ -1385,4 +1387,62 @@ This is the same shape as the `auth.py` split (#408): the real work is **delete 
 
 ---
 
-*God-file batch, verified live 2026-10-16. `AdminPanels.jsx` split + `mypy` scope on `fix/round-9-godfile-split`; `fivem.py` scoped, not yet executed.*
+*God-file batch, verified live 2026-10-16. `AdminPanels.jsx` split + `mypy` scope on `fix/round-9-godfile-split`; `fivem.py` scoped here, executed in §24 (the §23.3 "dead copies" claim is corrected there).*
+
+---
+
+## 24. God-file splits, cont. — `ServerRackAnimation.jsx`, `ThemeLibrary.jsx`, `fivem.py` → package (2026-10-16)
+
+Same branch (`fix/round-9-godfile-split`). Structure/quality work — **no new security findings**. Continues §23.
+
+### 24.1 `ServerRackAnimation.jsx` (2494 → 122) — full split
+
+The globe section moved to `components/server-rack/` (alongside the existing per-mode files):
+
+| File | Lines | Contents |
+|------|-------|----------|
+| `ServerRackAnimation.jsx` | 122 | `MODES` + the mode shell (default export unchanged) |
+| `server-rack/globeUtils.js` | 200 | pure helpers/constants: `cssVar`, `readGlobeTheme`, `GLOBE_CITIES`/`GLOBE_CONNECTIONS`, `cityToAngles`, the zoom/dpr/fit helpers, `hasWebGL`, `firstGeoValue`, `maskIp`, `rgbToArr` |
+| `server-rack/VisitorHud.jsx` | 233 | visitor telemetry HUD |
+| `server-rack/GlobeMode.jsx` | 1951 | COBE globe mode (imports `VisitorHud`) |
+
+`Hero.jsx`'s dynamic `import('./ServerRackAnimation')` is unaffected (default export kept). Imports no longer used in the shell (`Clickable`, `createGlobe`) pruned.
+
+### 24.2 `ThemeLibrary.jsx` (4240 → 3471) — parts extraction
+
+The ~750 lines of top-level parts/helpers moved to `pages-src/admin/themeLibraryParts.jsx` (759): `ThemePackageCard`, `FwStyleCard`, `FwCategorySection`, `FwNavRail`, `ColorRow`, `FontPicker`, `ColorEdit`, `PreviewTarget`, the WCAG contrast helpers, `ContrastBadge`, `CustomizePreviewModal`, `TabBtn`, and the draft helpers (`makeId`/`nowISO`/`applyTemplateToDraft`/`seedCustomDraft`/`customHistReducer`/`themeColorDefaults`/`isLightSurface`/`LIGHT_PACKAGE_THEMES`). The main component stays in `ThemeLibrary.jsx` and imports only the parts it uses. The mid-file `./themeLibraryData` import is hoisted to the parts file's header (a duplicate would be a redeclaration error). `ThemeHub.jsx`'s dynamic import is unaffected.
+
+Not a full split: the remaining `ThemeLibrary` component is still ~3450 lines of one cohesive editor. It only yields further splitting via a redesign (extract the tabs/preview as sub-components), not a mechanical move.
+
+### 24.3 `fivem.py` → `routers/fivem/` package (2003 → 7 modules)
+
+**Correction to §23.3.** The claim there — that the whitelist/status/player handlers are "undecorated dead copies" — is **wrong**. They are live implementations: the thin wrapper modules (`fivem_whitelist_api.py`, `fivem_status_api.py`, `fivem_bans_api.py`) import them lazily *inside their route bodies* (`from routers.fivem import update_server_status as _mono`), so they cannot be deleted. mypy proved it (20 `attr-defined` errors when they were removed). The first analysis pass missed this because it only followed references *within* `fivem.py`.
+
+`routers/fivem.py` (2003) is now a package:
+
+| File | Lines | Contents |
+|------|-------|----------|
+| `fivem/__init__.py` | 111 | assembles the router (bans + whitelist + status + discord + txadmin + connect) and re-exports the handler names for back-compat |
+| `fivem/shared.py` | 270 | aliases, heartbeat stamping, WL field lists, discord role sync, `_sync_to_txadmin`, player-record helpers, `_parse_dt` |
+| `fivem/whitelist.py` | 512 | the 12 whitelist handlers |
+| `fivem/status.py` | 265 | status / player handlers |
+| `fivem/discord.py` | 67 | `get_discord_member` |
+| `fivem/txadmin.py` | 313 | `txadmin-event` + `txadmin/status` + `txadmin/action` |
+| `fivem/connect.py` | 438 | connect token / session-check / verify + helpers |
+
+Domain dependencies are acyclic (every submodule → `shared` only). `from routers.fivem import <handler>` still resolves (re-exports), so the wrapper modules and `main.py` are unchanged. Also removed the genuinely dead `_e` / `FRONTEND_URL` / `FRONTEND_HOST` and 29 unused imports left over from an earlier email/ban extraction.
+
+**Verified:** the assembled route surface is **identical** to the pre-split module — 48 method+path pairs, compared side-by-side by loading the old `routers/fivem.py` from git and mounting both onto a `FastAPI()`.
+
+### 24.4 Not split: `HybridInfraEditor.tsx` / `HybridInfraCanvas.tsx`
+
+Both are **single monolithic components** (`HybridInfraEditor` 3301 lines; `HybridInfraCanvas` 2502 lines is one `forwardRef`), each with ~65-70 closures nested inside the component body (the `draw*`/`on*`/`handle*` handlers). There is no mechanical extraction — a real split means rewriting them into hooks/context sub-modules, which changes structure and behaviour. Left intact; deferred to a redesign rather than a refactor batch.
+
+### 24.5 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held) · **vitest 175 passed + 1 skip** · `next build` ✅.
+- Backend: `ruff` 0 · **`mypy .` 0 (120 files, was 114 — the fivem package adds 6 modules)** · **pytest 374 passed**.
+
+---
+
+*God-file batch, verified live 2026-10-16. `ServerRackAnimation.jsx` + `ThemeLibrary.jsx` splits and `fivem.py` → package on `fix/round-9-godfile-split`. `HybridInfraEditor.tsx` / `HybridInfraCanvas.tsx` left intact (monolithic; need a redesign).*
