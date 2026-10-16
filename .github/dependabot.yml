@@ -191,3 +191,19 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+
+  # Frontend image (docker/frontend/Dockerfile) — was missing from the matrix,
+  # so its base image drifted without a dependabot PR.
+  - package-ecosystem: "docker"
+    directory: "docker/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "aifazi"
+    labels:
+      - "dependencies"
+      - "docker"

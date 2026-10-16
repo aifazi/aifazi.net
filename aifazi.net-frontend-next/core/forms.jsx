@@ -152,6 +152,7 @@ export function Select({
   disabled,
   placement = 'bottom-left',
   menuStyle = {},
+  onClick,
   ...props
 }) {
   const opts = normalizeOptions(options)
@@ -180,11 +181,13 @@ export function Select({
 
   return (
     <div ref={ref} data-core-control="select" style={{ position: 'relative', width: '100%', ...style }}>
+      {/* Compose rather than clobber: a caller-supplied onClick (in ...props)
+          must still run when the trigger toggles the listbox. */}
       <button
         {...props}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen(v => !v)}
+        onClick={e => { onClick?.(e); setOpen(v => !v) }}
         aria-haspopup="listbox"
         aria-expanded={open}
         style={{
@@ -276,7 +279,7 @@ export function Select({
 /**
  * @param {{ [key: string]: any, checked?: boolean, onChange?: (checked: boolean) => void, disabled?: boolean, label?: any, style?: any, onKeyDown?: (e: any) => void, onFocus?: (e: any) => void, onBlur?: (e: any) => void }} props
  */
-export function Checkbox({ checked, onChange, disabled, label, style = {}, ...props }) {
+export function Checkbox({ checked, onChange, disabled, label, style = {}, onClick, ...props }) {
   const accent = inputAccent()
   // Historic look used green for the default (cyan-group) styles — preserve it
   // exactly there; other input styles drive the checked color from the mapping.
@@ -290,7 +293,7 @@ export function Checkbox({ checked, onChange, disabled, label, style = {}, ...pr
       data-core-control="checkbox"
       aria-pressed={checked}
       disabled={disabled}
-      onClick={() => !disabled && onChange?.(!checked)}
+      onClick={e => { if (disabled) return; onClick?.(e); onChange?.(!checked) }}
       style={{
         display: 'inline-flex',
         alignItems: 'center',

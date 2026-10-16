@@ -7,7 +7,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import { Slider } from '@/core/forms'
+import { Slider, Select, Checkbox } from '@/core/forms'
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined
@@ -88,5 +88,35 @@ describe('Slider keyboard support', () => {
     const el = render(<Slider value={50} onChange={() => {}} onKeyDown={caller} />)
     press(sliderOf(el), 'ArrowRight')
     expect(caller).toHaveBeenCalledTimes(1)
+  })
+})
+
+// R9 follow-up: Select/Checkbox spread {...props} before their own onClick, so
+// a caller-supplied onClick used to be silently dropped. Compose instead.
+describe('Select / Checkbox caller onClick', () => {
+  const click = (node: Element) =>
+    act(() => {
+      node.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+  it('Select runs a caller onClick and still toggles the listbox', () => {
+    const onClick = vi.fn()
+    const el = render(
+      <Select value="a" onChange={() => {}} options={[{ value: 'a', label: 'A' }]} onClick={onClick} />,
+    )
+    const trigger = el.querySelector('button') as HTMLButtonElement
+    click(trigger)
+    expect(onClick).toHaveBeenCalledTimes(1)
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('Checkbox runs a caller onClick and still toggles', () => {
+    const onClick = vi.fn()
+    const onChange = vi.fn()
+    const el = render(<Checkbox checked={false} onChange={onChange} onClick={onClick} label="x" />)
+    const btn = el.querySelector('button') as HTMLButtonElement
+    click(btn)
+    expect(onClick).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith(true)
   })
 })

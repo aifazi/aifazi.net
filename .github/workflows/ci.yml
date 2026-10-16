@@ -130,7 +130,9 @@ jobs:
         run: |
           pip install -r requirements-dev.txt
           if [ ! -d tests ]; then echo "No tests directory found — add tests/"; exit 1; fi
-          pytest tests/ -x --tb=short
+          # No -x: report every failure in one run instead of stopping at the
+          # first, so a shared-fixture break surfaces all its symptoms at once.
+          pytest tests/ --tb=short
 
   backend-security:
     name: Backend - Security Scan

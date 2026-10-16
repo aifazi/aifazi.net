@@ -749,6 +749,10 @@ function Dashboard({ onLogout }) {
       const tag = t && t.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON') return
       if (t && (t.type === 'checkbox' || t.type === 'radio')) return
+      // R9 follow-up — do not hijack a single-letter key while a link or a
+      // button-like surface (e.g. a card's role="button") has focus: the letter
+      // would both activate the control and jump the admin view.
+      if (t && t.closest && t.closest('a[href], [role="button"]')) return
       if (e.metaKey || e.ctrlKey) return
       if (e.key === 'h') goView('home')
       if (e.key === 'p') goView('content')

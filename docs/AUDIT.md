@@ -1293,3 +1293,41 @@ All actionable Round-9 findings were fixed in one batch on top of `ed15832`.
 ---
 
 *Round-9 audit, static + source-verified. Every CRITICAL/HIGH claim manually confirmed against source at `ed15832`; the R9-1/R9-2/R9-3/R9-4 and LOW/MED batch was fixed on `fix/round-9-batch` with regression tests.*
+
+---
+
+## 22. Round-9 follow-up batch — Part-B cleanups + C3 runbook (2026-10-16)
+
+Branch `fix/round-9-followup`, based on `c9e25d0` (Round-9 fix batch #501 merged). This closes the code-actionable items §21.4 left "re-confirmed still open" and drafts the C3 runbook. No new security findings; this is backlog burn-down.
+
+### 22.1 Fixes
+
+| ID | Area | Fix |
+|----|------|-----|
+| F-1 | Frontend | **`Select`/`Checkbox` dropped a caller `onClick`.** `core/forms.jsx` spread `{...props}` (which carried `onClick`) *before* its own `onClick`, clobbering it. Now `onClick` is destructured and composed (caller runs, then the toggle). |
+| F-2 | Frontend | **`useLocation()` mutated sessionStorage during render.** `lib/router-compat.tsx` read *and removed* `nav-state:<path>` while rendering (impure; StrictMode's double render drained the one-shot key twice). Rewritten to read through `useSyncExternalStore` (cached, referentially-stable snapshot) and remove the key in an effect. React-Compiler `react-hooks/set-state-in-effect` forbids the obvious "setState in an effect" fix, so the external-store pattern is also the lint-clean one. |
+| F-3 | Frontend | **Dashboard shortcut guard.** `Dashboard.jsx` single-letter jumps now skip when focus is inside `a[href]` or `[role="button"]` — a letter no longer both activates a card and jumps the view. |
+| F-4 | Frontend | **Video seek jumped to 0 on keyboard activation.** `Clickable` activates via `.click()`, whose synthetic MouseEvent has `clientX=0`/`detail=0`; the seek bars (`VideoPlayer.jsx:169`, `blogPostParts.jsx:65`) now bail on `e.detail === 0` (real pointer clicks keep working; ⏪/⏩ cover keyboard seeking). |
+| F-5 | Infra | **`infra_diagrams` privilege parity.** Migration `supabase/migrations/20261016000000_infra_diagrams_privilege_parity.sql` re-asserts `REVOKE ALL` + `GRANT SELECT` (anon/authenticated) + `GRANT ALL` (service_role) and the `TO anon, authenticated` policy, matching `page_layouts`. |
+| F-6 | CI/deps | `dependabot.yml` gains the missing `docker/frontend` ecosystem (the base image was drifting unmonitored). |
+| F-7 | CI | `ci.yml` pytest step drops `-x` so all failures report in one run; `dependency-review-config.yml` already wired via `config-file` (R6-1 — no change needed). |
+| F-8 | Docs | New `docs/BACKUP-RESTORE.md` (C3 runbook: offsite target #2, fail-loud, end-to-end restore drill) + `docs/README.md` index row. |
+
+### 22.2 Tests
+
+- `core/forms.test.tsx`: +2 cases — `Select` runs a caller `onClick` and still toggles the listbox; `Checkbox` runs a caller `onClick` and still toggles. (The `useLocation` rewrite is covered by `tsc` + the existing component suite; a dedicated jsdom test would need `next/navigation` mocking.)
+
+### 22.3 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held) · **vitest 175 passed + 1 skip** (173 + 2 new).
+- Backend/mobile unchanged this batch (no source touched) → 373 / 87 hold.
+
+### 22.4 Still open after §22
+
+Owner/ops (unchanged): **C3 bucket + creds → run the restore drill** (runbook now exists) · **R7-20** delete + rotate the 5 on-disk env dumps · Coolify backend redeploy · `WORKFLOW_PAT` · EAS rebuild + device QA · 20 dependabot PRs.
+
+Code (unchanged): god-file splits · `mypy utils/` scope · e2e-on-prod · `notify-failure` echo-only · CI runner starvation · Round-7 Mediums/Lows (§19 list) · `ROADMAP.md` reconciliation · dead `scripts/*` codemods · component-test depth.
+
+---
+
+*Round-9 follow-up, verified live 2026-10-16. Part-B backlog closed on `fix/round-9-followup`; C3 documented, still owner-gated.*
