@@ -1,11 +1,14 @@
 // themePickerData.js — theme catalog for ThemePicker (extracted for size).
 import { THEME_PACKAGES } from '../core/framework-styles.js'
 
+// `featured: true` marks the curated set the picker shows by default. Everything
+// else stays available behind the "All themes" toggle — nothing is removed, and a
+// saved non-featured theme still resolves and still renders as selected.
 const THEMES = [
   // ── COLOR VARIANTS ───────────────────────────────────────────────────────
   {
     id: 'cyber-dark', name: 'Cyber', tag: 'DARK', type: 'color', style: 'cyber',
-    desc: 'Default hacker green',
+    desc: 'Default hacker green', featured: true,
     bg: '#060a0f', bg2: '#0b1118', bg3: '#111a24', primary: '#00ff88', secondary: '#00d4ff',
     text: '#c8d8e8', muted: '#6b8296', border: 'color-mix(in srgb, var(--cyan) 15%, transparent)',
   },
@@ -59,32 +62,32 @@ const THEMES = [
   },
   {
     id: 'ice', name: 'Ice', tag: 'LIGHT', type: 'color', style: 'cyber',
-    desc: 'Arctic frost',
+    desc: 'Arctic frost', featured: true,
     bg: '#eef4fa', bg2: '#e3edf7', bg3: '#d8e6f2', primary: '#0284c7', secondary: '#0891b2',
     text: '#0b1a2a', muted: '#4a6a86', border: 'rgba(2,132,199,0.22)',
   },
   // ── DESIGN STYLE THEMES ──────────────────────────────────────────────────
   {
     id: 'glass-dark', name: 'Glass', tag: 'STYLE', type: 'design', style: 'glass',
-    desc: 'Frosted glassmorphism',
+    desc: 'Frosted glassmorphism', featured: true,
     bg: '#04080f', bg2: 'rgba(10,18,32,0.45)', bg3: 'rgba(16,26,46,0.55)', primary: '#00e5ff', secondary: '#7b61ff',
     text: '#d0e8ff', muted: '#5a7898', border: 'rgba(0,229,255,0.22)',
   },
   {
     id: 'brutalist', name: 'Brutal', tag: 'LIGHT', type: 'design', style: 'brutalist',
-    desc: 'Raw bold brutalism',
+    desc: 'Raw bold brutalism', featured: true,
     bg: '#f2f0ec', bg2: '#e8e5df', bg3: '#dedad2', primary: '#e8000d', secondary: '#000000',
     text: '#000000', muted: '#555555', border: '#000000',
   },
   {
     id: 'synthwave', name: 'Synth', tag: 'STYLE', type: 'design', style: 'synthwave',
-    desc: 'Retro 80s arcade',
+    desc: 'Retro 80s arcade', featured: true,
     bg: '#0d0618', bg2: '#130828', bg3: '#180a30', primary: '#ff2d8b', secondary: '#00f0ff',
     text: '#f0d8ff', muted: '#7858a0', border: 'rgba(255,45,139,0.28)',
   },
   {
     id: 'paper', name: 'Paper', tag: 'LIGHT', type: 'design', style: 'paper',
-    desc: 'Minimal editorial',
+    desc: 'Minimal editorial', featured: true,
     bg: '#f5f0e8', bg2: '#ede8df', bg3: '#e4ddd3', primary: '#c41a1a', secondary: '#1a3a6c',
     text: '#1a1a1a', muted: '#6b6060', border: 'rgba(0,0,0,0.18)',
   },
@@ -96,19 +99,19 @@ const THEMES = [
   },
   {
     id: 'terminal', name: 'Terminal', tag: 'STYLE', type: 'design', style: 'terminal',
-    desc: 'Old-school DOS/CRT',
+    desc: 'Old-school DOS/CRT', featured: true,
     bg: '#0a0a0a', bg2: '#0f0f0f', bg3: '#141414', primary: '#33ff33', secondary: '#ffcc00',
     text: '#33ff33', muted: '#228822', border: 'rgba(51,255,51,0.25)',
   },
   {
     id: 'macos', name: 'macOS', tag: 'LIGHT', type: 'design', style: 'macos',
-    desc: 'Apple-inspired minimal',
+    desc: 'Apple-inspired minimal', featured: true,
     bg: '#f5f5f7', bg2: '#ffffff', bg3: '#ebebed', primary: '#0071e3', secondary: '#34aadc',
     text: '#1d1d1f', muted: '#86868b', border: 'rgba(0,0,0,0.12)',
   },
   {
     id: 'neon-noir', name: 'Neon Noir', tag: 'DARK', type: 'design', style: 'neon-noir',
-    desc: 'Cinematic dark neon',
+    desc: 'Cinematic dark neon', featured: true,
     bg: '#0a0a0e', bg2: '#10101a', bg3: '#16161f', primary: '#ff6b35', secondary: '#cc44ff',
     text: '#d8d0e0', muted: '#6a5a7a', border: 'rgba(204,68,255,0.2)',
   },
@@ -139,7 +142,7 @@ const THEMES = [
   },
   {
     id: 'minecraft', name: 'Minecraft', tag: 'GAME', type: 'design', style: 'minecraft',
-    desc: 'Creeper green & blocky depth',
+    desc: 'Creeper green & blocky depth', featured: true,
     bg: '#141210', bg2: '#1d1a17', bg3: '#262219', primary: '#5ad427', secondary: '#2a9dd6',
     text: '#d8d5c8', muted: '#6f6a5a', border: 'rgba(90,212,39,0.28)',
   },

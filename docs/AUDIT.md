@@ -1554,3 +1554,27 @@ D3 homepage length/rhythm (9 sections, one 8157px scroll) · D4 theme curation (
 ---
 
 *Design batches 2–4, verified 2026-10-17 (`next dev` plus injected-token checks). Brand lockup (D1), button language (D6), neon-tint tokens (D5) on `fix/round-10-design`.*
+
+---
+
+## 27. D4 — theme curation: curated default + full catalog (2026-10-17)
+
+Owner decision: keep every theme, but stop showing them all at once.
+
+**Problem.** `VALID_THEMES` holds 70 ids; the picker renders 39 theme cards + 2 packages; only 3 themes are certified (`terminal` / `light` / `paper`, per `CERTIFIED-THEMES.md`). The other 36 are best-effort — a wall of near-duplicates with no signal about which are safe.
+
+**Change.** The picker now opens on a curated set and offers the full catalog behind a toggle:
+
+- `components/themePickerData.js` — `featured: true` on **10** themes: `cyber-dark` (default), `ice`, `glass-dark`, `brutalist`, `synthwave`, `paper`, `terminal`, `macos`, `neon-noir`, `minecraft`. The spread covers the default, both certified themes the picker carries, the light colour variant, the bold light styles, the retro/neon flagships and one game theme.
+- `components/ThemePicker.jsx` — new `showAll` state; the grid shows featured themes by default with a `SHOW ALL (41) →` / `← FEATURED (10)` toggle. Nothing is removed.
+
+**Interaction rules (deliberate):**
+- Any explicit filter (TYPE or TAG) searches the **whole** catalog — filtering is an explicit request, so it is not silently narrowed to the curated set.
+- The **active** theme always renders, even when it is not featured, so a saved non-featured choice still shows as selected.
+- `light` is certified but is not one of the picker's `THEMES`, so it cannot be featured here; the certified pair the picker carries is `terminal` + `paper`.
+
+Gates: `tsc` 0 · `eslint` 0 · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Theme curation (D4), 2026-10-17. Curated default + full-catalog toggle on `fix/round-10-design`.*

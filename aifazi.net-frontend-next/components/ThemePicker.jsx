@@ -133,6 +133,7 @@ export default function ThemePicker({ open, onClose }) {
   const [activeCategory, setActiveCategory] = useState('overview')
   const [filter, setFilter] = useState('ALL')
   const [styleFilter, setStyleFilter] = useState('ALL')
+  const [showAll, setShowAll] = useState(false)
 
   // ── Admin global panel state ─────────────────────────────────────────────
   const [showAdminPanel, setShowAdminPanel] = useState(false)
@@ -227,12 +228,20 @@ export default function ThemePicker({ open, onClose }) {
   const designThemes = THEMES.filter(t => t.type === 'design')
   const packageThemes = THEMES.filter(t => t.type === 'package')
 
+  const featuredThemes = THEMES.filter(t => t.featured)
+  // The default view is the curated set. Any explicit filter (type or tag) means
+  // the visitor is looking for something specific, so it searches the whole
+  // catalog. The active theme always stays visible so it can render as selected
+  // even when it is not featured.
+  const isFiltering = styleFilter !== 'ALL' || filter !== 'ALL'
+
   const filteredThemes = THEMES.filter(t => {
     if (styleFilter === 'COLOR')   return t.type === 'color'
     if (styleFilter === 'DESIGN')  return t.type === 'design'
     if (styleFilter === 'PACKAGES') return t.type === 'package'
     if (filter === 'DARK')  return t.tag === 'DARK'
     if (filter === 'LIGHT') return t.tag === 'LIGHT'
+    if (!showAll && !isFiltering) return t.featured || t.id === theme
     return true
   })
 
@@ -413,6 +422,21 @@ export default function ThemePicker({ open, onClose }) {
                     }}>{f}</button>
                 )
               })}
+            </div>
+          )}
+
+          {/* Curated vs full catalog — only meaningful with no filter applied */}
+          {!isFiltering && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>
+                {showAll ? `ALL ${THEMES.length}` : `FEATURED ${featuredThemes.length}`}
+              </div>
+              <button className="tp-filter-btn" onClick={() => setShowAll(v => !v)}
+                style={{ padding: '3px 9px', background: 'transparent', border: '1px solid var(--border)',
+                  borderRadius: 5, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11,
+                  letterSpacing: 1, color: 'var(--muted)', transition: 'all 0.15s' }}>
+                {showAll ? `← FEATURED (${featuredThemes.length})` : `SHOW ALL (${THEMES.length}) →`}
+              </button>
             </div>
           )}
         </div>
