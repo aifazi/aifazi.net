@@ -38,6 +38,7 @@ const StoreCenter = dynamic(() => import('./storeModules/StoreCenter').then(m =>
 const MonitoringPanel = dynamic(() => import('./MonitoringPanel').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
 const VpnPanel = dynamic(() => import('./VpnPanel').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
 const OAuthSettings = dynamic(() => import('./OAuthSettings').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
+const StyleGuide = dynamic(() => import('./StyleGuide').then(m => m.default || m), { ssr: false, loading: () => <LoadingState label="Loading panel…" /> })
 
 const STAT_CARD_VIEWS = { content: 'content', activity: 'db', communications: 'communications', staff: 'staff' }
 function StatsGrid({ dashStats, isMobile, setView }) {
@@ -261,7 +262,7 @@ function PermissionEditor({ value = {}, onChange }) {
 }
 
 //  Dashboard 
-function Dashboard({ onLogout }) {
+function Dashboard({ onLogout, initialView }) {
   const toast = useToast()
   const { confirm } = useDialog()
   const navigate = useNavigate()
@@ -269,7 +270,9 @@ function Dashboard({ onLogout }) {
   const role = getRole()
   const username = getUsername()
 
-  const [view, setView] = useState('home')
+  // `/admin/<slug>` deep-links straight to that panel (unknown slugs fall
+  // through the canView guard below and land on the first permitted section).
+  const [view, setView] = useState(initialView || 'home')
   const [openTickets, setOpenTickets] = useState(0)
   const [deepTicket, setDeepTicket] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -708,6 +711,7 @@ function Dashboard({ onLogout }) {
     { key: 'store',        label: 'Store',         group: 'BUSINESS',   icon: '🛒', badge: null },
     { key: 'fivem',        label: 'FiveM Server',  group: 'FIVEM',      icon: '🎮', badge: null },
     { key: 'changelog',    label: 'Changelog',     group: 'MANAGE',     icon: '📋',   badge: 'NEW' },
+    { key: 'style-guide',  label: 'Style Guide',   group: 'MANAGE',     icon: '🎨',   badge: null },
     { key: 'monitoring',   label: 'Monitoring',    group: 'SYSTEM',     icon: '📡',   badge: null },
     { key: 'vpn',          label: 'VPN',           group: 'SYSTEM',     icon: '🔒',   badge: null },
     { key: 'identity',     label: 'Identity & OAuth', group: 'SYSTEM',  icon: '🪪',   badge: 'NEW' },
@@ -1498,6 +1502,7 @@ function Dashboard({ onLogout }) {
           {view === 'monitoring' && canView(view) && <PanelErrorBoundary label="Monitoring"><MonitoringPanel /></PanelErrorBoundary>}
           {view === 'vpn' && canView(view) && <PanelErrorBoundary label="VPN"><VpnPanel /></PanelErrorBoundary>}
           {view === 'identity' && canView(view) && <PanelErrorBoundary label="Identity & OAuth"><OAuthSettings /></PanelErrorBoundary>}
+        {view === 'style-guide' && canView(view) && <PanelErrorBoundary label="Style Guide"><StyleGuide /></PanelErrorBoundary>}
           {view === 'fivem' && canView(view) && (
             <PanelErrorBoundary label="FiveM Server">
               <FiveMPanel defaultSection="status" />

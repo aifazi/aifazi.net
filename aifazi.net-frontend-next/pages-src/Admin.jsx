@@ -23,7 +23,7 @@ function getServerUserData() {
   }
 }
 
-export default function Admin({ serverUser: serverUserProp }) {
+export default function Admin({ serverUser: serverUserProp, initialView }) {
   const navigate  = useNavigate()
   const serverUser = serverUserProp || getServerUserData()
   const hasServerAuth = serverUser && serverUser.role && (serverUser.role !== 'user' || (serverUser.permissions && Object.keys(serverUser.permissions).length > 0))
@@ -114,5 +114,5 @@ export default function Admin({ serverUser: serverUserProp }) {
 
   // All staff/admin accounts now use the shared dashboard; permissions filter modules/actions.
 
-  return <Dashboard onLogout={handleLogout} />
+  return <Dashboard onLogout={handleLogout} initialView={initialView} />
 }

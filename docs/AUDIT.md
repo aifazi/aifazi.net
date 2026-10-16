@@ -1640,3 +1640,38 @@ Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip*
 ---
 
 *Empty states (Forum / Store / DB), 2026-10-17. Illustrated on `fix/round-10-design`.*
+
+---
+
+## 30. Style guide — `/admin/style-guide` (2026-10-17)
+
+Review finding: the design system existed, but the only way to discover it was to read `globals.css` and to notice that there were **four** different `EmptyState` implementations. Nothing told the next panel which primitive to reuse, so new panels kept inventing a fourth button and a fifth empty state.
+
+**New panel.** `pages-src/admin/StyleGuide.jsx`, reachable at `/admin/style-guide` and from the sidebar under MANAGE:
+
+| Section | What it renders |
+|---|---|
+| Tokens | Live swatches for surfaces, text, accents and the `--comp-*` contract |
+| Typography | `--font-display` / `--font-mono` at the sizes the site actually uses |
+| Buttons | `.btn-primary`, `.btn-outline`, the `.neon-btn*` family, and the admin kit `Btn` |
+| Inputs | `core/forms.jsx` Input / Select / TextArea / Checkbox, including disabled |
+| Badges | Admin kit `Badge` across every tone |
+| Cards | `StatCard` |
+| Empty states | All **four** implementations side by side, labelled with their owner surface |
+
+**Live, not a snapshot.** The token swatches read `getComputedStyle(document.documentElement)` and re-read through a `MutationObserver` watching `<html>`'s `style` and `data-theme` attributes — which is exactly how `applyComponentTokens` and the theme switcher mutate the document. The page therefore always shows the **active** theme, including a visitor's chosen personality, instead of a hardcoded palette that rots the first time a theme personality changes.
+
+**The empty-state section is the point.** §29 added ~30 call sites across two of the four implementations. This makes the choice explicit instead of tribal knowledge:
+
+- `components/community.jsx` — public surfaces (blog / forum / store). `compact` for inline spots.
+- `pages-src/admin/ui.jsx` — admin list panels.
+- `core/States.jsx` — the D-series admin language (LoadingState / ErrorState / DisabledNote).
+- `core/Feedback.jsx` — generic fallback.
+
+**Real routes for admin panels.** The dashboard was a single view with internal state; deep links worked only through a hash handler hardcoded to Help Desk. `app/admin/[[...slug]]/page.tsx` now awaits `params` and passes the first slug segment to the shell as `initialView`, which seeds the dashboard's view state. `/admin/style-guide` therefore works, and so does `/admin/<any-panel>`; an unknown slug falls through the existing `canView` fail-closed guard and lands on the first permitted section. `style-guide` is gated on `content.themes` in `admin/access.js`, so admins and editors see it.
+
+Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Living style guide, 2026-10-17. `/admin/style-guide` on `fix/round-10-design`.*

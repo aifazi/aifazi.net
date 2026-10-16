@@ -11,6 +11,7 @@ export default async function AdminPage({ params, searchParams }: { params: Prom
     if (Array.isArray(v)) v.forEach(item => { if (item !== undefined) sp.append(k, item) })
     else if (v !== undefined) sp.append(k, v)
   }
+  const { slug } = await params
   const { valid, user } = await verifyAdminSession(sp)
 
   // 'chat' included: chat staff land on the dashboard's first-permitted
@@ -49,7 +50,7 @@ export default async function AdminPage({ params, searchParams }: { params: Prom
           }),
         }}
       />
-      <AdminClient serverUser={user} />
+      <AdminClient serverUser={user} initialView={slug?.[0] ?? null} />
     </>
   )
 }
