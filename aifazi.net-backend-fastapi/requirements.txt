@@ -2,10 +2,10 @@
 # requirements.lock mirrors these pins for the deploy path.
 # Keep httpx/PyMuPDF pinned for security (see audit).
 httpx==0.28.1
-fastapi==0.142.2
+fastapi==0.143.0
 # Pinned explicitly (O4): fastapi's only hard constraint lets pydantic float
 # to a newer minor at install time.
-pydantic==2.13.5
+pydantic==2.14.1
 uvicorn[standard]==0.54.0
 supabase==2.32.0
 cryptography==50.0.2
