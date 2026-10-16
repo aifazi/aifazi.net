@@ -54,8 +54,8 @@ function HeaderPreviewSVG({ id }) {
         <polygon points="14,6 22,10 22,20 14,24 6,20 6,10" fill="none" stroke="#00ff88" strokeWidth="1.2" opacity="0.7"/>
         <line x1="10" y1="15" x2="18" y2="15" stroke="#00ff88" strokeWidth="1.5" strokeLinecap="round"/>
         <line x1="14" y1="15" x2="14" y2="21" stroke="#00ff88" strokeWidth="1.5" strokeLinecap="round"/>
-        <text x="26" y="14" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">TANVIR</text>
-        <text x="26" y="21" fontFamily="monospace" fontSize="4" fill="#00ff88" opacity="0.7" letterSpacing="3">.DEV</text>
+        <text x="26" y="14" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">AIFAZI</text>
+        <text x="26" y="21" fontFamily="monospace" fontSize="4" fill="#00ff88" opacity="0.7" letterSpacing="3">.NET</text>
         {['About','Blog','Forum','Tools'].map((l,i)=><text key={l} x={60+i*25} y="16" fontFamily="monospace" fontSize="5" fill="#6b8296" letterSpacing="1">{l}</text>)}
         <defs><linearGradient id="hcg" x1="0" x2="1"><stop offset="0%" stopColor="#00ff88"/><stop offset="100%" stopColor="#00d4ff"/></linearGradient></defs>
         <rect x="0" y="42" width="90" height="1.5" fill="url(#hcg)"/>
@@ -95,7 +95,7 @@ function HeaderPreviewSVG({ id }) {
       <svg viewBox="0 0 160 44" width="100%" height="100%">
         <rect width="160" height="44" fill="#fafafa"/>
         <rect x="0" y="43" width="160" height="1" fill="#e8e8e8"/>
-        <text x="12" y="26" fontFamily="monospace" fontSize="8" fill="#111" fontWeight="700" letterSpacing="2">TANVIR</text>
+        <text x="12" y="26" fontFamily="monospace" fontSize="8" fill="#111" fontWeight="700" letterSpacing="2">AIFAZI</text>
         {['About','Work','Blog','Contact'].map((l,i)=><text key={l} x={68+i*22} y="26" fontFamily="monospace" fontSize="5" fill="#888" letterSpacing="1">{l}</text>)}
         <text x="150" y="26" fontFamily="monospace" fontSize="8" fill="#111">☰</text>
       </svg>
@@ -150,7 +150,7 @@ function HeaderPreviewSVG({ id }) {
         <rect width="160" height="44" fill="#f7f1e8"/>
         <rect x="0" y="8" width="160" height="1" fill="#111"/>
         <rect x="0" y="35" width="160" height="1" fill="#111"/>
-        <text x="8" y="30" fontFamily="serif" fontSize="20" fill="#111" fontWeight="900" letterSpacing="-1">TANVIR</text>
+        <text x="8" y="30" fontFamily="serif" fontSize="20" fill="#111" fontWeight="900" letterSpacing="-1">AIFAZI</text>
         {['WORK','BLOG','CONTACT'].map((l,i)=><text key={l} x={88+i*22} y="25" fontFamily="monospace" fontSize="4.5" fill="#111">{l}</text>)}
       </svg>
     ),
@@ -166,7 +166,7 @@ function HeaderPreviewSVG({ id }) {
     'mobile-dock': (
       <svg viewBox="0 0 160 44" width="100%" height="100%">
         <rect width="160" height="44" fill="#061018"/>
-        <text x="62" y="16" fontFamily="monospace" fontSize="7" fill="#c8d8e8" letterSpacing="2">TANVIR</text>
+        <text x="62" y="16" fontFamily="monospace" fontSize="7" fill="#c8d8e8" letterSpacing="2">AIFAZI</text>
         <rect x="34" y="24" width="92" height="14" rx="7" fill="#0b1118" stroke="#00d4ff44"/>
         {['⌂','⌕','⚙','☰'].map((l,i)=><text key={l} x={47+i*21} y="34" fontFamily="monospace" fontSize="6" fill={i===1?'#00d4ff':'#6b8296'}>{l}</text>)}
       </svg>
@@ -174,7 +174,7 @@ function HeaderPreviewSVG({ id }) {
     studio: (
       <svg viewBox="0 0 160 44" width="100%" height="100%">
         <rect width="160" height="44" fill="#090909"/>
-        <text x="10" y="26" fontFamily="sans-serif" fontSize="9" fill="#fff" fontWeight="700">TANVIR</text>
+        <text x="10" y="26" fontFamily="sans-serif" fontSize="9" fill="#fff" fontWeight="700">AIFAZI</text>
         <line x1="60" y1="8" x2="60" y2="36" stroke="#ffffff22"/>
         {['Selected','Work','Journal'].map((l,i)=><text key={l} x={72+i*25} y="25" fontFamily="monospace" fontSize="4.8" fill={i===0?'#fff':'#777'}>{l}</text>)}
         <circle cx="148" cy="22" r="5" fill="none" stroke="#fff"/>
@@ -186,8 +186,8 @@ function HeaderPreviewSVG({ id }) {
         <defs><linearGradient id="hgr" x1="0" x2="1"><stop offset="0%" stopColor="#00ff88"/><stop offset="50%" stopColor="#00d4ff"/><stop offset="100%" stopColor="#7b61ff"/></linearGradient></defs>
         <rect width="160" height="3" fill="url(#hgr)"/>
         <polygon points="14,6 22,10 22,20 14,24 6,20 6,10" fill="none" stroke="#00ff88" strokeWidth="1.2" opacity="0.6"/>
-        <text x="28" y="14" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">TANVIR</text>
-        <text x="28" y="21" fontFamily="monospace" fontSize="4" fill="#00d4ff" opacity="0.75" letterSpacing="3">.DEV</text>
+        <text x="28" y="14" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">AIFAZI</text>
+        <text x="28" y="21" fontFamily="monospace" fontSize="4" fill="#00d4ff" opacity="0.75" letterSpacing="3">.NET</text>
         {['Home','Blog','Tools'].map((l,i)=><text key={l} x={64+i*26} y="26" fontFamily="monospace" fontSize="5" fill="#6b8296" letterSpacing="1">{l}</text>)}
         <rect x="128" y="10" width="26" height="12" rx="1" fill="none" stroke="#00d4ff55" strokeWidth="1"/>
         <text x="133" y="19" fontFamily="monospace" fontSize="5" fill="#00d4ff" letterSpacing="1">LOGIN</text>
@@ -197,7 +197,7 @@ function HeaderPreviewSVG({ id }) {
       <svg viewBox="0 0 160 48" width="100%" height="100%">
         <rect width="160" height="48" fill="#04080f"/>
         <rect x="6" y="8" width="148" height="30" rx="15" fill="#0b1118" stroke="#00ff8844"/>
-        <text x="16" y="26" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">TANVIR</text>
+        <text x="16" y="26" fontFamily="monospace" fontSize="6" fill="#e8eaed" letterSpacing="2">AIFAZI</text>
         {['Home','Blog','Tools'].map((l,i)=><text key={l} x={58+i*26} y="26" fontFamily="monospace" fontSize="5" fill="#6b8296" letterSpacing="1">{l}</text>)}
         <circle cx="134" cy="23" r="7" fill="none" stroke="#00ff8866" strokeWidth="1.2"/>
         <circle cx="146" cy="23" r="5" fill="#00ff88"/>
@@ -228,8 +228,8 @@ function FooterPreviewSVG({ id }) {
         <rect width="160" height="1" fill="#ffffff0a"/>
         {[...Array(8)].map((_,i)=>[...Array(5)].map((_,j)=><circle key={`${i}${j}`} cx={10+i*20} cy={10+j*16} r="0.8" fill="#00ff8818"/>))}
         <polygon points="14,8 20,11 20,18 14,21 8,18 8,11" fill="none" stroke="#00ff88" strokeWidth="1" opacity="0.6"/>
-        <text x="24" y="14" fontFamily="monospace" fontSize="6" fill="#c8d8e8" fontWeight="bold">TANVIR</text>
-        <text x="24" y="20" fontFamily="monospace" fontSize="3.5" fill="#00ff88" opacity="0.7">.DEV</text>
+        <text x="24" y="14" fontFamily="monospace" fontSize="6" fill="#c8d8e8" fontWeight="bold">AIFAZI</text>
+        <text x="24" y="20" fontFamily="monospace" fontSize="3.5" fill="#00ff88" opacity="0.7">.NET</text>
         <text x="8" y="32" fontFamily="monospace" fontSize="4" fill="#6b8296">Network Engineer</text>
         <text x="62" y="11" fontFamily="monospace" fontSize="4" fill="#00d4ff" letterSpacing="2">NAVIGATE</text>
         <rect x="62" y="13" width="28" height="0.5" fill="#00d4ff44"/>
@@ -250,7 +250,7 @@ function FooterPreviewSVG({ id }) {
       <svg viewBox="0 0 160 40" width="100%" height="100%">
         <rect width="160" height="40" fill="#fafafa"/>
         <rect width="160" height="1" fill="#e8e8e8"/>
-        <text x="10" y="24" fontFamily="monospace" fontSize="7" fill="#111" fontWeight="700" letterSpacing="2">TANVIR</text>
+        <text x="10" y="24" fontFamily="monospace" fontSize="7" fill="#111" fontWeight="700" letterSpacing="2">AIFAZI</text>
         {['About','Blog','Tools','Contact'].map((l,i)=><text key={l} x={58+i*24} y="24" fontFamily="monospace" fontSize="5" fill="#888">{l}</text>)}
         <text x="108" y="24" fontFamily="monospace" fontSize="4.5" fill="#aaa"> 2025 aifazi.net</text>
       </svg>
@@ -304,8 +304,8 @@ function FooterPreviewSVG({ id }) {
       <svg viewBox="0 0 160 56" width="100%" height="100%">
         <rect width="160" height="56" fill="#090e14"/>
         <rect width="160" height="1" fill="#ffffff0d"/>
-        <text x="10" y="18" fontFamily="monospace" fontSize="7" fill="#c8d8e8" fontWeight="bold" letterSpacing="2">TANVIR</text>
-        <text x="10" y="24" fontFamily="monospace" fontSize="3.5" fill="#00ff88" opacity="0.7" letterSpacing="2">.DEV</text>
+        <text x="10" y="18" fontFamily="monospace" fontSize="7" fill="#c8d8e8" fontWeight="bold" letterSpacing="2">AIFAZI</text>
+        <text x="10" y="24" fontFamily="monospace" fontSize="3.5" fill="#00ff88" opacity="0.7" letterSpacing="2">.NET</text>
         {['About','Skills','Projects','Blog','Tools','Contact'].map((l,i)=><text key={l} x={52+i*17} y="20" fontFamily="monospace" fontSize="4" fill="#4a6478">{l}</text>)}
         <rect x="8" y="32" width="144" height="0.5" fill="#ffffff0a"/>
         <circle cx="12" cy="44" r="2.5" fill="#00ff88"/>
@@ -347,7 +347,7 @@ function FooterPreviewSVG({ id }) {
       <svg viewBox="0 0 160 72" width="100%" height="100%">
         <rect width="160" height="72" fill="#f2f0ec"/>
         <rect x="0" y="0" width="160" height="6" fill="#111"/>
-        <text x="8" y="28" fontFamily="monospace" fontSize="13" fill="#111" fontWeight="900">TANVIR</text>
+        <text x="8" y="28" fontFamily="monospace" fontSize="13" fill="#111" fontWeight="900">AIFAZI</text>
         <rect x="8" y="38" width="50" height="18" fill="#fff" stroke="#111" strokeWidth="2"/>
         <rect x="68" y="38" width="36" height="18" fill="#111"/>
         <rect x="114" y="38" width="36" height="18" fill="#fff" stroke="#111" strokeWidth="2"/>
@@ -356,7 +356,7 @@ function FooterPreviewSVG({ id }) {
     dock: (
       <svg viewBox="0 0 160 58" width="100%" height="100%">
         <rect width="160" height="58" fill="#061018"/>
-        <text x="12" y="20" fontFamily="monospace" fontSize="6" fill="#c8d8e8">TANVIR.DEV</text>
+        <text x="12" y="20" fontFamily="monospace" fontSize="6" fill="#c8d8e8">AIFAZI.NET</text>
         <rect x="38" y="30" width="84" height="18" rx="9" fill="#0b1118" stroke="#00d4ff55"/>
         {['⌂','✉','⌕','⚙'].map((l,i)=><circle key={l} cx={52+i*18} cy="39" r="6" fill={i===0?'#00d4ff33':'#ffffff08'} stroke="#00d4ff44"/>)}
       </svg>
@@ -622,10 +622,10 @@ function SiteSettings() {
         const accentColor = STATUS_ACCENT[sget('maintenanceStatus') || 'MAINTENANCE'] || '#f59e0b'
 
         return (
-      <div style={{ ...T.card, border: `1px solid ${isActive ? 'rgba(255,71,87,0.4)' : 'var(--border)'}` }}>
-        <div style={{ ...T.sec, color: isActive ? '#ff4757' : 'var(--muted)', borderColor: isActive ? 'rgba(255,71,87,0.2)' : 'var(--border)' }}>
+      <div style={{ ...T.card, border: `1px solid ${isActive ? 'color-mix(in srgb, var(--red) 40%, transparent)' : 'var(--border)'}` }}>
+        <div style={{ ...T.sec, color: isActive ? '#ff4757' : 'var(--muted)', borderColor: isActive ? 'color-mix(in srgb, var(--red) 20%, transparent)' : 'var(--border)' }}>
           MAINTENANCE PAGE
-          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'rgba(255,71,87,0.12)', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', fontSize: 11, letterSpacing: 2 }}>ACTIVE</span>}
+          {isActive && <span style={{ marginLeft: 10, padding: '2px 8px', background: 'color-mix(in srgb, var(--red) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', color: '#ff4757', fontSize: 11, letterSpacing: 2 }}>ACTIVE</span>}
         </div>
 
         {/* Scope selector */}

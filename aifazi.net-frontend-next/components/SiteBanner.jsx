@@ -27,15 +27,15 @@ const TYPE_CFG = {
     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
   },
   alert: {
-    accent: '#ff4757', glow: 'rgba(255,71,87,0.26)',
-    bg: `linear-gradient(90deg,rgba(255,71,87,0.26) 0%,rgba(255,71,87,0.09) 40%,${SOLID} 100%)`,
-    border: 'rgba(255,71,87,0.60)', label: 'ALERT', pulse: 'bnrPulseAlert',
+    accent: '#ff4757', glow: 'color-mix(in srgb, var(--red) 26%, transparent)',
+    bg: `linear-gradient(90deg,color-mix(in srgb, var(--red) 26%, transparent) 0%,color-mix(in srgb, var(--red) 9%, transparent) 40%,${SOLID} 100%)`,
+    border: 'color-mix(in srgb, var(--red) 60%, transparent)', label: 'ALERT', pulse: 'bnrPulseAlert',
     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
   },
   error: {
-    accent: '#ff4757', glow: 'rgba(255,71,87,0.26)',
-    bg: `linear-gradient(90deg,rgba(255,71,87,0.26) 0%,rgba(255,71,87,0.09) 40%,${SOLID} 100%)`,
-    border: 'rgba(255,71,87,0.60)', label: 'ALERT', pulse: 'bnrPulseAlert',
+    accent: '#ff4757', glow: 'color-mix(in srgb, var(--red) 26%, transparent)',
+    bg: `linear-gradient(90deg,color-mix(in srgb, var(--red) 26%, transparent) 0%,color-mix(in srgb, var(--red) 9%, transparent) 40%,${SOLID} 100%)`,
+    border: 'color-mix(in srgb, var(--red) 60%, transparent)', label: 'ALERT', pulse: 'bnrPulseAlert',
     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
   },
   announce: {

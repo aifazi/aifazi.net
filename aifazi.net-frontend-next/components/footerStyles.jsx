@@ -122,7 +122,7 @@ function MiniNewsletter() {
         onKeyDown={e => e.key === 'Enter' && submit()}
         placeholder="your@email.com"
         style={{
-          flex: 1, background: 'var(--comp-input-bg, var(--bg3))', border: `1px solid ${status === 'err' ? 'rgba(255,71,87,0.5)' : 'var(--comp-input-border, var(--border))'}`,
+          flex: 1, background: 'var(--comp-input-bg, var(--bg3))', border: `1px solid ${status === 'err' ? 'color-mix(in srgb, var(--red) 50%, transparent)' : 'var(--comp-input-border, var(--border))'}`,
           outline: 'none', padding: '7px 10px',
           fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)',
           borderRadius: 'var(--comp-input-radius, 4px)', minWidth: 0,
@@ -155,7 +155,7 @@ function FooterMinimal({ siteConfig, sectionLinks, platformLinks, socialLinks, h
             <line x1="11" y1="13" x2="25" y2="13" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round"/>
             <line x1="18" y1="13" x2="18" y2="25" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>TANVIR.DEV</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>AIFAZI.NET</span>
         </Link>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center' }}>
           {sectionLinks.map(({ label, hash }) => (
@@ -198,7 +198,7 @@ function FooterMagazine({ siteConfig, sectionLinks, platformLinks, socialLinks, 
         <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr', gap: 48, marginBottom: 32 }}>
           <div>
             <div style={{ fontFamily: 'Georgia, serif', fontSize: 54, fontWeight: 900, color: 'var(--text)', lineHeight: 1, letterSpacing: -2, marginBottom: 8 }}>
-              TANVIR
+              AIFAZI
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 5, color: 'var(--green)', marginBottom: 20, textTransform: 'uppercase' }}>
               Network Engineer · Developer
@@ -264,8 +264,8 @@ function FooterGlass({ siteConfig, sectionLinks, platformLinks, socialLinks, has
               <line x1="18" y1="13" x2="18" y2="25" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, letterSpacing: 3, color: 'var(--text)', lineHeight: 1 }}>TANVIR</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)', opacity: 0.7, marginTop: 3 }}>.DEV</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, letterSpacing: 3, color: 'var(--text)', lineHeight: 1 }}>AIFAZI</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)', opacity: 0.7, marginTop: 3 }}>.NET</div>
             </div>
           </div>
           <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', lineHeight: 1.9, maxWidth: 320, marginBottom: 20 }}>
@@ -391,7 +391,7 @@ function FooterDarkCompact({ siteConfig, sectionLinks, platformLinks, socialLink
             <line x1="11" y1="13" x2="25" y2="13" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round"/>
             <line x1="18" y1="13" x2="18" y2="25" stroke="var(--green)" strokeWidth="2.5" strokeLinecap="round"/>
           </svg>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>TANVIR.DEV</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>AIFAZI.NET</span>
         </Link>
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'center' }}>
           {allLinks.map((l, i) => l.isHash ? (
@@ -598,7 +598,7 @@ function FooterBrutal({ sectionLinks, platformLinks, handleHashLink, year }) {
   return (
     <footer data-footer-style="brutal" style={{ background: P.bg, borderTop: topBorder, position: 'relative', zIndex: 1, overflow: 'hidden', '--fs-bg': P.bg, '--fs-top': topBorder }}>
       <div style={{ padding: 'clamp(36px,5vw,56px) clamp(16px,5vw,60px) 32px' }}>
-        <div style={{ fontFamily: 'monospace', fontSize: 'clamp(28px,5vw,44px)', fontWeight: 900, color: P.text, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1, marginBottom: 20 }}>TANVIR</div>
+        <div style={{ fontFamily: 'monospace', fontSize: 'clamp(28px,5vw,44px)', fontWeight: 900, color: P.text, letterSpacing: 2, textTransform: 'uppercase', lineHeight: 1, marginBottom: 20 }}>AIFAZI</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           {blocks.map(b => (
             <div key={b.no} style={{ border: `3px solid ${P.text}` }}>

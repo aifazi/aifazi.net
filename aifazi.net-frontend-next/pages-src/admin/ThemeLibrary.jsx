@@ -1462,7 +1462,7 @@ function ThemeLibrary() {
                 active={typeFilter === f && tagFilter === 'ALL'} activeColor="#c084fc"
                 onClick={() => { setTypeFilter(f); setTagFilter('ALL') }} />
             ))}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)', marginInline: 4 }}></span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', marginInline: 4 }}></span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', letterSpacing: 2, marginRight: 4 }}>TAG:</span>
             {['DARK','LIGHT','STYLE'].map(f => (
               <FilterBtn key={f} value={f} label={f}
@@ -1657,7 +1657,7 @@ function ThemeLibrary() {
           {/* Category header */}
           {animCat !== 'ALL' && (() => {
             const cat = ANIM_CATEGORIES.find(c => c.id === animCat)
-            const useCases = { entrance: 'Scroll-triggered reveals, page load, route transitions', attention: 'Hover states, notifications, interactive feedback', loading: 'Data fetching, uploads, AI responses, skeleton UI', text: 'Hero name, logo, taglines  especially the TANVIR AIFAZI header', background: 'Ambient overlays, card borders, section backgrounds' }
+            const useCases = { entrance: 'Scroll-triggered reveals, page load, route transitions', attention: 'Hover states, notifications, interactive feedback', loading: 'Data fetching, uploads, AI responses, skeleton UI', text: 'Hero name, logo, taglines  especially the AIFAZI header', background: 'Ambient overlays, card borders, section backgrounds' }
             return cat ? (
               <div style={{ marginBottom: 16, padding: '10px 16px', background: `${cat.color}0d`, border: `1px solid ${cat.color}30`, borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: cat.color, lineHeight: 1.8 }}>
                 <strong>{cat.label.replace(/^[^ ]+ /, '')}</strong>: {useCases[animCat]}
@@ -1742,14 +1742,14 @@ function ThemeLibrary() {
                       <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: 14, letterSpacing: 2, color: currentDef.primary, textShadow: `0 0 8px ${currentDef.primary},0 0 20px ${currentDef.primary}88`, animation: 'miniNeonFlicker 3s infinite' }}>AIFAZI</div>
                     )}
                     {anim.id === 'typewriter'  && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, whiteSpace: 'nowrap', overflow: 'hidden', borderRight: `2px solid ${currentDef.primary}`, width: '70%', animation: 'miniTypewriter 2.2s steps(8) infinite alternate, miniBlink 0.8s step-end infinite' }}>TANVIR</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, whiteSpace: 'nowrap', overflow: 'hidden', borderRight: `2px solid ${currentDef.primary}`, width: '70%', animation: 'miniTypewriter 2.2s steps(8) infinite alternate, miniBlink 0.8s step-end infinite' }}>AIFAZI</div>
                     )}
                     {anim.id === 'gradientFlow' && (
                       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 15, letterSpacing: 2, background: `linear-gradient(90deg,${currentDef.primary},${currentDef.secondary},${currentDef.orange},${currentDef.primary})`, backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'miniGradientFlow 2s linear infinite' }}>AIFAZI</div>
                     )}
                     {anim.id === 'letterPop'   && (
                       <div style={{ display: 'flex', gap: 2, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 13, letterSpacing: 1 }}>
-                        {'TANVIR'.split('').map((l, i) => (
+                        {'AIFAZI'.split('').map((l, i) => (
                           <span key={i} style={{ color: i < 3 ? '#e8eaed' : currentDef.primary, animation: `miniLetterPop 2s ${i * 0.12}s ease-out infinite alternate` }}>{l}</span>
                         ))}
                       </div>
@@ -2219,7 +2219,7 @@ function ThemeLibrary() {
                   {cat.id === 'notify' && (
                     <div style={{ marginBottom: 40 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
-                        <div style={{ width:38, height:38, borderRadius:8, background:'rgba(255,107,53,0.12)', border:'1px solid rgba(255,107,53,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📍</div>
+                        <div style={{ width:38, height:38, borderRadius:8, background:'color-mix(in srgb, var(--orange) 12%, transparent)', border:'1px solid color-mix(in srgb, var(--orange) 30%, transparent)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>📍</div>
                         <div>
                           <div style={{ fontFamily:_FD, fontSize:17, fontWeight:700, color:_TX }}>Toast Position</div>
                           <div style={{ fontFamily:_FM, fontSize: 11, color:_MT, marginTop:1 }}>Where notifications appear on screen</div>
@@ -2231,16 +2231,16 @@ function ThemeLibrary() {
                           return (
                             <button key={pos.id} onClick={() => handleFwSelectAndSave('notifyPosition', pos.id)} style={{
                               display:'flex', alignItems:'center', gap:7, padding:'9px 16px',
-                              background: isActive ? 'rgba(255,107,53,0.1)' : _BG2,
-                              border: `2px solid ${isActive ? 'rgba(255,107,53,0.6)' : _BD}`,
+                              background: isActive ? 'color-mix(in srgb, var(--orange) 10%, transparent)' : _BG2,
+                              border: `2px solid ${isActive ? 'color-mix(in srgb, var(--orange) 60%, transparent)' : _BD}`,
                               borderRadius:8, cursor:'pointer', transition:'all 0.15s',
-                              boxShadow: isActive ? '0 0 12px rgba(255,107,53,0.2)' : 'none',
+                              boxShadow: isActive ? '0 0 12px color-mix(in srgb, var(--orange) 20%, transparent)' : 'none',
                             }}>
                               <span style={{ fontSize:16 }}>{pos.icon}</span>
                               <div style={{ textAlign:'left' }}>
-                                <div style={{ fontFamily:_FM, fontSize: 11, fontWeight:700, color: isActive ? 'rgba(255,107,53,0.9)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
+                                <div style={{ fontFamily:_FM, fontSize: 11, fontWeight:700, color: isActive ? 'color-mix(in srgb, var(--orange) 90%, transparent)' : _TX, letterSpacing:0.5 }}>{pos.label}</div>
                               </div>
-                              {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize: 11, color:'rgba(255,107,53,0.9)' }}>✓</span>}
+                              {isActive && <span style={{ marginLeft:4, fontFamily:_FM, fontSize: 11, color:'color-mix(in srgb, var(--orange) 90%, transparent)' }}>✓</span>}
                             </button>
                           )
                         })}
@@ -2252,13 +2252,13 @@ function ThemeLibrary() {
 
               {/* Reset zone */}
               <div style={{ borderTop: `1px solid ${_BD}`, paddingTop: 24, marginTop: 8, marginBottom: 40 }}>
-                <div style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 3, color: 'rgba(255,71,87,0.7)', marginBottom: 12 }}>RESET</div>
+                <div style={{ fontFamily: _FM, fontSize: 11, letterSpacing: 3, color: 'color-mix(in srgb, var(--red) 70%, transparent)', marginBottom: 12 }}>RESET</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                   <div>
                     <div style={{ fontFamily: _FD, fontSize: 14, fontWeight: 600, color: _TX, marginBottom: 2 }}>Reset to Factory Defaults</div>
                     <div style={{ fontFamily: _FM, fontSize: 11, color: _MT }}>Restore all framework styles to defaults: cyber menus, cyber dialogs, cyber inputs, cyber-grid surfaces, cyber buttons, cyber cards, cyber tables and pill badges.</div>
                   </div>
-                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid rgba(255,71,87,0.4)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
+                  <button onClick={handleFwReset} style={{ flexShrink: 0, fontFamily: _FM, fontSize: 11, letterSpacing: 1, padding: '8px 18px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: 'var(--red)', cursor: 'pointer', borderRadius: 6 }}>↺ RESET DEFAULTS</button>
                 </div>
               </div>
             </div>
@@ -3136,7 +3136,7 @@ function ThemeLibrary() {
                       {r.kind === 'color' && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {r.saved ? <><span style={{ width: 12, height: 12, borderRadius: 3, background: r.saved, border: '1px solid var(--border)' }} /><span style={{ color: 'var(--muted)' }}>saved</span></> : <span style={{ color: 'var(--muted)' }}>default</span>}
-                          <span style={{ color: 'var(--border)' }}>→</span>
+                          <span style={{ color: 'var(--muted)' }}>→</span>
                           <span style={{ width: 12, height: 12, borderRadius: 3, background: r.current, border: '1px solid var(--border)' }} />
                           <span style={{ color: 'var(--cyan)', fontFamily: 'var(--font-mono)' }}>{r.current}</span>
                         </span>

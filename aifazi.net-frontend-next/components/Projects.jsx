@@ -1,6 +1,6 @@
 'use client'
 import NextImage from 'next/image'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatableWrapper, EditableList, EditableText } from '../context/EditContext'
 import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
 import { useReveal } from '../hooks/useReveal'
@@ -205,7 +205,7 @@ function ProjectCard({ project, index }) {
   )
 }
 
-export default function Projects() {
+export default function Projects({ children }) {
   const headerRef = useReveal()
   const titleRef  = useSplitTextReveal({ staggerMs: 40, fromY: 28 })
   const [projects, setProjects] = useState(mergeFeaturedProject(DEFAULT_PROJECTS))
@@ -220,7 +220,7 @@ export default function Projects() {
     <section id="projects" style={{ padding: '120px 60px', background: 'var(--bg2)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', position: 'relative', zIndex: 1 }} className="projects-section">
       <AnimatableWrapper animKey="projects.header" label="Projects Section Header" currentAnim="fadeUp 0.8s both">
         <div ref={headerRef} className="fade-up section-header">
-          <span className="section-tag">06 /</span>
+          <span className="section-tag">03 /</span>
           <h2 ref={titleRef} className="section-title">Projects</h2>
           <div className="section-line" />
         </div>
@@ -236,6 +236,9 @@ export default function Projects() {
           renderItem={(project, i) => <ProjectCard key={i} project={project} index={i} />}
         />
       </div>
+
+      {/* Merged sub-sections (e.g. Services) render inside this band */}
+      {children && <Suspense fallback={null}>{children}</Suspense>}
 
       <style>{`
         .projects-grid {

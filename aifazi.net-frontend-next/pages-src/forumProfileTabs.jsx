@@ -18,6 +18,7 @@ import {
   DISCORD_PURPLE, STEAM_BLUE, STEAM_LIGHT, GITHUB_COLOR,
   oauthApiBase, safeOAuthRedirect,
 } from './forumProfileParts'
+import { EmptyState } from '../components/community'
 
 // Dismissal flag for the Day-0 onboarding checklist (per account).
 const GET_STARTED_KEY = 'aifazi_getstarted_dismissed_v1'
@@ -183,7 +184,7 @@ function TicketDetailView({ ticketId, user, onBack }) {
       <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 12 }}>DISCUSSION</div>
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', ...M, fontSize: 11, color: 'var(--muted)', padding: 20 }}>No messages yet</div>
+          <EmptyState compact icon="💬" title="No messages yet" text="Replies from staff will show up here." />
         ) : messages.map(msg => {
           const isStaff = msg.author_type === 'staff'
           const isSystem = msg.author_type === 'system'
@@ -419,7 +420,7 @@ function ActivityTab({ user }) {
       {/* Threads */}
       <SectionCard title="Recent Threads" tag="FORUM">
         {threads.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px 0', ...M, fontSize: 11, color: 'var(--muted)' }}>No threads yet</div>
+          <EmptyState compact icon="🧵" title="No threads yet" text="Threads you start will appear here." />
         ) : threads.map(t => (
           <Link key={t.id || t._id} to={`/forum/thread/${t.id || t._id}`} style={{ textDecoration: 'none', display: 'block' }}>
             <div className="forum-activity-link" style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
@@ -433,7 +434,7 @@ function ActivityTab({ user }) {
       {/* Replies */}
       <SectionCard title="Recent Replies" tag="FORUM">
         {replies.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '20px 0', ...M, fontSize: 11, color: 'var(--muted)' }}>No replies yet</div>
+          <EmptyState compact icon="↩" title="No replies yet" text="Your forum replies will appear here." />
         ) : replies.map(r => (
           <div key={r.id || r._id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
             <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{r.content || r.body}</div>
@@ -992,7 +993,7 @@ function SecurityTab({ user }) {
             </div>
           ))}
         </div>
-        {identityLocked && <div style={{ ...M, fontSize: 11, color: CLRS.orange, padding: '8px 14px', background: 'rgba(255,107,53,0.07)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
+        {identityLocked && <div style={{ ...M, fontSize: 11, color: CLRS.orange, padding: '8px 14px', background: 'color-mix(in srgb, var(--orange) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 25%, transparent)', borderRadius: 6, marginTop: 8 }}>🔒 Your active FiveM identity is locked. Contact an admin or open a ticket to change OAuth accounts.</div>}
         {oauthStatus && <StatusMsg msg={oauthStatus.msg} type={oauthStatus.type} />}
       </SectionCard>
 
@@ -1136,7 +1137,7 @@ function OverviewTab({ user, tickets, onOpenTicket, onSelectTab }) {
           ))}
         </div>
         {recentTickets.length === 0
-          ? <div style={{ ...M, fontSize: 11, color: 'var(--muted)', textAlign: 'center', padding: '14px 0' }}>No tickets yet</div>
+          ? <EmptyState compact icon="🎫" title="No tickets yet" text="Support tickets you open will appear here." />
           : recentTickets.map(t => <TicketCard key={t.id || t.ticket_id} t={t} onClick={() => onOpenTicket?.(t.id)} />)}
       </SectionCard>
 

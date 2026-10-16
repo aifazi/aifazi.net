@@ -110,14 +110,14 @@ export default function DealsTab() {
           </div>
           <Checkbox checked={form.active} onChange={(checked) => setForm({ ...form, active: checked })} label="Active" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontFamily: MONO, fontSize: 11, color: 'var(--muted)', cursor: 'pointer' }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE DEAL'}</button>
+            <button onClick={save} disabled={saving} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 20px', background: 'color-mix(in srgb, var(--orange) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 50%, transparent)', color: O, borderRadius: 6, cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? '…' : 'SAVE DEAL'}</button>
             <button onClick={cancel} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 16px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>CANCEL</button>
           </div>
         </div>
       )}
 
       <div style={{ marginBottom: 14 }}>
-        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 18px', background: 'rgba(255,107,53,.12)', border: '1px solid rgba(255,107,53,.5)', color: O, borderRadius: 6, cursor: 'pointer' }}>⚡ + NEW DEAL</button>
+        <button onClick={startNew} style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '9px 18px', background: 'color-mix(in srgb, var(--orange) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 50%, transparent)', color: O, borderRadius: 6, cursor: 'pointer' }}>⚡ + NEW DEAL</button>
       </div>
 
       {loading ? <div className="loader" /> : deals.length === 0 ? (
@@ -135,7 +135,7 @@ export default function DealsTab() {
                 <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{d.product_name || d.product_id} · {d.discount_percent}% off</div>
                 {d.subtitle && <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{d.subtitle}</div>}
               </div>
-              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? (live ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)') : 'rgba(255,71,87,.08)', border: `1px solid ${active ? (live ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)') : 'rgba(255,71,87,.3)'}`, color: active ? (live ? G : C) : R }}>{active ? (live ? '● LIVE' : 'SCHEDULED') : 'PAUSED'}</span>
+              <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 8px', borderRadius: 12, background: active ? (live ? 'color-mix(in srgb, var(--green) 8%, transparent)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)') : 'color-mix(in srgb, var(--red) 8%, transparent)', border: `1px solid ${active ? (live ? 'color-mix(in srgb, var(--green) 30%, transparent)' : 'color-mix(in srgb, var(--cyan) 30%, transparent)') : 'color-mix(in srgb, var(--red) 30%, transparent)'}`, color: active ? (live ? G : C) : R }}>{active ? (live ? '● LIVE' : 'SCHEDULED') : 'PAUSED'}</span>
               {dealPrice && <span style={{ fontFamily: MONO, fontSize: 12 }}><s style={{ color: 'var(--muted)' }}>{money(d.product_price_cents)}</s> <span style={{ color: O, fontWeight: 700 }}>{money(dealPrice)}</span></span>}
               <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
                 {d.starts_at ? `from ${fmt(d.starts_at)}` : 'no start'}
@@ -143,7 +143,7 @@ export default function DealsTab() {
               </div>
               <button onClick={() => toggleActive(d)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>{active ? 'PAUSE' : 'ACTIVATE'}</button>
               <button onClick={() => startEdit(d)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
-              <button onClick={() => remove(d)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
+              <button onClick={() => remove(d)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )
         })

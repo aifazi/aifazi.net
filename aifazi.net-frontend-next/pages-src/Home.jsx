@@ -9,12 +9,16 @@ import PageMeta from '../components/PageMeta'
 const Experience     = lazy(() => import('../components/Experience'))
 const Skills         = lazy(() => import('../components/Skills'))
 const Services       = lazy(() => import('../components/Services'))
-
 const Projects       = lazy(() => import('../components/Projects'))
-const Newsletter     = lazy(() => import('../components/Newsletter'))
-const Explore        = lazy(() => import('../components/Explore'))
 const Contact        = lazy(() => import('../components/Contact'))
 
+// Home is four numbered movements, not eight flat sections (AUDIT §28):
+//   01 About    — with Skills merged in as a sub-section
+//   02 Experience
+//   03 Projects — with Services merged in as a sub-section
+//   04 Contact
+// The Newsletter section was dropped: the footer already carries the signup.
+// Explore renders null (removed per UX request) and is no longer mounted.
 export default function Home() {
   const location = useLocation()
 
@@ -41,15 +45,22 @@ export default function Home() {
     <main>
       <PageMeta url="/" />
       <Hero />
-      <About />
-      <Suspense fallback={null}>
-        <Experience />
-        <Skills />
-        <Services />
 
-        <Projects />
-        <Newsletter />
-        <Explore />
+      {/* 01 — About, with Skills merged in */}
+      <About>
+        <Skills embedded />
+      </About>
+
+      <Suspense fallback={null}>
+        {/* 02 */}
+        <Experience />
+
+        {/* 03 — Projects, with Services merged in */}
+        <Projects>
+          <Services embedded />
+        </Projects>
+
+        {/* 04 */}
         <Contact />
       </Suspense>
     </main>

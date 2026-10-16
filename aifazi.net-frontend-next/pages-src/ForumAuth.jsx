@@ -31,7 +31,7 @@ const btnStyle = (bg = 'var(--green)', disabled = false) => ({
 })
 
 const ErrorBox = ({ msg }) => msg ? (
-  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.2)', borderRadius: 10 }}>
+  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--red)', padding: '10px 16px', background: 'color-mix(in srgb, var(--red) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 20%, transparent)', borderRadius: 10 }}>
     {msg}
   </div>
 ) : null
@@ -166,7 +166,7 @@ export function ForumLogin() {
 
       {unverified ? (
         <div>
-          <div style={{ background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.3)', padding: '20px', marginBottom: 24 }}>
+          <div style={{ background: 'color-mix(in srgb, var(--orange) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', padding: '20px', marginBottom: 24 }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--orange)', letterSpacing: 2, marginBottom: 8 }}>EMAIL NOT VERIFIED</div>
             <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.7 }}>
               You need to verify your email address before you can log in.
@@ -377,7 +377,7 @@ export function ForumRegister() {
             minLength={3} maxLength={30}
             style={{
               ...inputStyle,
-              borderColor: unCheck === 'taken' ? 'rgba(255,71,87,0.6)'
+              borderColor: unCheck === 'taken' ? 'color-mix(in srgb, var(--red) 60%, transparent)'
                 : unCheck === 'available' ? 'color-mix(in srgb, var(--green) 50%, transparent)'
                 : 'var(--border)'
             }}
@@ -406,7 +406,7 @@ export function ForumRegister() {
             style={{
               ...inputStyle,
               borderColor: form.confirm.length > 0 && form.confirm !== form.password
-                ? 'rgba(255,71,87,0.6)' : 'var(--border)'
+                ? 'color-mix(in srgb, var(--red) 60%, transparent)' : 'var(--border)'
             }}
           />
           {form.confirm.length > 0 && form.confirm !== form.password && (
@@ -775,7 +775,7 @@ export function ResetPassword() {
         </div>
         <div>
           <label style={labelStyle}>CONFIRM PASSWORD</label>
-          <Input type="password" value={confirm} onChange={v => setConfirm(v)} required placeholder="Repeat password" style={{ ...inputStyle, borderColor: confirm.length > 0 && confirm !== password ? 'rgba(255,71,87,0.6)' : 'var(--border)' }} />
+          <Input type="password" value={confirm} onChange={v => setConfirm(v)} required placeholder="Repeat password" style={{ ...inputStyle, borderColor: confirm.length > 0 && confirm !== password ? 'color-mix(in srgb, var(--red) 60%, transparent)' : 'var(--border)' }} />
           {confirm.length > 0 && confirm !== password && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', marginTop: 6, letterSpacing: 1 }}>Passwords don&apos;t match</div>
           )}

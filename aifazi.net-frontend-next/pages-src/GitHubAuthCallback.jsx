@@ -117,7 +117,7 @@ export default function GitHubAuthCallback() {
         <>
           <div style={{
             fontFamily: 'var(--font-mono)', fontSize: 12, color: '#ff4757',
-            background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.25)',
+            background: 'color-mix(in srgb, var(--red) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 25%, transparent)',
             padding: '12px 20px', borderRadius: 6, textAlign: 'center', maxWidth: 380,
           }}>
             {error}

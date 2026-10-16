@@ -34,7 +34,7 @@ const S = {
   btnOut:   { fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:2, padding:'10px 22px', background:'transparent', color:'var(--cyan)', border:'1px solid var(--cyan)', cursor:'pointer', fontWeight:700, whiteSpace:'nowrap' },
   btnSm:    { fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, padding:'7px 14px', background:'var(--green)', color:'#000', border:'none', cursor:'pointer', fontWeight:700 },
   label:    { fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:2, color:'var(--muted)', display:'block', marginBottom:6 },
-  err:      { color:'var(--red)', fontFamily:'var(--font-mono)', fontSize:11, marginTop:8, padding:'8px 12px', background:'rgba(255,71,87,.08)', border:'1px solid rgba(255,71,87,.3)' },
+  err:      { color:'var(--red)', fontFamily:'var(--font-mono)', fontSize:11, marginTop:8, padding:'8px 12px', background:'color-mix(in srgb, var(--red) 8%, transparent)', border:'1px solid color-mix(in srgb, var(--red) 30%, transparent)' },
   success:  { color:'var(--green)', fontFamily:'var(--font-mono)', fontSize:11, marginTop:8, padding:'8px 12px', background:'color-mix(in srgb, var(--green) 7%, transparent)', border:'1px solid color-mix(in srgb, var(--green) 25%, transparent)' },
   panel:    { background:'var(--bg3)', border:'1px solid var(--border)', padding:'20px 24px', marginTop:16 },
   row:      { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border2)' },

@@ -548,7 +548,7 @@ export default function WhitelistApply() {
         </div>
 
         {serverError && (
-          <div style={{ background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 8, padding: '12px 16px', color: '#ff4757', fontSize: 13 }}>
+          <div style={{ background: 'color-mix(in srgb, var(--red) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', borderRadius: 8, padding: '12px 16px', color: '#ff4757', fontSize: 13 }}>
             {serverError}
           </div>
         )}

@@ -67,7 +67,7 @@ export default function NotFound() {
       {/* Glow orbs */}
       <div style={{
         position: 'absolute', width: 600, height: 600, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,71,87,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, color-mix(in srgb, var(--red) 6%, transparent) 0%, transparent 70%)',
         top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         pointerEvents: 'none', animation: 'pulse 4s ease-in-out infinite'
       }} />
@@ -137,10 +137,10 @@ export default function NotFound() {
           textAlign: 'left', maxWidth: 480, margin: '0 auto 40px',
           animation: 'fadeUp 0.8s 0.6s ease both', opacity: 0,
           animationFillMode: 'forwards',
-          boxShadow: '0 0 30px rgba(255,71,87,0.08)'
+          boxShadow: '0 0 30px color-mix(in srgb, var(--red) 8%, transparent)'
         }}>
           <div style={{
-            background: 'rgba(255,71,87,0.08)', padding: '10px 16px',
+            background: 'color-mix(in srgb, var(--red) 8%, transparent)', padding: '10px 16px',
             display: 'flex', alignItems: 'center', gap: 8,
             borderBottom: '1px solid var(--border)'
           }}>

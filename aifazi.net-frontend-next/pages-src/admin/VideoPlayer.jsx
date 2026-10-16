@@ -13,7 +13,7 @@ const Toolbar = ({ autoplay, onToggleAutoplay, muted, onToggleMuted, isEmbed, si
     {/* Mute toggle (embed) */}
     {isEmbed && (
       <button onClick={onToggleMuted}
-        style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '4px 10px', background: muted ? 'rgba(255,71,87,0.12)' : 'var(--bg3)', border: `1px solid ${muted ? 'rgba(255,71,87,0.4)' : 'var(--border)'}`, color: muted ? '#ff4757' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
+        style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '4px 10px', background: muted ? 'color-mix(in srgb, var(--red) 12%, transparent)' : 'var(--bg3)', border: `1px solid ${muted ? 'color-mix(in srgb, var(--red) 40%, transparent)' : 'var(--border)'}`, color: muted ? '#ff4757' : 'var(--muted)', borderRadius: 5, cursor: 'pointer' }}>
         {muted ? '🔇 MUTED' : '🔊 SOUND'}
       </button>
     )}

@@ -196,7 +196,7 @@ function AvatarMode({ visibleRef }) {
       }}/>
       <div id="av-orb3" style={{
         position: 'absolute', width: 200, height: 200, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,71,87,0.07) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, color-mix(in srgb, var(--red) 7%, transparent) 0%, transparent 70%)',
         top: '40%', right: '25%', pointerEvents: 'none',
       }}/>
 

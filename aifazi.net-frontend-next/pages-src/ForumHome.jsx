@@ -121,7 +121,7 @@ export default function ForumHome() {
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--green)' }}>{cats.length}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {cats.length === 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', padding: '8px 0' }}>No categories yet.</div>}
+                  {cats.length === 0 && <EmptyState compact icon="🗂" title="No categories yet" text="Categories appear once the forum is set up." />}
                   {cats.map(cat => (
                     <Link key={cat.id || cat._id} to={`/forum/category/${cat.slug || cat.id}`} className="forum-cat-link"
                       style={{

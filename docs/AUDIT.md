@@ -1446,3 +1446,232 @@ Both are **single monolithic components** (`HybridInfraEditor` 3301 lines; `Hybr
 ---
 
 *God-file batch, verified live 2026-10-16. `ServerRackAnimation.jsx` + `ThemeLibrary.jsx` splits and `fivem.py` → package on `fix/round-9-godfile-split`. `HybridInfraEditor.tsx` / `HybridInfraCanvas.tsx` left intact (monolithic; need a redesign).*
+
+---
+
+## 25. Design review + first consistency batch — `fix/round-10-design` (2026-10-17)
+
+Product/design pass — **no new security findings**. Reviewed live against the deployed site (Home, Login, Blog, Store, Forum, Status) plus a local `next dev` build. Verdict: **the identity is strong; the debt is consistency + information architecture, not taste.**
+
+### 25.1 What the review found (live)
+
+| # | Finding | Evidence |
+|---|---------|----------|
+| D1 | **Three brand marks in one product** — main nav `TANVIR.DEV`, Login `AIFAZI · SECURE GATEWAY`, Store `AIFAZI.` | Home / Login / Store |
+| D2 | **Navbar overflow** — 10 flat top-level links pushed the right-side controls off-screen; at a 1296px viewport the bar needed ~1443px and clipped `SIGN IN` (right edge 1319px) | measured `scrollWidth > clientWidth` |
+| D3 | **Homepage is one 8157px scroll** (viewport 886) with a flat "NN / Section" rhythm ×7 | live |
+| D4 | **72 theme ids, only 3 certified** (`terminal`/`light`/`paper`) — QA/maintenance cost | `core/themeCatalog.js`, `docs/CERTIFIED-THEMES.md` |
+| D5 | **58 hardcoded neon `rgba()`** in `pages-src`/`components` — bypass the token layer | grep |
+| D6 | **Button language differs per shell** — Login submit = green→cyan gradient, hero primary = angular clip, store = solid pill | live |
+| D7 | **Text coloured with a border token** — `color: var(--border)` (`rgba(0,212,255,0.15)`) | grep: 91 usages |
+| D8 | Dual surfaces real: `/store` → `store.aifazi.net`; `/whitelist` + `/fivem/whitelist`, `/store` + `/fivem/store` both exist | route table |
+| D9 | Type floor largely fixed — only **3** sub-10px `font-size` hits remain (the old HIGH is mostly resolved) | grep |
+
+**Correction to an earlier live-capture read.** The "blank first paint" seen on Home/Login/Store/Forum in screenshots was a **capture-timing artifact**, not JS-gated content. `Login.jsx` uses `gsap.fromTo(card, { opacity: 0 }, { opacity: 1 })`, which leaves the element at its natural (visible) opacity until GSAP loads; if GSAP never loads the `.then()` never runs, so nothing is ever set to `0`. Content is never permanently hidden — **no fix warranted.**
+
+### 25.2 This batch (D2 + D7 + the hero duplicate)
+
+- **Navbar IA (D2).** The four home-page scroll anchors (`About`/`Experience`/`Services`/`Projects`) are grouped into a single **"Work"** dropdown, sharing the existing `Tools` menu's visual language (extracted to `dropdownPanelStyle` / `dropdownRowStyle` / `dropdownTriggerStyle` constants). Desktop top-level links drop **10 → 6 + 2 dropdowns**; the mobile menu renders the full list inline, unchanged. Gaps and container padding become fluid (`clamp()`), and both right-side control groups get `flexShrink: 0` so the search / Sign In / theme controls can never be clipped. **Verified:** with the desktop bar forced at a 1000px viewport the intrinsic requirement is ~1016px; at 1296px the new bar needs **~1044px** (≈250px spare) vs. the old ~1443px.
+- **Hero duplicate (D3-adjacent).** The hero rendered availability twice — an `EditableText hero.status` ("AVAILABLE FOR NEW PROJECTS") **and** the live `StatusBadge`. The badge's own label is already admin-editable (`status.<key>.label`), so the separate line was pure duplication; removed, keeping the terminal `> ` prompt + the live badge.
+- **Text-token consistency (D7).** All **91** `color: var(--border)` text usages → `var(--muted)` across 9 files (`DBMonitor`, `DatabaseGUI`, `dbGuiParts`, `dbGuiTabs`, `admin/Dashboard`, `admin/ThemeLibrary`, `admin/panels/AnnouncementsPanel`, `NetworkTools`, `app/helpdesk/error.tsx`). Rule: **text never uses a border token.** `border:`/`borderColor:` usages are untouched (the Navbar's 9 `borderColor: 'var(--border)'` remain).
+
+### 25.3 Deferred — need an owner decision
+
+D1 brand-lockup unification · D3 homepage length/rhythm · D4 theme curation · D5 `rgba()`→token sweep · D6 cross-shell button language · D8 surface consolidation · living style guide + illustrated empty states · project case studies. These change product direction or are multi-file redesigns, so they are deliberately **not** in this batch.
+
+### 25.4 Gates (all green)
+
+- Frontend: `tsc` 0 · `eslint` **0 errors / 58 warnings** (baseline held) · **vitest 175 passed + 1 skip** · `next build` ✅.
+- No backend change.
+
+---
+
+*Design batch, verified live 2026-10-17 (`next dev`, LAN-reachable build). Navbar IA + hero duplicate + text-token consistency on `fix/round-10-design`.*
+
+---
+
+## 26. Design batches 2–4 — brand lockup, button language, neon-tint tokens (2026-10-17)
+
+Same branch (`fix/round-10-design`), one commit per concern. Continues §25.
+
+### 26.1 D1 — brand lockup unified to AIFAZI
+
+Owner decision: **AIFAZI everywhere** — the product brand is AIFAZI, and Tanvir stays as the person in the hero and copy. The review had found three marks in one product: nav `TANVIR.DEV`, Login `AIFAZI · SECURE GATEWAY`, Store `AIFAZI.`.
+
+Wordmark swap `TANVIR` → `AIFAZI` (and the `.DEV` suffix → `.NET`) across every persistent brand surface:
+
+| File | What changed |
+|------|--------------|
+| `components/Navbar.jsx` | default + minimal lockups; editorial initial badge `T` → `A` |
+| `components/LoadingScreen.jsx` | all 17 wordmark variants (incl. the stylized `T.TANVIR` → `A.AIFAZI`) |
+| `components/Footer.jsx`, `components/footerStyles.jsx` | all 7 footer styles — 2 already said AIFAZI, so the footers were themselves inconsistent |
+| `components/themePickerPreviews.jsx` | theme preview mockups |
+| `pages-src/admin/SiteSettings.jsx` | the favicon/logo SVG generator, which drew `TANVIR` into every variant |
+| `pages-src/admin/ThemeLibrary.jsx` | preview `split()` + one copy string |
+
+Login and Store already read AIFAZI, so their name marks are now consistent; their contextual taglines (`SECURE GATEWAY` / the accent dot) are unchanged.
+
+**Deliberately not changed:** the person's name in copy, page metadata titles, `tanvir@aifazi.net` addresses, and the personal "TANVIR SYSTEMS" terminal easter eggs (`Terminal.jsx` / `AboutTerminal.jsx`).
+
+### 26.2 D6 — one primary-button language
+
+The review found three button languages. The hero's `.btn-primary` turned out to be already fully token-driven (`--comp-btn-*`), so the outliers were the Login submit (a fixed green→cyan gradient) and the community/store `NeonButton` (hardcoded neon).
+
+- `pages-src/Login.jsx` `.auth-submit` → `--comp-btn-bg` / `-text` / `-border` / `-radius` / `-shadow` / `-clip`. Hover keeps the lift; the gradient-position animation is gone. `--comp-btn-text` also resolves light-mode button text, which the gradient + `var(--text)` did not.
+- `app/globals.css` `.neon-btn-primary` → the same six tokens, so the community/store CTA follows the active theme. `border-radius` still comes from the theme `--radius` via the size classes; `clip-path` supplies the family shape.
+
+Verified by injecting `--comp-btn-*` on `document.documentElement` and reading the computed style: `.neon-btn-primary` resolves bg / color / clip-path / border / box-shadow from the tokens; with no tokens set, both fall back exactly like `.btn-primary` does today.
+
+### 26.3 D5 — neon tints tokenised (theme-aware)
+
+The review's "hardcoded neon `rgba()`" is real and larger than first estimated: **200 occurrences across 51 files**. They are almost entirely red/orange **alert tints** (`rgba(255,71,87,·)`, `rgba(255,107,53,·)`) plus green/cyan accents. `--red` / `--orange` / `--green` / `--cyan` are redefined per theme in `theme-library.css`, so the fixed `rgba()` forms stayed neon in every theme — including the light ones. `CERTIFIED-THEMES.md` states the contract plainly: `var(--*)` + `color-mix`, never fixed neon rgba.
+
+Converted mechanically, alpha → percent:
+
+| From | To |
+|------|-----|
+| `rgba(0,255,136,A)` | `color-mix(in srgb, var(--green) A×100%, transparent)` |
+| `rgba(0,212,255,A)` | `color-mix(in srgb, var(--cyan) A×100%, transparent)` |
+| `rgba(255,71,87,A)` | `color-mix(in srgb, var(--red) A×100%, transparent)` |
+| `rgba(255,107,53,A)` | `color-mix(in srgb, var(--orange) A×100%, transparent)` |
+| `rgba(124,92,191,A)` | `color-mix(in srgb, var(--purple) A×100%, transparent)` |
+
+**Canvas exception.** `components/server-rack/GlobeMode.jsx` carries neon colours as JS strings for WebGL (`addColorStop`, the globe's fallback theme object) where `var()` cannot resolve. Those 3 lines keep `rgba()`; its 2 CSS lines were converted by hand. After the sweep **0** neon `rgba()` remain outside those canvas strings.
+
+Theme-definition files were excluded (`themePickerData.js`, `themePickerPreviews.jsx`, `themeLibraryPreviews.jsx`) — their palettes are data, not chrome.
+
+**Sibling issue, not in this batch.** ~429 standalone neon **hex** literals (`#00ff88` / `#00d4ff` / `#ff4757` / `#ff6b35` / `#7c5cbf`) remain across 66 component files (plus 66 that are already `var()` fallbacks, which are fine). Same off-contract problem, much larger sweep — tracked as a follow-up.
+
+### 26.4 Gates (all green)
+
+- Frontend, after each batch: `tsc` 0 · `eslint` **0 errors / 58 warnings** · **vitest 175 passed + 1 skip** · `next build` ✅.
+- No backend change.
+
+### 26.5 Still open (need an owner call)
+
+D3 homepage length/rhythm (9 sections, one 8157px scroll) · D4 theme curation (70 `VALID_THEMES`, 39 in the picker, 3 certified) · D8 surface consolidation · living style guide + illustrated empty states · project case studies.
+
+---
+
+*Design batches 2–4, verified 2026-10-17 (`next dev` plus injected-token checks). Brand lockup (D1), button language (D6), neon-tint tokens (D5) on `fix/round-10-design`.*
+
+---
+
+## 27. D4 — theme curation: curated default + full catalog (2026-10-17)
+
+Owner decision: keep every theme, but stop showing them all at once.
+
+**Problem.** `VALID_THEMES` holds 70 ids; the picker renders 39 theme cards + 2 packages; only 3 themes are certified (`terminal` / `light` / `paper`, per `CERTIFIED-THEMES.md`). The other 36 are best-effort — a wall of near-duplicates with no signal about which are safe.
+
+**Change.** The picker now opens on a curated set and offers the full catalog behind a toggle:
+
+- `components/themePickerData.js` — `featured: true` on **10** themes: `cyber-dark` (default), `ice`, `glass-dark`, `brutalist`, `synthwave`, `paper`, `terminal`, `macos`, `neon-noir`, `minecraft`. The spread covers the default, both certified themes the picker carries, the light colour variant, the bold light styles, the retro/neon flagships and one game theme.
+- `components/ThemePicker.jsx` — new `showAll` state; the grid shows featured themes by default with a `SHOW ALL (41) →` / `← FEATURED (10)` toggle. Nothing is removed.
+
+**Interaction rules (deliberate):**
+- Any explicit filter (TYPE or TAG) searches the **whole** catalog — filtering is an explicit request, so it is not silently narrowed to the curated set.
+- The **active** theme always renders, even when it is not featured, so a saved non-featured choice still shows as selected.
+- `light` is certified but is not one of the picker's `THEMES`, so it cannot be featured here; the certified pair the picker carries is `terminal` + `paper`.
+
+Gates: `tsc` 0 · `eslint` 0 · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Theme curation (D4), 2026-10-17. Curated default + full-catalog toggle on `fix/round-10-design`.*
+
+---
+
+## 28. D3 — homepage length & rhythm: four movements, not eight sections (2026-10-17)
+
+Owner decision: merge + drop.
+
+**Problem.** The homepage was eight visible sections in one 8157px scroll — `Explore` was already a no-op returning `null`, so the ninth "section" was dead code. Every section used the same shape (`NN /` tag, 52px title, 120px padding), so the scroll had no rhythm, and the numbering was already broken: 01, 02, 03, 04, **06**, 07, 08 — `05` was the removed Explore.
+
+**Change.** Home is now four numbered movements:
+
+| # | Section | Contains |
+|---|---------|----------|
+| — | Hero | unchanged |
+| 01 | About | bio + quick info + terminal, **with Skills merged in as a sub-section** |
+| 02 | Experience | unchanged |
+| 03 | Projects | project grid, **with Services merged in as a sub-section** |
+| 04 | Contact | unchanged |
+
+- `components/Skills.jsx` / `components/Services.jsx` take an `embedded` prop. Embedded they keep their anchor id (`#skills`, `#services` — FloatingNav, the footer and the command palette all link to them) and swap the numbered header for a `.sub-header` divider label; standalone they render exactly as before.
+- `components/About.jsx` / `components/Projects.jsx` render `{children}` (inside a `Suspense` boundary) after their own content, so a merged pair lives inside one `<section>` — and therefore one background band.
+- `pages-src/Home.jsx` composes the pairs, drops the `Newsletter` section (the footer already carries `MiniNewsletter`) and stops mounting the dead `Explore`.
+- `app/globals.css` gains `.sub-section` / `.sub-header` / `.sub-title` / `.sub-line`.
+
+**The specificity trap.** `globals.css` pads `#skills` / `#services` by id — `#about, #experience, #skills, … { padding: var(--page-py) var(--page-px) !important }` plus media-query overrides. An embedded sub-section must have **zero** horizontal padding, because the host band supplies it. So `.sub-section` is neutralised at `#skills.sub-section, #services.sub-section { padding: 0 !important; padding-top: … !important }`, which out-specifies the id-only rules (0,1,1 vs 0,1,0). Verified in the DOM: the embedded sections compute `padding-left/right: 0`, `padding-top: 40px`, `margin-top: 70px`, `border-top: 1px`.
+
+**Verified.** The SSR HTML places the React streaming placeholder that receives Skills (`<template id="B:0">`) *inside* `#about`, and the one that receives Services (`<template id="B:2">`) *inside* `#projects` — so the `$RC` segment move lands them in the host band. `.section-tag` now reads `01 / 02 / 03 / 04`, `.sub-title` reads `Skills` and `Services`, and `#newsletter` is gone.
+
+Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Homepage length & rhythm (D3), 2026-10-17. Merge + drop on `fix/round-10-design`.*
+
+---
+
+## 29. Empty states — stop rendering a bare zero (2026-10-17)
+
+Review finding: surfaces that had no rows rendered a bare one-line zero — `No orders yet.`, `NO DATA YET`, `0 rows returned` — with no icon and no next step, while the public Blog / Forum / Store already used the illustrated `EmptyState` from `components/community.jsx`. The inconsistency was the tell: an empty panel read like a failed load.
+
+**Two shared components grew the one thing their call sites were missing** — no fifth implementation was added:
+
+- `components/community.jsx` — `EmptyState` gains a **`compact`** variant (24px padding, 26px icon, 13px title) for inline spots (sidebars, modal lists, profile cards) where the 70px default would swamp the surrounding row. `app/globals.css` carries the `.community-empty.compact` rules.
+- `pages-src/admin/ui.jsx` — `EmptyState` gains an optional **`action`** slot, so an admin empty can carry a CTA without a second component.
+
+**Illustrated, ~30 call sites:**
+
+| Surface | Files | What changed |
+|---|---|---|
+| Forum | `ForumHome.jsx` (category sidebar), `forumProfileTabs.jsx` (ticket discussion, threads, replies, tickets), `ForumProfile.jsx` (orders — with a *Browse the store* CTA — and the order status timeline), `forumAdminModals.jsx` (recent threads / replies), `helpDeskParts.jsx` (ticket messages) | community `EmptyState`, `compact` |
+| Store | `admin/StorePanel.jsx` (products, orders, invoices, quotes, plans, subscriptions), `store/AccountDashboard.jsx` (orders, downloads) | admin kit / community |
+| DB | `admin/DBMonitor.jsx` (auth log, query result, stats, posts, categories, feed), `dbGuiTabs.jsx` (sizes, slow queries, audit, sessions, IP bans), `dbGuiParts.jsx` (collection browser) | admin kit `EmptyState` |
+
+Every replacement **names what will appear there** (`"They auto-create when paid orders complete."`, `"Signed-in sessions will be listed here."`), so an empty panel explains itself instead of reading as a failure.
+
+Deliberately left alone: `filetools/index.jsx` and the public store/blog/forum lists already carry an icon; `AppPage.jsx`'s `NO RELEASE YET` is a status chip, not an empty state; `admin/StorePanel`'s *"All stock levels healthy"* is a positive state, not an empty one.
+
+Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Empty states (Forum / Store / DB), 2026-10-17. Illustrated on `fix/round-10-design`.*
+
+---
+
+## 30. Style guide — `/admin/style-guide` (2026-10-17)
+
+Review finding: the design system existed, but the only way to discover it was to read `globals.css` and to notice that there were **four** different `EmptyState` implementations. Nothing told the next panel which primitive to reuse, so new panels kept inventing a fourth button and a fifth empty state.
+
+**New panel.** `pages-src/admin/StyleGuide.jsx`, reachable at `/admin/style-guide` and from the sidebar under MANAGE:
+
+| Section | What it renders |
+|---|---|
+| Tokens | Live swatches for surfaces, text, accents and the `--comp-*` contract |
+| Typography | `--font-display` / `--font-mono` at the sizes the site actually uses |
+| Buttons | `.btn-primary`, `.btn-outline`, the `.neon-btn*` family, and the admin kit `Btn` |
+| Inputs | `core/forms.jsx` Input / Select / TextArea / Checkbox, including disabled |
+| Badges | Admin kit `Badge` across every tone |
+| Cards | `StatCard` |
+| Empty states | All **four** implementations side by side, labelled with their owner surface |
+
+**Live, not a snapshot.** The token swatches read `getComputedStyle(document.documentElement)` and re-read through a `MutationObserver` watching `<html>`'s `style` and `data-theme` attributes — which is exactly how `applyComponentTokens` and the theme switcher mutate the document. The page therefore always shows the **active** theme, including a visitor's chosen personality, instead of a hardcoded palette that rots the first time a theme personality changes.
+
+**The empty-state section is the point.** §29 added ~30 call sites across two of the four implementations. This makes the choice explicit instead of tribal knowledge:
+
+- `components/community.jsx` — public surfaces (blog / forum / store). `compact` for inline spots.
+- `pages-src/admin/ui.jsx` — admin list panels.
+- `core/States.jsx` — the D-series admin language (LoadingState / ErrorState / DisabledNote).
+- `core/Feedback.jsx` — generic fallback.
+
+**Real routes for admin panels.** The dashboard was a single view with internal state; deep links worked only through a hash handler hardcoded to Help Desk. `app/admin/[[...slug]]/page.tsx` now awaits `params` and passes the first slug segment to the shell as `initialView`, which seeds the dashboard's view state. `/admin/style-guide` therefore works, and so does `/admin/<any-panel>`; an unknown slug falls through the existing `canView` fail-closed guard and lands on the first permitted section. `style-guide` is gated on `content.themes` in `admin/access.js`, so admins and editors see it.
+
+Gates: `tsc` 0 · `eslint` 0 errors/58 warnings · **vitest 175 passed + 1 skip** · `next build` ✅.
+
+---
+
+*Living style guide, 2026-10-17. `/admin/style-guide` on `fix/round-10-design`.*

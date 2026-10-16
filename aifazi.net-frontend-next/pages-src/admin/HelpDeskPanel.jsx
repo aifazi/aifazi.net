@@ -11,7 +11,7 @@ import { usePausableInterval } from '../../hooks/usePausableInterval'
 import { S, useIsMobile, PageHeader } from './shared'
 
 const STATUS_MAP = {
-  open:          { color: '#ff6b35', bg: 'rgba(255,107,53,0.1)',  border: 'rgba(255,107,53,0.35)'  },
+  open:          { color: '#ff6b35', bg: 'color-mix(in srgb, var(--orange) 10%, transparent)',  border: 'color-mix(in srgb, var(--orange) 35%, transparent)'  },
   'in-progress': { color: '#00d4ff', bg: 'color-mix(in srgb, var(--cyan) 10%, transparent)',  border: 'color-mix(in srgb, var(--cyan) 35%, transparent)'   },
   pending:       { color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.35)'  },
   resolved:      { color: '#00ff88', bg: 'color-mix(in srgb, var(--green) 10%, transparent)',  border: 'color-mix(in srgb, var(--green) 35%, transparent)'   },
@@ -336,7 +336,7 @@ function HelpDeskSettings() {
                 cats[i] = v
                 set('categories', cats)
               }} style={{ ...inp, flex: 1 }} />
-              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removeCategory(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -381,7 +381,7 @@ function HelpDeskSettings() {
                   set('priorities', ps)
                 }} />
               <span style={{ width: 16, height: 16, borderRadius: '50%', background: p.color, flexShrink: 0, border: '1px solid rgba(255,255,255,0.1)' }} />
-              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid rgba(255,71,87,0.3)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => removePriority(i)} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--red)', background: 'none', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>✕</button>
             </div>
           ))}
         </div>
@@ -740,7 +740,7 @@ export default function HelpDeskPanel({ initialTicketId }) {
                 )}
                 <button onClick={() => handleDelete(tid(t), tkid(t))}
                   style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '5px 10px',
-                    background: 'transparent', border: '1px solid rgba(255,71,87,0.3)',
+                    background: 'transparent', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)',
                     color: 'var(--red)', cursor: 'pointer', borderRadius: 4 }}>DEL</button>
               </Clickable>
             </div>

@@ -47,8 +47,8 @@ function Row({ keyName, value, onEdit, onDelete, onHistory, dirty }) {
       </div>
       <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
         <button onClick={onHistory} style={{ ...S.btn('transparent', 'var(--yellow)'), border: '1px solid rgba(255,215,0,0.35)', fontSize: 11, padding: '5px 10px' }}>HISTORY</button>
-        <button onClick={onEdit} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '5px 10px' }}>EDIT</button>
-        <button onClick={onDelete} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 11, padding: '5px 10px' }}>DEL</button>
+        <button onClick={onEdit} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 11, padding: '5px 10px' }}>EDIT</button>
+        <button onClick={onDelete} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 35%, transparent)', fontSize: 11, padding: '5px 10px' }}>DEL</button>
       </div>
     </div>
   )
@@ -180,7 +180,7 @@ export default function ContentManager() {
 
       {/* Add-block form */}
       {adding && (
-        <div style={{ border: '1px solid rgba(0,255,136,0.3)', background: 'rgba(0,255,136,0.04)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
+        <div style={{ border: '1px solid color-mix(in srgb, var(--green) 30%, transparent)', background: 'color-mix(in srgb, var(--green) 4%, transparent)', borderRadius: 10, padding: 14, marginBottom: 16 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--green)', marginBottom: 10 }}>NEW CONTENT BLOCK</div>
           <NewBlockForm
             onCancel={() => setAdding(false)}
@@ -239,7 +239,7 @@ export default function ContentManager() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 4 }}>
                         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()}</span>
-                        {rev.editor && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.3)', borderRadius: 3, padding: '1px 6px' }}>{rev.editor}</span>}
+                        {rev.editor && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', borderRadius: 3, padding: '1px 6px' }}>{rev.editor}</span>}
                       </div>
                       <Preview value={rev.value} />
                     </div>

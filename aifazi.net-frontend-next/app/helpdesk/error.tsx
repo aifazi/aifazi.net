@@ -106,7 +106,7 @@ export default function HelpDeskError({
         </div>
         {error?.digest && (
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--border)',
+            fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)',
             marginTop: 20, letterSpacing: 1,
           }}>
             Error ID: {error.digest}

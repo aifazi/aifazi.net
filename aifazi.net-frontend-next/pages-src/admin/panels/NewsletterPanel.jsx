@@ -160,7 +160,7 @@ function NewsletterPanel() {
                 </div>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, padding: '3px 8px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)', color: 'var(--green)', flexShrink: 0 }}>{(s.status || 'ACTIVE').toUpperCase()}</span>
                 <a href={`mailto:${s.email}`} title={`Email ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--cyan) 30%, transparent)', color: 'var(--cyan)', textDecoration: 'none', flexShrink: 0 }}>✉️</a>
-                <button onClick={() => handleDelete(s.email)} aria-label={`Delete ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757', cursor: 'pointer', flexShrink: 0 }}>🗑️</button>
+                <button onClick={() => handleDelete(s.email)} aria-label={`Delete ${s.email}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '4px 8px', background: 'transparent', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', color: '#ff4757', cursor: 'pointer', flexShrink: 0 }}>🗑️</button>
               </div>
             ))}
           </div>

@@ -1,4 +1,5 @@
 'use client'
+import { Suspense } from 'react'
 import { useReveal } from '../hooks/useReveal'
 import { useSplitTextReveal } from '../hooks/useSplitTextReveal'
 import { EditableText } from '../context/EditContext'
@@ -76,7 +77,7 @@ function QuickInfo() {
   )
 }
 
-export default function About() {
+export default function About({ children }) {
   const headerRef = useReveal()
   const titleRef  = useSplitTextReveal({ staggerMs: 35, fromY: 28 })
   const textRef = useReveal()
@@ -115,6 +116,9 @@ export default function About() {
           ))}
         </div>
       </div>
+
+      {/* Merged sub-sections (e.g. Skills) render inside this band */}
+      {children && <Suspense fallback={null}>{children}</Suspense>}
 
       <style>{`/* responsive handled by globals.css */`}</style>
     </section>

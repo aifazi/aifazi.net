@@ -21,6 +21,7 @@ import {
   TicketCard, TicketDetailView, MyTicketsTab, ActivityTab, ProfileEditTab,
   ProfileSessionsPanel, TwoFactorPanel, SecurityTab, OverviewTab,
 } from './forumProfileTabs'
+import { EmptyState } from '../components/community'
 
 /* ─── Design tokens ──────────────────────────────────────────────────────── */
 const DISCORD_PURPLE = '#5865F2'
@@ -342,7 +343,7 @@ function FiveMTab({ user }) {
       <SectionCard title="Whitelist Application" tag="FIVEM">
         {error && (
           <div style={{ ...M, fontSize: 11, color: CLRS.red, padding: '10px 14px',
-            background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)', borderRadius: 6, marginBottom: 14 }}>
+            background: 'color-mix(in srgb, var(--red) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 25%, transparent)', borderRadius: 6, marginBottom: 14 }}>
             ⚠  {error}
           </div>
         )}
@@ -597,7 +598,7 @@ function OrdersDocumentsTab({ user }) {
     <div>
       <SectionCard title="My Orders" tag="ORDER TRACKER">
         {ordersLoading ? <div className="loader" /> : orders.length === 0 ? (
-          <div style={{ fontSize: 12, color: 'var(--muted)', padding: '8px 0' }}>No orders yet.</div>
+          <EmptyState compact icon="📦" title="No orders yet" text="Your store orders will appear here." action="Browse the store" actionTo="/store" />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {orders.map(o => (
@@ -650,7 +651,7 @@ function OrdersDocumentsTab({ user }) {
             <div style={{ ...M, fontSize: 11, letterSpacing: 2, color: CLRS.cyan, marginBottom: 6, fontWeight: 800 }}>STATUS TIMELINE</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
               {(detail.events || []).length === 0 ? (
-                <span style={{ fontSize: 11, color: 'var(--muted)' }}>No updates yet.</span>
+                <EmptyState compact icon="🕓" title="No updates yet" text="Status changes will be logged here." />
               ) : (Array.isArray(detail.events) ? detail.events : []).map((ev, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 11 }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', marginTop: 4, background: CLRS.green, flexShrink: 0 }} />

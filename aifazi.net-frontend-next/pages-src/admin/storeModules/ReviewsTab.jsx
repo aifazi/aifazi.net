@@ -110,7 +110,7 @@ export default function ReviewsTab() {
                     <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)' }}>{fmt(r.created_at)}</span>
                     <div style={{ display: 'flex', gap: 6 }}>
                       {r.status !== 'approved' && <button onClick={() => setStatus(r, 'approved')} style={{ fontFamily: MONO, fontSize: 11, padding: '5px 10px', background: 'color-mix(in srgb, var(--green) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 40%, transparent)', color: G, borderRadius: 6, cursor: 'pointer' }}>✓ APPROVE</button>}
-                      {r.status !== 'rejected' && <button onClick={() => setStatus(r, 'rejected')} style={{ fontFamily: MONO, fontSize: 11, padding: '5px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>✕ REJECT</button>}
+                      {r.status !== 'rejected' && <button onClick={() => setStatus(r, 'rejected')} style={{ fontFamily: MONO, fontSize: 11, padding: '5px 10px', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: R, borderRadius: 6, cursor: 'pointer' }}>✕ REJECT</button>}
                       <button onClick={() => deleteReview(r)} style={{ fontFamily: MONO, fontSize: 11, padding: '5px 10px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 6, cursor: 'pointer' }}>DEL</button>
                     </div>
                   </div>

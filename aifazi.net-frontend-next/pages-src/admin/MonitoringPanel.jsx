@@ -101,7 +101,7 @@ function MonitorsTab() {
               <div style={{ flex: 1, minWidth: 160 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{m.name}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 7px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', color: C, borderRadius: 99 }}>{meta.label.toUpperCase()}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 7px', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', color: C, borderRadius: 99 }}>{meta.label.toUpperCase()}</span>
                   {!m.enabled && <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: 1, padding: '2px 7px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 99 }}>PAUSED</span>}
                 </div>
                 <div style={{ fontFamily: MONO, fontSize: 11, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

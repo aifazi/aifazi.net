@@ -188,9 +188,11 @@ export function Pagination({ page, pages, onChange, total, pageSize = 20 }) {
 }
 
 // ── Empty state ───────────────────────────────────────────────────────────────
-export function EmptyState({ icon = '🗒', title, text, action, actionTo }) {
+// `compact` shrinks the treatment for inline spots (sidebars, modal lists,
+// profile cards) where a 70px-padded block would swamp the surrounding row.
+export function EmptyState({ icon = '🗒', title, text, action, actionTo, compact }) {
   return (
-    <div className="community-empty">
+    <div className={`community-empty${compact ? ' compact' : ''}`}>
       <div className="community-empty-icon">{icon}</div>
       <div className="community-empty-title">{title}</div>
       {text && <div className="community-empty-text">{text}</div>}

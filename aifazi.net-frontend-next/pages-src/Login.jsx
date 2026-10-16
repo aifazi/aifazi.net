@@ -701,11 +701,15 @@ export default function Login() {
         /* Submit button */
         .auth-submit { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px;
           font-family: var(--font-display); font-size: 14.5px; font-weight: 700; letter-spacing: .2px;
-          padding: 15px; min-height: 54px; border: none; border-radius: 14px; cursor: pointer; color: var(--text);
-          background: linear-gradient(120deg, var(--green), var(--cyan), var(--green));
-          background-size: 220% 100%; transition: background-position .4s ease, transform .15s ease, box-shadow .25s ease;
-          box-shadow: 0 6px 28px color-mix(in srgb, var(--green) 35%, transparent); }
-        .auth-submit:hover:not(:disabled) { background-position: 100% 0; transform: translateY(-2px);
+          padding: 15px; min-height: 54px; cursor: pointer;
+          color: var(--comp-btn-text, #000);
+          border: var(--comp-btn-border, none);
+          border-radius: var(--comp-btn-radius, 14px);
+          background: var(--comp-btn-bg, var(--green));
+          clip-path: var(--comp-btn-clip, none);
+          transition: transform .15s ease, box-shadow .25s ease, filter .2s ease;
+          box-shadow: var(--comp-btn-shadow, 0 6px 28px color-mix(in srgb, var(--green) 35%, transparent)); }
+        .auth-submit:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08);
           box-shadow: 0 10px 36px color-mix(in srgb, var(--green) 45%, transparent); }
         .auth-submit:active:not(:disabled) { transform: translateY(0) scale(.98); }
         .auth-submit:disabled { cursor: not-allowed; opacity: .45; background: var(--bg3); color: var(--muted); box-shadow: none; }

@@ -108,7 +108,7 @@ function BlockEditor({ block, onClose, onSave }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
             <label style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, color: 'var(--muted)' }}>{list.label}</label>
-            <button onClick={() => setItems(items => [...items, Object.fromEntries(list.itemFields.map(f => [f.key, f.default ?? '']))])} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px dashed rgba(0,255,136,0.4)', fontSize: 11, padding: '4px 10px' }}>+ ADD</button>
+            <button onClick={() => setItems(items => [...items, Object.fromEntries(list.itemFields.map(f => [f.key, f.default ?? '']))])} style={{ ...S.btn('transparent', 'var(--green)'), border: '1px dashed color-mix(in srgb, var(--green) 40%, transparent)', fontSize: 11, padding: '4px 10px' }}>+ ADD</button>
           </div>
           <div style={{ display: 'grid', gap: 8 }}>
             {(Array.isArray(draft[list.key]) ? draft[list.key] : []).map((item, i) => (
@@ -167,7 +167,7 @@ function BlockRow({ block, path, index, insert, setInsert, onDrop, onEdit, onDup
       onDrop={drop}
       style={{
         display: 'flex', flexDirection: 'column', gap: 6, padding: compact ? 8 : '10px 12px', marginBottom: compact ? 0 : 8,
-        border: `1px solid ${here ? 'rgba(0,255,136,0.7)' : 'var(--border)'}`,
+        border: `1px solid ${here ? 'color-mix(in srgb, var(--green) 70%, transparent)' : 'var(--border)'}`,
         borderTop: here ? '2px solid var(--green)' : '1px solid var(--border)',
         borderRadius: 8, background: 'var(--bg)', cursor: 'grab', userSelect: 'none',
       }}
@@ -237,7 +237,7 @@ function RowEditor({ row, path, index, insert, setInsert, onDrop, onEdit, onDup,
               <BlockRow key={b.id || `b-${j}`} block={b} path={p} index={j} compact insert={insert} setInsert={setInsert} onDrop={onDrop} onEdit={onEdit} onDup={onDup} onRemove={onRemove} />
             ))}
             {endHere && (
-              <div style={{ border: '2px dashed rgba(0,255,136,0.6)', borderRadius: 8, padding: 12, textAlign: 'center', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>DROP</div>
+              <div style={{ border: '2px dashed color-mix(in srgb, var(--green) 60%, transparent)', borderRadius: 8, padding: 12, textAlign: 'center', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>DROP</div>
             )}
           </div>
         )
@@ -404,8 +404,8 @@ export default function PageBuilder() {
         title="Drag-and-drop page builder"
         subtitle="Pick pre-made blocks from the palette and drag them onto the page, reorder them, edit props, and publish. Row blocks let you place blocks side by side in 2–4 column grids. Pages render at /pages/<slug>."
         actions={<>
-          <button onClick={() => { setShowHistory(v => !v); if (!showHistory) loadRevisions() }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '8px 14px' }}>{showHistory ? '✕ HISTORY' : '◷ HISTORY'}</button>
-          <button onClick={clearPage} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid rgba(255,71,87,0.35)', fontSize: 11, padding: '8px 14px' }}>CLEAR</button>
+          <button onClick={() => { setShowHistory(v => !v); if (!showHistory) loadRevisions() }} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>{showHistory ? '✕ HISTORY' : '◷ HISTORY'}</button>
+          <button onClick={clearPage} style={{ ...S.btn('transparent', 'var(--red)'), border: '1px solid color-mix(in srgb, var(--red) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>CLEAR</button>
           <button onClick={save} disabled={!dirty || saving} style={{ ...S.btn('color-mix(in srgb, var(--green) 12%, transparent)', 'var(--green)'), border: '1px solid color-mix(in srgb, var(--green) 45%, transparent)', fontSize: 11, padding: '8px 14px' }}>{saving ? 'SAVING…' : (dirty ? '● PUBLISH' : 'PUBLISHED ✓')}</button>
         </>}
       />
@@ -413,7 +413,7 @@ export default function PageBuilder() {
       {/* Slug + page selector */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
         <Input value={slug} onChange={(v) => { setSlug(v.replace(/[^a-z0-9-_]/gi, '')); setDirty(false) }} placeholder="page slug" spellCheck={false} style={{ ...S.input, fontSize: 12, padding: '9px 12px', fontFamily: 'var(--font-mono)', width: 160 }} />
-        <button onClick={() => loadPage(slug)} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid rgba(0,212,255,0.35)', fontSize: 11, padding: '8px 14px' }}>LOAD</button>
+        <button onClick={() => loadPage(slug)} style={{ ...S.btn('transparent', 'var(--cyan)'), border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)', fontSize: 11, padding: '8px 14px' }}>LOAD</button>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>→ /pages/{slug || '…'}</span>
         <div style={{ flex: 1 }} />
         {pageSlugs.length > 0 && (
@@ -440,7 +440,7 @@ export default function PageBuilder() {
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text)' }}>{new Date(rev.created_at).toLocaleString()} — {rev.editor || 'unknown'}</div>
                 <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>{Array.isArray(rev.value) ? `${rev.value.length} blocks` : typeof rev.value === 'object' ? 'snapshot' : ''}</div>
               </div>
-              <button onClick={() => restoreRevision(rev)} style={{ ...S.btn('transparent', 'var(--orange)'), border: '1px solid rgba(255,107,53,0.35)', fontSize: 11, padding: '5px 10px', flexShrink: 0 }}>RESTORE</button>
+              <button onClick={() => restoreRevision(rev)} style={{ ...S.btn('transparent', 'var(--orange)'), border: '1px solid color-mix(in srgb, var(--orange) 35%, transparent)', fontSize: 11, padding: '5px 10px', flexShrink: 0 }}>RESTORE</button>
             </div>
           ))}
         </div>
@@ -464,7 +464,7 @@ export default function PageBuilder() {
                       onDragEnd={() => setInsert(null)}
                       title={cfg.desc}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', border: '1px solid var(--border)', borderRadius: 8, cursor: 'grab', background: 'var(--bg)', transition: 'all 0.15s', userSelect: 'none' }}
-                      onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(0,255,136,0.5)'}
+                      onMouseEnter={e => e.currentTarget.style.borderColor = 'color-mix(in srgb, var(--green) 50%, transparent)'}
                       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                     >
                       <span style={{ fontSize: 15 }}>{cfg.icon}</span>
@@ -484,7 +484,7 @@ export default function PageBuilder() {
         <div
           onDragOver={e => { e.preventDefault(); setInsert(insert && insert.path.length === 0 ? insert : { path: [], index: layout.length }) }}
           onDrop={e => handleDrop(e, [], insert && insert.path.length === 0 ? insert.index : layout.length)}
-          style={{ border: `1px dashed ${insert && insert.path.length === 0 ? 'rgba(0,255,136,0.6)' : 'var(--border)'}`, borderRadius: 10, background: 'var(--bg2)', minHeight: 320, padding: 14, transition: 'border-color 0.15s' }}
+          style={{ border: `1px dashed ${insert && insert.path.length === 0 ? 'color-mix(in srgb, var(--green) 60%, transparent)' : 'var(--border)'}`, borderRadius: 10, background: 'var(--bg2)', minHeight: 320, padding: 14, transition: 'border-color 0.15s' }}
         >
           {loading ? (
             <div style={{ display: 'grid', gap: 8 }}>{[0,1,2].map(i => <div key={i} className="sk-block" style={{ height: 70 }} />)}</div>
@@ -500,7 +500,7 @@ export default function PageBuilder() {
             ))
           )}
           {layout.length > 0 && insert && insert.path.length === 0 && insert.index >= layout.length && (
-            <div style={{ border: '2px dashed rgba(0,255,136,0.6)', borderRadius: 8, padding: 16, textAlign: 'center', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>DROP TO ADD AT END</div>
+            <div style={{ border: '2px dashed color-mix(in srgb, var(--green) 60%, transparent)', borderRadius: 8, padding: 16, textAlign: 'center', color: 'var(--green)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>DROP TO ADD AT END</div>
           )}
         </div>
       </div>

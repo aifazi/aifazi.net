@@ -46,7 +46,7 @@ function CopyBtn({ text, label, onCopy }) {
   return (
     <button onClick={() => onCopy(text, label)} title={`Copy ${label || 'to clipboard'}`}
       style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '3px 8px',
-        background: 'transparent', color: 'var(--cyan)', border: '1px solid rgba(0,212,255,0.35)',
+        background: 'transparent', color: 'var(--cyan)', border: '1px solid color-mix(in srgb, var(--cyan) 35%, transparent)',
         borderRadius: 5, cursor: 'pointer', flexShrink: 0 }}>
       ⧉ COPY
     </button>
@@ -488,7 +488,7 @@ function VpnPanelInner() {
         <div>
           {/* Alerts */}
           {!serverStatus?.server_running && (
-            <div style={{ background: 'rgba(255,71,87,0.08)', border: '1px solid var(--red)',
+            <div style={{ background: 'color-mix(in srgb, var(--red) 8%, transparent)', border: '1px solid var(--red)',
               borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--red)' }}>
               ⚠️ WireGuard server is offline — no tunnels can connect. Check the host WireGuard service.
             </div>
@@ -500,7 +500,7 @@ function VpnPanelInner() {
             </div>
           )}
           {monitorSvc && monitorSvc.status !== 'up' && (
-            <div style={{ background: 'rgba(255,71,87,0.08)', border: '1px solid var(--red)',
+            <div style={{ background: 'color-mix(in srgb, var(--red) 8%, transparent)', border: '1px solid var(--red)',
               borderRadius: 12, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--red)' }}>
               Uptime monitor reports VPN {monitorSvc.status}: {monitorSvc.detail || 'check the monitor tab'}
             </div>
@@ -519,7 +519,7 @@ function VpnPanelInner() {
             <div style={{ display: 'grid', gap: 8, marginBottom: 24 }}>
               {peers.filter(p => p.connected).map(p => (
                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12,
-                  background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.25)',
+                  background: 'color-mix(in srgb, var(--green) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--green) 25%, transparent)',
                   borderRadius: 10, padding: '10px 14px' }}>
                   <span style={{ width: 10, height: 10, borderRadius: 5, flexShrink: 0,
                     background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />

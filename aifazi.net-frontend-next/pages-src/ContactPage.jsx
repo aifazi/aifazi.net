@@ -121,7 +121,7 @@ export default function ContactPage() {
           </div>
 
           {status && (
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: '12px 16px', color: 'var(--orange)', border: '1px solid rgba(255,107,53,0.3)', background: 'rgba(255,107,53,0.05)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, padding: '12px 16px', color: 'var(--orange)', border: '1px solid color-mix(in srgb, var(--orange) 30%, transparent)', background: 'color-mix(in srgb, var(--orange) 5%, transparent)' }}>
               {status.msg}
             </div>
           )}

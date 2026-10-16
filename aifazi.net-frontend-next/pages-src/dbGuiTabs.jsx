@@ -5,6 +5,7 @@ import { useDialog } from '../core/dialog.jsx'
 import api from '../lib/api'
 import { Input } from '@/core/forms'
 import { Btn, StatCard, MiniChart, FeedRow, ap, authCfg, ago, fmt, adminAction, roleColor } from './dbGuiParts'
+import { EmptyState } from './admin/ui'
 
 function DbHealthTab({ token, toast }) {
   const [data, setData]       = useState(null);
@@ -61,13 +62,13 @@ function DbHealthTab({ token, toast }) {
   return (
     <div style={{ maxWidth:900 }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-        <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)" }}>DATABASE HEALTH &amp; METRICS</div>
+        <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)" }}>DATABASE HEALTH &amp; METRICS</div>
         <button onClick={load} disabled={loading} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"6px 14px", background:"transparent", color:"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:"pointer" }}>
           {loading ? "LOADING..." : "REFRESH"}
         </button>
       </div>
 
-      {loading && !data && <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>FETCHING METRICS...</div>}
+      {loading && !data && <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", letterSpacing:3 }}>FETCHING METRICS...</div>}
 
       {data && (
         <div style={{ display:"grid", gap:16 }}>
@@ -75,9 +76,9 @@ function DbHealthTab({ token, toast }) {
           {/* Table sizes (top 20) from /api/admin/db/health */}
           {data.health && data.sizes && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>TABLE SIZES · TOP 20</div>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>TABLE SIZES · TOP 20</div>
               {data.sizes.length === 0
-                ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No size data.</div>
+                ? <EmptyState icon="💾" title="No size data" hint="Table sizes appear once stats are collected." />
                 : <div style={{ overflowX:"auto" }}>
                     <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"var(--font-mono,monospace)", fontSize:11 }}>
                       <thead>
@@ -102,11 +103,11 @@ function DbHealthTab({ token, toast }) {
           {/* Slow queries from /api/admin/db/health */}
           {data.health && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>SLOW QUERIES</div>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>SLOW QUERIES</div>
               {!data.pgss
                 ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>pg_stat_statements not installed — sizes above still work.</div>
                 : !data.slowQueriesNew || data.slowQueriesNew.length === 0
-                  ? <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--muted)" }}>No slow-query data.</div>
+                  ? <EmptyState icon="🐢" title="No slow-query data" hint="Slow queries will be listed here." />
                   : data.slowQueriesNew.map((q, i) => (
                       <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 90px 80px", gap:12, padding:"8px 0", borderBottom:"1px solid #0a1016", fontFamily:"var(--font-mono,monospace)", fontSize: 11 }}>
                         <span style={{ color:"var(--muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={q.query}>{q.query}</span>
@@ -120,7 +121,7 @@ function DbHealthTab({ token, toast }) {
           {/* Storage */}
           {(data.storage || data.counts) && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>STORAGE</div>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>STORAGE</div>
               {data.storage ? (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:12 }}>
                   {[
@@ -163,7 +164,7 @@ function DbHealthTab({ token, toast }) {
           {/* Indexes */}
           {data.indexes && data.indexes.length > 0 && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>INDEXES</div>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>INDEXES</div>
               <div style={{ overflowX:"auto" }}>
                 <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"var(--font-mono,monospace)", fontSize:11 }}>
                   <thead>
@@ -195,7 +196,7 @@ function DbHealthTab({ token, toast }) {
 
           {/* Maintenance actions */}
           <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24 }}>
-            <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:16 }}>QUICK MAINTENANCE</div>
+            <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:16 }}>QUICK MAINTENANCE</div>
             <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
               {[
                 { label:"Compact DB",          path:"db/compact",           color:"var(--cyan,var(--cyan))" },
@@ -290,7 +291,7 @@ function NewsletterTab({ token, toast }) {
     <div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div>
-          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)" }}>NEWSLETTER SUBSCRIBERS</div>
+          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)" }}>NEWSLETTER SUBSCRIBERS</div>
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--text)", marginTop:4 }}>
             <span style={{ color:"var(--green,var(--green))" }}>{total.toLocaleString()}</span> total · <span style={{ color:"var(--cyan,var(--cyan))" }}>{active}</span> active
           </div>
@@ -307,7 +308,7 @@ function NewsletterTab({ token, toast }) {
         {search && <button onClick={() => { setSearch(""); setPage(1); load(1, ""); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
-      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>LOADING...</div> : (
+      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", letterSpacing:3 }}>LOADING...</div> : (
         <>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"var(--font-mono,monospace)", fontSize:11 }}>
@@ -326,7 +327,7 @@ function NewsletterTab({ token, toast }) {
                     onMouseLeave={e => e.currentTarget.style.background="transparent"}>
                     <td style={{ padding:"9px 12px", color:"var(--text)" }}>{s.email}</td>
                     <td style={{ padding:"9px 12px" }}>
-                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"rgba(255,71,87,0.07)", color:s.active?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
+                      <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"2px 8px", background:s.active?"color-mix(in srgb, var(--green) 7%, transparent)":"color-mix(in srgb, var(--red) 7%, transparent)", color:s.active?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${s.active?"color-mix(in srgb, var(--green) 19%, transparent)":"color-mix(in srgb, var(--red) 25%, transparent)"}` }}>
                         {s.active ? "YES ACTIVE" : "NO UNSUB"}
                       </span>
                     </td>
@@ -345,7 +346,7 @@ function NewsletterTab({ token, toast }) {
           {pages > 1 && (
             <div style={{ display:"flex", gap:8, marginTop:16, justifyContent:"center", alignItems:"center" }}>
               <button disabled={page<=1} onClick={() => setPage(p=>p-1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"6px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
-              <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>Page {page} / {pages} · {total.toLocaleString()} total</span>
+              <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>Page {page} / {pages} · {total.toLocaleString()} total</span>
               <button disabled={page>=pages} onClick={() => setPage(p=>p+1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"6px 14px", background:"var(--bg)", color:page>=pages?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page>=pages?"not-allowed":"pointer" }}>NEXT</button>
             </div>
           )}
@@ -410,26 +411,26 @@ function AuditLogTab({ token, toast }) {
 
   return (
     <div>
-      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>AUDIT LOG</div>
+      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:20 }}>AUDIT LOG</div>
       <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
         <Input value={filter} onChange={(v) => setFilter(v)} placeholder="Filter by action keyword (e.g. login, ban, create)..." aria-label="Filter audit log"
           style={{ flex:1, minWidth:220, background:"var(--bg)", border:"1px solid #1e2d45", color:"var(--text)", fontFamily:"var(--font-mono,monospace)", fontSize:11, padding:"9px 12px", outline:"none" }} />
         {filter && <button onClick={() => { setFilter(""); setPage(1); }} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"9px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
         <button onClick={exportCsv}
-          style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid rgba(0,255,136,0.35)", cursor:"pointer" }}>
+          style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:1, padding:"9px 14px", background:"transparent", color:"var(--green)", border:"1px solid color-mix(in srgb, var(--green) 35%, transparent)", cursor:"pointer" }}>
           ⬇ EXPORT CSV
         </button>
       </div>
       {loading ? (
-        <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>
+        <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", letterSpacing:3 }}>LOADING...</div>
       ) : (
         <>
-          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:10, letterSpacing:2 }}>
+          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginBottom:10, letterSpacing:2 }}>
             {total.toLocaleString()} EVENTS{filter ? ` · filter: "${filter}"` : ""}
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
             {logs.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No audit events found</div>
+              <EmptyState icon="🧾" title="No audit events found" hint="Admin actions will be logged here." />
             ) : logs.map((log, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"22px 160px 130px 1fr auto", gap:12, padding:"10px 14px", background:"var(--bg2)", border:"1px solid #0a1016", alignItems:"center" }}>
                 <span style={{ fontSize:13 }}>{getIcon(log.event)}</span>
@@ -441,14 +442,14 @@ function AuditLogTab({ token, toast }) {
                   {log.meta?.oldRole ? ` (${log.meta.oldRole} -> ${log.meta.newRole})` : ""}
                   {log.ip && <span style={{ color:"var(--muted)", marginLeft:8 }}>IP: {log.ip}</span>}
                 </span>
-                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", whiteSpace:"nowrap" }}>{log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}</span>
+                <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", whiteSpace:"nowrap" }}>{log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}</span>
               </div>
             ))}
           </div>
           {pages > 1 && (
             <div style={{ display:"flex", gap:8, marginTop:16, justifyContent:"center", alignItems:"center" }}>
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"6px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
-              <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>Page {page} / {pages}</span>
+              <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>Page {page} / {pages}</span>
               <button disabled={page >= pages} onClick={() => setPage(p => p + 1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"6px 14px", background:"var(--bg)", color:page>=pages?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page>=pages?"not-allowed":"pointer" }}>NEXT</button>
             </div>
           )}
@@ -527,13 +528,13 @@ function SessionsTab({ token, toast }) {
         ))}
       </div>
 
-      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>LOADING...</div> : (
+      {loading ? <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>LOADING...</div> : (
 
         subTab === "sessions" ? (
           <div>
-            <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:14, letterSpacing:2 }}>{sessions.length} ACTIVE SESSION{sessions.length !== 1 ? "S" : ""}</div>
+            <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginBottom:14, letterSpacing:2 }}>{sessions.length} ACTIVE SESSION{sessions.length !== 1 ? "S" : ""}</div>
             {sessions.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No active sessions data available</div>
+              <EmptyState icon="🔑" title="No active sessions" hint="Signed-in sessions will be listed here." />
             ) : sessions.map((s, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr auto auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
                 <div>
@@ -551,7 +552,7 @@ function SessionsTab({ token, toast }) {
         ) : (
           <div>
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:20, marginBottom:20 }}>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>ADD IP BAN</div>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:14 }}>ADD IP BAN</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:10, alignItems:"end" }}>
                 <div>
                   <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:6 }}>IP ADDRESS</div>
@@ -566,9 +567,9 @@ function SessionsTab({ token, toast }) {
                 </button>
               </div>
             </div>
-            <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:10, letterSpacing:2 }}>{ipBans.length} BANNED IP{ipBans.length !== 1 ? "S" : ""}</div>
+            <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginBottom:10, letterSpacing:2 }}>{ipBans.length} BANNED IP{ipBans.length !== 1 ? "S" : ""}</div>
             {ipBans.length === 0 ? (
-              <div style={{ textAlign:"center", padding:60, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>No IP bans configured</div>
+              <EmptyState icon="🚫" title="No IP bans configured" hint="Banned addresses will be listed here." />
             ) : ipBans.map((ban, i) => (
               <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto auto", gap:12, padding:"12px 16px", background:"var(--bg2)", border:"1px solid #0a1016", marginBottom:4, alignItems:"center" }}>
                 <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize:12, color:"var(--red,var(--red))" }}>{ban.ip}</span>

@@ -190,7 +190,7 @@ export default function VariantsTab({ focusProductId }) {
                 )}
               </div>
               <button onClick={() => startEdit(v)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--cyan) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 40%, transparent)', color: C, borderRadius: 6, cursor: 'pointer' }}>EDIT</button>
-              <button onClick={() => remove(v)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'rgba(255,71,87,.1)', border: '1px solid rgba(255,71,87,.4)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
+              <button onClick={() => remove(v)} style={{ fontFamily: MONO, fontSize: 11, padding: '6px 10px', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', color: R, borderRadius: 6, cursor: 'pointer' }}>DEL</button>
             </div>
           )
         })

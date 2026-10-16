@@ -90,7 +90,7 @@ function BannerRow({ b, TYPES, onToggle, onRemove, onEdit, isEditing }) {
             <span style={{ color: '#a855f7', background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', padding: '1px 6px', borderRadius: 3 }}>📅 SCHED</span>
           )}
           {isExpired ? (
-            <span style={{ color: '#ff4757', background: 'rgba(255,71,87,0.1)', border: '1px solid rgba(255,71,87,0.3)', padding: '1px 6px', borderRadius: 3 }}>⏱ EXPIRED</span>
+            <span style={{ color: '#ff4757', background: 'color-mix(in srgb, var(--red) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', padding: '1px 6px', borderRadius: 3 }}>⏱ EXPIRED</span>
           ) : isExpiring && (
             <span style={{ color: '#00d4ff', background: 'color-mix(in srgb, var(--cyan) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--cyan) 25%, transparent)', padding: '1px 6px', borderRadius: 3 }}>⏱ EXPIRES</span>
           )}
@@ -111,9 +111,9 @@ function BannerRow({ b, TYPES, onToggle, onRemove, onEdit, isEditing }) {
             cursor: 'pointer' }}>&#9998;</button>
         <button onClick={() => onToggle(id, b.active)}
           style={{ padding: '5px 9px', borderRadius: 5, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 0.5,
-            background: isLive ? 'color-mix(in srgb, var(--green) 10%, transparent)' : isExpired ? 'rgba(255,71,87,0.08)' : 'transparent',
+            background: isLive ? 'color-mix(in srgb, var(--green) 10%, transparent)' : isExpired ? 'color-mix(in srgb, var(--red) 8%, transparent)' : 'transparent',
             color: isLive ? 'var(--green)' : isExpired ? '#ff4757' : 'var(--muted)',
-            border: '1px solid ' + (isLive ? 'color-mix(in srgb, var(--green) 35%, transparent)' : isExpired ? 'rgba(255,71,87,0.3)' : 'var(--border)'),
+            border: '1px solid ' + (isLive ? 'color-mix(in srgb, var(--green) 35%, transparent)' : isExpired ? 'color-mix(in srgb, var(--red) 30%, transparent)' : 'var(--border)'),
             cursor: 'pointer' }}>{isLive ? 'LIVE' : isExpired ? 'EXPIRED' : 'OFF'}</button>
         {b.pinned ? (
           <button title="Unpin to enable delete" disabled
@@ -124,7 +124,7 @@ function BannerRow({ b, TYPES, onToggle, onRemove, onEdit, isEditing }) {
           <button onClick={() => onRemove(id)} title="Delete"
             style={{ padding: '5px 9px', borderRadius: 5, fontFamily: 'var(--font-mono)', fontSize: 11,
               background: 'transparent', color: '#ff4757',
-              border: '1px solid rgba(255,71,87,0.3)', cursor: 'pointer' }}>&#215;</button>
+              border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', cursor: 'pointer' }}>&#215;</button>
         )}
       </div>
     </div>
@@ -145,7 +145,7 @@ function AnnouncementsPanel() {
     { id: 'info',    label: 'Info',    icon: '\u2139\ufe0f', color: '#00d4ff', glow: 'color-mix(in srgb, var(--cyan) 20%, transparent)'  },
     { id: 'warning', label: 'Warning', icon: '\u26a0\ufe0f', color: '#ffd700', glow: 'rgba(255,215,0,0.2)'   },
     { id: 'success', label: 'Success', icon: '\u2705',        color: '#00ff88', glow: 'color-mix(in srgb, var(--green) 20%, transparent)'  },
-    { id: 'alert',   label: 'Alert',   icon: '\ud83d\udea8', color: '#ff4757', glow: 'rgba(255,71,87,0.2)'   },
+    { id: 'alert',   label: 'Alert',   icon: '\ud83d\udea8', color: '#ff4757', glow: 'color-mix(in srgb, var(--red) 20%, transparent)'   },
   ]
 
   const fetchAll = () =>
@@ -456,7 +456,7 @@ function AnnouncementsPanel() {
                 {form.expiresAt && (
                   <button type="button" onClick={() => set('expiresAt', '')}
                     style={{ fontFamily: 'var(--font-mono)', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer',
-                      background: 'transparent', border: '1px solid rgba(255,71,87,0.3)', color: '#ff4757' }}>
+                      background: 'transparent', border: '1px solid color-mix(in srgb, var(--red) 30%, transparent)', color: '#ff4757' }}>
                     ✕ clear
                   </button>
                 )}
@@ -627,7 +627,7 @@ function AnnouncementsPanel() {
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
                 color: 'var(--muted)', letterSpacing: 2 }}>NO BANNERS YET</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11,
-                color: 'var(--border)', marginTop: 6 }}>
+                color: 'var(--muted)', marginTop: 6 }}>
                 Publish one to show a site-wide announcement
               </div>
             </div>

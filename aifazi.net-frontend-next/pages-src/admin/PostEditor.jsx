@@ -113,8 +113,8 @@ function MediaThumb({ file, height = 120, cdnConfig = null }) {
           fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, textAlign: 'center',
           color: failed ? '#ff6b7a' : 'var(--muted)',
           padding: failed ? '2px 6px' : 0,
-          background: failed ? 'rgba(255,71,87,0.1)' : 'transparent',
-          border: failed ? '1px solid rgba(255,71,87,0.25)' : 'none',
+          background: failed ? 'color-mix(in srgb, var(--red) 10%, transparent)' : 'transparent',
+          border: failed ? '1px solid color-mix(in srgb, var(--red) 25%, transparent)' : 'none',
         }}>{label}</span>
       </div>
     )

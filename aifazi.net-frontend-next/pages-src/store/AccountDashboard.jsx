@@ -200,7 +200,7 @@ export default function AccountDashboard({ loginHref }) {
                   </Card>
                 )
               })}
-              {orders.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12, padding: '16px 0' }}>No orders yet.</div>}
+              {orders.length === 0 && <EmptyState compact icon="📦" title="No orders yet" text="Your orders will appear here." />}
             </div>
           </div>
 
@@ -227,7 +227,7 @@ export default function AccountDashboard({ loginHref }) {
                   </div>
                 </Card>
               ))}
-              {downloads.length === 0 && <div style={{ color: 'var(--muted)', fontSize: 12, padding: '16px 0' }}>No downloads yet.</div>}
+              {downloads.length === 0 && <EmptyState compact icon="⬇" title="No downloads yet" text="Digital purchases will appear here." />}
             </div>
           </div>
         </>

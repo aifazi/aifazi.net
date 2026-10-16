@@ -165,6 +165,7 @@ export default function Navbar() {
   const [terminalOpen, setTerminalOpen]     = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [toolsOpen, setToolsOpen]           = useState(false)
+  const [workOpen, setWorkOpen]             = useState(false)
   const [headerStyle, setHeaderStyle]       = useState('cyber')
   const [isMobileNav, setIsMobileNav]       = useState(false)
   const location = useLocation()
@@ -371,19 +372,25 @@ export default function Navbar() {
     }
   }
 
-  const portfolioNavLinks = [
-    { type: 'hash',    hash: 'about',          label: 'About'      },
-    { type: 'hash',    hash: 'experience',      label: 'Experience' },
-    { type: 'hash',    hash: 'services',        label: 'Services'   },
-
-    { type: 'hash',    hash: 'projects',        label: 'Projects'   },
-    { type: 'route',   to: '/blog',             label: 'Blog'       },
-    { type: 'route',   to: '/forum',            label: 'Forum'      },
-    { type: 'route',   to: STORE_URL,           label: 'Store' },
-    { type: 'route',   to: FIVEM_URL,           label: 'FiveM' },
-    { type: 'route',   to: '/app',              label: 'App'        },
-    { type: 'contact',                          label: 'Contact'    },
+  // Home-page scroll anchors. On desktop these are grouped into a single
+  // "Work" dropdown — 10 flat top-level links overflowed the bar and clipped
+  // the right-side controls (search / Sign In / theme) between ~1100–1440px.
+  // Mobile still renders them inline, in order.
+  const portfolioWorkLinks = [
+    { type: 'hash',    hash: 'about',      label: 'About'      },
+    { type: 'hash',    hash: 'experience', label: 'Experience' },
+    { type: 'hash',    hash: 'services',   label: 'Services'   },
+    { type: 'hash',    hash: 'projects',   label: 'Projects'   },
   ]
+  const portfolioPrimaryLinks = [
+    { type: 'route',   to: '/blog',   label: 'Blog'    },
+    { type: 'route',   to: '/forum',  label: 'Forum'   },
+    { type: 'route',   to: STORE_URL, label: 'Store'   },
+    { type: 'route',   to: FIVEM_URL, label: 'FiveM'   },
+    { type: 'route',   to: '/app',    label: 'App'     },
+    { type: 'contact',                label: 'Contact' },
+  ]
+  const portfolioNavLinks = [...portfolioWorkLinks, ...portfolioPrimaryLinks]
 
   // FiveM nav links — shared header shell, FiveM-specific destinations
   const fiveMNavLinks = [
@@ -406,6 +413,34 @@ export default function Navbar() {
     { to: '/tools/seo',     label: '🔍  SEO Tools'      },
     { to: '/helpdesk',      label: '🎫  Help Desk'       },
   ]
+
+  // Shared dropdown chrome — the Work + Tools menus use one visual language.
+  const dropdownPanelStyle = {
+    position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+    marginTop: 12, background: 'var(--bg2)',
+    border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)',
+    boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 24px color-mix(in srgb, var(--green) 5%, transparent)',
+    minWidth: 180, zIndex: 200, animation: 'toolsDropdown 0.15s ease',
+  }
+  const dropdownRowStyle = {
+    display: 'block', width: '100%', textAlign: 'left',
+    padding: '11px 16px', fontFamily: 'var(--font-mono)', fontSize: 11,
+    letterSpacing: 1, color: 'var(--muted)', textDecoration: 'none',
+    transition: 'all 0.15s', borderBottom: '1px solid rgba(255,255,255,0.04)',
+    background: 'none', border: 'none', cursor: 'pointer',
+  }
+  const dropdownHover = {
+    enter: e => { e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 4%, transparent)' },
+    leave: e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.background = 'transparent' },
+  }
+  const dropdownTriggerStyle = (open) => ({
+    fontFamily: 'var(--font-code)', fontSize: 11, letterSpacing: 3,
+    textTransform: 'uppercase', color: open ? 'var(--green)' : 'var(--muted)',
+    background: 'none', border: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', gap: 5,
+    padding: 0, lineHeight: 1, whiteSpace: 'nowrap',
+    transition: 'color 0.3s', position: 'relative',
+  })
 
   const isActive = (link) => {
     if (link.type === 'route') {
@@ -518,7 +553,7 @@ export default function Navbar() {
           gap: isMobileNav ? 12 : 24,
           padding: isMobileNav
             ? '12px max(14px, env(safe-area-inset-right, 14px)) 12px max(14px, env(safe-area-inset-left, 14px))'
-            : (headerStyle === 'pill' ? '12px 28px' : '20px 60px'),
+            : (headerStyle === 'pill' ? '12px clamp(16px, 2vw, 28px)' : '20px clamp(16px, 2.5vw, 60px)'),
           minWidth: 0,
           width: '100%',
           boxSizing: 'border-box',
@@ -554,14 +589,14 @@ export default function Navbar() {
             ) : headerStyle === 'editorial' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 18, height: 18, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>T</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>A</span>
                 </div>
                 <span style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>AIFAZI</span>
               </div>
             ) : headerStyle === 'minimal' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>TANVIR</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)' }}>.DEV</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>AIFAZI</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)' }}>.NET</span>
               </div>
             ) : headerStyle === 'terminal' ? (
               <div>
@@ -599,9 +634,9 @@ export default function Navbar() {
                 </svg>
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
-                    letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>TANVIR</span>
+                    letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>AIFAZI</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4,
-                    color: hs.accent, marginTop: 3, opacity: 0.75 }}>.DEV</span>
+                    color: hs.accent, marginTop: 3, opacity: 0.75 }}>.NET</span>
                 </div>
               </>
             )}
@@ -623,12 +658,54 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Desktop nav links — hidden on admin routes */}
+          {/* Desktop nav links — hidden on admin routes. Fluid gap + shrinkable
+              container so the right-side controls never clip on narrow laptops. */}
           {showDesktopNav && (
-          <ul className="nav-links" style={{ display: 'flex', gap: 40, listStyle: 'none', margin: 0, padding: 0, alignItems: 'center' }}>
-            {navLinks.map(link => (
-              <li key={link.hash || link.to || 'contact'} style={{ display: 'flex', alignItems: 'center' }}>{renderLink(link)}</li>
-            ))}
+          <ul className="nav-links" style={{ display: 'flex', gap: 'clamp(16px, 1.6vw, 40px)', listStyle: 'none', margin: 0, padding: 0, alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            {isFiveM ? (
+              fiveMNavLinks.map(link => (
+                <li key={link.to} style={{ display: 'flex', alignItems: 'center' }}>{renderLink(link)}</li>
+              ))
+            ) : (
+              <>
+                {/* Work dropdown — home-page section anchors grouped to save bar width */}
+                <li style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setWorkOpen(o => !o)}
+                    onBlur={() => setTimeout(() => setWorkOpen(false), 150)}
+                    aria-haspopup="true"
+                    aria-expanded={workOpen}
+                    aria-label="Work sections menu"
+                    style={dropdownTriggerStyle(workOpen)}
+                    onMouseEnter={e => { if (!workOpen) e.currentTarget.style.color = 'var(--text)' }}
+                    onMouseLeave={e => { if (!workOpen) e.currentTarget.style.color = 'var(--muted)' }}
+                  >
+                    Work
+                    <svg width="8" height="8" viewBox="0 0 10 6" fill="currentColor"
+                      style={{ transition: 'transform 0.2s', transform: workOpen ? 'rotate(180deg)' : 'none' }}>
+                      <path d="M0 0l5 6 5-6z"/>
+                    </svg>
+                    {workOpen && <span style={{ position: 'absolute', bottom: -8, left: 0, right: 0, height: 1, background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />}
+                  </button>
+                  {workOpen && (
+                    <div style={dropdownPanelStyle} role="menu" aria-label="Work sections">
+                      <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
+                      {portfolioWorkLinks.map(l => (
+                        <a key={l.hash} href={`/#${l.hash}`} role="menuitem"
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={e => { handleHashLink(e, l.hash); setWorkOpen(false) }}
+                          style={dropdownRowStyle}
+                          onMouseEnter={dropdownHover.enter} onMouseLeave={dropdownHover.leave}
+                        >{l.label}</a>
+                      ))}
+                    </div>
+                  )}
+                </li>
+                {portfolioPrimaryLinks.map(link => (
+                  <li key={link.to || 'contact'} style={{ display: 'flex', alignItems: 'center' }}>{renderLink(link)}</li>
+                ))}
+              </>
+            )}
             {/* Tools dropdown */}
             {!isFiveM && (
             <li style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -638,14 +715,7 @@ export default function Navbar() {
                 aria-haspopup="true"
                 aria-expanded={toolsOpen}
                 aria-label="Tools menu"
-                style={{
-                  fontFamily: 'var(--font-code)', fontSize: 11, letterSpacing: 3,
-                  textTransform: 'uppercase', color: toolsOpen ? 'var(--green)' : 'var(--muted)',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: 0, lineHeight: 1,
-                  transition: 'color 0.3s', position: 'relative',
-                }}
+                style={dropdownTriggerStyle(toolsOpen)}
                 onMouseEnter={e => { if (!toolsOpen) e.currentTarget.style.color = 'var(--text)' }}
                 onMouseLeave={e => { if (!toolsOpen) e.currentTarget.style.color = 'var(--muted)' }}
               >
@@ -657,22 +727,11 @@ export default function Navbar() {
                 {toolsOpen && <span style={{ position: 'absolute', bottom: -8, left: 0, right: 0, height: 1, background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />}
               </button>
               {toolsOpen && (
-                <div style={{
-                  position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-                  marginTop: 12, background: 'var(--bg2)', border: '1px solid color-mix(in srgb, var(--green) 20%, transparent)',
-                  boxShadow: '0 16px 48px rgba(0,0,0,0.5), 0 0 24px color-mix(in srgb, var(--green) 5%, transparent)',
-                  minWidth: 180, zIndex: 200, animation: 'toolsDropdown 0.15s ease',
-                }}>
+                <div style={dropdownPanelStyle} role="menu" aria-label="Tools">
                   <div style={{ height: 2, background: 'linear-gradient(90deg, var(--green), var(--cyan))' }} />
                   {toolsLinks.map(({ to, label }) => (
-                    <Link key={to} to={to} onMouseDown={e => e.preventDefault()} onClick={() => setToolsOpen(false)} style={{
-                      display: 'block', padding: '11px 16px',
-                      fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1,
-                      color: 'var(--muted)', textDecoration: 'none',
-                      transition: 'all 0.15s', borderBottom: '1px solid rgba(255,255,255,0.04)',
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--green)'; e.currentTarget.style.background = 'color-mix(in srgb, var(--green) 4%, transparent)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.background = 'transparent' }}
+                    <Link key={to} to={to} role="menuitem" onMouseDown={e => e.preventDefault()} onClick={() => setToolsOpen(false)} style={dropdownRowStyle}
+                      onMouseEnter={dropdownHover.enter} onMouseLeave={dropdownHover.leave}
                     >{label}</Link>
                   ))}
                 </div>
@@ -684,7 +743,7 @@ export default function Navbar() {
 
           {/* Right side controls — hidden on admin routes */}
           {showDesktopNav && (
-          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             {/* Command Palette — terminal accessible via ⌘K → "Open Terminal" command */}
             <CommandPalette onToggleTheme={toggleTheme} onOpenTerminal={() => setTerminalOpen(true)} />
 

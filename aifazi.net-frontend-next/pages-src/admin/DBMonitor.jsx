@@ -5,6 +5,7 @@ import { useDialog } from '../../core/dialog.jsx'
 import { Checkbox, TextArea } from '@/core/forms'
 import { CollectionBrowser, MaintenancePanel, ExportPanel, QueryPanel, MiniChart, FeedRow } from '../dbGuiParts'
 import { AuditLogTab, DbHealthTab, SessionsTab } from '../dbGuiTabs'
+import { EmptyState } from './ui'
 
 const ago = (d) => {
   if (!d) return ''
@@ -52,8 +53,8 @@ function AuthLogTab() {
         <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>{total.toLocaleString()} AUTH EVENTS</span>
         <button onClick={() => load(page)} disabled={loading} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'5px 12px', background:'transparent', color:'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:loading?'not-allowed':'pointer' }}>{loading ? '..' : 'REFRESH'}</button>
       </div>
-      {loading && !logs.length ? <div style={{ textAlign:'center', padding:40, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
-      : !logs.length ? <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No auth log entries yet</div>
+      {loading && !logs.length ? <div style={{ textAlign:'center', padding:40, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
+      : !logs.length ? <EmptyState icon="🔐" title="No auth log entries yet" hint="Sign-in activity will be listed here." />
       : <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
           {logs.map((entry, i) => {
             const reason = (entry.reason || '').toLowerCase()
@@ -73,7 +74,7 @@ function AuthLogTab() {
                   {entry.userAgent ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{entry.userAgent}</div> : null}
                   {entry.reason ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', marginTop:2 }}>{entry.reason}</div> : null}
                 </div>
-                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', flexShrink:0, whiteSpace:'nowrap' }}>{ago(entry.createdAt)}</span>
+                <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', flexShrink:0, whiteSpace:'nowrap' }}>{ago(entry.createdAt)}</span>
               </div>
             )
           })}
@@ -82,7 +83,7 @@ function AuthLogTab() {
       {pages > 1 && (
         <div style={{ display:'flex', gap:8, marginTop:16, justifyContent:'center', alignItems:'center' }}>
           <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'6px 14px', background:'var(--bg)', color:page<=1?'var(--border)':'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:page<=1?'not-allowed':'pointer' }}>PREV</button>
-          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>Page {page} / {pages}</span>
+          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>Page {page} / {pages}</span>
           <button disabled={page >= pages} onClick={() => setPage(p => p + 1)} style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, padding:'6px 14px', background:'var(--bg)', color:page>=pages?'var(--border)':'var(--cyan,#00d4ff)', border:'1px solid #1e2d45', cursor:page>=pages?'not-allowed':'pointer' }}>NEXT</button>
         </div>
       )}
@@ -110,7 +111,7 @@ function SqlConsoleTab() {
     finally { setLoading(false) }
   }
 
-  if (available === null) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>CHECKING CONSOLE STATUS..</div>
+  if (available === null) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>CHECKING CONSOLE STATUS..</div>
   if (available === false) return (
     <div style={{ maxWidth:700 }}>
       <div style={{ background:'rgba(255,200,0,0.05)', border:'1px solid rgba(255,200,0,0.3)', padding:20 }}>
@@ -128,7 +129,7 @@ function SqlConsoleTab() {
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
         <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>SQL CONSOLE <span style={{color:'var(--green,#00ff88)',fontSize: 11}}>ACTIVE</span></span>
-        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:1 }}>Ctrl+Enter to run</span>
+        <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:1 }}>Ctrl+Enter to run</span>
       </div>
       <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', overflow:'hidden' }}>
         <div style={{ borderBottom:'1px solid #0f1a26' }}>
@@ -141,15 +142,15 @@ function SqlConsoleTab() {
             style={{ padding:'5px 16px', background:loading?'var(--border)':'var(--cyan,#00d4ff)', color:'#000', fontFamily:'var(--font-mono,monospace)', fontSize: 11, fontWeight:700, letterSpacing:1, border:'none', cursor:loading?'not-allowed':'pointer', opacity:!sql.trim()?0.4:1 }}>
             {loading ? 'RUNNING' : 'RUN'}
           </button>
-          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>{'>'}</span>
+          <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)' }}>{'>'}</span>
         </div>
-        {error && <div style={{ padding:'10px 14px', background:'rgba(255,71,87,0.06)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
+        {error && <div style={{ padding:'10px 14px', background:'color-mix(in srgb, var(--red) 6%, transparent)', borderTop:'1px solid #ff475730', fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--red,#ff4757)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{error}</div>}
         {results !== null && (
           <div style={{ borderTop:'1px solid #0f1a26', padding:14, maxHeight:500, overflow:'auto' }}>
-            {Array.isArray(results) && results.length === 0 ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', textAlign:'center', padding:20 }}>0 rows returned</div>
+            {Array.isArray(results) && results.length === 0 ? <EmptyState icon="🔍" title="0 rows returned" hint="The query ran successfully but matched nothing." />
             : Array.isArray(results) ? (
               <div>
-                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
+                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginBottom:10, letterSpacing:1 }}>{results.length.toLocaleString()} row{results.length !== 1 ? 's' : ''} returned</div>
                 <div className="dbmon-scroll" style={{ overflowX:'auto' }}>
                   <table className="dbmon-table" style={{ width:'100%', borderCollapse:'collapse', fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
                     <thead>
@@ -162,14 +163,14 @@ function SqlConsoleTab() {
                         <tr key={i} style={{ borderBottom:'1px solid #0a1016' }}>
                           {Object.entries(row).slice(0, 12).map(([k, v]) => (
                             <td key={k} style={{ padding:'5px 8px', color:'var(--muted)', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                              {v === null || v === undefined ? <span style={{color:'var(--border)'}}>NULL</span> : typeof v === 'boolean' ? (v ? 'true' : 'false') : typeof v === 'object' ? JSON.stringify(v).slice(0, 60) : String(v).slice(0, 100)}
+                              {v === null || v === undefined ? <span style={{color:'var(--muted)'}}>NULL</span> : typeof v === 'boolean' ? (v ? 'true' : 'false') : typeof v === 'object' ? JSON.stringify(v).slice(0, 60) : String(v).slice(0, 100)}
                             </td>
                           ))}
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {results.length > 200 && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', textAlign:'center', padding:'12px 0', letterSpacing:1 }}>Showing 200 of {results.length.toLocaleString()} rows</div>}
+                  {results.length > 200 && <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', textAlign:'center', padding:'12px 0', letterSpacing:1 }}>Showing 200 of {results.length.toLocaleString()} rows</div>}
                 </div>
                 {/* P1-11 — CSS-only mobile fix: sticky first column + 11px floor
                     (full card rewrite out of scope) */}
@@ -206,8 +207,8 @@ function DbOverview() {
     api.get('/admin/stats').then(r => setStats(r.data)).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
-  if (!stats) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No data available</div>
+  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
+  if (!stats) return <EmptyState icon="📊" title="No data available" hint="Stats will appear once the API reports them." />
 
   const cards = [
     { label:'USERS', value:stats.counts?.users?.total, sub:`${stats.counts?.users?.verified||0} verified`, color:'var(--cyan,#00d4ff)' },
@@ -222,7 +223,7 @@ function DbOverview() {
 
   return (
     <div>
-      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>DATABASE OVERVIEW</div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:20 }}>DATABASE OVERVIEW</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))', gap:10 }}>
         {cards.map(c => (
           <div key={c.label} style={{ background:'var(--bg2)', border:`1px solid ${c.color}18`, padding:'16px 18px' }}>
@@ -234,14 +235,14 @@ function DbOverview() {
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:10, marginTop:10 }}>
         <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:20 }}>
-          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:14 }}>TOP POSTS BY VIEWS</div>
+          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:14 }}>TOP POSTS BY VIEWS</div>
           {(stats.topPosts||[]).length===0
-            ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No posts yet</div>
+            ? <EmptyState icon="📝" title="No posts yet" hint="Published blog posts will be listed here." />
             : (stats.topPosts||[]).map((p,i) => (
               <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #0a1016', gap:12 }}>
                 <div style={{ flex:1, overflow:'hidden' }}>
                   <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:12, color:'var(--muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.title}</div>
-                  <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', marginTop:2 }}>{p.category}</div>
+                  <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', marginTop:2 }}>{p.category}</div>
                 </div>
                 <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:11, color:'var(--green,#00ff88)', flexShrink:0 }}>{fmt(p.views)}v</span>
               </div>
@@ -249,9 +250,9 @@ function DbOverview() {
           }
         </div>
         <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:20 }}>
-          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:14 }}>FORUM CATEGORIES</div>
+          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:14 }}>FORUM CATEGORIES</div>
           {(stats.categories||[]).length===0
-            ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No categories yet</div>
+            ? <EmptyState icon="🗂" title="No categories yet" hint="Blog categories will be listed here." />
             : (stats.categories||[]).map((c,i) => (
               <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'9px 0', borderBottom:'1px solid #0a1016' }}>
                 <span style={{ fontFamily:'var(--font-mono,monospace)', fontSize:12, color:'var(--muted)' }}>{c.icon} {c.name}</span>
@@ -354,12 +355,12 @@ function BackupTab() {
 
   return (
     <div style={{ maxWidth: 700 }}>
-      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>DATABASE BACKUP &amp; EXPORT</div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:20 }}>DATABASE BACKUP &amp; EXPORT</div>
 
       {/* Collection stats */}
       <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', padding:'20px 24px', marginBottom:24 }}>
         <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:2, color:'var(--muted)', marginBottom:14 }}>COLLECTION SNAPSHOT</div>
-        {loading ? <div style={{ textAlign:'center', padding:20, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:2 }}>LOADING..</div>
+        {loading ? <div style={{ textAlign:'center', padding:20, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>LOADING..</div>
         : stats ? (
           <>
             <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
@@ -478,7 +479,7 @@ function BackupTab() {
           <span style={{ fontSize:11, marginRight:8 }}>[JSON]</span>
           {downloadingJson ? 'GENERATING JSON...' : 'DOWNLOAD JSON BACKUP'}
         </button>
-        <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ marginTop:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', lineHeight:1.8, padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)' }}>
           Includes discovered public tables · Passwords, tokens and nested secrets redacted · Store securely
         </div>
       </div>
@@ -507,8 +508,8 @@ function BackupTab() {
             <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14, fontFamily:'var(--font-mono,monospace)', fontSize: 11 }}>
               <span style={{
                 padding:'2px 10px', borderRadius:99, fontWeight:700, letterSpacing:1,
-                background: rtResult.ok ? 'rgba(0,255,136,0.1)' : 'rgba(255,71,87,0.1)',
-                border: `1px solid ${rtResult.ok ? 'rgba(0,255,136,0.4)' : 'rgba(255,71,87,0.4)'}`,
+                background: rtResult.ok ? 'color-mix(in srgb, var(--green) 10%, transparent)' : 'color-mix(in srgb, var(--red) 10%, transparent)',
+                border: `1px solid ${rtResult.ok ? 'color-mix(in srgb, var(--green) 40%, transparent)' : 'color-mix(in srgb, var(--red) 40%, transparent)'}`,
                 color: rtResult.ok ? 'var(--green,#00ff88)' : 'var(--red,#ff4757)',
               }}>{rtResult.ok ? 'PASS' : 'FAIL'}</span>
               <span style={{ color:'var(--muted)' }}>{rtResult.tables} tables · {rtResult.duration_s}s</span>
@@ -549,12 +550,12 @@ function useAdminStats() {
 function ActivityTab() {
   const { stats: s, loading } = useAdminStats()
 
-  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
-  if (!s) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No data available</div>
+  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
+  if (!s) return <EmptyState icon="📊" title="No data available" hint="This panel has nothing to show yet." />
 
   return (
     <div>
-      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>RECENT ACTIVITY</div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:20 }}>RECENT ACTIVITY</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
         {[
           {title:"LATEST POSTS",     key:"posts",      render:p=><FeedRow icon="[P]" title={p.title} sub={`${p.published?"YES":"DRAFT"} · ${p.views||0}v · ${p.category||""}`} time={ago(p.createdAt)} color="var(--green,#00ff88)" />},
@@ -565,9 +566,9 @@ function ActivityTab() {
           {title:"NEWSLETTER SUBS",  key:"newsletter", render:n=><FeedRow icon="[N]" title={n.email} sub={n.active?"YES Active":"NO Unsubscribed"} time={ago(n.createdAt)} color="var(--green,#00ff88)" />},
         ].map(({title, key, render}) => (
           <div key={key} style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:'18px 16px' }}>
-            <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:12 }}>{title}</div>
+            <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:12 }}>{title}</div>
             {(s.recent?.[key]||[]).length===0
-              ? <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', padding:'12px 0' }}>NO DATA YET</div>
+              ? <EmptyState icon="📭" title="No data yet" hint="Nothing to display for this collection." />
               : (s.recent?.[key]||[]).map((item, i) => <div key={i}>{render(item)}</div>)
             }
           </div>
@@ -580,12 +581,12 @@ function ActivityTab() {
 function ChartsTab() {
   const { stats: s, loading } = useAdminStats()
 
-  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:3 }}>LOADING..</div>
-  if (!s) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)' }}>No data available</div>
+  if (loading) return <div style={{ textAlign:'center', padding:60, fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:3 }}>LOADING..</div>
+  if (!s) return <EmptyState icon="📊" title="No data available" hint="This panel has nothing to show yet." />
 
   return (
     <div>
-      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:20 }}>CHARTS</div>
+      <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:20 }}>CHARTS</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:14 }}>
         <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:24 }}>
           <MiniChart data={s.charts?.dailyPosts||[]} color="var(--green,#00ff88)" label="POSTS - LAST 30 DAYS" />
@@ -594,7 +595,7 @@ function ChartsTab() {
           <MiniChart data={s.charts?.dailyUsers||[]} color="var(--cyan,#00d4ff)" label="NEW USERS - LAST 30 DAYS" />
         </div>
         <div style={{ background:'var(--bg2)', border:'1px solid #0f1a26', padding:24, gridColumn:'1/-1' }}>
-          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--border)', marginBottom:16 }}>THIS WEEK</div>
+          <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, letterSpacing:3, color:'var(--muted)', marginBottom:16 }}>THIS WEEK</div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(120px,1fr))', gap:12 }}>
             {[
               {label:"POSTS",    value:s.week?.posts,    color:"var(--green,#00ff88)"},
@@ -604,7 +605,7 @@ function ChartsTab() {
             ].map(({label,value,color}) => (
               <div key={label} style={{ textAlign:'center', padding:'20px 12px', background:'var(--bg)', border:`1px solid ${color}18` }}>
                 <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize:32, fontWeight:900, color, marginBottom:6 }}>{fmt(value)}</div>
-                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--border)', letterSpacing:2 }}>{label}</div>
+                <div style={{ fontFamily:'var(--font-mono,monospace)', fontSize: 11, color:'var(--muted)', letterSpacing:2 }}>{label}</div>
               </div>
             ))}
           </div>

@@ -7,6 +7,7 @@ import { Checkbox, Select } from '../core/ui.jsx'
 import { Input, TextArea } from '@/core/forms'
 import Clickable from '../core/Clickable.jsx'
 import api from '../lib/api'
+import { EmptyState } from './admin/ui'
 
 const ago = (d) => {
   const s = Math.floor((Date.now() - new Date(d)) / 1000);
@@ -108,7 +109,7 @@ function StatCard({ label, value, sub, color="var(--green,var(--green))", icon, 
 }
 
 function MiniChart({ data=[], color="var(--green,var(--green))", label="" }) {
-  if (!data.length) return <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", padding:"20px 0", textAlign:"center" }}>NO DATA YET</div>;
+  if (!data.length) return <EmptyState icon="📭" title="No data yet" hint="This collection is empty." />;
   const max = Math.max(...data.map(d => d.count), 1);
   return (
     <div>
@@ -122,7 +123,7 @@ function MiniChart({ data=[], color="var(--green,var(--green))", label="" }) {
           }} />
         ))}
       </div>
-      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>
         <span>{data[0]?._id}</span><span>{data[data.length-1]?._id}</span>
       </div>
     </div>
@@ -137,7 +138,7 @@ function FeedRow({ icon, title, sub, time, color="var(--green,var(--green))" }) 
         <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{title}</div>
         {sub && <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginTop:2, lineHeight:1.4 }}>{sub}</div>}
       </div>
-      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", flexShrink:0 }}>{time}</div>
+      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", flexShrink:0 }}>{time}</div>
     </div>
   );
 }
@@ -212,7 +213,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
             <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, padding:"4px 10px", background:roleBg(u.role), color:roleColor(u.role), border:`1px solid ${roleColor(u.role)}33` }}>
               {(ROLE_META[u.role]?.label||"USER")}
             </span>
-            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"color-mix(in srgb, var(--red) 8%, transparent)", color:u.emailVerified?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"rgba(255,71,87,0.25)"}` }}>
+            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"4px 10px", background:u.emailVerified?"color-mix(in srgb, var(--green) 6%, transparent)":"color-mix(in srgb, var(--red) 8%, transparent)", color:u.emailVerified?"var(--green,var(--green))":"var(--red,var(--red))", border:`1px solid ${u.emailVerified?"color-mix(in srgb, var(--green) 19%, transparent)":"color-mix(in srgb, var(--red) 25%, transparent)"}` }}>
               {u.emailVerified?"YES VERIFIED":"NO UNVERIFIED"}
             </span>
             {u.banned && <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"4px 10px", background:"color-mix(in srgb, var(--red) 8%, transparent)", color:"var(--red,var(--red))", border:"1px solid color-mix(in srgb, var(--red) 25%, transparent)" }}>BAN BANNED</span>}
@@ -252,7 +253,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>BAN MANAGEMENT</div>
                 {u.banned ? (
                   <div>
-                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
+                    <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:10, padding:"8px 10px", background:"color-mix(in srgb, var(--red) 3%, transparent)", border:"1px solid var(--red)20", lineHeight:1.5 }}>
                       BAN Reason: {u.banReason||"No reason given"}
                     </div>
                     <Btn label={busy==="unban"?"WORKING...":"YES UNBAN USER"} color="var(--green,var(--green))" disabled={!!busy} onClick={() => run("unban",`users/${u._id}/unban`)} />
@@ -276,7 +277,7 @@ function UserActionsModal({ user, token, onClose, onRefresh, toast }) {
           {tab==="password" && (
             <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:16 }}>
               <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:12 }}>SET PASSWORD DIRECTLY</div>
-              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"rgba(255,71,87,0.03)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
+              <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--red,var(--red))", marginBottom:14, padding:"10px 12px", background:"color-mix(in srgb, var(--red) 3%, transparent)", border:"1px solid var(--red)20", lineHeight:1.6 }}>
                 WARN Immediately changes the password with no notification to the user.
               </div>
               <div style={{ position:"relative", marginBottom:10 }}>
@@ -402,7 +403,7 @@ function EditModal({ doc, coll, token, onClose, onSaved }) {
             return (
               <div key={key}>
                 <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:isRO?"var(--border)":"var(--cyan,var(--cyan))", marginBottom:5 }}>
-                  {key.toUpperCase()}{isRO&&<span style={{color:"var(--border)"}}> (READ-ONLY)</span>}
+                  {key.toUpperCase()}{isRO&&<span style={{color:"var(--muted)"}}> (READ-ONLY)</span>}
                 </div>
                 {isLong
                   ? <TextArea value={val} onChange={(v) => setFields(f=>({...f,[key]:v}))} readOnly={isRO} rows={Math.min(8,val.split("\n").length+1)} style={{...inp, border:`1px solid ${isRO?"var(--border)":"var(--border)"}`, color:isRO?"var(--border)":"var(--text)", resize:"vertical"}} />
@@ -508,7 +509,7 @@ function CollectionBrowser({ token, toast }) {
   const cols = keys.filter(k => pri.includes(k)).sort((a,b) => pri.indexOf(a)-pri.indexOf(b)).slice(0,7);
 
   const cell = (key, val) => {
-    if (val===null||val===undefined) return <span style={{color:"var(--border)"}}>-</span>;
+    if (val===null||val===undefined) return <span style={{color:"var(--muted)"}}>-</span>;
     if (key==="role") return <span style={{color:roleColor(val),fontSize: 11,letterSpacing:1,fontFamily:"var(--font-mono,monospace)"}}>{(val).toUpperCase()}</span>;
     if (typeof val==="boolean") return <span style={{color:val?"var(--green,var(--green))":"var(--red,var(--red))"}}>{val?"YES":"NO"}</span>;
     if ((key.includes("At")||key.includes("date"))&&val) return <span style={{color:"var(--muted)"}} title={new Date(val).toLocaleString()}>{ago(val)}</span>;
@@ -543,12 +544,12 @@ function CollectionBrowser({ token, toast }) {
         {search && <button aria-label="Clear search" onClick={()=>{setSearch("");setPage(1);setQuery("");}} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"8px 12px", background:"transparent", color:"var(--muted)", border:"1px solid #1e2d45", cursor:"pointer" }}>x</button>}
       </div>
 
-      {loading && <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", letterSpacing:3 }}>LOADING...</div>}
+      {loading && <div style={{ textAlign:"center", padding:40, fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", letterSpacing:3 }}>LOADING...</div>}
 
       {data && !loading && (
         <>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-            <div style={{ fontSize: 11, fontFamily:"var(--font-mono,monospace)", color:"var(--border)", letterSpacing:2 }}>
+            <div style={{ fontSize: 11, fontFamily:"var(--font-mono,monospace)", color:"var(--muted)", letterSpacing:2 }}>
               {fmt(data.total)} DOCS · PAGE {data.page}/{data.pages}
               {selected.size>0 && <span style={{color:"var(--yellow,#ffd700)",marginLeft:10}}>{selected.size} SELECTED</span>}
             </div>
@@ -612,7 +613,7 @@ function CollectionBrowser({ token, toast }) {
               <button disabled={page<=1} onClick={()=>setPage(1)}        style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"5px 10px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--muted)", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>FIRST</button>
               <button disabled={page<=1} onClick={()=>setPage(p=>p-1)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"5px 14px", background:"var(--bg)", color:page<=1?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page<=1?"not-allowed":"pointer" }}>PREV</button>
             </div>
-            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)" }}>Page {page} / {data.pages} · {fmt(data.total)} total</span>
+            <span style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)" }}>Page {page} / {data.pages} · {fmt(data.total)} total</span>
             <div style={{ display:"flex", gap:6 }}>
               <button disabled={page>=data.pages} onClick={()=>setPage(p=>p+1)}       style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"5px 14px", background:"var(--bg)", color:page>=data.pages?"var(--border)":"var(--cyan,var(--cyan))", border:"1px solid #1e2d45", cursor:page>=data.pages?"not-allowed":"pointer" }}>NEXT</button>
               <button disabled={page>=data.pages} onClick={()=>setPage(data.pages)} style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, padding:"5px 10px", background:"var(--bg)", color:page>=data.pages?"var(--border)":"var(--muted)", border:"1px solid #1e2d45", cursor:page>=data.pages?"not-allowed":"pointer" }}>LAST</button>
@@ -680,7 +681,7 @@ function ExportPanel({ token, toast, stats }) {
 
   return (
     <div style={{ maxWidth: 600 }}>
-      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>D⬇ EXPORT</div>
+      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:20 }}>D⬇ EXPORT</div>
       <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24, display:"flex", flexDirection:"column", gap:16 }}>
         <div>
           <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:2, color:"var(--muted)", marginBottom:8 }}>COLLECTION</div>
@@ -716,7 +717,7 @@ function ExportPanel({ token, toast, stats }) {
       {/* Quick stats */}
       {stats?.counts && (
         <div style={{ marginTop:20, background:"var(--bg2)", border:"1px solid #0f1a26", padding:20 }}>
-          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:14 }}>COLLECTION SIZES</div>
+          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:14 }}>COLLECTION SIZES</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:8 }}>
             {Object.entries({ users: stats.counts?.users?.total, posts: stats.counts?.posts?.total, threads: stats.counts?.forum?.threads, replies: stats.counts?.forum?.replies, contacts: stats.counts?.contacts, media: stats.counts?.media, staff: stats.counts?.staff, newsletter: stats.counts?.newsletter?.total }).map(([k,v]) => (
               <Clickable key={k} label={`Collection ${k}`} onClick={() => setCollection(k)} style={{ padding:"12px", background:collection===k?"color-mix(in srgb, var(--green) 3%, transparent)":"var(--bg)", border:`1px solid ${collection===k?"color-mix(in srgb, var(--green) 20%, transparent)":"var(--border)"}`, cursor:"pointer" }}>
@@ -759,7 +760,7 @@ function QueryPanel({ token, toast }) {
 
   return (
     <div>
-      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>COLLECTION QUERY BUILDER</div>
+      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:20 }}>COLLECTION QUERY BUILDER</div>
       <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:24, marginBottom:16 }}>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:12, marginBottom:16 }}>
           <div>
@@ -786,7 +787,7 @@ function QueryPanel({ token, toast }) {
 
       {results && (
         <div style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:20 }}>
-          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--border)", marginBottom:14 }}>
+          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, color:"var(--muted)", marginBottom:14 }}>
             RESULTS - {results.total?.toLocaleString()} total · showing {results.docs?.length}
           </div>
           <div style={{ overflowX:"auto" }}>
@@ -856,13 +857,13 @@ function MaintenancePanel({ token, toast, onRefresh }) {
 
   return (
     <div style={{ maxWidth:700 }}>
-      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:20 }}>DATABASE MAINTENANCE</div>
+      <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:20 }}>DATABASE MAINTENANCE</div>
       <div style={{ background:"color-mix(in srgb, var(--red) 8%, transparent)", border:"1px solid color-mix(in srgb, var(--red) 25%, transparent)", padding:"12px 16px", marginBottom:20, fontFamily:"var(--font-mono,monospace)", fontSize:11, color:"var(--red,var(--red))", lineHeight:1.6 }}>
         WARN Maintenance operations may be irreversible. Make sure you have a backup before proceeding.
       </div>
       {actions.map(({group, items}) => (
         <div key={group} style={{ marginBottom:20 }}>
-          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--border)", marginBottom:10 }}>{group}</div>
+          <div style={{ fontFamily:"var(--font-mono,monospace)", fontSize: 11, letterSpacing:3, color:"var(--muted)", marginBottom:10 }}>{group}</div>
           <div style={{ display:"grid", gap:8 }}>
             {items.map(({label, path, color, desc}) => (
               <div key={label} style={{ background:"var(--bg2)", border:"1px solid #0f1a26", padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:20 }}>

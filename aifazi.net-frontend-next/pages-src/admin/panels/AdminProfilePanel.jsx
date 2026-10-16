@@ -200,7 +200,7 @@ function AdminProfilePanel() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 3, color: 'var(--muted)' }}>TWO-FACTOR AUTHENTICATION</div>
           {!twoFA.loading && (
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '2px 10px', borderRadius: 12, background: twoFA.enabled ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'rgba(255,71,87,0.1)', border: `1px solid ${twoFA.enabled ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'rgba(255,71,87,0.3)'}`, color: twoFA.enabled ? 'var(--green)' : '#ff4757' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 1, padding: '2px 10px', borderRadius: 12, background: twoFA.enabled ? 'color-mix(in srgb, var(--green) 12%, transparent)' : 'color-mix(in srgb, var(--red) 10%, transparent)', border: `1px solid ${twoFA.enabled ? 'color-mix(in srgb, var(--green) 35%, transparent)' : 'color-mix(in srgb, var(--red) 30%, transparent)'}`, color: twoFA.enabled ? 'var(--green)' : '#ff4757' }}>
               {twoFA.enabled ? '● ACTIVE' : '○ DISABLED'}
             </span>
           )}
@@ -212,7 +212,7 @@ function AdminProfilePanel() {
 
         {/* Error */}
         {twoFA.error && (
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', background: 'rgba(255,71,87,0.07)', border: '1px solid rgba(255,71,87,0.25)', padding: '10px 14px', marginBottom: 14, borderRadius: 4 }}>{twoFA.error}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff4757', background: 'color-mix(in srgb, var(--red) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--red) 25%, transparent)', padding: '10px 14px', marginBottom: 14, borderRadius: 4 }}>{twoFA.error}</div>
         )}
 
         {/* ── Idle: not enabled, no active step ── */}
@@ -292,7 +292,7 @@ function AdminProfilePanel() {
             )}
 
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              <button onClick={() => setTF({ step: 'disable', error: '' })} style={{ padding: '10px 20px', background: 'transparent', color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: '1px solid rgba(255,71,87,0.4)', cursor: 'pointer', borderRadius: 2 }}>
+              <button onClick={() => setTF({ step: 'disable', error: '' })} style={{ padding: '10px 20px', background: 'transparent', color: '#ff4757', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: '1px solid color-mix(in srgb, var(--red) 40%, transparent)', cursor: 'pointer', borderRadius: 2 }}>
                 DISABLE 2FA
               </button>
               <button onClick={() => setTF({ step: 'regen', error: '', code: '' })} style={{ padding: '10px 20px', background: 'transparent', color: 'var(--cyan)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 2, fontWeight: 700, border: '1px solid color-mix(in srgb, var(--cyan) 45%, transparent)', cursor: 'pointer', borderRadius: 2 }}>
