@@ -569,7 +569,7 @@ function HeaderPreview({ t }) {
               <div style={{ width: 18, height: 18, background: t.primary,
                 boxShadow: 'inset -1px -1px 0 rgba(0,0,0,0.3), inset 1px 1px 0 rgba(255,255,255,0.5)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11 }}>T</div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#000' }}>TANVIR</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, color: '#000' }}>AIFAZI</span>
             </div>
           ) : f.isBrut ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -577,7 +577,7 @@ function HeaderPreview({ t }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: 11, fontWeight: 900, color: '#fff' }}>T</span>
               </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 900, color: t.text, letterSpacing: 2 }}>TANVIR</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 900, color: t.text, letterSpacing: 2 }}>AIFAZI</span>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -589,9 +589,9 @@ function HeaderPreview({ t }) {
               </svg>
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
-                  letterSpacing: 2, color: textColor, lineHeight: 1 }}>TANVIR</div>
+                  letterSpacing: 2, color: textColor, lineHeight: 1 }}>AIFAZI</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: 3,
-                  color: accentColor, opacity: 0.8, lineHeight: 1 }}>.DEV</div>
+                  color: accentColor, opacity: 0.8, lineHeight: 1 }}>.NET</div>
               </div>
             </div>
           )}
@@ -775,7 +775,7 @@ function FooterPreview({ t }) {
                 </svg>
               )}
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
-                letterSpacing: 2, color: textColor }}>TANVIR.DEV</span>
+                letterSpacing: 2, color: textColor }}>AIFAZI.NET</span>
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: mutedColor,
               lineHeight: 1.8, marginBottom: 8 }}>

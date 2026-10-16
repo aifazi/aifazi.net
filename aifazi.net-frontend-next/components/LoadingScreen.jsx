@@ -32,7 +32,7 @@ function TerminalLoader({ onComplete }) {
   return (
     <div style={{ opacity: exiting ? 0 : 1, transform: exiting ? 'scale(1.05)' : 'scale(1)', transition: 'opacity .6s,transform .6s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', width:'100%' }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(48px,8vw,80px)', fontWeight:700, letterSpacing:-2, marginBottom:48, textAlign:'center', animation:'fadeDown .6s ease both', position:'relative', zIndex:1 }}>
-        TANVIR<span style={{ color:'var(--green)' }}>.</span>
+        AIFAZI<span style={{ color:'var(--green)' }}>.</span>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--muted)', letterSpacing:6, marginTop:8, fontWeight:400 }}>NETWORK ENGINEER & IT SPECIALIST</div>
       </div>
       <div style={{ width:'100%', maxWidth:520, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, overflow:'hidden', boxShadow:'0 0 60px color-mix(in srgb, var(--green) 10%, transparent)', animation:'fadeUp .6s .2s ease both', position:'relative', zIndex:1 }}>
@@ -76,7 +76,7 @@ function MinimalLoader({ onComplete }) {
         <div style={{ position:'absolute', inset:'50%', transform:'translate(-50%,-50%)', width:8, height:8, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 12px var(--green)' }} />
       </div>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>AIFAZI<span style={{ color:'var(--green)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING</div>
       </div>
     </div>
@@ -94,9 +94,9 @@ function GlitchLoader({ onComplete }) {
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
       <div style={{ position:'relative', fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:700, letterSpacing:-2, userSelect:'none' }}>
-        <span style={{ color:'var(--text)' }}>TANVIR</span><span style={{ color:'var(--green)' }}>.</span>
-        <span aria-hidden style={{ position:'absolute', inset:0, color:'var(--cyan)', clipPath:'polygon(0 0,100% 0,100% 35%,0 35%)', animation:'glitch-t 2s infinite', opacity:.7 }}>TANVIR.</span>
-        <span aria-hidden style={{ position:'absolute', inset:0, color:'#ff2d8b', clipPath:'polygon(0 65%,100% 65%,100% 100%,0 100%)', animation:'glitch-b 2s .12s infinite', opacity:.7 }}>TANVIR.</span>
+        <span style={{ color:'var(--text)' }}>AIFAZI</span><span style={{ color:'var(--green)' }}>.</span>
+        <span aria-hidden style={{ position:'absolute', inset:0, color:'var(--cyan)', clipPath:'polygon(0 0,100% 0,100% 35%,0 35%)', animation:'glitch-t 2s infinite', opacity:.7 }}>AIFAZI.</span>
+        <span aria-hidden style={{ position:'absolute', inset:0, color:'#ff2d8b', clipPath:'polygon(0 65%,100% 65%,100% 100%,0 100%)', animation:'glitch-b 2s .12s infinite', opacity:.7 }}>AIFAZI.</span>
       </div>
       <div style={{ marginTop:24, fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:6, color:'var(--muted)' }}>
         {['▓▓▓░░░░░░░','▓▓▓▓▓▓░░░░','▓▓▓▓▓▓▓▓░░','▓▓▓▓▓▓▓▓▓░','▓▓▓▓▓▓▓▓▓▓'][Math.min(phase,4)]}
@@ -138,7 +138,7 @@ function MatrixLoader({ onComplete }) {
     <div style={{ opacity: exiting ? 0 : 1, transition:'opacity .6s', position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
       <canvas ref={canvasRef} style={{ position:'absolute', inset:0 }} />
       <div style={{ position:'relative', zIndex:1, textAlign:'center', background:'rgba(6,10,15,0.7)', padding:'24px 40px', border:'1px solid color-mix(in srgb, var(--green) 30%, transparent)', backdropFilter:'blur(4px)' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'var(--green)', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:48, fontWeight:700, color:'var(--green)', letterSpacing:-1, textShadow:'0 0 20px color-mix(in srgb, var(--green) 80%, transparent)' }}>AIFAZI<span style={{ color:'var(--cyan)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4, marginTop:8 }}>DECRYPTING PORTFOLIO</div>
       </div>
     </div>
@@ -157,7 +157,7 @@ function SplashLoader({ onComplete }) {
   return (
     <div style={{ opacity: exiting ? 0 : 1, transform: exiting ? 'scale(0.95)' : 'scale(1)', transition:'opacity .7s,transform .7s', display:'flex', flexDirection:'column', alignItems:'center', width:'100%' }}>
       <div style={{ overflow:'hidden', marginBottom:12 }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(56px,12vw,120px)', fontWeight:700, letterSpacing:-3, lineHeight:1, transform: step>=1 ? 'translateY(0)' : 'translateY(100%)', transition:'transform .7s cubic-bezier(0.16,1,0.3,1)' }}>T<span style={{ color:'var(--green)' }}>.</span>TANVIR</div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(56px,12vw,120px)', fontWeight:700, letterSpacing:-3, lineHeight:1, transform: step>=1 ? 'translateY(0)' : 'translateY(100%)', transition:'transform .7s cubic-bezier(0.16,1,0.3,1)' }}>A<span style={{ color:'var(--green)' }}>.</span>AIFAZI</div>
       </div>
       <div style={{ overflow:'hidden', marginBottom:32 }}>
         <div style={{ fontFamily:'var(--font-mono)', fontSize:11, letterSpacing:6, color:'var(--muted)', transform: step>=2 ? 'translateY(0)' : 'translateY(100%)', transition:'transform .6s .1s cubic-bezier(0.16,1,0.3,1)' }}>{items[Math.min(step-2,items.length-1)]||items[0]}</div>
@@ -186,7 +186,7 @@ function PulseLoader({ onComplete }) {
         <div style={{ width:16, height:16, borderRadius:'50%', background:'var(--green)', boxShadow:'0 0 20px var(--green)', animation:'ls-pulse-core 1.4s ease-in-out infinite' }} />
       </div>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>AIFAZI<span style={{ color:'var(--green)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>CONNECTING</div>
       </div>
       <style>{`@keyframes ls-pulse-ring{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:1}}@keyframes ls-pulse-core{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}`}</style>
@@ -217,7 +217,7 @@ function HoloLoader({ onComplete }) {
         <div style={{ width:12, height:12, borderRadius:'50%', background:'var(--cyan)', boxShadow:'0 0 18px var(--cyan)' }} />
       </div>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--cyan)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>AIFAZI<span style={{ color:'var(--cyan)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>INITIALIZING HOLOGRAPHIC INTERFACE</div>
       </div>
       <style>{`@keyframes ls-holo-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
@@ -273,7 +273,7 @@ function CyberLoader({ onComplete }) {
   }, [onComplete, TOTAL])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', gap:32 }}>
-      <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
+      <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>AIFAZI<span style={{ color:'var(--green)' }}>.</span></div>
       <div style={{ display:'grid', gridTemplateColumns:`repeat(${COLS},1fr)`, gap:5 }}>
         {Array.from({ length: TOTAL }, (_, i) => (
           <div key={i} style={{ width:18, height:18, borderRadius:3, background: lit.includes(i) ? 'var(--cyan)' : 'color-mix(in srgb, var(--cyan) 8%, transparent)', border:`1px solid ${lit.includes(i) ? 'color-mix(in srgb, var(--cyan) 80%, transparent)' : 'color-mix(in srgb, var(--cyan) 20%, transparent)'}`, boxShadow: lit.includes(i) ? '0 0 8px color-mix(in srgb, var(--cyan) 60%, transparent)' : 'none', transition:'all 0.1s' }} />
@@ -301,7 +301,7 @@ function BarsLoader({ onComplete }) {
   }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', gap:32, width:'100%', maxWidth:400, padding:'0 24px' }}>
-      <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
+      <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>AIFAZI<span style={{ color:'var(--green)' }}>.</span></div>
       <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:12 }}>
         {BARS.map((b, i) => {
           const p = Math.min(100, Math.max(0, progress - i * 15))
@@ -330,7 +330,7 @@ function WaveLoader({ onComplete }) {
   }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', gap:40 }}>
-      <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
+      <div style={{ fontFamily:'var(--font-display)', fontSize:36, fontWeight:700, letterSpacing:-1 }}>AIFAZI<span style={{ color:'var(--green)' }}>.</span></div>
       <div style={{ display:'flex', alignItems:'flex-end', gap:6, height:48 }}>
         {Array.from({ length: 12 }, (_, i) => (
           <div key={i} style={{ width:6, borderRadius:3, background: i % 2 === 0 ? 'var(--green)' : 'var(--cyan)', animation:`ls-wave-bar 1.2s ${i*0.08}s ease-in-out infinite` }} />
@@ -351,7 +351,7 @@ function NeonLoader({ onComplete }) {
   }, [onComplete])
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .5s', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:24 }}>
-      <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'var(--text)', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green),0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>TANVIR</div>
+      <div style={{ fontFamily:'var(--font-display)', fontSize:'clamp(52px,10vw,96px)', fontWeight:900, letterSpacing:4, color:'var(--text)', textTransform:'uppercase', animation:'ls-neon-flicker 3s infinite', textShadow:'0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green),0 0 120px color-mix(in srgb, var(--green) 50%, transparent)' }}>AIFAZI</div>
       <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, letterSpacing:8, color:'var(--cyan)', animation:'ls-neon-sub 3s 0.3s infinite', textShadow:'0 0 8px var(--cyan)' }}>NETWORK ENGINEER</div>
       <style>{`
         @keyframes ls-neon-flicker{0%,100%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}45%{opacity:0.15;text-shadow:none}50%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}75%{opacity:0.3;text-shadow:none}80%{opacity:1;text-shadow:0 0 10px var(--green),0 0 30px var(--green),0 0 60px var(--green)}}
@@ -431,7 +431,7 @@ function OrbitLoader({ onComplete }) {
         ))}
       </div>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>TANVIR<span style={{ color:'var(--green)' }}>.</span></div>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1, marginBottom:6 }}>AIFAZI<span style={{ color:'var(--green)' }}>.</span></div>
         <div style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:4 }}>ESTABLISHING ORBIT</div>
       </div>
     </div>
@@ -444,7 +444,7 @@ function TypewriterLoader({ onComplete }) {
   const containerRef = useRef(null)
   const cursorRef    = useRef(null)
   const [exiting, setExiting]   = useState(false)
-  const NAME    = 'TANVIR.'
+  const NAME    = 'AIFAZI.'
   const TAGLINE = 'NETWORK ENGINEER'
 
   useEffect(() => {
@@ -518,7 +518,7 @@ function DNALoader({ onComplete }) {
   return (
     <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity .4s', display:'flex', flexDirection:'column', alignItems:'center', gap:36 }}>
       <div style={{ fontFamily:'var(--font-display)', fontSize:32, fontWeight:700, letterSpacing:-1 }}>
-        TANVIR<span style={{ color:'var(--green)' }}>.</span>
+        AIFAZI<span style={{ color:'var(--green)' }}>.</span>
       </div>
 
       {/* Helix */}
@@ -601,7 +601,7 @@ function CountdownLoader({ onComplete }) {
         {display}
       </div>
       <div ref={labelRef} style={{ fontFamily:'var(--font-mono)', fontSize: 11, color:'var(--muted)', letterSpacing:6 }}>
-        TANVIR<span style={{ color:'var(--green)' }}>.</span>
+        AIFAZI<span style={{ color:'var(--green)' }}>.</span>
       </div>
     </div>
   )

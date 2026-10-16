@@ -1657,7 +1657,7 @@ function ThemeLibrary() {
           {/* Category header */}
           {animCat !== 'ALL' && (() => {
             const cat = ANIM_CATEGORIES.find(c => c.id === animCat)
-            const useCases = { entrance: 'Scroll-triggered reveals, page load, route transitions', attention: 'Hover states, notifications, interactive feedback', loading: 'Data fetching, uploads, AI responses, skeleton UI', text: 'Hero name, logo, taglines  especially the TANVIR AIFAZI header', background: 'Ambient overlays, card borders, section backgrounds' }
+            const useCases = { entrance: 'Scroll-triggered reveals, page load, route transitions', attention: 'Hover states, notifications, interactive feedback', loading: 'Data fetching, uploads, AI responses, skeleton UI', text: 'Hero name, logo, taglines  especially the AIFAZI header', background: 'Ambient overlays, card borders, section backgrounds' }
             return cat ? (
               <div style={{ marginBottom: 16, padding: '10px 16px', background: `${cat.color}0d`, border: `1px solid ${cat.color}30`, borderRadius: 6, fontFamily: 'var(--font-mono)', fontSize: 11, color: cat.color, lineHeight: 1.8 }}>
                 <strong>{cat.label.replace(/^[^ ]+ /, '')}</strong>: {useCases[animCat]}
@@ -1742,14 +1742,14 @@ function ThemeLibrary() {
                       <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: 14, letterSpacing: 2, color: currentDef.primary, textShadow: `0 0 8px ${currentDef.primary},0 0 20px ${currentDef.primary}88`, animation: 'miniNeonFlicker 3s infinite' }}>AIFAZI</div>
                     )}
                     {anim.id === 'typewriter'  && (
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, whiteSpace: 'nowrap', overflow: 'hidden', borderRight: `2px solid ${currentDef.primary}`, width: '70%', animation: 'miniTypewriter 2.2s steps(8) infinite alternate, miniBlink 0.8s step-end infinite' }}>TANVIR</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: currentDef.primary, whiteSpace: 'nowrap', overflow: 'hidden', borderRight: `2px solid ${currentDef.primary}`, width: '70%', animation: 'miniTypewriter 2.2s steps(8) infinite alternate, miniBlink 0.8s step-end infinite' }}>AIFAZI</div>
                     )}
                     {anim.id === 'gradientFlow' && (
                       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 15, letterSpacing: 2, background: `linear-gradient(90deg,${currentDef.primary},${currentDef.secondary},${currentDef.orange},${currentDef.primary})`, backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', animation: 'miniGradientFlow 2s linear infinite' }}>AIFAZI</div>
                     )}
                     {anim.id === 'letterPop'   && (
                       <div style={{ display: 'flex', gap: 2, fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 13, letterSpacing: 1 }}>
-                        {'TANVIR'.split('').map((l, i) => (
+                        {'AIFAZI'.split('').map((l, i) => (
                           <span key={i} style={{ color: i < 3 ? '#e8eaed' : currentDef.primary, animation: `miniLetterPop 2s ${i * 0.12}s ease-out infinite alternate` }}>{l}</span>
                         ))}
                       </div>

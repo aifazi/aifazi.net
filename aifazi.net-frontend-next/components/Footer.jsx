@@ -208,8 +208,8 @@ export default function Footer() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <FooterLogo />
             <div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, letterSpacing: 3, color: 'var(--text)', lineHeight: 1 }}>TANVIR</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)', opacity: 0.75, marginTop: 3 }}>.DEV</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, letterSpacing: 3, color: 'var(--text)', lineHeight: 1 }}>AIFAZI</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4, color: 'var(--green)', opacity: 0.75, marginTop: 3 }}>.NET</div>
             </div>
           </div>
 

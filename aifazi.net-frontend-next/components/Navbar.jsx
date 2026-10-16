@@ -589,14 +589,14 @@ export default function Navbar() {
             ) : headerStyle === 'editorial' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{ width: 18, height: 18, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>T</span>
+                  <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--bg)' }}>A</span>
                 </div>
                 <span style={{ fontFamily: 'Georgia, serif', fontSize: 18, fontWeight: 900, color: 'var(--text)', letterSpacing: -0.5 }}>AIFAZI</span>
               </div>
             ) : headerStyle === 'minimal' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>TANVIR</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)' }}>.DEV</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, letterSpacing: 3, color: 'var(--text)' }}>AIFAZI</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--muted)' }}>.NET</span>
               </div>
             ) : headerStyle === 'terminal' ? (
               <div>
@@ -634,9 +634,9 @@ export default function Navbar() {
                 </svg>
                 <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700,
-                    letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>TANVIR</span>
+                    letterSpacing: 3, color: hs.logoColor || 'var(--text)' }}>AIFAZI</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: 4,
-                    color: hs.accent, marginTop: 3, opacity: 0.75 }}>.DEV</span>
+                    color: hs.accent, marginTop: 3, opacity: 0.75 }}>.NET</span>
                 </div>
               </>
             )}
