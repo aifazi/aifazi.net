@@ -1,5 +1,5 @@
 # ── Frontend Dev Dockerfile — hot-reload Next.js dev server ───────────────────
-FROM node:22.14-alpine
+FROM node:26.11-alpine
 
 WORKDIR /app
 
