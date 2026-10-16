@@ -2731,9 +2731,11 @@ img, video, svg { max-width: 100%; height: auto; }
   cursor: not-allowed;
 }
 .neon-btn-primary {
-  background: var(--green);
-  color: #000;
-  box-shadow: 0 0 18px rgba(0,255,136,0.22);
+  background: var(--comp-btn-bg, var(--green));
+  color: var(--comp-btn-text, #000);
+  border: var(--comp-btn-border, var(--border-w, 1px) solid transparent);
+  box-shadow: var(--comp-btn-shadow, 0 0 18px rgba(0,255,136,0.22));
+  clip-path: var(--comp-btn-clip, none);
 }
 .neon-btn-primary:hover:not(:disabled) {
   box-shadow: 0 0 30px rgba(0,255,136,0.4);
